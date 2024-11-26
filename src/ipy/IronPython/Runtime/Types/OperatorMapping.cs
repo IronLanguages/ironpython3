@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Text;
 using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime.Types {
@@ -109,7 +109,7 @@ namespace IronPython.Runtime.Types {
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceBitwiseAnd, "op_BitwiseAndAssignment", "InPlaceBitwiseAnd"));     // &=
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceBitwiseOr, "op_BitwiseOrAssignment", "InPlaceBitwiseOr"));      // |=
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceTrueDivide, "op_DivisionAssignment", "InPlaceDivide"));         // /=
-
+            
             // these exist just for TypeInfo to map by name
             res.Add(new OperatorMapping(PythonOperationKind.GetItem, "get_Item", "GetItem"));        // not defined
             res.Add(new OperatorMapping(PythonOperationKind.SetItem, "set_Item", "SetItem"));        // not defined

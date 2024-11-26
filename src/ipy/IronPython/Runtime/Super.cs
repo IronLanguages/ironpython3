@@ -10,10 +10,11 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     [PythonType("super")]
@@ -116,7 +117,7 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-
+        
         #region Custom member access
 
         [SpecialName]
@@ -150,7 +151,7 @@ namespace IronPython.Runtime {
                 // above us until we get a hit.
                 lookupType++;
                 while (lookupType < mro.Count) {
-
+                    
                     if (TryLookupInBase(context, mro[lookupType], name, self, out value))
                         return value;
 
@@ -188,7 +189,7 @@ namespace IronPython.Runtime {
         private PythonType? DescriptorContext {
             get {
                 if (!DynamicHelpers.GetPythonType(_self).IsSubclassOf(_thisClass)) {
-                    if (_self == _selfClass) // Using @classmethod
+                    if(_self == _selfClass) // Using @classmethod
                         return _selfClass as PythonType ?? _thisClass;
                     return _thisClass;
                 }

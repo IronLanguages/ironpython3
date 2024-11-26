@@ -6,8 +6,10 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -26,7 +28,7 @@ namespace IronPython.Runtime.Types {
         public ReflectedIndexer(PropertyInfo/*!*/ info, NameType nt, bool privateBinding)
             : base(new MethodInfo[] { info.GetGetMethod(privateBinding) }, new MethodInfo[] { info.GetSetMethod(privateBinding) }, nt) {
             Debug.Assert(info != null);
-
+            
             _info = info;
         }
 

@@ -43,9 +43,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 using System;
 
-namespace ComponentAce.Compression.Libs.ZLib {
+namespace ComponentAce.Compression.Libs.ZLib
+{
 
-    internal enum InflateBlockMode {
+    internal enum InflateBlockMode
+    {
         TYPE = 0, // get type bits (3, including End bit)
         LENS = 1, // get lengths for stored
         STORED = 2, // processing stored block
@@ -58,7 +60,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
         BAD = 9 // a data error--stuck here
     }
 
-    internal sealed class InfBlocks {
+    internal sealed class InfBlocks
+    {
         #region Fields
 
         private const int MANY = 1440;
@@ -163,7 +166,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
 
         #region Methods
 
-        internal InfBlocks(ZStream z, bool needCheck, int w) {
+        internal InfBlocks(ZStream z, bool needCheck, int w)
+        {
             hufts = new int[MANY * 3];
             Window = new byte[w];
             End = w;
@@ -175,13 +179,16 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// <summary>
         /// Resets this InfBlocks class instance
         /// </summary>
-        internal void reset(ZStream z, long[] c) {
+        internal void reset(ZStream z, long[] c)
+        {
             if (c != null)
                 c[0] = check;
-            if (mode == InflateBlockMode.BTREE || mode == InflateBlockMode.DTREE) {
+            if (mode == InflateBlockMode.BTREE || mode == InflateBlockMode.DTREE)
+            {
                 blens = null;
             }
-            if (mode == InflateBlockMode.CODES) {
+            if (mode == InflateBlockMode.CODES)
+            {
                 codes.free(z);
             }
             mode = InflateBlockMode.TYPE;
@@ -196,7 +203,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// <summary>
         /// Block processing functions
         /// </summary>
-        internal int proc(ZStream z, int r) {
+        internal int proc(ZStream z, int r)
+        {
             int t; // temporary storage
             int b; // bit buffer
             int k; // bits in bit buffer
@@ -214,15 +222,21 @@ namespace ComponentAce.Compression.Libs.ZLib {
             }
 
             // process input based on current state
-            while (true) {
-                switch (mode) {
+            while (true)
+            {
+                switch (mode)
+                {
 
                     case InflateBlockMode.TYPE:
 
-                        while (k < (3)) {
-                            if (n != 0) {
+                        while (k < (3))
+                        {
+                            if (n != 0)
+                            {
                                 r = (int)ZLibResultCode.Z_OK;
-                            } else {
+                            }
+                            else
+                            {
                                 BitB = b; BitK = k;
                                 z.avail_in = n;
                                 z.total_in += p - z.next_in_index; z.next_in_index = p;
@@ -237,7 +251,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         t = (int)(b & 7);
                         last = t & 1;
 
-                        switch (ZLibUtil.URShift(t, 1)) {
+                        switch (ZLibUtil.URShift(t, 1))
+                        {
 
                             case 0:  // stored 
                                 {
@@ -259,7 +274,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
 
                                     InfTree.inflate_trees_fixed(bl, bd, tl, td, z);
                                     codes = new InfCodes(bl[0], bd[0], tl[0], td[0], z);
-                                } {
+                                }
+                                {
                                     b = ZLibUtil.URShift(b, (3)); k -= (3);
                                 }
 
@@ -291,10 +307,14 @@ namespace ComponentAce.Compression.Libs.ZLib {
 
                     case InflateBlockMode.LENS:
 
-                        while (k < (32)) {
-                            if (n != 0) {
+                        while (k < (32))
+                        {
+                            if (n != 0)
+                            {
                                 r = (int)ZLibResultCode.Z_OK;
-                            } else {
+                            }
+                            else
+                            {
                                 BitB = b; BitK = k;
                                 z.avail_in = n;
                                 z.total_in += p - z.next_in_index; z.next_in_index = p;
@@ -307,7 +327,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                             k += 8;
                         }
 
-                        if (((ZLibUtil.URShift((~b), 16)) & 0xffff) != (b & 0xffff)) {
+                        if (((ZLibUtil.URShift((~b), 16)) & 0xffff) != (b & 0xffff))
+                        {
                             mode = InflateBlockMode.BAD;
                             z.msg = "invalid stored block lengths";
                             r = (int)ZLibResultCode.Z_DATA_ERROR;
@@ -323,25 +344,31 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         break;
 
                     case InflateBlockMode.STORED:
-                        if (n == 0) {
+                        if (n == 0)
+                        {
                             BitB = b; BitK = k;
                             z.avail_in = n; z.total_in += p - z.next_in_index; z.next_in_index = p;
                             WritePos = q;
                             return inflate_flush(z, r);
                         }
 
-                        if (m == 0) {
-                            if (q == End && ReadPos != 0) {
+                        if (m == 0)
+                        {
+                            if (q == End && ReadPos != 0)
+                            {
                                 q = 0; m = (int)(q < ReadPos ? ReadPos - q - 1 : End - q);
                             }
-                            if (m == 0) {
+                            if (m == 0)
+                            {
                                 WritePos = q;
                                 r = inflate_flush(z, r);
                                 q = WritePos; m = (int)(q < ReadPos ? ReadPos - q - 1 : End - q);
-                                if (q == End && ReadPos != 0) {
+                                if (q == End && ReadPos != 0)
+                                {
                                     q = 0; m = (int)(q < ReadPos ? ReadPos - q - 1 : End - q);
                                 }
-                                if (m == 0) {
+                                if (m == 0)
+                                {
                                     BitB = b; BitK = k;
                                     z.avail_in = n; z.total_in += p - z.next_in_index; z.next_in_index = p;
                                     WritePos = q;
@@ -366,10 +393,14 @@ namespace ComponentAce.Compression.Libs.ZLib {
 
                     case InflateBlockMode.TABLE:
 
-                        while (k < (14)) {
-                            if (n != 0) {
+                        while (k < (14))
+                        {
+                            if (n != 0)
+                            {
                                 r = (int)ZLibResultCode.Z_OK;
-                            } else {
+                            }
+                            else
+                            {
                                 BitB = b; BitK = k;
                                 z.avail_in = n;
                                 z.total_in += p - z.next_in_index; z.next_in_index = p;
@@ -383,7 +414,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         }
 
                         table = t = (b & 0x3fff);
-                        if ((t & 0x1f) > 29 || ((t >> 5) & 0x1f) > 29) {
+                        if ((t & 0x1f) > 29 || ((t >> 5) & 0x1f) > 29)
+                        {
                             mode = InflateBlockMode.BAD;
                             z.msg = "too many length or distance symbols";
                             r = (int)ZLibResultCode.Z_DATA_ERROR;
@@ -394,7 +426,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                             return inflate_flush(z, r);
                         }
                         t = 258 + (t & 0x1f) + ((t >> 5) & 0x1f);
-                        blens = new int[t]; {
+                        blens = new int[t];
+                        {
                             b = ZLibUtil.URShift(b, (14)); k -= (14);
                         }
 
@@ -403,11 +436,16 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         goto case InflateBlockMode.BTREE;
 
                     case InflateBlockMode.BTREE:
-                        while (index < 4 + (ZLibUtil.URShift(table, 10))) {
-                            while (k < (3)) {
-                                if (n != 0) {
+                        while (index < 4 + (ZLibUtil.URShift(table, 10)))
+                        {
+                            while (k < (3))
+                            {
+                                if (n != 0)
+                                {
                                     r = (int)ZLibResultCode.Z_OK;
-                                } else {
+                                }
+                                else
+                                {
                                     BitB = b; BitK = k;
                                     z.avail_in = n;
                                     z.total_in += p - z.next_in_index; z.next_in_index = p;
@@ -427,15 +465,18 @@ namespace ComponentAce.Compression.Libs.ZLib {
                             }
                         }
 
-                        while (index < 19) {
+                        while (index < 19)
+                        {
                             blens[ZLibUtil.border[index++]] = 0;
                         }
 
                         bb[0] = 7;
                         t = InfTree.inflate_trees_bits(blens, bb, tb, hufts, z);
-                        if (t != (int)ZLibResultCode.Z_OK) {
+                        if (t != (int)ZLibResultCode.Z_OK)
+                        {
                             r = t;
-                            if (r == (int)ZLibResultCode.Z_DATA_ERROR) {
+                            if (r == (int)ZLibResultCode.Z_DATA_ERROR)
+                            {
                                 blens = null;
                                 mode = InflateBlockMode.BAD;
                             }
@@ -451,9 +492,11 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         goto case InflateBlockMode.DTREE;
 
                     case InflateBlockMode.DTREE:
-                        while (true) {
+                        while (true)
+                        {
                             t = table;
-                            if (!(index < 258 + (t & 0x1f) + ((t >> 5) & 0x1f))) {
+                            if (!(index < 258 + (t & 0x1f) + ((t >> 5) & 0x1f)))
+                            {
                                 break;
                             }
 
@@ -462,10 +505,14 @@ namespace ComponentAce.Compression.Libs.ZLib {
 
                             t = bb[0];
 
-                            while (k < (t)) {
-                                if (n != 0) {
+                            while (k < (t))
+                            {
+                                if (n != 0)
+                                {
                                     r = (int)ZLibResultCode.Z_OK;
-                                } else {
+                                }
+                                else
+                                {
                                     BitB = b; BitK = k;
                                     z.avail_in = n;
                                     z.total_in += p - z.next_in_index; z.next_in_index = p;
@@ -481,18 +528,25 @@ namespace ComponentAce.Compression.Libs.ZLib {
                             t = hufts[(tb[0] + (b & ZLibUtil.inflate_mask[t])) * 3 + 1];
                             c = hufts[(tb[0] + (b & ZLibUtil.inflate_mask[t])) * 3 + 2];
 
-                            if (c < 16) {
+                            if (c < 16)
+                            {
                                 b = ZLibUtil.URShift(b, (t)); k -= (t);
                                 blens[index++] = c;
-                            } else {
+                            }
+                            else
+                            {
                                 // c == 16..18
                                 i = c == 18 ? 7 : c - 14;
                                 j = c == 18 ? 11 : 3;
 
-                                while (k < (t + i)) {
-                                    if (n != 0) {
+                                while (k < (t + i))
+                                {
+                                    if (n != 0)
+                                    {
                                         r = (int)ZLibResultCode.Z_OK;
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         BitB = b; BitK = k;
                                         z.avail_in = n;
                                         z.total_in += p - z.next_in_index; z.next_in_index = p;
@@ -513,7 +567,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
 
                                 i = index;
                                 t = table;
-                                if (i + j > 258 + (t & 0x1f) + ((t >> 5) & 0x1f) || (c == 16 && i < 1)) {
+                                if (i + j > 258 + (t & 0x1f) + ((t >> 5) & 0x1f) || (c == 16 && i < 1))
+                                {
                                     blens = null;
                                     mode = InflateBlockMode.BAD;
                                     z.msg = "invalid bit length repeat";
@@ -526,7 +581,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                                 }
 
                                 c = c == 16 ? blens[i - 1] : 0;
-                                do {
+                                do
+                                {
                                     blens[i++] = c;
                                 }
                                 while (--j != 0);
@@ -534,7 +590,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                             }
                         }
 
-                        tb[0] = -1; {
+                        tb[0] = -1;
+                        {
                             int[] bl = new int[1];
                             int[] bd = new int[1];
                             int[] tl = new int[1];
@@ -545,8 +602,10 @@ namespace ComponentAce.Compression.Libs.ZLib {
                             bd[0] = 6; // must be <= 9 for lookahead assumptions
                             t = table;
                             t = InfTree.inflate_trees_dynamic(257 + (t & 0x1f), 1 + ((t >> 5) & 0x1f), blens, bl, bd, tl, td, hufts, z);
-                            if (t != (int)ZLibResultCode.Z_OK) {
-                                if (t == (int)ZLibResultCode.Z_DATA_ERROR) {
+                            if (t != (int)ZLibResultCode.Z_OK)
+                            {
+                                if (t == (int)ZLibResultCode.Z_DATA_ERROR)
+                                {
                                     blens = null;
                                     mode = InflateBlockMode.BAD;
                                 }
@@ -569,7 +628,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         z.avail_in = n; z.total_in += p - z.next_in_index; z.next_in_index = p;
                         WritePos = q;
 
-                        if ((r = codes.proc(this, z, r)) != (int)ZLibResultCode.Z_STREAM_END) {
+                        if ((r = codes.proc(this, z, r)) != (int)ZLibResultCode.Z_STREAM_END)
+                        {
                             return inflate_flush(z, r);
                         }
                         r = (int)ZLibResultCode.Z_OK;
@@ -578,7 +638,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         p = z.next_in_index; n = z.avail_in; b = BitB; k = BitK;
                         q = WritePos; m = (int)(q < ReadPos ? ReadPos - q - 1 : End - q);
 
-                        if (last == 0) {
+                        if (last == 0)
+                        {
                             mode = InflateBlockMode.TYPE;
                             break;
                         }
@@ -589,7 +650,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                         WritePos = q;
                         r = inflate_flush(z, r);
                         q = WritePos; m = (int)(q < ReadPos ? ReadPos - q - 1 : End - q);
-                        if (ReadPos != WritePos) {
+                        if (ReadPos != WritePos)
+                        {
                             BitB = b; BitK = k;
                             z.avail_in = n; z.total_in += p - z.next_in_index; z.next_in_index = p;
                             WritePos = q;
@@ -630,7 +692,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// <summary>
         /// Frees inner buffers
         /// </summary>
-        internal void free(ZStream z) {
+        internal void free(ZStream z)
+        {
             reset(z, null);
             Window = null;
             hufts = null;
@@ -641,7 +704,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// Sets dictionary
         /// </summary>
 
-        internal void set_dictionary(byte[] d, int start, int n) {
+        internal void set_dictionary(byte[] d, int start, int n)
+        {
             Array.Copy(d, start, Window, 0, n);
             ReadPos = WritePos = n;
         }
@@ -650,72 +714,75 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// Returns true if inflate is currently at the End of a block generated
         /// by Z_SYNC_FLUSH or Z_FULL_FLUSH. 
         /// </summary>
-        internal int sync_point() {
+        internal int sync_point()
+        {
             return mode == InflateBlockMode.LENS ? 1 : 0;
         }
 
         /// <summary>
         /// copy as much as possible from the sliding Window to the output area
         /// </summary>
-		internal int inflate_flush(ZStream z, int r) {
-            // local copies of source and destination pointers
-            int p = z.next_out_index;
-            int q = ReadPos;
-
-            // compute number of bytes to copy as far as End of Window
-            int n = (int)((q <= WritePos ? WritePos : End) - q);
-            if (n > z.avail_out)
-                n = z.avail_out;
-            if (n != 0 && r == (int)ZLibResultCode.Z_BUF_ERROR)
-                r = (int)ZLibResultCode.Z_OK;
-
-            // update counters
-            z.avail_out -= n;
-            z.total_out += n;
-
-            // update check information
-            if (needCheck)
-                z.adler = check = Adler32.GetAdler32Checksum(check, Window, q, n);
-
-            // copy as far as End of Window
-            Array.Copy(Window, q, z.next_out, p, n);
-            p += n;
-            q += n;
-
-            // see if more to copy at beginning of Window
-            if (q == End) {
-                // wrap pointers
-                q = 0;
-                if (WritePos == End)
-                    WritePos = 0;
-
-                // compute bytes to copy
-                n = WritePos - q;
-                if (n > z.avail_out)
-                    n = z.avail_out;
-                if (n != 0 && r == (int)ZLibResultCode.Z_BUF_ERROR)
-                    r = (int)ZLibResultCode.Z_OK;
-
-                // update counters
-                z.avail_out -= n;
-                z.total_out += n;
-
-                // update check information
-                if (needCheck)
-                    z.adler = check = Adler32.GetAdler32Checksum(check, Window, q, n);
-
-                // copy
-                Array.Copy(Window, q, z.next_out, p, n);
-                p += n;
-                q += n;
-            }
-
-            // update pointers
-            z.next_out_index = p;
-            ReadPos = q;
-
-            // done
-            return r;
+		internal int inflate_flush(ZStream z, int r)
+		{
+		    // local copies of source and destination pointers
+			int p = z.next_out_index;
+			int q = ReadPos;
+			
+			// compute number of bytes to copy as far as End of Window
+			int n = (int) ((q <= WritePos?WritePos:End) - q);
+			if (n > z.avail_out)
+				n = z.avail_out;
+			if (n != 0 && r == (int)ZLibResultCode.Z_BUF_ERROR)
+				r = (int)ZLibResultCode.Z_OK;
+			
+			// update counters
+			z.avail_out -= n;
+			z.total_out += n;
+			
+			// update check information
+			if (needCheck)
+				z.adler = check = Adler32.GetAdler32Checksum(check, Window, q, n);
+			
+			// copy as far as End of Window
+			Array.Copy(Window, q, z.next_out, p, n);
+			p += n;
+			q += n;
+			
+			// see if more to copy at beginning of Window
+			if (q == End)
+			{
+				// wrap pointers
+				q = 0;
+				if (WritePos == End)
+					WritePos = 0;
+				
+				// compute bytes to copy
+				n = WritePos - q;
+				if (n > z.avail_out)
+					n = z.avail_out;
+				if (n != 0 && r == (int)ZLibResultCode.Z_BUF_ERROR)
+					r = (int)ZLibResultCode.Z_OK;
+				
+				// update counters
+				z.avail_out -= n;
+				z.total_out += n;
+				
+				// update check information
+				if (needCheck)
+					z.adler = check = Adler32.GetAdler32Checksum(check, Window, q, n);
+				
+				// copy
+				Array.Copy(Window, q, z.next_out, p, n);
+				p += n;
+				q += n;
+			}
+			
+			// update pointers
+			z.next_out_index = p;
+			ReadPos = q;
+			
+			// done
+			return r;
         }
 
         #endregion

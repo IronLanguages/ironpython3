@@ -23,13 +23,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
-using IronPython.Compiler;
-using IronPython.Hosting;
-using IronPython.Modules;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
@@ -38,6 +31,13 @@ using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Compiler;
+using IronPython.Hosting;
+using IronPython.Modules;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Types;
 
 using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
@@ -107,7 +107,7 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary(new CommonDictionaryStorage(data, true));
         }
 
-        public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)] object? o) {
+        public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)]object? o) {
             // This tells if an object can be called, but does not make a claim about the parameter list.
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated
             // in favor of dynamic sites.
@@ -391,7 +391,7 @@ namespace IronPython.Runtime.Operations {
             return typeinfo.__subclasscheck__(c);
         }
 
-        internal static bool IsSubClass(CodeContext/*!*/ context, PythonType c, [NotNull] object? typeinfo) {
+        internal static bool IsSubClass(CodeContext/*!*/ context, PythonType c, [NotNull]object? typeinfo) {
             if (c == null) throw PythonOps.TypeError("issubclass: arg 1 must be a class");
             if (typeinfo == null) throw PythonOps.TypeError("issubclass: arg 2 must be a class");
 
@@ -476,7 +476,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         // used by Ironclad
-        public static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNull] object? typeinfo) {
+        public static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNull]object? typeinfo) {
             if (typeinfo == null) throw PythonOps.TypeError("isinstance: arg 2 must be a class, type, or tuple of classes and types");
 
             if (typeinfo is PythonTuple tt) {
@@ -505,7 +505,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        private static bool IsSubclassSlow([NotNullWhen(true)] object? cls, object typeinfo) {
+        private static bool IsSubclassSlow([NotNullWhen(true)]object? cls, object typeinfo) {
             if (cls == null) return false;
 
             // Same type
@@ -2178,7 +2178,7 @@ namespace IronPython.Runtime.Operations {
             throw TypeErrorForNotIterable(o);
         }
 
-        private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)] out object? enumerator) {
+        private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)]out object? enumerator) {
             // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
             // which would make it "iterable" even though it is not.
             if (o is PythonType pt && !pt.IsIterable(context)) {
@@ -2212,7 +2212,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("iteration over non-sequence of type {0}", PythonOps.GetPythonTypeName(enumerable));
         }
 
-        internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)] object? enumerable, [NotNullWhen(true)] out IEnumerator? enumerator) {
+        internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)]object? enumerable, [NotNullWhen(true)]out IEnumerator? enumerator) {
             enumerator = null;
 
             // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
@@ -2856,7 +2856,7 @@ namespace IronPython.Runtime.Operations {
         /// Helper to determine if the value is a simple numeric type (int or big int or bool) - used for OldInstance
         /// deprecated form of slicing.
         /// </summary>
-        public static bool IsNumericObject([NotNullWhen(true)] object? value) {
+        public static bool IsNumericObject([NotNullWhen(true)]object? value) {
             return value is int || value is BigInteger || value is Extensible<BigInteger> || value is bool;
         }
 
@@ -2920,7 +2920,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object ConvertToPythonPrimitive(object value) {
-            return value switch {
+            return value switch
+            {
                 float f => (double)f,
                 sbyte sb => (int)sb,
                 byte b => (int)b,
@@ -4077,7 +4078,7 @@ namespace IronPython.Runtime.Operations {
                              methodName, expectedArgCount, expectedArgCount == 1 ? "" : "s", actualArgCount);
         }
 
-        public static Exception TypeErrorForOptionalArgumentCountMismatch(string methodName, int expectedArgCount, int actualArgCount, bool positional = false) {
+        public static Exception TypeErrorForOptionalArgumentCountMismatch(string methodName, int expectedArgCount, int actualArgCount, bool positional=false) {
             return TypeError("{0}() takes at most {1} {2}argument{3} ({4} given)",
                              methodName, expectedArgCount, positional ? "positional " : "", expectedArgCount == 1 ? "" : "s", actualArgCount);
         }

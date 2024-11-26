@@ -165,24 +165,24 @@ namespace IronPython.Modules {
             return res;
         }
 
-        public short ReadInt16(int offset, bool swap = false) {
+        public short ReadInt16(int offset, bool swap=false) {
             short res = Marshal.ReadInt16(_data, offset);
             GC.KeepAlive(this);
-            if (swap) res = Swap(res);
+            if(swap) res = Swap(res);
             return res;
         }
 
-        public int ReadInt32(int offset, bool swap = false) {
+        public int ReadInt32(int offset, bool swap=false) {
             int res = Marshal.ReadInt32(_data, offset);
             GC.KeepAlive(this);
-            if (swap) res = Swap(res);
+            if(swap) res = Swap(res);
             return res;
         }
 
-        public long ReadInt64(int offset, bool swap = false) {
+        public long ReadInt64(int offset, bool swap=false) {
             long res = Marshal.ReadInt64(_data, offset);
             GC.KeepAlive(this);
-            if (swap) res = Swap(res);
+            if(swap) res = Swap(res);
             return res;
         }
 
@@ -240,7 +240,7 @@ namespace IronPython.Modules {
             // ptrToStringAnsi gives special treatment to values >= 128.
             MemoryStream res = new MemoryStream();
             byte b;
-            while ((b = Marshal.ReadByte(addr, offset++)) != 0) {
+            while((b = Marshal.ReadByte(addr, offset++)) != 0) {
                 res.WriteByte(b);
             }
             return Bytes.Make(res.ToArray());
@@ -259,17 +259,17 @@ namespace IronPython.Modules {
             GC.KeepAlive(this);
         }
 
-        public void WriteInt16(int offset, short value, bool swap = false) {
+        public void WriteInt16(int offset, short value, bool swap=false) {
             Marshal.WriteInt16(_data, offset, swap ? Swap(value) : value);
             GC.KeepAlive(this);
         }
 
-        public void WriteInt32(int offset, int value, bool swap = false) {
+        public void WriteInt32(int offset, int value, bool swap=false) {
             Marshal.WriteInt32(_data, offset, swap ? Swap(value) : value);
             GC.KeepAlive(this);
         }
 
-        public void WriteInt64(int offset, long value, bool swap = false) {
+        public void WriteInt64(int offset, long value, bool swap=false) {
             Marshal.WriteInt64(_data, offset, swap ? Swap(value) : value);
             GC.KeepAlive(this);
         }

@@ -5,13 +5,13 @@
 using System;
 using System.Collections.Generic;
 
-using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-namespace IronPython.Runtime.Types {
+using IronPython.Runtime.Operations;
 
+namespace IronPython.Runtime.Types {
+    
     /// <summary>
     /// Represents a member of a user-defined type which defines __slots__.  The names listed in
     /// __slots__ have storage allocated for them with the type and provide fast get/set access.
@@ -19,7 +19,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("member_descriptor")]
     internal class ReflectedSlotProperty : PythonTypeDataSlot, ICodeFormattable {
         private readonly string/*!*/ _name, _typeName;
-        private readonly int/*!*/ _index;
+        private readonly int/*!*/ _index;        
 
         private static readonly Dictionary<int, SlotValue> _methods = new Dictionary<int, SlotValue>();
 
@@ -124,5 +124,5 @@ namespace IronPython.Runtime.Types {
     }
 
     internal delegate object SlotGetValue(object instance);
-    internal delegate void SlotSetValue(object instance, object value);
+    internal delegate void   SlotSetValue(object instance, object value);
 }

@@ -590,7 +590,7 @@ namespace IronPythonTest {
             yield return 3;
         }
     }
-
+    
     public class UsePythonDictAsHashtable {
         private Hashtable table;
 

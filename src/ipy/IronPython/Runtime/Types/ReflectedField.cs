@@ -2,19 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime.Types {
     using Ast = Expression;
@@ -41,8 +43,8 @@ namespace IronPython.Runtime.Types {
 
         public FieldInfo Info {
             [PythonHidden]
-            get {
-                return _info;
+            get { 
+                return _info; 
             }
         }
 
@@ -71,7 +73,7 @@ namespace IronPython.Runtime.Types {
         public void SetValue(CodeContext context, object instance, object value) {
             if (!TrySetValueWorker(context, instance, DynamicHelpers.GetPythonType(instance), value, true)) {
                 throw new InvalidOperationException("cannot set field");
-            }
+            }            
         }
 
         public void __set__(CodeContext/*!*/ context, object instance, object value) {

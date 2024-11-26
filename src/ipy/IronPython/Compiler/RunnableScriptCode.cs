@@ -7,11 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
     internal abstract class RunnableScriptCode : ScriptCode {
@@ -82,7 +83,7 @@ namespace IronPython.Compiler {
         }
 
         public abstract FunctionCode GetFunctionCode(bool register);
-
+                
         protected void PushFrame(CodeContext context, FunctionCode code) {
             if (((PythonContext)SourceUnit.LanguageContext).PythonOptions.Frames) {
                 PythonOps.PushFrame(context, code);

@@ -2,19 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Dynamic;
 using System.Linq.Expressions;
 using System.Numerics;
 
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Dynamic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -82,7 +84,7 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject/*!*/ BindDeleteIndex(DeleteIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes) {
             return PythonProtocol.Index(binder, PythonIndexType.DeleteItem, ArrayUtils.Insert(this, indexes));
-        }
+        }        
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
             Expression context = Ast.Call(
@@ -94,8 +96,8 @@ namespace IronPython.Runtime.Binding {
             );
 
             return InvokeWorker(
-                action,
-                context,
+                action, 
+                context, 
                 args
             );
         }
@@ -123,7 +125,7 @@ namespace IronPython.Runtime.Binding {
                 if (Value.PythonType.TryResolveSlot(context.SharedContext, "__call__", out callSlot) &&
                     TypeCache.PythonType.TryResolveSlot(context.SharedContext, "__call__", out typeCallSlot) &&
                     callSlot == typeCallSlot) {
-
+                    
                     return InvokeFallback(action, codeContext, args);
                 }
             }
@@ -183,7 +185,7 @@ namespace IronPython.Runtime.Binding {
                             }
                         } else if (type == typeof(IEnumerable)) {
                             return PythonConversionBinder.ConvertToIEnumerable(conversion, Restrict(Value.GetType()));
-                        } else if (type == typeof(IEnumerator)) {
+                        } else if (type == typeof(IEnumerator)){
                             return PythonConversionBinder.ConvertToIEnumerator(conversion, Restrict(Value.GetType()));
                         } else if (type.IsSubclassOf(typeof(Delegate))) {
                             return MakeDelegateTarget(conversion, type, Restrict(Value.GetType()));
@@ -362,14 +364,14 @@ namespace IronPython.Runtime.Binding {
                         db.MakeConversionError(
                             convertToAction.Type,
                             self.Expression
-                        ),
+                        ), 
                         typeof(object)
                     );
                 default:
                     throw new InvalidOperationException(convertToAction.ResultKind.ToString());
             }
         }
-
+        
         /// <summary>
         /// Helper for falling back - if we have a base object fallback to it first (which can
         /// then fallback to the calling site), otherwise fallback to the calling site.

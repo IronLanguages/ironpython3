@@ -1,5 +1,7 @@
 ﻿using System;
-
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using IronPython.Runtime;
 
 #if FEATURE_PROCESS
@@ -14,7 +16,7 @@ namespace IronPython.Modules {
 
             private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e) {
                 int pySignal;
-                switch (e.SpecialKey) {
+                switch(e.SpecialKey) {
                     case ConsoleSpecialKey.ControlC:
                         pySignal = SIGINT;
                         break;
@@ -26,7 +28,7 @@ namespace IronPython.Modules {
                     default:
                         throw new InvalidOperationException("unreachable");
                 }
-
+                
                 lock (PySignalToPyHandler) {
                     if (PySignalToPyHandler[pySignal].GetType() == typeof(int)) {
                         int tempId = (int)PySignalToPyHandler[pySignal];

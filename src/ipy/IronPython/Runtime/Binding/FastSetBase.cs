@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Binding {
     internal class FastSetBase {

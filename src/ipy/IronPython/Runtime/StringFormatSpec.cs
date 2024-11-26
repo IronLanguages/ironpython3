@@ -3,10 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Diagnostics;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
-
-using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -309,7 +313,7 @@ namespace IronPython.Runtime {
                 text = FinishText(text, sign, type);
             }
 
-
+            
             return text;
         }
 

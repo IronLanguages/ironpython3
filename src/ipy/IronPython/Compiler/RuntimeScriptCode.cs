@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using MSAst = System.Linq.Expressions;
+
 using System;
 using System.Diagnostics;
 using System.Threading;
 
-using IronPython.Compiler.Ast;
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
-using MSAst = System.Linq.Expressions;
+using IronPython.Compiler.Ast;
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
     /// <summary>
@@ -83,7 +84,7 @@ namespace IronPython.Compiler {
             // exec/eval code.  Therefore we don't need to do any of that here.
             return _unoptimizedCode.Run(scope);
         }
-
+        
         private object OptimizedEvalWrapper(FunctionCode funcCode) {
             try {
                 return _optimizedTarget(funcCode);
@@ -106,7 +107,7 @@ namespace IronPython.Compiler {
         private Func<FunctionCode, object>/*!*/ Compile() {
             var pco = (PythonCompilerOptions)Ast.CompilerContext.Options;
             var pc = (PythonContext)SourceUnit.LanguageContext;
-
+            
             if (pc.ShouldInterpret(pco, SourceUnit)) {
                 return ((Microsoft.Scripting.Ast.LightExpression<Func<FunctionCode, object>>)Ast.GetLambda()).Compile(pc.Options.CompilationThreshold);
             } else {

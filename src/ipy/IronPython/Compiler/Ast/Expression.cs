@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -54,7 +55,7 @@ namespace IronPython.Compiler.Ast {
 
         internal virtual bool IsConstant => ConstantFold()?.IsConstant ?? false;
 
-        internal virtual object GetConstantValue() {
+        internal virtual object GetConstantValue() {            
             var folded = ConstantFold();
             if (folded != null && folded.IsConstant) {
                 return folded.GetConstantValue();

@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
-using IronPython.Runtime;
-
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime;
 
 namespace IronPythonTest {
     [Serializable]
@@ -119,7 +120,7 @@ namespace IronPythonTest {
             }
             return res;
         }
-
+        
         public override DictionaryStorage Clone() {
             lock (this) {
                 IDictionary<string, object> dict;
@@ -142,7 +143,7 @@ namespace IronPythonTest {
         private void EnsureObjectDictionary() {
             if (_objDict == null) {
                 Interlocked.CompareExchange<Dictionary<object, object>>(ref _objDict, new Dictionary<object, object>(DefaultContext.DefaultPythonContext.EqualityComparer), null);
-            }
+            }            
         }
     }
 }

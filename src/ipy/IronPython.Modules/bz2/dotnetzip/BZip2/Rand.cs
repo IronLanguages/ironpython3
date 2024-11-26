@@ -24,8 +24,10 @@
 // ------------------------------------------------------------------
 
 
-namespace Ionic.BZip2 {
-    internal static class Rand {
+namespace Ionic.BZip2
+{
+    internal static class Rand
+    {
         private static int[] RNUMS =
         {
             619, 720, 127, 481, 931, 816, 813, 233, 566, 247,
@@ -88,7 +90,8 @@ namespace Ionic.BZip2 {
         /// </summary>
         /// <param name='i'>the index</param>
         /// <returns>the random number</returns>
-        internal static int Rnums(int i) {
+        internal static int Rnums(int i)
+        {
             return RNUMS[i];
         }
     }

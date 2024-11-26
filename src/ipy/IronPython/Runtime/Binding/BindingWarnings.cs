@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 
 using IronPython.Runtime.Exceptions;

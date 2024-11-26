@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Types {
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
             throw PythonOps.TypeError("__weakref__ attribute cannot be deleted");
         }
-
+       
         public override string ToString() {
             return $"<attribute '__weakref__' of '{_type.Name}' objects>";
         }

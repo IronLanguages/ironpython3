@@ -4,10 +4,10 @@
 
 using System;
 using System.Linq;
+using System.Numerics;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_random", typeof(IronPython.Modules.PythonRandom))]

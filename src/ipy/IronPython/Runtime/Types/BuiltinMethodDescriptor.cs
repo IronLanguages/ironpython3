@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     using Ast = Expression;
@@ -101,7 +103,7 @@ namespace IronPython.Runtime.Types {
         }
 
         #endregion
-
+        
         #region Public Python API
 
         public string __name__ {
@@ -116,7 +118,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public object __call__(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary] IDictionary<object, object> dictArgs, params object[] args) {
+        public object __call__(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary]IDictionary<object, object> dictArgs, params object[] args) {
             return _template.__call__(context, storage, dictArgs, args);
         }
 

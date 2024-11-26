@@ -5,10 +5,8 @@
 using System;
 using System.Text;
 using System.Windows.Forms;
-
 using IronPython.Hosting;
 using IronPython.Runtime;
-
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;

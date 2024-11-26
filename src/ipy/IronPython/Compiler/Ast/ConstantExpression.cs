@@ -4,13 +4,14 @@
 
 using System;
 
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using MSAst = System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;

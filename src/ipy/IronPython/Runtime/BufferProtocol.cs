@@ -30,7 +30,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// The buffer must be writable. The consumer cannot handle read-only buffers.
         /// </summary>
-        Writable = 0x0001,
+        Writable      = 0x0001,
 
         /// <summary>
         /// The consumer expects the item format to be reported and is prepared to deal with items that are more complex than a byte.
@@ -38,30 +38,30 @@ namespace IronPython.Runtime {
         /// <remarks>
         /// If format is requested, the consumer must also indicate preparedness to handle shape (<see cref="ND"/> flag set).
         /// </remarks>
-        Format = 0x0004,
+        Format        = 0x0004,
 
         /// <summary>
         /// An N-dimensional array, 0 &lt;= N &lt;= 64. The dimensions are reported as shape.
         /// </summary>
-        ND = 0x0008,
+        ND            = 0x0008,
 
         /// <summary>
         /// An N-dimensional array with strides, so data may not be memory contiguous.
         /// However, it will fit in a contiguous memory range. 
         /// </summary>
-        Strides = 0x0010 | ND,
+        Strides       = 0x0010 | ND,
 
         /// <summary>
         /// An N-dimensional array with strides, so it may not be memory contiguous.
         /// The last dimension is contiguous.
         /// </summary>
-        CContiguous = 0x0020 | Strides,
+        CContiguous   = 0x0020 | Strides,
 
         /// <summary>
         /// An N-dimensional array with strides, so it may not be memory contiguous.
         /// The first dimension is contiguous.
         /// </summary>
-        FContiguous = 0x0040 | Strides,
+        FContiguous   = 0x0040 | Strides,
 
         /// <summary>
         /// The client is prepared to deal with either <see cref="CContiguous"/> or <see cref="FContiguous"/>.
@@ -72,29 +72,29 @@ namespace IronPython.Runtime {
         /// An N-dimensional array that has a complex structure, where higher dimensions
         /// may contains pointers to memory blocks holding lower dimensions.
         /// </summary>
-        Indirect = 0x0100 | Strides,
+        Indirect      = 0x0100 | Strides,
 
         #region Flag combinations for common requests
 
         /// <summary>
         /// Unformatted (i.e. byte-oriented) read-only blob with no structure.
         /// </summary>
-        Simple = 0,
+        Simple    = 0,
 
         /// <summary>
         /// Contiguous writable buffer of any dimension.
         /// </summary>
-        Contig = ND | Writable,
+        Contig    = ND | Writable,
 
         /// <summary>
         /// Contiguous buffer of any dimension.
         /// </summary>
-        ContigRO = ND,
+        ContigRO  = ND,
 
         /// <summary>
         /// Writable byte buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
         /// </summary>
-        Strided = Strides | Writable,
+        Strided   = Strides | Writable,
 
         /// <summary>
         /// Byte buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
@@ -105,7 +105,7 @@ namespace IronPython.Runtime {
         /// Writable buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
         /// Elements can be any struct type.
         /// </summary>
-        Records = Strides | Writable | Format,
+        Records   = Strides | Writable | Format,
 
         /// <summary>
         /// Buffer of any dimension, possibly non-contiguous, but with no embedded pointers.
@@ -113,8 +113,8 @@ namespace IronPython.Runtime {
         /// </summary>
         RecordsRO = Strides | Format,
 
-        Full = Indirect | Writable | Format,
-        FullRO = Indirect | Format,
+        Full      = Indirect | Writable | Format,
+        FullRO    = Indirect | Format,
 
         #endregion
     }

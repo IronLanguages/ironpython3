@@ -2,21 +2,23 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Types;
+using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime.Operations {
-
+    
     // These operations get linked into all new-style classes. 
     public static class UserTypeOps {
         public static string ToStringReturnHelper(object o) {
@@ -57,7 +59,7 @@ namespace IronPython.Runtime.Operations {
 
             object[] slots = obj.GetSlotsCreate();
             slots[slots.Length - 1] = value;
-            return true;
+            return true;            
         }
 
         public static WeakRefTracker GetWeakRefHelper(IPythonObject obj) {
@@ -256,7 +258,7 @@ namespace IronPython.Runtime.Operations {
             try {
                 if (getAttributeSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
-                }
+                } 
             } catch (MissingMemberException) {
                 if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
@@ -320,8 +322,8 @@ namespace IronPython.Runtime.Operations {
             }
             return (Binding.FastBindResult<T>)(object)new Binding.MetaUserObject.FastGetBinderHelper(
                 codeContext,
-                (CallSite<Func<CallSite, object, CodeContext, object>>)(object)site,
-                self,
+                (CallSite<Func<CallSite, object, CodeContext, object>>)(object)site, 
+                self, 
                 getBinder).GetBinding(codeContext, getBinder.Name);
         }
 
@@ -388,7 +390,7 @@ namespace IronPython.Runtime.Operations {
     /// </summary>
     public class UserTypeDebugView {
         private readonly IPythonObject _userObject;
-
+        
         public UserTypeDebugView(IPythonObject userObject) {
             _userObject = userObject;
         }
@@ -414,8 +416,8 @@ namespace IronPython.Runtime.Operations {
                 if (slots != null) {
                     var mro = _userObject.PythonType.ResolutionOrder;
                     List<string> slotNames = new List<string>();
-
-                    for (int i = mro.Count - 1; i >= 0; i--) {
+                    
+                    for(int i = mro.Count - 1; i>= 0; i--) {
                         slotNames.AddRange(mro[i].GetTypeSlots());
                     }
 

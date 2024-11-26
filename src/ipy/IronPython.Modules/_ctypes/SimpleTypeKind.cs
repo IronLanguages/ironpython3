@@ -4,6 +4,8 @@
 
 #if FEATURE_CTYPES
 
+using System;
+
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.

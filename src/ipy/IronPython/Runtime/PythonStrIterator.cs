@@ -7,11 +7,11 @@
 using System.Collections;
 using System.Collections.Generic;
 
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Types;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     // note: any changes in how this iterator works should also be applied in the

@@ -15,7 +15,7 @@ namespace IronPython.Runtime.Operations {
             return DBNull.Value;
         }
 
-        public static bool __bool__(DBNull value) {
+        public static bool __bool__(DBNull value) {            
             return false;
         }
     }

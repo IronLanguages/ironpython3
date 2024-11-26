@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -13,32 +14,12 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-
-/* Unmerged change from project 'IronPython (net6.0)'
-Before:
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime.Exceptions;
-After:
-using IronPython.Runtime.Exceptions;
-*/
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-
-/* Unmerged change from project 'IronPython (net6.0)'
-Before:
-namespace IronPython.Runtime.Operations {
-After:
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
-namespace IronPython.Runtime.Operations {
-*/
 namespace IronPython.Runtime.Operations {
 
     public static partial class BigIntegerOps {
@@ -776,7 +757,8 @@ namespace IronPython.Runtime.Operations {
 
                     if (spec.Fill == '0' && spec.Width > 1) {
                         digits = FormattingHelper.ToCultureString(val, culture.NumberFormat, spec, (spec.Sign != null && spec.Sign != '-' || self < 0) ? spec.Width - 1 : null);
-                    } else {
+                    }
+                    else {
                         digits = FormattingHelper.ToCultureString(val, culture.NumberFormat, spec);
                     }
                     break;
@@ -843,7 +825,7 @@ namespace IronPython.Runtime.Operations {
                     int iVal;
                     if (!self.AsInt32(out iVal)) {
                         throw PythonOps.OverflowError("Python int too large to convert to System.Int32");
-                    } else if (iVal < 0 || iVal > 0x10ffff) {
+                    } else if(iVal < 0 || iVal > 0x10ffff) {
                         throw PythonOps.OverflowError("%c arg not in range(0x110000)");
                     }
 
@@ -871,7 +853,7 @@ namespace IronPython.Runtime.Operations {
 
 #if NETCOREAPP
             var bytes = new byte[length];
-            int start = isLittle ? 0 : length - value.GetByteCount(isUnsigned: !signed);
+            int start = isLittle? 0 : length - value.GetByteCount(isUnsigned: !signed);
             if (start < 0) ThrowOverflow();
             if (!value.TryWriteBytes(bytes.AsSpan(start), out int written, isUnsigned: !signed, isBigEndian: !isLittle)) {
                 ThrowOverflow();

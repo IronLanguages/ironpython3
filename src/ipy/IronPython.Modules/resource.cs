@@ -5,17 +5,17 @@
 #nullable enable
 
 using System;
-using System.Linq;
 using System.Numerics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+
+using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("resource", typeof(IronPython.Modules.PythonResourceModule), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules;
@@ -367,20 +367,20 @@ public static class PythonResourceModule {
 
         public timeval ru_utime;        // user CPU time used
         public timeval ru_stime;        // system CPU time used
-        public long ru_maxrss;       // maximum resident set size
-        public long ru_ixrss;        // integral shared memory size
-        public long ru_idrss;        // integral unshared data size
-        public long ru_isrss;        // integral unshared stack size
-        public long ru_minflt;       // page reclaims (soft page faults)
-        public long ru_majflt;       // page faults (hard page faults)
-        public long ru_nswap;        // swaps
-        public long ru_inblock;      // block input operations
-        public long ru_oublock;      // block output operations
-        public long ru_msgsnd;       // IPC messages sent
-        public long ru_msgrcv;       // IPC messages received
-        public long ru_nsignals;     // signals received
-        public long ru_nvcsw;        // voluntary context switches
-        public long ru_nivcsw;       // involuntary context switches
+        public long    ru_maxrss;       // maximum resident set size
+        public long    ru_ixrss;        // integral shared memory size
+        public long    ru_idrss;        // integral unshared data size
+        public long    ru_isrss;        // integral unshared stack size
+        public long    ru_minflt;       // page reclaims (soft page faults)
+        public long    ru_majflt;       // page faults (hard page faults)
+        public long    ru_nswap;        // swaps
+        public long    ru_inblock;      // block input operations
+        public long    ru_oublock;      // block output operations
+        public long    ru_msgsnd;       // IPC messages sent
+        public long    ru_msgrcv;       // IPC messages received
+        public long    ru_nsignals;     // signals received
+        public long    ru_nvcsw;        // voluntary context switches
+        public long    ru_nivcsw;       // involuntary context switches
     }
 #pragma warning restore CS0649
 

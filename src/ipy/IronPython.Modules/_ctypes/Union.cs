@@ -11,7 +11,7 @@ namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.
     /// </summary>
-    public static partial class CTypes {
+    public static partial class CTypes {        
         [PythonType("Union")]
         public abstract class _Union : CData {
             public void __init__(CodeContext/*!*/ context) {

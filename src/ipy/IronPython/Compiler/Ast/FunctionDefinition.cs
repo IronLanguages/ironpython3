@@ -5,20 +5,21 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
-
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Utils;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+
 using MSAst = System.Linq.Expressions;
+
+using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -84,7 +85,8 @@ namespace IronPython.Compiler.Ast {
         internal override int ArgCount {
             get {
                 int argCount = 0;
-                for (argCount = 0; argCount < _parameters.Length; argCount++) {
+                for (argCount = 0; argCount < _parameters.Length; argCount++)
+                {
                     Parameter p = _parameters[argCount];
                     if (p.IsDictionary || p.IsList || p.IsKeywordOnly) break;
                 }
@@ -254,7 +256,7 @@ namespace IronPython.Compiler.Ast {
                 NeedsLocalsDictionary = true;
             }
         }
-
+        
         internal override void FinishBind(PythonNameBinder binder) {
             foreach (var param in _parameters) {
                 _variableMapping[param.PythonVariable] = param.FinishBind(forceClosureCell: ExposesLocalVariable(param.PythonVariable));
@@ -284,7 +286,7 @@ namespace IronPython.Compiler.Ast {
                 new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(HeaderIndex))
             );
         }
-
+        
         /// <summary>
         /// Returns an expression which creates the function object.
         /// </summary>
@@ -561,7 +563,7 @@ namespace IronPython.Compiler.Ast {
                 get {
                     return _defaultCount + (_kwdefaultCount * 2) + (_annotationCount * 2) +
                         (_context == null ? 1 : 0) +
-                        (_name == null ? 1 : 0);
+                        (_name    == null ? 1 : 0);
                 }
             }
 
@@ -777,7 +779,7 @@ namespace IronPython.Compiler.Ast {
 
             return res;
         }
-
+        
         private void InitializeParameters(List<MSAst.Expression> init, bool needsWrapperMethod, MSAst.Expression[] parameters) {
             for (int i = 0; i < _parameters.Length; i++) {
                 Parameter p = _parameters[i];
@@ -827,10 +829,10 @@ namespace IronPython.Compiler.Ast {
 
         internal override void RewriteBody(MSAst.ExpressionVisitor visitor) {
             _dlrBody = null;    // clear the cached body if we've been reduced
-
+            
             MSAst.Expression funcCode = GlobalParent.Constant(GetOrMakeFunctionCode());
             FuncCodeExpr = funcCode;
-
+            
             Body = new RewrittenBodyStatement(Body, visitor.Visit(Body));
         }
 

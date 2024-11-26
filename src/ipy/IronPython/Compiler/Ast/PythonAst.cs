@@ -6,19 +6,23 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using IronPython.Runtime;
-using IronPython.Runtime.Binding;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using MSAst = System.Linq.Expressions;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -64,7 +68,7 @@ namespace IronPython.Compiler.Ast {
             ContractUtils.RequiresNotNull(body, nameof(body));
 
             _body = body;
-
+            
             _lineLocations = lineLocations;
         }
 
@@ -94,7 +98,7 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(_name != null);
             PythonOptions po = ((PythonContext)context.SourceUnit.LanguageContext).PythonOptions;
 
-            if (po.EnableProfiler
+            if (po.EnableProfiler 
 #if FEATURE_REFEMIT
                 && _mode != CompilationMode.ToDisk
 #endif
@@ -179,7 +183,7 @@ namespace IronPython.Compiler.Ast {
 #if FEATURE_REFEMIT
             if (_mode == CompilationMode.ToDisk) {
                 _arrayExpression = _globalArray;
-            } else
+            } else 
 #endif
             {
                 var newArray = new ConstantExpression(globalArray);
@@ -393,7 +397,7 @@ namespace IronPython.Compiler.Ast {
             block.Add(_body);
 
             MSAst.Expression body = Ast.Block(block.ToReadOnlyCollection());
-
+            
             body = WrapScopeStatements(body, Body.CanThrow);   // new ComboActionRewriter().VisitNode(Transform(ag))
 
             body = AddModulePublishing(body);
@@ -548,7 +552,7 @@ namespace IronPython.Compiler.Ast {
         internal new MSAst.Expression Constant(object value) {
             return new PythonConstantExpression(CompilationMode, value);
         }
-
+        
         #endregion
 
         #region Binder Factories
@@ -575,7 +579,7 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-
+        
         internal MSAst.Expression/*!*/ Operation(Type/*!*/ resultType, PythonOperationKind operation, MSAst.Expression arg0) {
             if (resultType == typeof(object)) {
                 return new PythonDynamicExpression1(
@@ -587,7 +591,7 @@ namespace IronPython.Compiler.Ast {
                     arg0
                 );
             }
-
+           
             return CompilationMode.Dynamic(
                 Binders.UnaryOperationBinder(
                     PyContext,
@@ -636,7 +640,7 @@ namespace IronPython.Compiler.Ast {
             return new DynamicGetMemberExpression(PyContext.GetMember(name), _mode, target, LocalContext);
         }
 
-
+        
         internal MSAst.Expression/*!*/ Delete(Type/*!*/ resultType, string/*!*/ name, MSAst.Expression/*!*/ target) {
             return CompilationMode.Dynamic(
                 PyContext.DeleteMember(
@@ -673,7 +677,7 @@ namespace IronPython.Compiler.Ast {
                 ),
                 CompilationMode,
                 expressions
-            );
+            );           
         }
 
         internal MSAst.Expression/*!*/ SetSlice(MSAst.Expression/*!*/[]/*!*/ expressions) {
@@ -681,10 +685,10 @@ namespace IronPython.Compiler.Ast {
                 PyContext.SetSliceBinder,
                 CompilationMode,
                 expressions
-            );
+            );            
         }
 
-        internal MSAst.Expression/*!*/ DeleteIndex(MSAst.Expression/*!*/[]/*!*/ expressions) {
+        internal MSAst.Expression/*!*/ DeleteIndex(MSAst.Expression/*!*/[]/*!*/ expressions) {           
             return CompilationMode.Dynamic(
                 PyContext.DeleteIndex(
                     expressions.Length
@@ -699,7 +703,7 @@ namespace IronPython.Compiler.Ast {
                 PyContext.DeleteSlice,
                 CompilationMode,
                 expressions
-            );
+            );            
         }
 
         #endregion

@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
-
+using System.Text;
+using System.Collections;
 using IronPython.Runtime.Operations;
 
 // Includes tests for mapping from .NET interfaces & known types to various Python protocol methods.

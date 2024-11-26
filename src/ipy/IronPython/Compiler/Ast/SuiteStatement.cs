@@ -2,17 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using MSAst = System.Linq.Expressions;
+
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
-
+    
     public sealed class SuiteStatement : Statement {
         private readonly Statement[] _statements;
 
@@ -23,7 +27,7 @@ namespace IronPython.Compiler.Ast {
 
         public IList<Statement> Statements {
             get { return _statements; }
-        }
+        } 
 
         public override MSAst.Expression Reduce() {
             if (_statements.Length == 0) {
@@ -48,7 +52,7 @@ namespace IronPython.Compiler.Ast {
                 }
                 curStart = newline;
             }
-
+            
             return Ast.Block(statements.ToReadOnlyCollection());
         }
 
@@ -96,7 +100,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override string Documentation {
-            get {
+            get {                
                 if (_statements.Length > 0) {
                     return _statements[0].Documentation;
                 }

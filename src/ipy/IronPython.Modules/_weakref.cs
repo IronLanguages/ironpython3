@@ -8,10 +8,12 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -74,7 +76,8 @@ namespace IronPython.Modules {
         public static readonly PythonType ReferenceType = DynamicHelpers.GetPythonTypeFromType(typeof(@ref));
 
         [PythonType("weakref")]
-        public class @ref : IStructuralEquatable {
+        public class @ref : IStructuralEquatable
+        {
             private readonly CodeContext _context;
             internal readonly WeakHandle _target;
             private int _hashVal;
@@ -280,7 +283,8 @@ namespace IronPython.Modules {
         }
 
         [PythonType, DynamicBaseType, PythonHidden]
-        public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IPythonMembersList, IStructuralEquatable {
+        public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IPythonMembersList, IStructuralEquatable
+        {
             internal readonly WeakHandle _target;
             private readonly CodeContext/*!*/ _context;
 
@@ -378,7 +382,7 @@ namespace IronPython.Modules {
 
             object[] IPythonObject.GetSlots() { return null; }
             object[] IPythonObject.GetSlotsCreate() { return null; }
-
+            
             #endregion
 
             #region object overloads
@@ -480,7 +484,7 @@ namespace IronPython.Modules {
 
                 return comparer.Equals(obj, other);
             }
-
+            
             #endregion
 
             public object __bool__() {
@@ -495,7 +499,7 @@ namespace IronPython.Modules {
         [PythonType, DynamicBaseTypeAttribute, PythonHidden]
         public sealed partial class weakcallableproxy :
             IPythonObject,
-            ICodeFormattable,
+            ICodeFormattable,            
             IProxyObject,
             IStructuralEquatable,
             IPythonMembersList {
@@ -541,7 +545,8 @@ namespace IronPython.Modules {
             ~weakcallableproxy() {
                 // remove our self from the chain...
                 IWeakReferenceable iwr;
-                if (_context.LanguageContext.TryConvertToWeakReferenceable(_target.Target, out iwr)) {
+                if (_context.LanguageContext.TryConvertToWeakReferenceable(_target.Target, out iwr))
+                {
                     WeakRefTracker wrt = iwr.GetWeakRef();
                     wrt.RemoveHandler(this);
                 }
@@ -605,7 +610,7 @@ namespace IronPython.Modules {
 
             object[] IPythonObject.GetSlots() { return null; }
             object[] IPythonObject.GetSlotsCreate() { return null; }
-
+            
             #endregion
 
             #region object overloads
@@ -633,9 +638,9 @@ namespace IronPython.Modules {
             public object Call(CodeContext/*!*/ context, params object[] args) {
                 return context.LanguageContext.CallSplat(GetObject(), args);
             }
-
+                        
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+            public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 return PythonCalls.CallWithKeywordArgs(context, GetObject(), args, dict);
             }
 
@@ -731,7 +736,7 @@ namespace IronPython.Modules {
 
                 WeakRefTracker wrt = iwr.GetWeakRef();
                 if (wrt == null) {
-                    if (!iwr.SetWeakRef(wrt = new WeakRefTracker(iwr)))
+                    if (!iwr.SetWeakRef(wrt = new WeakRefTracker(iwr))) 
                         throw PythonOps.TypeError("cannot create weak reference to '{0}' object", PythonOps.GetPythonTypeName(target));
                 }
 
@@ -805,7 +810,7 @@ namespace IronPython.Modules {
 
 
         [SpecialName]
-        public object Call(CodeContext context, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+        public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             object targetMethod;
             if (!DynamicHelpers.GetPythonType(target.Target).TryGetBoundMember(context, target.Target, name, out targetMethod))
                 throw PythonOps.AttributeError("type {0} has no attribute {1}",

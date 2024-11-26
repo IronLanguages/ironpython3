@@ -6,16 +6,16 @@
 
 using System;
 
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.
     /// </summary>
-    public static partial class CTypes {
+    public static partial class CTypes {        
         // returned from from_param, byref, seemingly called "cparam", but type() says CArgObject in CPython
         [PythonType, PythonHidden]
         public sealed class NativeArgument : ICodeFormattable {

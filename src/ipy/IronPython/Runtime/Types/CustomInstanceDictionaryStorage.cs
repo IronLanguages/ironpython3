@@ -6,10 +6,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-
+using System.Diagnostics;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using System.Threading;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -113,7 +113,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public override int Count {
-            get {
+            get { 
                 int count = base.Count;
                 foreach (object? o in _values) {
                     if (o != Uninitialized.Instance) {
@@ -171,7 +171,7 @@ namespace IronPython.Runtime.Types {
         public bool TryGetValue(int index, out object? value) {
             value = _values[index];
             return value != Uninitialized.Instance;
-        }
+        }        
 
         public void SetExtraValue(int index, object? value) {
             _values[index] = value;

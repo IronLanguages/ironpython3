@@ -4,21 +4,24 @@
 
 #nullable enable
 
+using Microsoft.Scripting;
+
+using MSAst = System.Linq.Expressions;
+using System.Linq.Expressions;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
-
-using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using MSAst = System.Linq.Expressions;
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -86,7 +89,7 @@ namespace IronPython.Compiler.Ast {
                 IndexSpan = new IndexSpan(value, 0);
             }
         }
-
+        
         internal SourceLocation IndexToLocation(int index) {
             if (index == -1) {
                 return SourceLocation.Invalid;
@@ -202,7 +205,7 @@ namespace IronPython.Compiler.Ast {
 
         internal MSAst.Expression TransformAndDynamicConvert(Expression expression, Type/*!*/ type) {
             Assert.NotNull(expression);
-
+            
             MSAst.Expression res = expression;
 
             // Do we need conversion?
@@ -213,7 +216,7 @@ namespace IronPython.Compiler.Ast {
                 if (reduced is LightDynamicExpression) {
                     reduced = reduced.Reduce();
                 }
-
+                
                 // Add conversion step to the AST
                 MSAst.DynamicExpression? ae = reduced as MSAst.DynamicExpression;
                 ReducableDynamicExpression? rde = reduced as ReducableDynamicExpression;
@@ -237,7 +240,7 @@ namespace IronPython.Compiler.Ast {
                     for (int i = 0; i < infos.Length; i++) {
                         infos[i] = ParameterMappingInfo.Parameter(i);
                     }
-
+                    
                     res = Expression.Dynamic(
                         GlobalParent.PyContext.BinaryOperationRetType(
                             binder,
@@ -440,7 +443,7 @@ namespace IronPython.Compiler.Ast {
                 return _lineNumberUpdated;
             }
         }
-
+        
         internal static MSAst.Expression UpdateLineNumber(int line) {
             return Ast.Assign(LineNumberExpression, AstUtils.Constant(line));
         }

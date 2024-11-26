@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Dynamic;
 using System.Linq.Expressions;
+
+using System.Dynamic;
+using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
@@ -41,7 +44,7 @@ namespace IronPython.Runtime.Types {
         /// Deletes the value stored in the slot from the instance.
         /// </summary>
         /// <returns>true if the value was deleted, false if it can't be deleted</returns>
-        internal virtual bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
+        internal virtual bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {            
             return false;
         }
 
@@ -88,7 +91,7 @@ namespace IronPython.Runtime.Types {
                 builder.FinishCondition(Ast.Block(call, tmp));
             }
         }
-
+        
         /// <summary>
         /// True if TryGetValue will always succeed, false if it may fail.
         /// 
@@ -104,7 +107,7 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        public virtual object __get__(CodeContext/*!*/ context, object instance, object typeContext = null) {
+        public virtual object __get__(CodeContext/*!*/ context, object instance, object typeContext=null) {
             PythonType dt = typeContext as PythonType;
 
             object res;

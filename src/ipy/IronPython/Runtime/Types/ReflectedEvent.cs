@@ -5,10 +5,8 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
@@ -66,7 +64,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private bool EventInfosDiffer(BoundEvent et) {
-
+            
             // if they're the same object they're the same...
             if (et.Event.Info == Info) {
                 return false;

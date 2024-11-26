@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.Scripting;
 
 /*
  * The data flow.
@@ -121,7 +122,7 @@ namespace IronPython.Compiler.Ast {
         public FlowDeleter(FlowChecker fc) {
             _fc = fc;
         }
-
+ 
         public override bool Walk(NameExpression node) {
             _fc.Delete(node.Name);
             return false;

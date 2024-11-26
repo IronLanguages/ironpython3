@@ -15,7 +15,7 @@ using NUnit.Framework;
 
 namespace IronPythonTest.Stress {
 
-    [TestFixture(Category = "IronPython")]
+    [TestFixture(Category="IronPython")]
     public class Engine
 #if FEATURE_REMOTING
         : MarshalByRefObject
@@ -63,7 +63,8 @@ namespace IronPythonTest.Stress {
             const long memoryThreshold = 100000;
 
             bool emitsUncollectibleCode = Snippets.Shared.SaveSnippets || _env.Setup.DebugMode;
-            if (!emitsUncollectibleCode) {
+            if (!emitsUncollectibleCode)
+            {
                 System.Console.WriteLine("ScenarioGC used {0} bytes of memory.", memoryUsed);
                 if (memoryUsed > memoryThreshold) {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {

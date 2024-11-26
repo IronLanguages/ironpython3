@@ -4,6 +4,8 @@
 
 using MSAst = System.Linq.Expressions;
 
+using System;
+
 namespace IronPython.Compiler.Ast {
     public class LambdaExpression : Expression {
         public LambdaExpression(FunctionDefinition function) {

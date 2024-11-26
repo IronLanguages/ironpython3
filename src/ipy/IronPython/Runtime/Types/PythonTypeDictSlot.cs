@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using Microsoft.Scripting;
 
 using IronPython.Runtime.Operations;
 
@@ -64,7 +65,7 @@ namespace IronPython.Runtime.Types {
 
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
             if (instance is IPythonObject sdo) {
-                if (!sdo.PythonType.HasDictionary) {
+                if(!sdo.PythonType.HasDictionary) {
                     return false;
                 }
 

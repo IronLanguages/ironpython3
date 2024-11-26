@@ -26,9 +26,9 @@ namespace IronPython.Runtime.Types {
 
             if (methodName.StartsWith("Get", StringComparison.Ordinal) || methodName.StartsWith("Set", StringComparison.Ordinal)) {
                 GetPropertyMethods(mi, methodName, prefix, "Get", "Set", "Delete");
-            } else if (methodName.StartsWith("get_", StringComparison.Ordinal) || methodName.StartsWith("set_", StringComparison.Ordinal)) {
+            } else if(methodName.StartsWith("get_", StringComparison.Ordinal) || methodName.StartsWith("set_", StringComparison.Ordinal)) {
                 GetPropertyMethods(mi, methodName, prefix, "get_", "set_", null);
-            }
+            } 
 #if FEATURE_REFEMIT
             else if (methodName.StartsWith(NewTypeMaker.FieldGetterPrefix, StringComparison.Ordinal) || methodName.StartsWith(NewTypeMaker.FieldSetterPrefix, StringComparison.Ordinal)) {
                 GetPropertyMethods(mi, methodName, prefix, NewTypeMaker.FieldGetterPrefix, NewTypeMaker.FieldSetterPrefix, null);

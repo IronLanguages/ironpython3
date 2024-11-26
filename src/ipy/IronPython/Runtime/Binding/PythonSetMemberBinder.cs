@@ -2,21 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Dynamic;
 using System.Linq.Expressions;
 
+using System;
+using System.Dynamic;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Binding {
-    using System.Runtime.CompilerServices;
-
     using Ast = Expression;
+    using System.Runtime.CompilerServices;
 
     internal class PythonSetMemberBinder : SetMemberBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;

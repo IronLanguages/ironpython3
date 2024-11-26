@@ -5,6 +5,8 @@
 using System;
 using System.Runtime.CompilerServices;
 
+using Microsoft.Scripting.Utils;
+
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {

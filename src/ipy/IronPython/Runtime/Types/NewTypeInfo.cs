@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection;
 using System.Collections.Generic;
 
 using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
@@ -159,6 +159,6 @@ namespace IronPython.Runtime.Types {
                 return true;
             }
             return false;
-        }
+        }        
     }
 }

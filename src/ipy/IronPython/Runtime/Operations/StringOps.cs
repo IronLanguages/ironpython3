@@ -16,18 +16,18 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Types;
+using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Types;
+
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
+using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 
 namespace IronPython.Runtime.Operations {
     /// <summary>
@@ -1318,7 +1318,7 @@ namespace IronPython.Runtime.Operations {
         ///
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
-        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string\u00F8, [ParamDictionary] IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
+        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             return NewStringFormatter.FormatString(
                 context.LanguageContext,
                 format_string\u00F8,
@@ -1729,7 +1729,7 @@ namespace IronPython.Runtime.Operations {
             return b?.ToString() ?? s.Substring(start, count);
         }
 
-        private static void StringBuilderInit([NotNull] ref StringBuilder? sb, string s, int start, int end) {
+        private static void StringBuilderInit([NotNull]ref StringBuilder? sb, string s, int start, int end) {
             if (sb != null) return;
 
             sb = new StringBuilder(s.Length);
@@ -1912,7 +1912,7 @@ namespace IronPython.Runtime.Operations {
         internal static Bytes DoEncodeAscii(string s)
             => DoEncode(DefaultContext.Default, s, "strict", "ascii", Encoding.ASCII, includePreamble: false);
 
-        internal static bool TryEncodeAscii(string s, [NotNullWhen(true)] out Bytes? b) {
+        internal static bool TryEncodeAscii(string s, [NotNullWhen(true)]out Bytes? b) {
             try {
                 b = DoEncodeAscii(s);
                 return true;
@@ -2012,17 +2012,17 @@ namespace IronPython.Runtime.Operations {
                 // set up well-known/often-used mappings
                 d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["iso8859"]
                     = d["cp28591"] = d["28591"] = d["cp819"] = d["819"]
-                    = d["latin_1"] = d["latin1"] = d["latin"] = d["l1"] = makeEncodingProxy(() => Latin1Encoding);
+                    = d["latin_1"] = d["latin1"] = d["latin"] = d["l1"]        = makeEncodingProxy(() => Latin1Encoding);
                 d["cp20127"] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => Encoding.ASCII);
-                d["cp65000"] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"] = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
-                d["cp65001"] = d["utf_8"] = d["utf8"] = d["u8"] = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-                d["utf_8_sig"] = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-                d["utf_16le"] = d["utf_16_le"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
-                d["cp1200"] = d["utf_16"] = d["utf16"] = d["u16"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
-                d["cp1201"] = d["utf_16be"] = d["utf_16_be"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
-                d["utf_32le"] = d["utf_32_le"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
-                d["cp12000"] = d["utf_32"] = d["utf32"] = d["u32"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
-                d["cp12001"] = d["utf_32be"] = d["utf_32_be"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
+                d["cp65000"] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"]   = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
+                d["cp65001"] = d["utf_8"] = d["utf8"] = d["u8"]                = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                d["utf_8_sig"]                                                 = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                d["utf_16le"] = d["utf_16_le"]                                 = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
+                d["cp1200"] = d["utf_16"] = d["utf16"] = d["u16"]              = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
+                d["cp1201"] = d["utf_16be"] = d["utf_16_be"]                   = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
+                d["utf_32le"] = d["utf_32_le"]                                 = makeEncodingProxy(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
+                d["cp12000"] = d["utf_32"] = d["utf32"] = d["u32"]             = makeEncodingProxy(() => new UTF32Encoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
+                d["cp12001"] = d["utf_32be"] = d["utf_32_be"]                  = makeEncodingProxy(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
 
                 // set up internal codecs
                 d["raw_unicode_escape"] = makeEncodingProxy(() => RawUnicodeEscapeEncoding);
@@ -2079,9 +2079,9 @@ namespace IronPython.Runtime.Operations {
 #if DEBUG
                 foreach (KeyValuePair<string, Lazy<Encoding?>> kvp in d) {
                     // all codecs should be stored in lowercase because we only look up from lowercase strings
-#pragma warning disable CA1862 // disable warning about comparing with ToLower()
+                    #pragma warning disable CA1862 // disable warning about comparing with ToLower()
                     Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
-#pragma warning restore
+                    #pragma warning restore
                     // all codec names should use underscores instead of dashes to match lookup values
                     Debug.Assert(kvp.Key.IndexOf('-') < 0);
                 }
@@ -2173,7 +2173,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static void AssertStringOrTuple([NotNull] object? prefix) {
+        private static void AssertStringOrTuple([NotNull]object? prefix) {
             if (prefix == null) {
                 throw PythonOps.TypeError("expected string or tuple, got NoneType");
             }
@@ -2731,7 +2731,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private delegate string? DecodeErrorHandler(IList<byte> bytes, int start, ref int end);
-        private delegate Bytes? EncodeErrorHandler(string text, int start, ref int end);
+        private delegate Bytes?  EncodeErrorHandler(string text, int start, ref int end);
 
         private static object SurrogateEscapeErrors(object unicodeError) {
             return SurrogateErrorsImpl(unicodeError, surrogateEscapeDecode, surrogateEscapeEncode);
@@ -2890,7 +2890,7 @@ namespace IronPython.Runtime.Operations {
                         int end = dfe.BytesUnknown.Length;
                         string? res = decodeFallback(dfe.BytesUnknown, 0, ref end);
                         if (res == null) throw dfe;
-                        return PythonTuple.MakeTuple(res, dfe.Index + end);
+                        return PythonTuple.MakeTuple(res,  dfe.Index + end);
                     }
 
                 case EncoderFallbackException efe: {

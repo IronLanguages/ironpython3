@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Operations;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     internal static class TypecodeOps {
@@ -80,7 +81,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static bool TryGetFromBytes(char typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)] out object? result) {
+        public static bool TryGetFromBytes(char typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)]out object? result) {
             switch (typecode) {
                 case 'c':
                     result = Bytes.FromByte(bytes[0]);

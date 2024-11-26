@@ -9,11 +9,12 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection.Emit;
 
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -123,7 +124,7 @@ namespace IronPython.Modules {
                 _Array array;
                 if (value == null) {
                     address.WriteIntPtr(offset, IntPtr.Zero);
-                } else if (value is int) {
+                }  else if (value is int) {
                     address.WriteIntPtr(offset, new IntPtr((int)value));
                 } else if (value is BigInteger) {
                     address.WriteIntPtr(offset, new IntPtr((long)(BigInteger)value));
@@ -160,7 +161,7 @@ namespace IronPython.Modules {
 
                 method.MarkLabel(nextTry);
                 nextTry = method.DefineLabel();
-
+                
                 argIndex.Emit(method);
                 if (argumentType.IsValueType) {
                     method.Emit(OpCodes.Box, argumentType);
@@ -171,7 +172,7 @@ namespace IronPython.Modules {
                 MarshalCleanup res = null;
                 if (st != null && !argIndex.Type.IsValueType) {
                     if (st._type == SimpleTypeKind.Char || st._type == SimpleTypeKind.WChar) {
-
+                            
                         if (st._type == SimpleTypeKind.Char) {
                             SimpleType.TryToCharPtrConversion(method, argIndex, argumentType, done);
                         } else {

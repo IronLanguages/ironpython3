@@ -4,10 +4,10 @@
 
 using System;
 
+using Microsoft.Scripting.Interpreter;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
-using Microsoft.Scripting.Interpreter;
 
 using MSAst = System.Linq.Expressions;
 

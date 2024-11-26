@@ -3,15 +3,25 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Dynamic;
+using System.IO;
 using System.Runtime.CompilerServices;
 
-using IronPython.Runtime;
-using IronPython.Runtime.Binding;
-
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using MSAst = System.Linq.Expressions;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Compiler.Ast {
     internal class DynamicGetMemberExpression : MSAst.Expression, IInstructionProvider {
         private readonly PythonGetMemberBinder/*!*/ _binder;

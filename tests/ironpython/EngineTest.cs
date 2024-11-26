@@ -8,8 +8,10 @@ using System.Numerics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 #if FEATURE_REMOTING
@@ -26,6 +28,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
 
+using IronPython;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;

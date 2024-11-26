@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Exceptions {

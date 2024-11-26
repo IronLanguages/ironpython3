@@ -2,8 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Numerics;
+using System.Text;
+
+using Microsoft.Scripting.Utils;
+
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_opcode", typeof(IronPython.Modules.PythonOpcode))]
 namespace IronPython.Modules {
@@ -145,7 +156,7 @@ namespace IronPython.Modules {
         private const int FVS_MASK = 0x4;
         private const int FVS_HAVE_SPEC = 0x4;
 
-        public static int stack_effect(CodeContext context, int opcode, object oparg = null) {
+        public static int stack_effect(CodeContext context, int opcode, object oparg=null) {
             int ioparg = 0;
 
             if (opcode >= HAVE_ARGUMENT) {

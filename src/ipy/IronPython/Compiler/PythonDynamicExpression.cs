@@ -2,23 +2,22 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq.Expressions;
+
+using System;
+using System.Dynamic;
 using System.Runtime.CompilerServices;
-
 using IronPython.Runtime;
-
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Utils;
+using System.Collections.Generic;
 
 namespace IronPython.Compiler {
     internal sealed class PythonDynamicExpression1 : LightDynamicExpression1 {
         private readonly CompilationMode/*!*/ _mode;
 
-        public PythonDynamicExpression1(CallSiteBinder/*!*/ binder, CompilationMode/*!*/ mode, Expression/*!*/ arg0)
+        public PythonDynamicExpression1(CallSiteBinder/*!*/ binder, CompilationMode/*!*/ mode, Expression/*!*/ arg0) 
             : base(binder, arg0) {
             _mode = mode;
         }
@@ -214,7 +213,7 @@ namespace IronPython.Compiler {
                     compiler.Compile(GetArgument(i));
                 }
 
-                switch (ArgumentCount) {
+                switch(ArgumentCount) {
                     case 1: compiler.Instructions.EmitDynamic<CodeContext, object>(Binder); break;
                     case 2: compiler.Instructions.EmitDynamic<CodeContext, object, object>(Binder); break;
                     case 3: compiler.Instructions.EmitDynamic<CodeContext, object, object, object>(Binder); break;
@@ -229,7 +228,7 @@ namespace IronPython.Compiler {
                     case 12: compiler.Instructions.EmitDynamic<CodeContext, object, object, object, object, object, object, object, object, object, object, object, object>(Binder); break;
                     case 13: compiler.Instructions.EmitDynamic<CodeContext, object, object, object, object, object, object, object, object, object, object, object, object, object>(Binder); break;
                     case 14: compiler.Instructions.EmitDynamic<CodeContext, object, object, object, object, object, object, object, object, object, object, object, object, object, object>(Binder); break;
-                    case 15: compiler.Instructions.EmitDynamic<CodeContext, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>(Binder); break;
+                    case 15: compiler.Instructions.EmitDynamic<CodeContext, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>(Binder); break;                    
                 }
             } else {
                 base.AddInstructions(compiler);

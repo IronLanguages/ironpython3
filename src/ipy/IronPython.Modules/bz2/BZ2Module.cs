@@ -5,6 +5,9 @@
 // Copyright 2012 Jeff Hardy
 //
 
+using System.Collections.Generic;
+using System.Linq;
+
 using IronPython.Runtime;
 
 [assembly: PythonModule("_bz2", typeof(IronPython.Modules.Bz2.Bz2Module))]

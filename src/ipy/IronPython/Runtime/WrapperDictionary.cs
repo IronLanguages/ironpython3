@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime {
@@ -15,7 +15,7 @@ namespace IronPython.Runtime {
         public WrapperDictionaryStorage(TopNamespaceTracker/*!*/ data) {
             _data = data;
         }
-
+      
         public override void Add(ref DictionaryStorage storage, object key, object value) {
             throw CannotModifyNamespaceDict();
         }

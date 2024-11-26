@@ -52,7 +52,7 @@ namespace IronPython.Runtime.Operations {
         internal static bool EndsWith(this IList<byte> self, IList<byte> suffix, int start, int end) {
             int len = self.Count;
 
-            if (!PythonOps.TryFixSubsequenceIndices(len, ref start, ref end)) {
+            if(!PythonOps.TryFixSubsequenceIndices(len, ref start, ref end)) {
                 return false;
             }
 
@@ -305,7 +305,7 @@ namespace IronPython.Runtime.Operations {
         internal static bool StartsWith(this IList<byte> self, IList<byte> prefix, int start, int end) {
             int len = self.Count;
 
-            if (!PythonOps.TryFixSubsequenceIndices(len, ref start, ref end)) {
+            if(!PythonOps.TryFixSubsequenceIndices(len, ref start, ref end)) {
                 return false;
             }
 
@@ -638,7 +638,8 @@ namespace IronPython.Runtime.Operations {
                         if (b != t) changed = true;
                         res.Add(t);
                     }
-                } else {
+                }
+                else {
                     changed = true;
                 }
             }

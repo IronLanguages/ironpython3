@@ -2,20 +2,22 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
 using System.Linq.Expressions;
 
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
+using System;
+using System.Diagnostics;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+
 namespace IronPython.Compiler {
-    internal interface IPythonVariableExpression {
+    internal interface IPythonVariableExpression  {
         Expression/*!*/ Assign(Expression/*!*/ value);
         Expression/*!*/ Delete();
         Expression/*!*/ Create();
@@ -91,7 +93,7 @@ namespace IronPython.Compiler {
 
         public Expression/*!*/ RawValue() {
             return new PythonRawGlobalValueExpression(this);
-        }
+        }        
 
         public Expression/*!*/ Assign(Expression/*!*/ value) {
             return new PythonSetGlobalVariableExpression(this, value);

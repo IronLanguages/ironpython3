@@ -9,12 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
 using Ionic.BZip2;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules.Bz2 {

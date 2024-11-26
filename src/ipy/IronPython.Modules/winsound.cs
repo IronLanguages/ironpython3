@@ -7,6 +7,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -131,7 +132,7 @@ The duration argument specifies the number of milliseconds.
         }
 
         [Documentation("MessageBeep(x) - call Windows MessageBeep(x). x defaults to MB_OK.")]
-        public static void MessageBeep(CodeContext/*!*/ context, int x = MB_OK) {
+        public static void MessageBeep(CodeContext/*!*/ context, int x=MB_OK) {
             MessageBeep(x);
         }
 

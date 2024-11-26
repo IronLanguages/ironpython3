@@ -10,13 +10,13 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -69,7 +69,7 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary] IDictionary<object, object> kwDict0, params object[]/*!*/ args\u00F8) {
+        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwDict0, params object[]/*!*/ args\u00F8) {
             return __new__(context, cls, args\u00F8);
         }
 
@@ -255,7 +255,7 @@ namespace IronPython.Runtime {
 
             private DynamicMetaObject GetMemberWorker(DynamicMetaObjectBinder binder, DynamicMetaObject codeContext) {
                 string name = GetGetMemberName(binder);
-                var tmp = Expression.Variable(typeof(object), "res");
+                var tmp = Expression.Variable(typeof(object), "res");                
 
                 return new DynamicMetaObject(
                     Expression.Block(
@@ -360,7 +360,7 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-
+        
         internal class DebugProxy {
             private readonly PythonModule _module;
 
@@ -380,6 +380,6 @@ namespace IronPython.Runtime {
             }
         }
 
-
+        
     }
 }

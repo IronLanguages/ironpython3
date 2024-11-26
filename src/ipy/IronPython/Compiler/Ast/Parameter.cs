@@ -4,7 +4,10 @@
 
 using System.Collections.Generic;
 
+using Microsoft.Scripting;
+
 using IronPython.Runtime;
+using IronPython.Runtime.Binding;
 
 using MSAst = System.Linq.Expressions;
 

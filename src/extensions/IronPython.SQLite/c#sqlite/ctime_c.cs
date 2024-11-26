@@ -1,45 +1,48 @@
 #pragma warning disable CA1865 // Use char overload
 
-namespace Community.CsharpSqlite {
-    using System;
+namespace Community.CsharpSqlite
+{
+  using sqlite3_value = Sqlite3.Mem;
+  using System;
 
-    public partial class Sqlite3 {
-        /*
-        ** 2010 February 23
-        **
-        ** The author disclaims copyright to this source code.  In place of
-        ** a legal notice, here is a blessing:
-        **
-        **    May you do good and not evil.
-        **    May you find forgiveness for yourself and forgive others.
-        **    May you share freely, never taking more than you give.
-        **
-        *************************************************************************
-        **
-        ** This file implements routines used to report what compile-time options
-        ** SQLite was built with.
-        *************************************************************************
-        **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
-        **  C#-SQLite is an independent reimplementation of the SQLite software library
-        **
-        **  SQLITE_SOURCE_ID: 2011-01-28 17:03:50 ed759d5a9edb3bba5f48f243df47be29e3fe8cd7
-        **
-        *************************************************************************
-        */
+  public partial class Sqlite3
+  {
+    /*
+    ** 2010 February 23
+    **
+    ** The author disclaims copyright to this source code.  In place of
+    ** a legal notice, here is a blessing:
+    **
+    **    May you do good and not evil.
+    **    May you find forgiveness for yourself and forgive others.
+    **    May you share freely, never taking more than you give.
+    **
+    *************************************************************************
+    **
+    ** This file implements routines used to report what compile-time options
+    ** SQLite was built with.
+    *************************************************************************
+    **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
+    **  C#-SQLite is an independent reimplementation of the SQLite software library
+    **
+    **  SQLITE_SOURCE_ID: 2011-01-28 17:03:50 ed759d5a9edb3bba5f48f243df47be29e3fe8cd7
+    **
+    *************************************************************************
+    */
 
 #if !SQLITE_OMIT_COMPILEOPTION_DIAGS
 
-        //#include "sqliteInt.h"
+    //#include "sqliteInt.h"
 
-        /*
-        ** An array of names of all compile-time options.  This array should 
-        ** be sorted A-Z.
-        **
-        ** This array looks large, but in a typical installation actually uses
-        ** only a handful of compile-time options, so most times this array is usually
-        ** rather short and uses little memory space.
-        */
-        static string[] azCompileOpt = {
+    /*
+    ** An array of names of all compile-time options.  This array should 
+    ** be sorted A-Z.
+    **
+    ** This array looks large, but in a typical installation actually uses
+    ** only a handful of compile-time options, so most times this array is usually
+    ** rather short and uses little memory space.
+    */
+    static string[] azCompileOpt = {
 
 /* These macros are provided to "stringify" the value of the define
 ** for those options in which the value is meaningful. */
@@ -373,43 +376,47 @@ namespace Community.CsharpSqlite {
 #endif
 };
 
-        /*
-        ** Given the name of a compile-time option, return true if that option
-        ** was used and false if not.
-        **
-        ** The name can optionally begin with "SQLITE_" but the "SQLITE_" prefix
-        ** is not required for a match.
-        */
-        static int sqlite3_compileoption_used(string zOptName) {
-            if (zOptName.EndsWith("=", StringComparison.Ordinal))
-                return 0;
-            int i, n = 0;
-            if (zOptName.StartsWith("SQLITE_", System.StringComparison.OrdinalIgnoreCase))
-                n = 7;
-            //n = sqlite3Strlen30(zOptName);
+    /*
+    ** Given the name of a compile-time option, return true if that option
+    ** was used and false if not.
+    **
+    ** The name can optionally begin with "SQLITE_" but the "SQLITE_" prefix
+    ** is not required for a match.
+    */
+    static int sqlite3_compileoption_used( string zOptName )
+    {
+      if ( zOptName.EndsWith( "=", StringComparison.Ordinal ) )
+        return 0;
+      int i, n = 0;
+      if ( zOptName.StartsWith( "SQLITE_", System.StringComparison.OrdinalIgnoreCase ) )
+        n = 7;
+      //n = sqlite3Strlen30(zOptName);
 
-            /* Since ArraySize(azCompileOpt) is normally in single digits, a
-            ** linear search is adequate.  No need for a binary search. */
-            if (!String.IsNullOrEmpty(zOptName))
-                for (i = 0; i < ArraySize(azCompileOpt); i++) {
-                    int n1 = (zOptName.Length - n < azCompileOpt[i].Length) ? zOptName.Length - n : azCompileOpt[i].Length;
-                    if (String.Compare(zOptName, n, azCompileOpt[i], 0, n1, StringComparison.OrdinalIgnoreCase) == 0)
-                        return 1;
-                }
-            return 0;
+      /* Since ArraySize(azCompileOpt) is normally in single digits, a
+      ** linear search is adequate.  No need for a binary search. */
+      if ( !String.IsNullOrEmpty( zOptName ) )
+        for ( i = 0; i < ArraySize( azCompileOpt ); i++ )
+        {
+          int n1 = ( zOptName.Length-n < azCompileOpt[i].Length ) ? zOptName.Length-n : azCompileOpt[i].Length;
+          if ( String.Compare( zOptName, n, azCompileOpt[i], 0, n1, StringComparison.OrdinalIgnoreCase ) == 0 )
+            return 1;
         }
+      return 0;
+    }
 
-        /*
-        ** Return the N-th compile-time option string.  If N is out of range,
-        ** return a NULL pointer.
-        */
-        static string sqlite3_compileoption_get(int N) {
-            if (N >= 0 && N < ArraySize(azCompileOpt)) {
-                return azCompileOpt[N];
-            }
-            return null;
-        }
+    /*
+    ** Return the N-th compile-time option string.  If N is out of range,
+    ** return a NULL pointer.
+    */
+    static string sqlite3_compileoption_get( int N )
+    {
+      if ( N >= 0 && N < ArraySize( azCompileOpt ) )
+      {
+        return azCompileOpt[N];
+      }
+      return null;
+    }
 
 #endif //* SQLITE_OMIT_COMPILEOPTION_DIAGS */
-    }
+  }
 }

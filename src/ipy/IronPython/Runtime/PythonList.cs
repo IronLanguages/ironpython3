@@ -12,13 +12,14 @@ using System.Numerics;
 using System.Text;
 using System.Threading;
 
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 

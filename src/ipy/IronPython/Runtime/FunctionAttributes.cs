@@ -7,11 +7,11 @@ using System;
 namespace IronPython.Runtime {
     [Flags]
     public enum FunctionAttributes {
-        None = 0,
+        None = 0, 
         /// <summary>
         /// Set if the function includes a *args argument list.
         /// </summary>
-        ArgumentList = 0x04,
+        ArgumentList = 0x04, 
         /// <summary>
         /// Set if the function includes a **kwargs argument dictionary.
         /// </summary>

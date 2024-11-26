@@ -2,20 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+using System.Numerics;
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
-using System.Numerics;
 using System.Reflection;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -94,7 +95,7 @@ namespace IronPython.Runtime.Binding {
             if (action is InvokeMemberBinder cla) {
                 return CallInfoToSignature(cla.CallInfo);
             }
-
+            
             // DLR Create action which we hand off to our call code, also
             // has an argument array.
             CreateInstanceBinder ca = action as CreateInstanceBinder;
@@ -124,7 +125,7 @@ namespace IronPython.Runtime.Binding {
                 return action.Defer(args);
             }
 
-            return AddDynamicTestAndDefer(action,
+            return AddDynamicTestAndDefer(action, 
                 action.FallbackInvoke(
                     new DynamicMetaObject(
                         Binders.Get(
@@ -195,7 +196,7 @@ namespace IronPython.Runtime.Binding {
             PythonType y = MetaPythonObject.GetPythonType(yType);
             return x.IsSubclassOf(y);
         }
-
+        
         private static BuiltinFunction TryConvertToBuiltinFunction(object o) {
             if (o is BuiltinMethodDescriptor md) {
                 return md.Template;
@@ -221,7 +222,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Convert(res.Expression, bestType),
                         AstUtils.Convert(defer, bestType)
                     ),
-                    res.Restrictions
+                    res.Restrictions 
                 );
             }
 
@@ -236,13 +237,13 @@ namespace IronPython.Runtime.Binding {
 
             return res;
         }
-
+        
         internal static ValidationInfo/*!*/ GetValidationInfo(DynamicMetaObject/*!*/ tested, PythonType type) {
             return new ValidationInfo(
                 Ast.AndAlso(
                     Ast.TypeEqual(tested.Expression, type.UnderlyingSystemType),
                     CheckTypeVersion(
-                        AstUtils.Convert(tested.Expression, type.UnderlyingSystemType),
+                        AstUtils.Convert(tested.Expression, type.UnderlyingSystemType), 
                         type.Version
                     )
                 )
@@ -307,9 +308,9 @@ namespace IronPython.Runtime.Binding {
         internal static Expression AddRecursionCheck(PythonContext pyContext, Expression expr) {
             ParameterExpression tmp = Ast.Variable(expr.Type, "callres");
 
-            expr =
+            expr = 
                 Ast.Block(
-                    new[] { tmp },
+                    new [] { tmp },
                     AstUtils.Try(
                         Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPushFrame)), Ast.Constant(pyContext)),
                         Ast.Assign(tmp, expr)

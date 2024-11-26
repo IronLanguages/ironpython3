@@ -15,7 +15,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("ellipsis"), Documentation(null)]
     public sealed class Ellipsis : ICodeFormattable {
         private static Ellipsis? _instance;
-
+        
         private Ellipsis() { }
 
         internal static Ellipsis Value {
@@ -50,9 +50,9 @@ namespace IronPython.Runtime.Types {
     [PythonType("NotImplementedType"), Documentation(null)]
     public sealed class NotImplementedType : ICodeFormattable {
         private static NotImplementedType? _instance;
-
+        
         private NotImplementedType() { }
-
+        
         internal static NotImplementedType Value {
             get {
                 if (_instance == null) {

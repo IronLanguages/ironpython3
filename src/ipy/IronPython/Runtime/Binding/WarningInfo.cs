@@ -7,7 +7,6 @@ using System.Linq.Expressions;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;

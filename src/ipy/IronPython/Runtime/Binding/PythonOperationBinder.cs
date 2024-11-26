@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -42,7 +43,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
-            switch (_operation) {
+            switch(_operation) {
                 case PythonOperationKind.Hash:
                     if (CompilerHelpers.GetType(args[0]) == typeof(PythonType)) {
                         if (typeof(T) == typeof(Func<CallSite, object, int>)) {
@@ -99,7 +100,7 @@ namespace IronPython.Runtime.Binding {
                         Type tType = typeof(T);
                         if (tType == typeof(Func<CallSite, object, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, object, bool>(StringContains);
-                        } else if (tType == typeof(Func<CallSite, string, object, bool>)) {
+                        } else if(tType == typeof(Func<CallSite, string, object, bool>)) {
                             return (T)(object)new Func<CallSite, string, object, bool>(StringContains);
                         } else if (tType == typeof(Func<CallSite, object, string, bool>)) {
                             return (T)(object)new Func<CallSite, object, string, bool>(StringContains);
@@ -112,25 +113,25 @@ namespace IronPython.Runtime.Binding {
                         }
                     }
                     break;
-
+                
             }
             return base.BindDelegate<T>(site, args);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, PythonList value) {
-            return new KeyValuePair<IEnumerator, IDisposable>(new PythonListIterator(value), null);
+            return new KeyValuePair<IEnumerator,IDisposable>(new PythonListIterator(value), null);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(PythonList)) {
-                return new KeyValuePair<IEnumerator, IDisposable>(new PythonListIterator((PythonList)value), null);
+                return new KeyValuePair<IEnumerator,IDisposable>(new PythonListIterator((PythonList)value), null);
             }
 
             return ((CallSite<Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>>)site).Update(site, value);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetTupleEnumerator(CallSite site, PythonTuple value) {
-            return new KeyValuePair<IEnumerator, IDisposable>(new PythonTupleEnumerator(value), null);
+            return new KeyValuePair<IEnumerator,IDisposable>(new PythonTupleEnumerator(value), null);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetTupleEnumerator(CallSite site, object value) {
@@ -232,7 +233,7 @@ namespace IronPython.Runtime.Binding {
                     case PythonOperationKind.CallSignatures: return typeof(IList<string>);
                     case PythonOperationKind.Documentation: return typeof(string);
                 }
-                return typeof(object);
+                return typeof(object); 
             }
         }
 

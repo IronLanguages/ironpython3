@@ -5,12 +5,12 @@
 using System;
 using System.Collections.Generic;
 
+using Microsoft.Scripting;
+
 using IronPython.Modules;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting;
 
 using Debugging = Microsoft.Scripting.Debugging;
 
@@ -21,7 +21,7 @@ namespace IronPython.Runtime {
         private TracebackDelegate _traceDispatch;
         private bool _inTraceBack;
         private bool _exceptionThrown;
-
+        
 #if PROFILE_SUPPORT
         private bool _profile;
 #endif
@@ -72,7 +72,7 @@ namespace IronPython.Runtime {
 
         #region ITraceCallback Members
 
-        public void OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload) {
+        public void OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload) {        
             if (kind == Debugging.TraceEventKind.ThreadExit ||                  // We don't care about thread-exit events
 #if PROFILE_SUPPORT
                 (_profile && kind == Debugging.TraceEventKind.TracePoint) ||    // Ignore code execute tracebacks when in profile mode
@@ -111,7 +111,7 @@ namespace IronPython.Runtime {
                     if (traceDispatchObject == null) {
                         return;
                     }
-
+                    
                     pyFrame.Setf_trace(traceDispatchObject);
                 } else {
                     if (thread.Count == 0) {
@@ -141,12 +141,12 @@ namespace IronPython.Runtime {
                         thread.RemoveAt(thread.Count - 1);
                     }
                 }
-            }
+            }            
         }
 
         #endregion
 
-
+        
         private void DispatchTrace(List<FunctionStack> thread, Debugging.TraceEventKind kind, object payload, TracebackDelegate traceDispatch, object traceDispatchObject, TraceBackFrame pyFrame) {
             object args = null;
 

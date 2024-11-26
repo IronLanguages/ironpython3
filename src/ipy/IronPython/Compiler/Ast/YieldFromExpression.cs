@@ -4,8 +4,12 @@
 
 #nullable enable
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
+
+using System;
+using System.Diagnostics;
+using Microsoft.Scripting;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;

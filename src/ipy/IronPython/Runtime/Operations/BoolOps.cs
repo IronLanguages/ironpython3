@@ -6,7 +6,6 @@ using System;
 using System.Numerics;
 
 using Microsoft.Scripting.Runtime;
-
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 namespace IronPython.Runtime.Operations {
@@ -27,7 +26,7 @@ namespace IronPython.Runtime.Operations {
         public static bool BitwiseAnd(bool x, bool y) {
             return x & y;
         }
-
+        
         [SpecialName]
         public static bool BitwiseOr(bool x, bool y) {
             return x | y;

@@ -9,11 +9,12 @@ using System.Xml.XPath;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-
+using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
@@ -21,7 +22,7 @@ using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     internal static class DocBuilder {
-
+        
         internal static string GetDefaultDocumentation(string methodName) {
             switch (methodName) {
                 case "__abs__": return "x.__abs__() <==> abs(x)";
@@ -155,8 +156,8 @@ namespace IronPython.Runtime.Types {
 
                 summary = String.Concat(
                     summary,
-                    Environment.NewLine, Environment.NewLine,
-                    "enum ", t.IsDefined(typeof(FlagsAttribute), false) ? "(flags) " : "", GetPythonTypeName(t), ", values: ",
+                    Environment.NewLine, Environment.NewLine, 
+                    "enum ", t.IsDefined(typeof(FlagsAttribute), false) ? "(flags) ": "", GetPythonTypeName(t), ", values: ", 
                     String.Join(", ", names));
             }
             return summary;
@@ -219,7 +220,7 @@ namespace IronPython.Runtime.Types {
                         name = mi.Name.Substring(0, hashIndex);
                     }
                 }
-            } else if (name == null) {
+            } else if(name == null) {
                 name = "__new__";
             }
 
@@ -309,11 +310,11 @@ namespace IronPython.Runtime.Types {
                     )
                 );
             }
-
+            
             if (returnCount > 1) {
                 retType.Append(')');
             }
-
+            
             ParameterDoc retDoc = new ParameterDoc(String.Empty, retType.ToString(), returns);
 
             return new OverloadDoc(
@@ -474,7 +475,7 @@ namespace IronPython.Runtime.Types {
         /// Converts a Type object into a string suitable for lookup in the help file.  All generic types are
         /// converted down to their generic type definition.
         /// </summary>
-        private static void AppendTypeFormat(Type curType, StringBuilder res, ParameterInfo pi = null) {
+        private static void AppendTypeFormat(Type curType, StringBuilder res, ParameterInfo pi=null) {
             if (curType.IsGenericType) {
                 curType = curType.GetGenericTypeDefinition();
             }
@@ -503,7 +504,7 @@ namespace IronPython.Runtime.Types {
                 res.Append('}');
             } else {
                 if (pi != null) {
-                    if ((pi.IsOut || pi.ParameterType.IsByRef) && curType.FullName.EndsWith('&')) {
+                    if((pi.IsOut || pi.ParameterType.IsByRef) && curType.FullName.EndsWith('&')) {
                         res.Append(curType.FullName.Replace("&", "@"));
                     } else {
                         res.Append(curType.FullName);
@@ -571,7 +572,7 @@ namespace IronPython.Runtime.Types {
                         // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(
                             Path.Combine(
-                                Environment.GetFolderPath(Environment.Is64BitProcess ? Environment.SpecialFolder.ProgramFilesX86 : Environment.SpecialFolder.ProgramFiles),
+                                Environment.GetFolderPath(Environment.Is64BitProcess ? Environment.SpecialFolder.ProgramFilesX86 : Environment.SpecialFolder.ProgramFiles), 
                                 _frameworkReferencePath
                             ),
                             baseFile
@@ -673,7 +674,7 @@ namespace IronPython.Runtime.Types {
                     case "summary": summary = XmlToString(iter); break;
                 }
             }
-        }
+        }        
 
         /// <summary>
         /// Gets the Xml documentation for the specified Field.

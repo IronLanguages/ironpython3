@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
@@ -17,7 +16,7 @@ namespace IronPython.Runtime.Types {
         internal PythonTypeUserDescriptorSlot(object value) {
             Value = value;
         }
-
+        
         internal PythonTypeUserDescriptorSlot(object value, bool isntDescriptor) {
             Value = value;
             if (isntDescriptor) {

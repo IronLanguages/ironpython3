@@ -20,8 +20,8 @@ namespace IronPython.Runtime.Operations {
         public static string __repr__(TypeGroup self) {
             StringBuilder sb = new StringBuilder("<types ");
             bool pastFirstType = false;
-            foreach (Type type in self.Types) {
-                if (pastFirstType) {
+            foreach(Type type in self.Types) {
+                if (pastFirstType) { 
                     sb.Append(", ");
                 }
                 PythonType dt = DynamicHelpers.GetPythonTypeFromType(type);
@@ -56,9 +56,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static object? Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, [ParamDictionary] PythonDictionary kwArgs, params object?[] args) {
+        public static object? Call(CodeContext/*!*/ context, TypeGroup/*!*/ self, [ParamDictionary]PythonDictionary kwArgs, params object?[] args) {
             return PythonCalls.CallWithKeywordArgs(
-                context,
+                context, 
                 DynamicHelpers.GetPythonTypeFromType(self.GetNonGenericType()),
                 args ?? ArrayUtils.EmptyObjects,
                 kwArgs ?? new PythonDictionary()
@@ -68,7 +68,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static PythonType GetItem(TypeGroup self, params object?[] types) {
             PythonType[] pythonTypes = new PythonType[types.Length];
-            for (int i = 0; i < types.Length; i++) {
+            for(int i = 0; i < types.Length; i++) {
                 object? t = types[i];
                 if (t is PythonType) {
                     pythonTypes[i] = (PythonType)t;

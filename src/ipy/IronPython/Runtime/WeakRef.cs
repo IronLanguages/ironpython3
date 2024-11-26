@@ -8,10 +8,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
-using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
 
@@ -26,7 +26,7 @@ namespace IronPython.Runtime {
             private readonly object _callback;
             private readonly WeakHandle _longRef;
             private readonly WeakHandle _shortRef;
-
+            
             public CallbackInfo(object callback, object weakRef) {
                 _callback = callback;
                 // we need a short ref & a long ref to deal with the case

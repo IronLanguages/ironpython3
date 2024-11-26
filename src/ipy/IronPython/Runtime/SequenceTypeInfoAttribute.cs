@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Collections.ObjectModel;
 
 namespace IronPython.Runtime {
@@ -12,13 +14,13 @@ namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1019:DefineAccessorsForAttributeArguments"), AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple = false)]
     public sealed class SequenceTypeInfoAttribute : Attribute {
         private readonly ReadOnlyCollection<Type> _types;
-
+        
         public SequenceTypeInfoAttribute(params Type[] types) {
             _types = new ReadOnlyCollection<Type>(types);
         }
 
         public ReadOnlyCollection<Type> Types {
-            get {
+            get{
                 return _types;
             }
         }

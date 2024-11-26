@@ -30,7 +30,7 @@ namespace IronPython.Modules {
             return Bytes.Make(MarshalOps.GetBytes(value, version));
         }
 
-        public static object loads([BytesLike] IList<byte> bytes) {
+        public static object loads([BytesLike]IList<byte> bytes) {
             return MarshalOps.GetObject(bytes.GetEnumerator());
         }
 

@@ -5,7 +5,6 @@
 #nullable enable
 
 using System;
-
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 

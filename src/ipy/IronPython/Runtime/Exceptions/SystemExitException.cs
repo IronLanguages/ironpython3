@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.Serialization;
-
 using IronPython.Modules;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;

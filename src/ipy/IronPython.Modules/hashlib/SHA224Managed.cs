@@ -29,6 +29,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Security.Cryptography;
+
 using IronPython.Runtime;
 
 namespace Mono.Security.Cryptography {

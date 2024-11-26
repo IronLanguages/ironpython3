@@ -2,21 +2,23 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -40,7 +42,7 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-
+            
             foreach (PythonType pt in Value.ResolutionOrder) {
                 if (pt.IsSystemType) {
                     return action.FallbackInvokeMember(this, args);
@@ -108,7 +110,7 @@ namespace IronPython.Runtime.Binding {
                 string msg;
                 if (Value.UnderlyingSystemType.IsAbstract) {
                     msg = String.Format("Cannot create instances of {0} because it is abstract", Value.Name);
-                } else {
+                }else{
                     msg = String.Format("Cannot create instances of {0} because it has no public constructors", Value.Name);
                 }
                 return new DynamicMetaObject(
@@ -156,16 +158,16 @@ namespace IronPython.Runtime.Binding {
 
             GetAdapters(ai, call, codeContext, out newAdapter, out initAdapter);
             PythonContext state = PythonContext.GetPythonContext(call);
-
+            
             // get the expression for calling __new__
             DynamicMetaObject createExpr = newAdapter.GetExpression(state.Binder);
             if (createExpr.Expression.Type == typeof(void)) {
                 return BindingHelpers.AddDynamicTestAndDefer(
                     call,
                     createExpr,
-                    args,
+                    args,                        
                     valInfo
-                );
+                );                    
             }
 
             Expression res;
@@ -250,7 +252,7 @@ namespace IronPython.Runtime.Binding {
                 valInfo
             );
         }
-
+        
         #endregion
 
         #region Adapter support
@@ -425,16 +427,16 @@ namespace IronPython.Runtime.Binding {
 
                 if (_creating.IsSystemType || _creating.HasSystemCtor) {
                     resolve = new PythonOverloadResolver(
-                        binder,
-                        Arguments.Arguments,
-                        Arguments.Signature,
+                        binder, 
+                        Arguments.Arguments, 
+                        Arguments.Signature, 
                         CodeContext
                     );
                 } else {
                     resolve = new PythonOverloadResolver(
-                        binder,
-                        ArrayUtils.Insert(Arguments.Self, Arguments.Arguments),
-                        GetDynamicNewSignature(),
+                        binder, 
+                        ArrayUtils.Insert(Arguments.Self, Arguments.Arguments), 
+                        GetDynamicNewSignature(), 
                         CodeContext
                     );
                 }
@@ -498,13 +500,13 @@ namespace IronPython.Runtime.Binding {
                         args.ToArray()
                     ),
                     Arguments.Self.Restrictions.Merge(createExpr.Restrictions)
-                );
+                );                
             }
         }
 
         private class SlotInitAdapter : InitAdapter {
             private readonly PythonTypeSlot/*!*/ _slot;
-
+            
             public SlotInitAdapter(PythonTypeSlot/*!*/ slot, ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
                 _slot = slot;
@@ -590,8 +592,8 @@ namespace IronPython.Runtime.Binding {
                         )
                     ),
                     GetErrorRestrictions(ai)
-                ),
-                ai.Arguments,
+                ), 
+                ai.Arguments,                
                 valInfo
             );
         }
@@ -655,7 +657,7 @@ namespace IronPython.Runtime.Binding {
         private static BindingRestrictions GetInstanceRestriction(ArgumentValues ai) {
             return BindingRestrictions.GetInstanceRestriction(ai.Self.Expression, ai.Self.Value);
         }
-
+        
         private bool HasFinalizer(DynamicMetaObjectBinder/*!*/ action) {
             // only user types have finalizers...
             if (Value.IsSystemType) return false;
@@ -690,7 +692,7 @@ namespace IronPython.Runtime.Binding {
                 for (int i = 0; i < infos.Length; i++) {
                     Argument curArg = infos[i];
 
-                    switch (curArg.Kind) {
+                    switch(curArg.Kind) {
                         case ArgumentType.List:
                             // Deferral?
                             if (((IList<object>)args[i].Value).Count > 0) {
@@ -705,7 +707,7 @@ namespace IronPython.Runtime.Binding {
                             break;
                         default:
                             return true;
-                    }
+                    }                    
                 }
             }
             return false;
@@ -735,7 +737,7 @@ namespace IronPython.Runtime.Binding {
                 !Value.IsPythonType &&
                 !bState.Binder.HasExtensionTypes(Value.UnderlyingSystemType) &&
                 !typeof(Delegate).IsAssignableFrom(Value.UnderlyingSystemType) &&
-                !Value.UnderlyingSystemType.IsArray;
+                !Value.UnderlyingSystemType.IsArray;                                
         }
 
         #endregion        

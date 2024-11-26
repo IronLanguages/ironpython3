@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -17,10 +18,10 @@ using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 
-using IronPythonTest.Util;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
+
+using IronPythonTest.Util;
 
 namespace IronPythonTest.Cases {
     internal class CaseExecuter {

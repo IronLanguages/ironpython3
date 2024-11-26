@@ -6,11 +6,11 @@
 
 using System.Collections.Generic;
 
+using Microsoft.Scripting;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -53,7 +53,7 @@ namespace IronPython.Modules {
                 st.SetValueInternal(MemHolder, 0, args);
             }
 
-            public void __init__(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object> kwargs) {
+            public void __init__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<string, object> kwargs) {
                 CheckAbstract();
 
                 foreach (var x in kwargs) {

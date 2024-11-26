@@ -10,7 +10,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 
 using IronPython;
-
 using IronPythonTest.Util;
 
 using NUnit.Framework;

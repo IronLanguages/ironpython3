@@ -3,15 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-
-using IronPython.Runtime.Binding;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronPython.Runtime.Binding;
+
 using MSAst = System.Linq.Expressions;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -168,29 +170,29 @@ namespace IronPython.Compiler.Ast {
                         Ast.Assign(previousException, Ast.Call(AstMethods.SaveCurrentException)),
                         _var != null ?
                             (MSAst.Expression)Ast.Block(
-                                // VAR = value
+                // VAR = value
                                 _var.TransformSet(SourceSpan.None, value, PythonOperationKind.None),
-                                // BLOCK
+                // BLOCK
                                 _body,
                                 AstUtils.Empty()
                             ) :
-                            // BLOCK
+                // BLOCK
                             (MSAst.Expression)_body // except:, // try statement location
                     ).Catch(exception = Ast.Variable(typeof(Exception), "exception"),
-                        // Python specific exception handling code
+                // Python specific exception handling code
                         TryStatement.GetTracebackHeader(
                             this,
                             exception,
                             GlobalParent.AddDebugInfoAndVoid(
                                 Ast.Block(
                                     Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
-                                    // exc = False
+                // exc = False
                                     MakeAssignment(
                                         exc,
                                         AstUtils.Constant(false)
                                     ),
-                                    //  if not exit(*sys.exc_info()):
-                                    //      raise
+                //  if not exit(*sys.exc_info()):
+                //      raise
                                     AstUtils.IfThen(
                                         GlobalParent.Convert(
                                             typeof(bool),
@@ -219,8 +221,8 @@ namespace IronPython.Compiler.Ast {
                 // finally:                    
                 ).Finally(
                     Ast.Call(AstMethods.RestoreCurrentException, previousException),
-                    //  if exc:
-                    //      exit(None, None, None)
+                //  if exc:
+                //      exit(None, None, None)
                     AstUtils.IfThen(
                         exc,
                         GlobalParent.AddDebugInfoAndVoid(

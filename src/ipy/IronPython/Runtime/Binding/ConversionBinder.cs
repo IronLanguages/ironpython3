@@ -2,24 +2,25 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Numerics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+using System.Reflection;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -545,7 +546,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._context.Binder == _context.Binder &&
+            return ob._context.Binder == _context.Binder && 
                 _kind == ob._kind && base.Equals(obj) &&
                 _retObject == ob._retObject;
         }

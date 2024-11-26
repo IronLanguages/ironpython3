@@ -171,7 +171,7 @@ assembly on disk. After the load the assemblies namespaces and top-level types
 will be available via import Namespace.")]
         public static Assembly/*!*/ LoadAssemblyFromFileWithPath(CodeContext/*!*/ context, string/*!*/ file) {
             if (file == null) throw new TypeErrorException("LoadAssemblyFromFileWithPath: arg 1 must be a string.");
-
+            
             Assembly res;
             if (!context.LanguageContext.TryLoadAssemblyFromFileWithPath(file, out res)) {
                 if (!Path.IsPathRooted(file)) {
@@ -253,7 +253,7 @@ the assembly object.")]
 
         [Documentation("Converts maxCount of an array of bytes to a string")]
         public static string GetString(byte[] bytes, int maxCount) {
-            int bytesToCopy = Math.Min(bytes.Length, maxCount);
+            int bytesToCopy = Math.Min(bytes.Length, maxCount);            
             return Encoding.GetEncoding("iso-8859-1").GetString(bytes, 0, bytesToCopy);
         }
 
@@ -699,7 +699,7 @@ import Namespace.")]
 
             #region IFancyCallable Members
             [SpecialName]
-            public object Call(CodeContext context, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+            public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 ValidateArgs(args);
 
                 if (_inst != null) {
@@ -794,7 +794,7 @@ import Namespace.")]
 
             #region IFancyCallable Members
             [SpecialName]
-            public object Call(CodeContext context, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+            public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 object ret;
                 if (_inst != null) {
                     ret = PythonCalls.CallWithKeywordArgs(context, _func, ArrayUtils.Insert(_inst, args), dict);
@@ -870,7 +870,7 @@ import Namespace.")]
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
         /// </summary>
-        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary] IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
+        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
             ContractUtils.RequiresNotNull(assemblyName, nameof(assemblyName));
             ContractUtils.RequiresNotNullItems(filenames, nameof(filenames));
 
@@ -996,7 +996,7 @@ import Namespace.")]
         /// </summary>
         public static PythonTuple GetSubclassedTypes() {
             List<object> res = new List<object>();
-
+            
             foreach (NewTypeInfo info in NewTypeMaker._newTypes.Keys) {
                 Type clrBaseType = info.BaseType;
                 Type tempType = clrBaseType;
@@ -1129,7 +1129,7 @@ import Namespace.")]
         /// 
         /// All times are expressed in the same unit of measure as DateTime.Ticks
         /// </summary>
-        public static PythonTuple GetProfilerData(CodeContext/*!*/ context, bool includeUnused = false) {
+        public static PythonTuple GetProfilerData(CodeContext/*!*/ context, bool includeUnused=false) {
             return new PythonTuple(Profiler.GetProfiler(context.LanguageContext).GetProfile(includeUnused));
         }
 

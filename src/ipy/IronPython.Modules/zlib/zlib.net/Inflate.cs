@@ -44,15 +44,17 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 
-namespace ComponentAce.Compression.Libs.ZLib {
+namespace ComponentAce.Compression.Libs.ZLib
+{
     /// <summary>
     /// This enumeration contains modes of inflate processing
     /// </summary>
-    internal enum InflateMode {
+    internal enum InflateMode
+    {	
         /// <summary>
         /// waiting for method byte
         /// </summary>
-        METHOD = 0,
+        METHOD = 0, 
         /// <summary>
         /// waiting for flag byte
         /// </summary>
@@ -108,14 +110,15 @@ namespace ComponentAce.Compression.Libs.ZLib {
     }
 
 
-    internal sealed class Inflate {
+	internal sealed class Inflate
+	{
 
         #region Fields
 
-        /// <summary>
+		/// <summary>
         /// current inflate mode
-        /// </summary>
-        public InflateMode mode;
+		/// </summary>
+		public InflateMode mode;
 
         #region mode dependent information
 
@@ -123,8 +126,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// if FLAGS, method byte
         /// </summary>
         private int method;
-
-        // if CHECK, check values to compare
+		
+		// if CHECK, check values to compare
 
         /// <summary>
         /// computed check value
@@ -135,10 +138,10 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// stream check value
         /// </summary>
         private long need;
-
-        /// <summary>
+		
+		/// <summary>
         /// if BAD, inflateSync's marker bytes count
-        /// </summary>
+		/// </summary>
         private int marker;
 
         #endregion
@@ -147,15 +150,15 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// <summary>
         /// flag for no wrapper
         /// </summary>
-        private int nowrap;
+        private int nowrap; 
         /// <summary>
         /// log2(Window size)  (8..15, defaults to 15)
         /// </summary>
         private int wbits;
 
-        private IEnumerator<object> gzipHeaderRemover;
+	    private IEnumerator<object> gzipHeaderRemover;
 
-        private bool detectHeader;
+	    private bool detectHeader;
 
         #endregion
 
@@ -163,7 +166,7 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// current inflate_blocks state
         /// </summary>
         private InfBlocks blocks;
-
+		
         #endregion
 
         #region Methods
@@ -173,28 +176,30 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// </summary>
         /// <param name="z">A ZStream object</param>
         /// <returns>A result code</returns>
-        internal int inflateReset(ZStream z) {
+        internal int inflateReset(ZStream z)
+        {
             if (z?.istate == null)
                 return (int)ZLibResultCode.Z_STREAM_ERROR;
-
+            
             z.total_in = z.total_out = 0;
             z.msg = null;
-            z.istate.mode = z.istate.nowrap != 0 ? InflateMode.BLOCKS : InflateMode.METHOD;
+            z.istate.mode = z.istate.nowrap != 0? InflateMode.BLOCKS: InflateMode.METHOD;
             z.istate.blocks.reset(z, null);
             return (int)ZLibResultCode.Z_OK;
         }
-
+        
         /// <summary>
         /// Finishes the inflate algorithm processing
         /// </summary>
         /// <param name="z">A ZStream object</param>
         /// <returns>Operation result code</returns>
-        internal int inflateEnd(ZStream z) {
-            blocks?.free(z);
-            blocks = null;
-            //    ZFREE(z, z->state);
-            return (int)ZLibResultCode.Z_OK;
-        }
+		internal int inflateEnd(ZStream z)
+		{
+		    blocks?.free(z);
+		    blocks = null;
+			//    ZFREE(z, z->state);
+			return (int)ZLibResultCode.Z_OK;
+		}
 
         /// <summary>
         /// Initializes the inflate algorithm
@@ -202,39 +207,46 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// <param name="z">A ZStream object</param>
         /// <param name="windowBits">Window size</param>
         /// <returns>Operation result code</returns>
-		internal int inflateInit(ZStream z, int windowBits) {
-            z.msg = null;
-            blocks = null;
-
-            // handle undocumented nowrap option (no zlib header or check)
-            nowrap = 0;
+		internal int inflateInit(ZStream z, int windowBits)
+		{
+			z.msg = null;
+			blocks = null;
+			
+			// handle undocumented nowrap option (no zlib header or check)
+			nowrap = 0;
             detectHeader = false;
-            if (windowBits < 0) {
+			if (windowBits < 0)
+			{
                 // deflate, no header
-                windowBits = -windowBits;
-                nowrap = 1;
-            } else if ((windowBits & 16) != 0) {
+				windowBits = - windowBits;
+				nowrap = 1;
+            }
+            else if ((windowBits & 16) != 0)
+            {
                 gzipHeaderRemover = GzipHeader.CreateRemover(z);
                 windowBits &= ~16;
 
-            } else if ((windowBits & 32) != 0) {
+            }
+            else if ((windowBits & 32) != 0) 
+            {
                 detectHeader = true;
                 windowBits &= ~32;
             }
 
-            // set Window size
-            if (windowBits < 8 || windowBits > 15) {
-                inflateEnd(z);
-                return (int)ZLibResultCode.Z_STREAM_ERROR;
-            }
-            wbits = windowBits;
-
-            z.istate.blocks = new InfBlocks(z, z.istate.nowrap == 0, 1 << windowBits);
-
-            // reset state
-            inflateReset(z);
-            return (int)ZLibResultCode.Z_OK;
-        }
+			// set Window size
+			if (windowBits < 8 || windowBits > 15)
+			{
+				inflateEnd(z);
+				return (int)ZLibResultCode.Z_STREAM_ERROR;
+			}
+			wbits = windowBits;
+			
+			z.istate.blocks = new InfBlocks(z, z.istate.nowrap == 0, 1 << windowBits);
+			
+			// reset state
+			inflateReset(z);
+			return (int)ZLibResultCode.Z_OK;
+		}
 
 
         /// <summary>
@@ -243,17 +255,19 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// <param name="z">A ZStream object</param>
         /// <param name="flush">Flush strategy</param>
         /// <returns>Operation result code</returns>
-		internal int inflate(ZStream z, FlushStrategy flush) {
-            int internalFlush = (int)flush;
+		internal int inflate(ZStream z, FlushStrategy flush)
+		{
+		    int internalFlush = (int)flush;
 
-            if (z?.istate == null || z.next_in == null)
+		    if (z?.istate == null || z.next_in == null)
                 return (int)ZLibResultCode.Z_STREAM_ERROR;
-            int res_temp = internalFlush == (int)FlushStrategy.Z_FINISH
-                ? (int)ZLibResultCode.Z_BUF_ERROR
-                : (int)ZLibResultCode.Z_OK;
-            int r = (int)ZLibResultCode.Z_BUF_ERROR;
+		    int res_temp = internalFlush == (int)FlushStrategy.Z_FINISH
+		        ? (int)ZLibResultCode.Z_BUF_ERROR
+		        : (int)ZLibResultCode.Z_OK;
+			int r = (int)ZLibResultCode.Z_BUF_ERROR;
 
-            if (detectHeader) {
+            if (detectHeader)
+            {
                 if (z.avail_in == 0)
                     return r;
                 if (z.next_in[z.next_in_index] == 0x1F)
@@ -261,7 +275,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
                 detectHeader = false;
             }
 
-            if (gzipHeaderRemover != null) {
+            if (gzipHeaderRemover != null)
+            {
                 if (z.avail_in == 0)
                     return r;
                 if (gzipHeaderRemover.MoveNext())
@@ -272,276 +287,300 @@ namespace ComponentAce.Compression.Libs.ZLib {
                 nowrap = 1;
             }
 
-            while (true) {
+			while (true)
+			{
 
-                switch (z.istate.mode) {
-
-                    case InflateMode.METHOD:
-
-                        if (z.avail_in == 0)
+				switch (z.istate.mode)
+				{
+					
+					case  InflateMode.METHOD: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        if (((z.istate.method = z.next_in[z.next_in_index++]) & 0xf) != ZLibUtil.Z_DEFLATED) {
-                            z.istate.mode = InflateMode.BAD;
-                            z.msg = "unknown compression method";
-                            z.istate.marker = 5; // can't try inflateSync
-                            break;
-                        }
-                        if ((z.istate.method >> 4) + 8 > z.istate.wbits) {
-                            z.istate.mode = InflateMode.BAD;
-                            z.msg = "invalid Window size";
-                            z.istate.marker = 5; // can't try inflateSync
-                            break;
-                        }
-                        z.istate.mode = InflateMode.FLAG;
-                        goto case InflateMode.FLAG;
-
-                    case InflateMode.FLAG:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						if (((z.istate.method = z.next_in[z.next_in_index++]) & 0xf) != ZLibUtil.Z_DEFLATED)
+						{
+							z.istate.mode =  InflateMode.BAD;
+							z.msg = "unknown compression method";
+							z.istate.marker = 5; // can't try inflateSync
+							break;
+						}
+						if ((z.istate.method >> 4) + 8 > z.istate.wbits)
+						{
+							z.istate.mode =  InflateMode.BAD;
+							z.msg = "invalid Window size";
+							z.istate.marker = 5; // can't try inflateSync
+							break;
+						}
+						z.istate.mode =  InflateMode.FLAG;
+						goto case  InflateMode.FLAG;
+					
+					case  InflateMode.FLAG: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        int b = (z.next_in[z.next_in_index++]) & 0xff;
-
-                        if ((((z.istate.method << 8) + b) % 31) != 0) {
-                            z.istate.mode = InflateMode.BAD;
-                            z.msg = "incorrect header check";
-                            z.istate.marker = 5; // can't try inflateSync
-                            break;
-                        }
-
-                        if ((b & ZLibUtil.PRESET_DICT) == 0) {
-                            z.istate.mode = InflateMode.BLOCKS;
-                            break;
-                        }
-                        z.istate.mode = InflateMode.DICT4;
-                        goto case InflateMode.DICT4;
-
-                    case InflateMode.DICT4:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						int b = (z.next_in[z.next_in_index++]) & 0xff;
+						
+						if ((((z.istate.method << 8) + b) % 31) != 0)
+						{
+							z.istate.mode =  InflateMode.BAD;
+							z.msg = "incorrect header check";
+							z.istate.marker = 5; // can't try inflateSync
+							break;
+						}
+						
+						if ((b & ZLibUtil.PRESET_DICT) == 0)
+						{
+							z.istate.mode =  InflateMode.BLOCKS;
+							break;
+						}
+						z.istate.mode =  InflateMode.DICT4;
+						goto case  InflateMode.DICT4;
+					
+					case  InflateMode.DICT4: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need = ((long)(z.next_in[z.next_in_index++] & 0xff) << 24) & unchecked((int)0xff000000L);
-                        z.istate.mode = InflateMode.DICT3;
-                        goto case InflateMode.DICT3;
-
-                    case InflateMode.DICT3:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need = ((long)(z.next_in[z.next_in_index++] & 0xff) << 24) & unchecked((int) 0xff000000L);
+						z.istate.mode =  InflateMode.DICT3;
+						goto case  InflateMode.DICT3;
+					
+					case  InflateMode.DICT3: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need += (((long)(z.next_in[z.next_in_index++] & 0xff) << 16) & 0xff0000L);
-                        z.istate.mode = InflateMode.DICT2;
-                        goto case InflateMode.DICT2;
-
-                    case InflateMode.DICT2:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need += (((long)(z.next_in[z.next_in_index++] & 0xff) << 16) & 0xff0000L);
+						z.istate.mode =  InflateMode.DICT2;
+						goto case  InflateMode.DICT2;
+					
+					case  InflateMode.DICT2: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need += (((long)(z.next_in[z.next_in_index++] & 0xff) << 8) & 0xff00L);
-                        z.istate.mode = InflateMode.DICT1;
-                        goto case InflateMode.DICT1;
-
-                    case InflateMode.DICT1:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need += (((long)(z.next_in[z.next_in_index++] & 0xff) << 8) & 0xff00L);
+						z.istate.mode =  InflateMode.DICT1;
+						goto case  InflateMode.DICT1;
+					
+					case  InflateMode.DICT1: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need += (z.next_in[z.next_in_index++] & 0xffL);
-                        z.adler = z.istate.need;
-                        z.istate.mode = InflateMode.DICT0;
-                        return (int)ZLibResultCode.Z_NEED_DICT;
-
-                    case InflateMode.DICT0:
-                        z.istate.mode = InflateMode.BAD;
-                        z.msg = "need dictionary";
-                        z.istate.marker = 0; // can try inflateSync
-                        return (int)ZLibResultCode.Z_STREAM_ERROR;
-
-                    case InflateMode.BLOCKS:
-                        r = z.istate.blocks.proc(z, r);
-                        if (r == (int)ZLibResultCode.Z_DATA_ERROR) {
-                            z.istate.mode = InflateMode.BAD;
-                            z.istate.marker = 0; // can try inflateSync
-                            break;
-                        }
-                        if (r == (int)ZLibResultCode.Z_OK) {
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need += (z.next_in[z.next_in_index++] & 0xffL);
+						z.adler = z.istate.need;
+						z.istate.mode =  InflateMode.DICT0;
+						return (int)ZLibResultCode.Z_NEED_DICT;
+					
+					case  InflateMode.DICT0: 
+						z.istate.mode =  InflateMode.BAD;
+						z.msg = "need dictionary";
+						z.istate.marker = 0; // can try inflateSync
+						return (int)ZLibResultCode.Z_STREAM_ERROR;
+					
+					case  InflateMode.BLOCKS:
+						r = z.istate.blocks.proc(z, r);
+						if (r == (int)ZLibResultCode.Z_DATA_ERROR)
+						{
+							z.istate.mode =  InflateMode.BAD;
+							z.istate.marker = 0; // can try inflateSync
+							break;
+						}
+						if (r == (int)ZLibResultCode.Z_OK)
+						{
                             r = res_temp;
-                        }
-                        if (r != (int)ZLibResultCode.Z_STREAM_END) {
-                            return r;
-                        }
+						}
+						if (r != (int)ZLibResultCode.Z_STREAM_END)
+						{
+							return r;
+						}
                         r = res_temp;
-                        z.istate.blocks.reset(z, z.istate.was);
-                        if (z.istate.nowrap != 0) {
-                            z.istate.mode = InflateMode.DONE;
-                            break;
-                        }
-                        z.istate.mode = InflateMode.CHECK4;
-                        goto case InflateMode.CHECK4;
-
-                    case InflateMode.CHECK4:
-
-                        if (z.avail_in == 0)
+						z.istate.blocks.reset(z, z.istate.was);
+						if (z.istate.nowrap != 0)
+						{
+							z.istate.mode =  InflateMode.DONE;
+							break;
+						}
+						z.istate.mode =  InflateMode.CHECK4;
+						goto case  InflateMode.CHECK4;
+					
+					case  InflateMode.CHECK4: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need = ((z.next_in[z.next_in_index++] & 0xff) << 24) & unchecked((int)0xff000000L);
-                        z.istate.mode = InflateMode.CHECK3;
-                        goto case InflateMode.CHECK3;
-
-                    case InflateMode.CHECK3:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need = ((z.next_in[z.next_in_index++] & 0xff) << 24) & unchecked((int) 0xff000000L);
+						z.istate.mode =  InflateMode.CHECK3;
+						goto case  InflateMode.CHECK3;
+					
+					case  InflateMode.CHECK3: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need += (((z.next_in[z.next_in_index++] & 0xff) << 16) & 0xff0000L);
-                        z.istate.mode = InflateMode.CHECK2;
-                        goto case InflateMode.CHECK2;
-
-                    case InflateMode.CHECK2:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need += (((z.next_in[z.next_in_index++] & 0xff) << 16) & 0xff0000L);
+						z.istate.mode =  InflateMode.CHECK2;
+						goto case  InflateMode.CHECK2;
+					
+					case  InflateMode.CHECK2: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need += (((z.next_in[z.next_in_index++] & 0xff) << 8) & 0xff00L);
-                        z.istate.mode = InflateMode.CHECK1;
-                        goto case InflateMode.CHECK1;
-
-                    case InflateMode.CHECK1:
-
-                        if (z.avail_in == 0)
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need += (((z.next_in[z.next_in_index++] & 0xff) << 8) & 0xff00L);
+						z.istate.mode =  InflateMode.CHECK1;
+						goto case  InflateMode.CHECK1;
+					
+					case  InflateMode.CHECK1: 
+						
+						if (z.avail_in == 0)
                             return r; r = res_temp;
-
-                        z.avail_in--; z.total_in++;
-                        z.istate.need += (z.next_in[z.next_in_index++] & 0xffL);
-
-                        if (unchecked(((int)(z.istate.was[0])) != ((int)(z.istate.need)))) {
-                            z.istate.mode = InflateMode.BAD;
-                            z.msg = "incorrect data check";
-                            z.istate.marker = 5; // can't try inflateSync
-                            break;
-                        }
-
-                        z.istate.mode = InflateMode.DONE;
-                        goto case InflateMode.DONE;
-
-                    case InflateMode.DONE:
-                        return (int)ZLibResultCode.Z_STREAM_END;
-
-                    case InflateMode.BAD:
-                        return (int)ZLibResultCode.Z_DATA_ERROR;
-
-                    default:
-                        return (int)ZLibResultCode.Z_STREAM_ERROR;
-
-                }
-            }
-        }
-
-        /// <summary>
-        /// Sets dictionary for the inflate operation
-        /// </summary>
-        /// <param name="z">A ZStream object</param>
-        /// <param name="dictionary">An array of byte - dictionary</param>
-        /// <param name="dictLength">Dictionary length</param>
-        /// <returns>Operation result code</returns>
-        internal int inflateSetDictionary(ZStream z, byte[] dictionary, int dictLength) {
-            int index = 0;
-            int length = dictLength;
-            if (z?.istate?.mode != InflateMode.DICT0)
-                return (int)ZLibResultCode.Z_STREAM_ERROR;
-
-            if (Adler32.GetAdler32Checksum(1L, dictionary, 0, dictLength) != z.adler) {
-                return (int)ZLibResultCode.Z_DATA_ERROR;
-            }
-
-            z.adler = Adler32.GetAdler32Checksum(0, null, 0, 0);
-
-            if (length >= (1 << z.istate.wbits)) {
-                length = (1 << z.istate.wbits) - 1;
-                index = dictLength - length;
-            }
-            z.istate.blocks.set_dictionary(dictionary, index, length);
-            z.istate.mode = InflateMode.BLOCKS;
-            return (int)ZLibResultCode.Z_OK;
-        }
-
-
+						
+						z.avail_in--; z.total_in++;
+						z.istate.need += (z.next_in[z.next_in_index++] & 0xffL);
+						
+						if (unchecked(((int) (z.istate.was[0])) != ((int) (z.istate.need))))
+						{
+							z.istate.mode =  InflateMode.BAD;
+							z.msg = "incorrect data check";
+							z.istate.marker = 5; // can't try inflateSync
+							break;
+						}
+						
+						z.istate.mode =  InflateMode.DONE;
+						goto case  InflateMode.DONE;
+					
+					case  InflateMode.DONE: 
+						return (int)ZLibResultCode.Z_STREAM_END;
+					
+					case  InflateMode.BAD: 
+						return (int)ZLibResultCode.Z_DATA_ERROR;
+					
+					default: 
+						return (int)ZLibResultCode.Z_STREAM_ERROR;
+					
+				}
+			}
+		}
+		
+		/// <summary>
+		/// Sets dictionary for the inflate operation
+		/// </summary>
+		/// <param name="z">A ZStream object</param>
+		/// <param name="dictionary">An array of byte - dictionary</param>
+		/// <param name="dictLength">Dictionary length</param>
+		/// <returns>Operation result code</returns>
+		internal int inflateSetDictionary(ZStream z, byte[] dictionary, int dictLength)
+		{
+			int index = 0;
+			int length = dictLength;
+			if (z?.istate?.mode != InflateMode.DICT0)
+				return (int)ZLibResultCode.Z_STREAM_ERROR;
+			
+			if (Adler32.GetAdler32Checksum(1L, dictionary, 0, dictLength) != z.adler)
+			{
+				return (int)ZLibResultCode.Z_DATA_ERROR;
+			}
+			
+			z.adler = Adler32.GetAdler32Checksum(0, null, 0, 0);
+			
+			if (length >= (1 << z.istate.wbits))
+			{
+				length = (1 << z.istate.wbits) - 1;
+				index = dictLength - length;
+			}
+			z.istate.blocks.set_dictionary(dictionary, index, length);
+			z.istate.mode =  InflateMode.BLOCKS;
+			return (int)ZLibResultCode.Z_OK;
+		}
+		
+	
         /// <summary>
         /// Inflate synchronization
         /// </summary>
         /// <param name="z">A ZStream object</param>
         /// <returns>Operation result code</returns>
-        internal int inflateSync(ZStream z) {
-            int n; // number of bytes to look at
-            int p; // pointer to bytes
-            int m; // number of marker bytes found in a row
-            long r, w; // temporaries to save _total_in and _total_out
-
-            // set up
-            if (z?.istate == null)
-                return (int)ZLibResultCode.Z_STREAM_ERROR;
-            if (z.istate.mode != InflateMode.BAD) {
-                z.istate.mode = InflateMode.BAD;
-                z.istate.marker = 0;
-            }
-            if ((n = z.avail_in) == 0)
-                return (int)ZLibResultCode.Z_BUF_ERROR;
-            p = z.next_in_index;
-            m = z.istate.marker;
-
-            // search
-            while (n != 0 && m < 4) {
-                if (z.next_in[p] == ZLibUtil.mark[m]) {
-                    m++;
-                } else if (z.next_in[p] != 0) {
-                    m = 0;
-                } else {
-                    m = 4 - m;
-                }
-                p++; n--;
-            }
-
-            // restore
-            z.total_in += p - z.next_in_index;
-            z.next_in_index = p;
-            z.avail_in = n;
-            z.istate.marker = m;
-
-            // return no joy or set up to restart on a new block
-            if (m != 4) {
-                return (int)ZLibResultCode.Z_DATA_ERROR;
-            }
-            r = z.total_in; w = z.total_out;
-            inflateReset(z);
-            z.total_in = r; z.total_out = w;
-            z.istate.mode = InflateMode.BLOCKS;
-            return (int)ZLibResultCode.Z_OK;
-        }
-
+		internal int inflateSync(ZStream z)
+		{
+			int n; // number of bytes to look at
+			int p; // pointer to bytes
+			int m; // number of marker bytes found in a row
+			long r, w; // temporaries to save _total_in and _total_out
+			
+			// set up
+			if (z?.istate == null)
+				return (int)ZLibResultCode.Z_STREAM_ERROR;
+			if (z.istate.mode !=  InflateMode.BAD)
+			{
+				z.istate.mode =  InflateMode.BAD;
+				z.istate.marker = 0;
+			}
+			if ((n = z.avail_in) == 0)
+				return (int)ZLibResultCode.Z_BUF_ERROR;
+			p = z.next_in_index;
+			m = z.istate.marker;
+			
+			// search
+			while (n != 0 && m < 4)
+			{
+				if (z.next_in[p] == ZLibUtil.mark[m])
+				{
+					m++;
+				}
+				else if (z.next_in[p] != 0)
+				{
+					m = 0;
+				}
+				else
+				{
+					m = 4 - m;
+				}
+				p++; n--;
+			}
+			
+			// restore
+			z.total_in += p - z.next_in_index;
+			z.next_in_index = p;
+			z.avail_in = n;
+			z.istate.marker = m;
+			
+			// return no joy or set up to restart on a new block
+			if (m != 4)
+			{
+				return (int)ZLibResultCode.Z_DATA_ERROR;
+			}
+			r = z.total_in; w = z.total_out;
+			inflateReset(z);
+			z.total_in = r; z.total_out = w;
+			z.istate.mode =  InflateMode.BLOCKS;
+			return (int)ZLibResultCode.Z_OK;
+		}
+		
         ///<summary>
-        /// Returns true if inflate is currently at the End of a block generated
-        /// by Z_SYNC_FLUSH or Z_FULL_FLUSH. This function is used by one PPP
-        /// implementation to provide an additional safety check. PPP uses Z_SYNC_FLUSH
-        /// but removes the length bytes of the resulting empty stored block. When
-        /// decompressing, PPP checks that at the End of input packet, inflate is
-        /// waiting for these length bytes.
+		/// Returns true if inflate is currently at the End of a block generated
+		/// by Z_SYNC_FLUSH or Z_FULL_FLUSH. This function is used by one PPP
+		/// implementation to provide an additional safety check. PPP uses Z_SYNC_FLUSH
+		/// but removes the length bytes of the resulting empty stored block. When
+		/// decompressing, PPP checks that at the End of input packet, inflate is
+		/// waiting for these length bytes.
         /// </summary>
-        internal int inflateSyncPoint(ZStream z) {
-            if (z?.istate?.blocks == null)
-                return (int)ZLibResultCode.Z_STREAM_ERROR;
-            return z.istate.blocks.sync_point();
+		internal int inflateSyncPoint(ZStream z)
+		{
+			if (z?.istate?.blocks == null)
+				return (int)ZLibResultCode.Z_STREAM_ERROR;
+			return z.istate.blocks.sync_point();
         }
 
         #endregion

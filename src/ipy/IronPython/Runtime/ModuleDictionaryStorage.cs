@@ -6,10 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-
 using IronPython.Compiler;
 using IronPython.Runtime.Types;
-
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -219,7 +217,7 @@ namespace IronPython.Runtime {
                 return value != Uninitialized.Instance;
             }
 
-            if (key is string strKey) {
+            if(key is string strKey) {
                 return TryGetLazyValue(strKey, out value);
             }
 

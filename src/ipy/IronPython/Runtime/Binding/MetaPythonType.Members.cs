@@ -3,22 +3,24 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Linq.Expressions;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -222,7 +224,7 @@ namespace IronPython.Runtime.Binding {
                 if (!isFinal) {
                     // the member doesn't exist anywhere in the type hierarchy, see if
                     // we define __getattr__ on our meta type.
-                    if (metaType.TryResolveSlot(_context, "__getattr__", out pts) &&
+                    if (metaType.TryResolveSlot(_context, "__getattr__", out pts) && 
                         !pts.IsSetDescriptor(lookupContext, metaType)) { // we tried get/set descriptors initially
 
                         AddMetaGetAttribute(metaType, pts);
@@ -271,7 +273,7 @@ namespace IronPython.Runtime.Binding {
                 _state = PythonContext.GetPythonContext(member);
                 _valInfo = validationInfo;
                 _metaValInfo = metaValidation;
-            }
+            }            
 
             private void EnsureTmp() {
                 if (_tmp == null) {

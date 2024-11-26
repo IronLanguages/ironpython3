@@ -91,9 +91,9 @@ namespace IronPython.Runtime {
 
         public bool __ne__([NotNone] Slice other) => !Equals(other);
 
-        public static object? operator >([NotNone] Slice self, [NotNone] Slice other) => self.ToTuple() < other.ToTuple();
+        public static object? operator >([NotNone] Slice self, [NotNone] Slice other)=> self.ToTuple() < other.ToTuple();
 
-        public static object? operator <([NotNone] Slice self, [NotNone] Slice other) => self.ToTuple() < other.ToTuple();
+        public static object? operator <([NotNone] Slice self, [NotNone] Slice other)=> self.ToTuple() < other.ToTuple();
 
         public static object? operator >=([NotNone] Slice self, [NotNone] Slice other) => self.ToTuple() >= other.ToTuple();
 

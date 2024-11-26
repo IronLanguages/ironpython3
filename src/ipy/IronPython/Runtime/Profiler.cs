@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using MSAst = System.Linq.Expressions;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,11 +12,10 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
 
-using IronPython.Compiler;
-
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions.Calls;
 
-using MSAst = System.Linq.Expressions;
+using IronPython.Compiler;
 
 namespace IronPython.Runtime {
     using Ast = MSAst.Expression;
@@ -225,7 +226,7 @@ namespace IronPython.Runtime {
                         AstUtils.Constant(profileIndex)
                     )
                 ),
-                AstUtils.Try(
+                AstUtils.Try(                
                     body
                 ).Finally(
                     Ast.Call(

@@ -161,7 +161,8 @@ namespace IronPython.Modules {
                 Func<int, IReadOnlyList<byte>?>? eh = null;
 
                 return delegate (in ReadOnlySpan<byte> data, int start, int end, string message) {
-                    eh ??= errors switch {
+                    eh ??= errors switch
+                    {
                         "strict" => idx => throw PythonOps.ValueError(@"invalid \x escape at position {0}", idx),
                         "replace" => idx => _replacementMarker ??= new[] { (byte)'?' },
                         "ignore" => idx => null,

@@ -6,13 +6,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Reflection;
 using System.Threading;
 
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
 
@@ -72,7 +74,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(CodeContext/*!*/ context, object self, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args\u00F8) {
+        public static void __init__(CodeContext/*!*/ context, object self, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args\u00F8) {
             InstanceOps.CheckInitArgs(context, kwargs, args\u00F8, self);
         }
 
@@ -106,7 +108,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary] IDictionary<object, object> kwargs\u00F8, [NotNone] params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, [NotNone] params object[] args\u00F8) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }

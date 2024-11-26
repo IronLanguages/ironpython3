@@ -5,7 +5,6 @@
 #nullable enable
 
 using Microsoft.Win32.SafeHandles;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -2307,10 +2306,10 @@ the 'status' value."),
 
         private static string ConvertToFsString(CodeContext context, [NotNull] object? o, string argname, [CallerMemberName] string? methodname = null)
             => o switch {
-                string s => s,
+                string s            => s,
                 ExtensibleString es => es.Value,
-                Bytes b => b.ToFsString(context),
-                IBufferProtocol bp => bp.ToFsBytes(context).ToFsString(context),
+                Bytes b             => b.ToFsString(context),
+                IBufferProtocol bp  => bp.ToFsBytes(context).ToFsString(context),
                 // TODO: Python 3.6: os.PathLike
                 _ => throw PythonOps.TypeError("{0}: {1} should be string or bytes, not '{2}'", methodname, argname, PythonOps.GetPythonTypeName(o))
             };

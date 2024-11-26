@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Types {
 
             if (!(value is PythonType dt)) throw PythonOps.TypeError("__class__ must be set to a class, not '{0}' object", PythonOps.GetPythonTypeName(value));
 
-            if (dt.UnderlyingSystemType != DynamicHelpers.GetPythonType(instance).UnderlyingSystemType)
+            if(dt.UnderlyingSystemType != DynamicHelpers.GetPythonType(instance).UnderlyingSystemType)
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__class__ assignment", DynamicHelpers.GetPythonType(instance), dt.UnderlyingSystemType);
 
             sdo.SetPythonType(dt);

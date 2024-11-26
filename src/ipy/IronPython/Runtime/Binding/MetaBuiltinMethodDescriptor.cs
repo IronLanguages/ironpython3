@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Dynamic;
 using System.Linq.Expressions;
 
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using System;
+using System.Dynamic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -91,7 +93,7 @@ namespace IronPython.Runtime.Binding {
                     );
 
                     return BindingHelpers.CheckLightThrow(call, res, target);
-                });
+                });            
         }
 
         internal Expression MakeFunctionTest(Expression functionTarget) {

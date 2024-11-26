@@ -2,24 +2,26 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq.Expressions;
+
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
-
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
+using System.Threading;
+using System.Collections.Generic;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -30,7 +32,7 @@ namespace IronPython.Runtime.Binding {
 
         public DynamicMetaObject GetMember(PythonGetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ codeContext) {
             return GetMemberWorker(member, codeContext);
-        }
+        }        
 
         #endregion
 
@@ -131,7 +133,7 @@ namespace IronPython.Runtime.Binding {
             protected abstract TResult BindGetAttribute(PythonTypeSlot foundSlot);
             protected abstract TResult FinishRule();
             protected abstract void MakeDictionaryAccess();
-
+        
             public IPythonObject Value {
                 get {
                     return _value;
@@ -220,7 +222,7 @@ namespace IronPython.Runtime.Binding {
                     info.Validation
                 );
             }
-
+            
             protected abstract DynamicMetaObject FallbackError();
             protected abstract DynamicMetaObject Fallback();
 
@@ -331,7 +333,7 @@ namespace IronPython.Runtime.Binding {
                     MakeSlotAccess(foundSlot);
                 }
             }
-
+                        
             private void MakeSlotAccess(PythonTypeSlot dts) {
                 if (dts is ReflectedSlotProperty rsp) {
                     // we need to fall back to __getattr__ if the value is not defined, so call it and check the result.
@@ -486,7 +488,7 @@ namespace IronPython.Runtime.Binding {
                 get {
                     return _target.Expression;
                 }
-            }
+            }           
         }
 
         internal class FastGetBinderHelper : GetOrInvokeBinderHelper<FastGetBase> {
@@ -524,12 +526,12 @@ namespace IronPython.Runtime.Binding {
                 }
                 _slot = foundSlot;
             }
-
+            
             public FastBindResult<Func<CallSite, object, CodeContext, object>> GetBinding(CodeContext context, string name) {
                 var cachedGets = GetCachedGets();
                 var key = CachedGetKey.Make(name, context.ModuleContext.ExtensionMethods);
                 FastGetBase dlg;
-                lock (cachedGets) {
+                lock (cachedGets) {                    
                     if (!cachedGets.TryGetValue(key, out dlg) || !dlg.IsValid(Value.PythonType)) {
                         var binding = Bind(context, name);
                         if (binding != null) {
@@ -597,7 +599,7 @@ namespace IronPython.Runtime.Binding {
 
             private Func<CallSite, object, CodeContext, object> FallbackError() {
                 Type finalType = Value.PythonType.FinalSystemType;
-                if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType)) {
+                if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType)) {                    
                     return ((IFastGettable)Value).MakeGetBinding(_site, _binder, _context, _binder.Name);
                 }
 
@@ -619,9 +621,9 @@ namespace IronPython.Runtime.Binding {
                     Debug.Assert(Value is IFastGettable);
 
                     PythonTypeSlot baseSlot;
-                    if (TryGetGetAttribute(_context, DynamicHelpers.GetPythonTypeFromType(finalType), out baseSlot) &&
+                    if (TryGetGetAttribute(_context, DynamicHelpers.GetPythonTypeFromType(finalType), out baseSlot) && 
                         baseSlot == foundSlot) {
-
+                        
                         return new ChainedUserGet(_binder, _version, FallbackError());
                     }
                 }
@@ -703,7 +705,7 @@ namespace IronPython.Runtime.Binding {
             }
             return false;
         }
-
+        
         private static MethodCallExpression/*!*/ MakeGetAttrTestAndGet(GetBindingInfo/*!*/ info, Expression/*!*/ getattr) {
             return Ast.Call(
                 PythonTypeInfo._PythonOps.SlotTryGetBoundValue,
@@ -721,8 +723,8 @@ namespace IronPython.Runtime.Binding {
                 ),
                 info.Result
             );
-        }
-
+        }               
+        
         private static Expression/*!*/ GetWeakSlot(PythonTypeSlot slot) {
             return AstUtils.Convert(AstUtils.WeakConstant(slot), typeof(PythonTypeSlot));
         }
@@ -755,7 +757,7 @@ namespace IronPython.Runtime.Binding {
                 _context = context;
             }
 
-            public TResult Bind(string name) {
+            public TResult Bind(string name) {                
                 bool bound = false;
 
                 // call __setattr__ if it exists
@@ -807,7 +809,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             protected abstract TResult Finish();
-
+            
             protected abstract void MakeSetAttrTarget(PythonTypeSlot dts);
             protected abstract void MakeSlotsSetTarget(ReflectedSlotProperty prop);
             protected abstract void MakeSlotSetOrFallback(PythonTypeSlot dts, bool systemTypeResolution);
@@ -835,13 +837,13 @@ namespace IronPython.Runtime.Binding {
                     return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.SetAttr, _binder.Name, _version, _setattrSlot, null);
                 } else if (_slotProp != null) {
                     return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.UserSlot, _binder.Name, _version, null, _slotProp.Setter);
-                } else if (_dictSet) {
+                } else if(_dictSet) {
                     return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.SetDict, _binder.Name, _version, null, null);
                 } else {
                     return new SetMemberDelegates<TValue>(_context, Instance.PythonType, OptimizedSetKind.Error, _binder.Name, _version, null, null);
-                }
+                }                
             }
-
+            
             public FastBindResult<Func<CallSite, object, TValue, object>> MakeSet() {
                 var cachedSets = GetCachedSets();
 
@@ -953,14 +955,14 @@ namespace IronPython.Runtime.Binding {
             protected override DynamicMetaObject Finish() {
                 PerfTrack.NoteEvent(PerfTrack.Categories.Binding, _resolution);
                 PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "UserSet");
-
+                
                 Debug.Assert(_result != null);
 
                 _result = new DynamicMetaObject(
                     _result.Expression,
                     _target.Restrict(Instance.GetType()).Restrictions.Merge(_result.Restrictions)
                 );
-
+                
                 Debug.Assert(!_result.Expression.Type.IsValueType);
 
                 return BindingHelpers.AddDynamicTestAndDefer(
@@ -1045,7 +1047,7 @@ namespace IronPython.Runtime.Binding {
                     _result = MakeSlotSet(_info, dts);
                 }
             }
-
+            
             protected override void MakeSlotsSetTarget(ReflectedSlotProperty prop) {
                 _resolution += "Slot ";
                 MakeSlotsSetTargetHelper(_info, prop, _value.Expression);
@@ -1212,7 +1214,7 @@ namespace IronPython.Runtime.Binding {
             if (dts is ReflectedSlotProperty rsp) {
                 MakeSlotsDeleteTarget(info, rsp);
             }
-
+            
             if (!info.Body.IsFinal && dts != null) {
                 MakeSlotDelete(info, dts);
             }
@@ -1266,7 +1268,7 @@ namespace IronPython.Runtime.Binding {
                             Ast.NotEqual(
                                 tmpDeleter,
                                 AstUtils.Constant(null)
-                            ),
+                            ),                            
                             Ast.Dynamic(
                                 PythonContext.GetPythonContext(info.Action).InvokeOne,
                                 typeof(object),

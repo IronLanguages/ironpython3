@@ -10,10 +10,10 @@ using System.Windows;
 using System.Windows.Markup;
 using System.Xml;
 
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
-using Microsoft.Scripting.Runtime;
 
 #if NETCOREAPP3_1_OR_GREATER
 using Microsoft.Internal.Scripting.Runtime; // TODO: get rid of this once DynamicXamlReader is in the DLR

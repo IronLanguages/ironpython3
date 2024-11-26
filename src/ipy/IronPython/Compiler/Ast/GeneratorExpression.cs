@@ -4,6 +4,14 @@
 
 using MSAst = System.Linq.Expressions;
 
+using System;
+using System.Diagnostics;
+
+using Microsoft.Scripting.Actions;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
+
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 

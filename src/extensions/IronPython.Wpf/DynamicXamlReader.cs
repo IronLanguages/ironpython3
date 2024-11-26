@@ -5,12 +5,12 @@
 #if NETCOREAPP3_1_OR_GREATER
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using System.Xaml;
 using System.Xaml.Schema;
+using System.IO;
 using System.Xml;
+using System.Reflection;
+using System.Collections.Generic;
 
 using Microsoft.Scripting.Runtime;
 
@@ -77,7 +77,7 @@ namespace Microsoft.Internal.Scripting.Runtime {
                     operations.SetMember((object)scope, name, value);
                 }
             }
-
+            
             return myWriter.Result;
         }
 
@@ -141,7 +141,7 @@ namespace Microsoft.Internal.Scripting.Runtime {
                 }
                 base.WriteValue(value);
             }
-
+            
             public override void WriteEndMember() {
                 _nameStack.Pop();
                 base.WriteEndMember();
@@ -161,7 +161,7 @@ namespace Microsoft.Internal.Scripting.Runtime {
                 } else {
                     base.WriteStartMember(property);
                 }
-            }
+            }            
         }
     }
 }

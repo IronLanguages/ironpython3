@@ -3,15 +3,20 @@
 // See the LICENSE file in the project root for more information.
 #if FEATURE_REFEMIT
 
+using System.Linq.Expressions;
+
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
     /// <summary>
@@ -22,7 +27,7 @@ namespace IronPython.Compiler {
         private readonly Expression<LookupCompilationDelegate> _code;
         private readonly string[] _names;
         private readonly string _moduleName;
-
+        
         public PythonSavableScriptCode(Expression<LookupCompilationDelegate> code, SourceUnit sourceUnit, string[] names, string moduleName)
             : base(sourceUnit) {
             _code = code;

@@ -7,6 +7,8 @@
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
+    using Ast = MSAst.Expression;
+
     public class SliceExpression : Expression {
         public SliceExpression(Expression? start, Expression? stop, Expression? step) {
             SliceStart = start;

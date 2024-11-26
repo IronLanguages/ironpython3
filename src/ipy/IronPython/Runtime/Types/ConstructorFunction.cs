@@ -4,9 +4,10 @@
 
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
-
 using Microsoft.Scripting.Utils;
+using System.Text;
+using IronPython.Runtime.Operations;
+using Microsoft.Scripting;
 
 namespace IronPython.Runtime.Types {
     [PythonType("builtin_function_or_method")]

@@ -8,11 +8,11 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     /// <summary>

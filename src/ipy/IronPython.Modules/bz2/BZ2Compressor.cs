@@ -6,13 +6,12 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
+using System.Runtime.InteropServices;
 using Ionic.BZip2;
-
 using IronPython.Runtime;
-
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -20,7 +19,7 @@ namespace IronPython.Modules.Bz2 {
     public static partial class Bz2Module {
         [PythonType]
         public class BZ2Compressor {
-            public const string __doc__ =
+            public const string __doc__ = 
 @"BZ2Compressor([compresslevel=9]) -> compressor object
 
 Create a new compressor object. This object may be used to compress

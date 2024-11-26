@@ -1,31 +1,35 @@
-namespace Community.CsharpSqlite {
-    public partial class Sqlite3 {
-        /*
-        ** 2009 March 3
-        **
-        ** The author disclaims copyright to this source code.  In place of
-        ** a legal notice, here is a blessing:
-        **
-        **    May you do good and not evil.
-        **    May you find forgiveness for yourself and forgive others.
-        **    May you share freely, never taking more than you give.
-        **
-        *************************************************************************
-        **
-        ** This file contains the implementation of the sqlite3_unlock_notify()
-        ** API method and its associated functionality.
-        *************************************************************************
-        **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
-        **  C#-SQLite is an independent reimplementation of the SQLite software library
-        **
-        **  SQLITE_SOURCE_ID: 2009-12-07 16:39:13 1ed88e9d01e9eda5cbc622e7614277f29bcc551c
-        **
-        *************************************************************************
-        */
-        //#include "sqliteInt.h"
-        //#include "btreeInt.h"
+using System.Diagnostics;
 
-        /* Omit this entire file if SQLITE_ENABLE_UNLOCK_NOTIFY is not defined. */
+namespace Community.CsharpSqlite
+{
+  public partial class Sqlite3
+  {
+    /*
+    ** 2009 March 3
+    **
+    ** The author disclaims copyright to this source code.  In place of
+    ** a legal notice, here is a blessing:
+    **
+    **    May you do good and not evil.
+    **    May you find forgiveness for yourself and forgive others.
+    **    May you share freely, never taking more than you give.
+    **
+    *************************************************************************
+    **
+    ** This file contains the implementation of the sqlite3_unlock_notify()
+    ** API method and its associated functionality.
+    *************************************************************************
+    **  Included in SQLite3 port to C#-SQLite;  2008 Noah B Hart
+    **  C#-SQLite is an independent reimplementation of the SQLite software library
+    **
+    **  SQLITE_SOURCE_ID: 2009-12-07 16:39:13 1ed88e9d01e9eda5cbc622e7614277f29bcc551c
+    **
+    *************************************************************************
+    */
+    //#include "sqliteInt.h"
+    //#include "btreeInt.h"
+
+    /* Omit this entire file if SQLITE_ENABLE_UNLOCK_NOTIFY is not defined. */
 #if SQLITE_ENABLE_UNLOCK_NOTIFY
 
 /*
@@ -338,5 +342,5 @@ checkListProperties(db);
 leaveMutex();
 }
 #endif
-    }
+  }
 }

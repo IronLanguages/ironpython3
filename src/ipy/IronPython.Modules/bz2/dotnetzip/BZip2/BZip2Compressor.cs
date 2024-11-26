@@ -85,11 +85,14 @@
 //
 
 using System;
+using System.IO;
 
 // flymake: csc.exe /t:module BZip2InputStream.cs BZip2OutputStream.cs Rand.cs BCRC32.cs @@FILE@@
 
-namespace Ionic.BZip2 {
-    internal class BZip2Compressor {
+namespace Ionic.BZip2
+{
+    internal class BZip2Compressor
+    {
         private int blockSize100k;  // 0...9
         private int currentByte = -1;
         private int runLength = 0;
@@ -138,10 +141,12 @@ namespace Ionic.BZip2 {
         ///   is necessary because BZip2 does byte shredding.
         /// </summary>
         public BZip2Compressor(BitWriter writer)
-            : this(writer, BZip2.MaxBlockSize) {
+            : this(writer, BZip2.MaxBlockSize)
+        {
         }
 
-        public BZip2Compressor(BitWriter writer, int blockSize) {
+        public BZip2Compressor(BitWriter writer, int blockSize)
+        {
             this.blockSize100k = blockSize;
             this.bw = writer;
 
@@ -155,7 +160,8 @@ namespace Ionic.BZip2 {
             Reset();
         }
 
-        private void Reset() {
+        private void Reset()
+        {
             // initBlock();
             this.crc.Reset();
             this.currentByte = -1;
@@ -167,15 +173,18 @@ namespace Ionic.BZip2 {
         }
 
 
-        public int BlockSize {
+        public int BlockSize
+        {
             get { return this.blockSize100k; }
         }
 
-        public uint Crc32 {
+        public uint Crc32
+        {
             get; private set;
         }
 
-        public int AvailableBytesOut {
+        public int AvailableBytesOut
+        {
             get; private set;
         }
 
@@ -193,7 +202,8 @@ namespace Ionic.BZip2 {
         ///     then writes no more. In that case the stream may want to check.
         ///   </para>
         /// </remarks>
-        public int UncompressedBytes {
+        public int UncompressedBytes
+        {
             get { return this.last + 1; }
         }
 
@@ -207,7 +217,8 @@ namespace Ionic.BZip2 {
         ///     stores the encoded data into the rle block.
         ///   </para>
         /// </remarks>
-        public int Fill(byte[] buffer, int offset, int count) {
+        public int Fill(byte[] buffer, int offset, int count)
+        {
             if (this.last >= this.outBlockFillThreshold)
                 return 0; // We're full, I tell you!
 
@@ -216,7 +227,8 @@ namespace Ionic.BZip2 {
             int rc;
 
             // do run-length-encoding until block is full
-            do {
+            do
+            {
                 rc = write0(buffer[offset++]);
                 if (rc > 0) bytesWritten++;
             } while (offset < limit && rc == 1);
@@ -247,18 +259,22 @@ namespace Ionic.BZip2 {
         ///   </para>
         /// </remarks>
         /// <returns>0 if the byte was not written, non-zero if written.</returns>
-        private int write0(byte b) {
+        private int write0(byte b)
+        {
             bool rc;
             // there is no current run in progress
-            if (this.currentByte == -1) {
+            if (this.currentByte == -1)
+            {
                 this.currentByte = b;
                 this.runLength++;
                 return 1;
             }
 
             // this byte is the same as the current run in progress
-            if (this.currentByte == b) {
-                if (++this.runLength > 254) {
+            if (this.currentByte == b)
+            {
+                if (++this.runLength > 254)
+                {
                     rc = AddRunToOutputBlock(false);
                     this.currentByte = -1;
                     this.runLength = 0;
@@ -272,7 +288,8 @@ namespace Ionic.BZip2 {
             // and try to start a new run.
             rc = AddRunToOutputBlock(false);
 
-            if (rc) {
+            if (rc)
+            {
                 this.currentByte = -1;
                 this.runLength = 0;
                 // returning 0 implies the block is full, and the byte was not written.
@@ -299,7 +316,8 @@ namespace Ionic.BZip2 {
         ///   </para>
         /// </remarks>
         /// <returns>true if the block is now full; otherwise false.</returns>
-        private bool AddRunToOutputBlock(bool final) {
+        private bool AddRunToOutputBlock(bool final)
+        {
             runs++;
             /* add_pair_to_block ( EState* s ) */
             int previousLast = this.last;
@@ -307,7 +325,8 @@ namespace Ionic.BZip2 {
             // sanity check only - because of the check done at the
             // bottom of this method, and the logic in write0(), this
             // should never ever happen.
-            if (previousLast >= this.outBlockFillThreshold && !final) {
+            if (previousLast >= this.outBlockFillThreshold && !final)
+            {
                 var msg = String.Format("block overrun(final={2}): {0} >= threshold ({1})",
                                         previousLast, this.outBlockFillThreshold, final);
                 throw new Exception(msg);
@@ -322,13 +341,14 @@ namespace Ionic.BZip2 {
             // rle block. For those two reasons, the base offset from last is
             // always +2.
 
-            byte b = (byte)this.currentByte;
+            byte b = (byte) this.currentByte;
             byte[] block = this.cstate.block;
             this.cstate.inUse[b] = true;
             int rl = this.runLength;
             this.crc.UpdateCRC(b, rl);
 
-            switch (rl) {
+            switch (rl)
+            {
                 case 1:
                     block[previousLast + 2] = b;
                     this.last = previousLast + 1;
@@ -354,7 +374,7 @@ namespace Ionic.BZip2 {
                     block[previousLast + 3] = b;
                     block[previousLast + 4] = b;
                     block[previousLast + 5] = b;
-                    block[previousLast + 6] = (byte)rl;
+                    block[previousLast + 6] = (byte) rl;
                     this.last = previousLast + 5;
                     break;
             }
@@ -409,11 +429,11 @@ namespace Ionic.BZip2 {
             this.bw.WriteByte(0x53);
             this.bw.WriteByte(0x59);
 
-            this.Crc32 = (uint)this.crc.Crc32Result;
+            this.Crc32 = (uint) this.crc.Crc32Result;
             this.bw.WriteInt(this.Crc32);
 
             /* Now a single bit indicating randomisation. */
-            this.bw.WriteBits(1, (this.blockRandomised) ? 1U : 0U);
+            this.bw.WriteBits(1, (this.blockRandomised)?1U:0U);
 
             /* Finally, block's contents proper. */
             moveToFrontCodeAndSend();
@@ -422,7 +442,8 @@ namespace Ionic.BZip2 {
         }
 
 
-        private void randomiseBlock() {
+        private void randomiseBlock()
+        {
             bool[] inUse = this.cstate.inUse;
             byte[] block = this.cstate.block;
             int lastShadow = this.last;
@@ -432,16 +453,19 @@ namespace Ionic.BZip2 {
 
             int rNToGo = 0;
             int rTPos = 0;
-            for (int i = 0, j = 1; i <= lastShadow; i = j, j++) {
-                if (rNToGo == 0) {
-                    rNToGo = (char)Rand.Rnums(rTPos);
-                    if (++rTPos == 512) {
+            for (int i = 0, j = 1; i <= lastShadow; i = j, j++)
+            {
+                if (rNToGo == 0)
+                {
+                    rNToGo = (char) Rand.Rnums(rTPos);
+                    if (++rTPos == 512)
+                    {
                         rTPos = 0;
                     }
                 }
 
                 rNToGo--;
-                block[j] ^= (byte)((rNToGo == 1) ? 1 : 0);
+                block[j] ^= (byte) ((rNToGo == 1) ? 1 : 0);
 
                 // handle 16 bit signed numbers
                 inUse[block[j] & 0xff] = true;
@@ -450,7 +474,8 @@ namespace Ionic.BZip2 {
             this.blockRandomised = true;
         }
 
-        private void mainSort() {
+        private void mainSort()
+        {
             CompressionState dataShadow = this.cstate;
             int[] runningOrder = dataShadow.mainSort_runningOrder;
             int[] copy = dataShadow.mainSort_copy;
@@ -464,7 +489,8 @@ namespace Ionic.BZip2 {
             bool firstAttemptShadow = this.firstAttempt;
 
             // Set up the 2-byte frequency table
-            for (int i = 65537; --i >= 0;) {
+            for (int i = 65537; --i >= 0;)
+            {
                 ftab[i] = 0;
             }
 
@@ -473,10 +499,12 @@ namespace Ionic.BZip2 {
              * last+NUM_OVERSHOOT_BYTES inclusive. First, set up the overshoot area
              * for block.
              */
-            for (int i = 0; i < BZip2.NUM_OVERSHOOT_BYTES; i++) {
+            for (int i = 0; i < BZip2.NUM_OVERSHOOT_BYTES; i++)
+            {
                 block[lastShadow + i + 2] = block[(i % (lastShadow + 1)) + 1];
             }
-            for (int i = lastShadow + BZip2.NUM_OVERSHOOT_BYTES + 1; --i >= 0;) {
+            for (int i = lastShadow + BZip2.NUM_OVERSHOOT_BYTES +1; --i >= 0;)
+            {
                 quadrant[i] = '\0';
             }
             block[0] = block[lastShadow + 1];
@@ -484,7 +512,8 @@ namespace Ionic.BZip2 {
             // Complete the initial radix sort:
 
             int c1 = block[0] & 0xff;
-            for (int i = 0; i <= lastShadow; i++) {
+            for (int i = 0; i <= lastShadow; i++)
+            {
                 int c2 = block[i + 1] & 0xff;
                 ftab[(c1 << 8) + c2]++;
                 c1 = c2;
@@ -494,7 +523,8 @@ namespace Ionic.BZip2 {
                 ftab[i] += ftab[i - 1];
 
             c1 = block[1] & 0xff;
-            for (int i = 0; i < lastShadow; i++) {
+            for (int i = 0; i < lastShadow; i++)
+            {
                 int c2 = block[i + 2] & 0xff;
                 fmap[--ftab[(c1 << 8) + c2]] = i;
                 c1 = c2;
@@ -506,23 +536,28 @@ namespace Ionic.BZip2 {
              * Now ftab contains the first loc of every small bucket. Calculate the
              * running order, from smallest to largest big bucket.
              */
-            for (int i = 256; --i >= 0;) {
+            for (int i = 256; --i >= 0;)
+            {
                 bigDone[i] = false;
                 runningOrder[i] = i;
             }
 
-            for (int h = 364; h != 1;) {
+            for (int h = 364; h != 1;)
+            {
                 h /= 3;
-                for (int i = h; i <= 255; i++) {
+                for (int i = h; i <= 255; i++)
+                {
                     int vv = runningOrder[i];
                     int a = ftab[(vv + 1) << 8] - ftab[vv << 8];
                     int b = h - 1;
                     int j = i;
                     for (int ro = runningOrder[j - h]; (ftab[(ro + 1) << 8] - ftab[ro << 8]) > a; ro = runningOrder[j
-                                                                                                                    - h]) {
+                                                                                                                    - h])
+                    {
                         runningOrder[j] = ro;
                         j -= h;
-                        if (j <= b) {
+                        if (j <= b)
+                        {
                             break;
                         }
                     }
@@ -533,7 +568,8 @@ namespace Ionic.BZip2 {
             /*
              * The main sorting loop.
              */
-            for (int i = 0; i <= 255; i++) {
+            for (int i = 0; i <= 255; i++)
+            {
                 /*
                  * Process big buckets, starting with the least full.
                  */
@@ -546,16 +582,20 @@ namespace Ionic.BZip2 {
                  * already completed many of the small buckets [ss, j], so we don't
                  * have to sort them at all.
                  */
-                for (int j = 0; j <= 255; j++) {
+                for (int j = 0; j <= 255; j++)
+                {
                     int sb = (ss << 8) + j;
                     int ftab_sb = ftab[sb];
-                    if ((ftab_sb & SETMASK) != SETMASK) {
+                    if ((ftab_sb & SETMASK) != SETMASK)
+                    {
                         int lo = ftab_sb & CLEARMASK;
                         int hi = (ftab[sb + 1] & CLEARMASK) - 1;
-                        if (hi > lo) {
+                        if (hi > lo)
+                        {
                             mainQSort3(dataShadow, lo, hi, 2);
                             if (firstAttemptShadow
-                                && (this.workDone > workLimitShadow)) {
+                                && (this.workDone > workLimitShadow))
+                            {
                                 return;
                             }
                         }
@@ -567,14 +607,17 @@ namespace Ionic.BZip2 {
                 // Now scan this big bucket so as to synthesise the
                 // sorted order for small buckets [t, ss] for all t != ss.
 
-                for (int j = 0; j <= 255; j++) {
+                for (int j = 0; j <= 255; j++)
+                {
                     copy[j] = ftab[(j << 8) + ss] & CLEARMASK;
                 }
 
-                for (int j = ftab[ss << 8] & CLEARMASK, hj = (ftab[(ss + 1) << 8] & CLEARMASK); j < hj; j++) {
+                for (int j = ftab[ss << 8] & CLEARMASK, hj = (ftab[(ss + 1) << 8] & CLEARMASK); j < hj; j++)
+                {
                     int fmap_j = fmap[j];
                     c1 = block[fmap_j] & 0xff;
-                    if (!bigDone[c1]) {
+                    if (!bigDone[c1])
+                    {
                         fmap[copy[c1]] = (fmap_j == 0) ? lastShadow : (fmap_j - 1);
                         copy[c1]++;
                     }
@@ -593,20 +636,24 @@ namespace Ionic.BZip2 {
                  */
                 bigDone[ss] = true;
 
-                if (i < 255) {
+                if (i < 255)
+                {
                     int bbStart = ftab[ss << 8] & CLEARMASK;
                     int bbSize = (ftab[(ss + 1) << 8] & CLEARMASK) - bbStart;
                     int shifts = 0;
 
-                    while ((bbSize >> shifts) > 65534) {
+                    while ((bbSize >> shifts) > 65534)
+                    {
                         shifts++;
                     }
 
-                    for (int j = 0; j < bbSize; j++) {
+                    for (int j = 0; j < bbSize; j++)
+                    {
                         int a2update = fmap[bbStart + j];
-                        char qVal = (char)(j >> shifts);
+                        char qVal = (char) (j >> shifts);
                         quadrant[a2update] = qVal;
-                        if (a2update < BZip2.NUM_OVERSHOOT_BYTES) {
+                        if (a2update < BZip2.NUM_OVERSHOOT_BYTES)
+                        {
                             quadrant[a2update + lastShadow + 1] = qVal;
                         }
                     }
@@ -616,14 +663,16 @@ namespace Ionic.BZip2 {
         }
 
 
-        private void blockSort() {
+        private void blockSort()
+        {
             this.workLimit = WORK_FACTOR * this.last;
             this.workDone = 0;
             this.blockRandomised = false;
             this.firstAttempt = true;
             mainSort();
 
-            if (this.firstAttempt && (this.workDone > this.workLimit)) {
+            if (this.firstAttempt && (this.workDone > this.workLimit))
+            {
                 randomiseBlock();
                 this.workLimit = this.workDone = 0;
                 this.firstAttempt = false;
@@ -632,8 +681,10 @@ namespace Ionic.BZip2 {
 
             int[] fmap = this.cstate.fmap;
             this.origPtr = -1;
-            for (int i = 0, lastShadow = this.last; i <= lastShadow; i++) {
-                if (fmap[i] == 0) {
+            for (int i = 0, lastShadow = this.last; i <= lastShadow; i++)
+            {
+                if (fmap[i] == 0)
+                {
                     this.origPtr = i;
                     break;
                 }
@@ -651,9 +702,11 @@ namespace Ionic.BZip2 {
          * </p>
          */
         private bool mainSimpleSort(CompressionState dataShadow, int lo,
-                                    int hi, int d) {
+                                    int hi, int d)
+        {
             int bigN = hi - lo + 1;
-            if (bigN < 2) {
+            if (bigN < 2)
+            {
                 return this.firstAttempt && (this.workDone > this.workLimit);
             }
 
@@ -674,13 +727,16 @@ namespace Ionic.BZip2 {
             // coding it in additional loops.
 
             // HP:
-            while (--hp >= 0) {
+            while (--hp >= 0)
+            {
                 int h = increments[hp];
                 int mj = lo + h - 1;
 
-                for (int i = lo + h; i <= hi;) {
+                for (int i = lo + h; i <= hi;)
+                {
                     // copy
-                    for (int k = 3; (i <= hi) && (--k >= 0); i++) {
+                    for (int k = 3; (i <= hi) && (--k >= 0); i++)
+                    {
                         int v = fmap[i];
                         int vd = v + d;
                         int j = i;
@@ -698,13 +754,17 @@ namespace Ionic.BZip2 {
                         bool onceRunned = false;
                         int a = 0;
 
-                    HAMMER: while (true) {
-                            if (onceRunned) {
+                        HAMMER: while (true)
+                        {
+                            if (onceRunned)
+                            {
                                 fmap[j] = a;
-                                if ((j -= h) <= mj) {
+                                if ((j -= h) <= mj)
+                                {
                                     goto END_HAMMER;
                                 }
-                            } else {
+                            }
+                            else {
                                 onceRunned = true;
                             }
 
@@ -714,70 +774,111 @@ namespace Ionic.BZip2 {
 
                             // following could be done in a loop, but
                             // unrolled it for performance:
-                            if (block[i1 + 1] == block[i2 + 1]) {
-                                if (block[i1 + 2] == block[i2 + 2]) {
-                                    if (block[i1 + 3] == block[i2 + 3]) {
-                                        if (block[i1 + 4] == block[i2 + 4]) {
-                                            if (block[i1 + 5] == block[i2 + 5]) {
-                                                if (block[(i1 += 6)] == block[(i2 += 6)]) {
+                            if (block[i1 + 1] == block[i2 + 1])
+                            {
+                                if (block[i1 + 2] == block[i2 + 2])
+                                {
+                                    if (block[i1 + 3] == block[i2 + 3])
+                                    {
+                                        if (block[i1 + 4] == block[i2 + 4])
+                                        {
+                                            if (block[i1 + 5] == block[i2 + 5])
+                                            {
+                                                if (block[(i1 += 6)] == block[(i2 += 6)])
+                                                {
                                                     int x = lastShadow;
-                                                X: while (x > 0) {
+                                                    X: while (x > 0)
+                                                    {
                                                         x -= 4;
 
-                                                        if (block[i1 + 1] == block[i2 + 1]) {
-                                                            if (quadrant[i1] == quadrant[i2]) {
-                                                                if (block[i1 + 2] == block[i2 + 2]) {
-                                                                    if (quadrant[i1 + 1] == quadrant[i2 + 1]) {
-                                                                        if (block[i1 + 3] == block[i2 + 3]) {
-                                                                            if (quadrant[i1 + 2] == quadrant[i2 + 2]) {
-                                                                                if (block[i1 + 4] == block[i2 + 4]) {
-                                                                                    if (quadrant[i1 + 3] == quadrant[i2 + 3]) {
-                                                                                        if ((i1 += 4) >= lastPlus1) {
+                                                        if (block[i1 + 1] == block[i2 + 1])
+                                                        {
+                                                            if (quadrant[i1] == quadrant[i2])
+                                                            {
+                                                                if (block[i1 + 2] == block[i2 + 2])
+                                                                {
+                                                                    if (quadrant[i1 + 1] == quadrant[i2 + 1])
+                                                                    {
+                                                                        if (block[i1 + 3] == block[i2 + 3])
+                                                                        {
+                                                                            if (quadrant[i1 + 2] == quadrant[i2 + 2])
+                                                                            {
+                                                                                if (block[i1 + 4] == block[i2 + 4])
+                                                                                {
+                                                                                    if (quadrant[i1 + 3] == quadrant[i2 + 3])
+                                                                                    {
+                                                                                        if ((i1 += 4) >= lastPlus1)
+                                                                                        {
                                                                                             i1 -= lastPlus1;
                                                                                         }
-                                                                                        if ((i2 += 4) >= lastPlus1) {
+                                                                                        if ((i2 += 4) >= lastPlus1)
+                                                                                        {
                                                                                             i2 -= lastPlus1;
                                                                                         }
                                                                                         workDoneShadow++;
                                                                                         goto X;
-                                                                                    } else if ((quadrant[i1 + 3] > quadrant[i2 + 3])) {
+                                                                                    }
+                                                                                    else if ((quadrant[i1 + 3] > quadrant[i2 + 3]))
+                                                                                    {
                                                                                         goto HAMMER;
-                                                                                    } else {
+                                                                                    }
+                                                                                    else {
                                                                                         goto END_HAMMER;
                                                                                     }
-                                                                                } else if ((block[i1 + 4] & 0xff) > (block[i2 + 4] & 0xff)) {
+                                                                                }
+                                                                                else if ((block[i1 + 4] & 0xff) > (block[i2 + 4] & 0xff))
+                                                                                {
                                                                                     goto HAMMER;
-                                                                                } else {
+                                                                                }
+                                                                                else {
                                                                                     goto END_HAMMER;
                                                                                 }
-                                                                            } else if ((quadrant[i1 + 2] > quadrant[i2 + 2])) {
+                                                                            }
+                                                                            else if ((quadrant[i1 + 2] > quadrant[i2 + 2]))
+                                                                            {
                                                                                 goto HAMMER;
-                                                                            } else {
+                                                                            }
+                                                                            else {
                                                                                 goto END_HAMMER;
                                                                             }
-                                                                        } else if ((block[i1 + 3] & 0xff) > (block[i2 + 3] & 0xff)) {
+                                                                        }
+                                                                        else if ((block[i1 + 3] & 0xff) > (block[i2 + 3] & 0xff))
+                                                                        {
                                                                             goto HAMMER;
-                                                                        } else {
+                                                                        }
+                                                                        else {
                                                                             goto END_HAMMER;
                                                                         }
-                                                                    } else if ((quadrant[i1 + 1] > quadrant[i2 + 1])) {
+                                                                    }
+                                                                    else if ((quadrant[i1 + 1] > quadrant[i2 + 1]))
+                                                                    {
                                                                         goto HAMMER;
-                                                                    } else {
+                                                                    }
+                                                                    else {
                                                                         goto END_HAMMER;
                                                                     }
-                                                                } else if ((block[i1 + 2] & 0xff) > (block[i2 + 2] & 0xff)) {
+                                                                }
+                                                                else if ((block[i1 + 2] & 0xff) > (block[i2 + 2] & 0xff))
+                                                                {
                                                                     goto HAMMER;
-                                                                } else {
+                                                                }
+                                                                else {
                                                                     goto END_HAMMER;
                                                                 }
-                                                            } else if ((quadrant[i1] > quadrant[i2])) {
+                                                            }
+                                                            else if ((quadrant[i1] > quadrant[i2]))
+                                                            {
                                                                 goto HAMMER;
-                                                            } else {
+                                                            }
+                                                            else {
                                                                 goto END_HAMMER;
                                                             }
-                                                        } else if ((block[i1 + 1] & 0xff) > (block[i2 + 1] & 0xff)) {
+                                                        }
+                                                        else if ((block[i1 + 1] & 0xff) > (block[i2 + 1] & 0xff))
+                                                        {
                                                             goto HAMMER;
-                                                        } else {
+                                                        }
+                                                        else {
                                                             goto END_HAMMER;
                                                         }
 
@@ -785,53 +886,71 @@ namespace Ionic.BZip2 {
                                                     goto END_HAMMER;
                                                 } // while x > 0
                                                 else {
-                                                    if ((block[i1] & 0xff) > (block[i2] & 0xff)) {
+                                                    if ((block[i1] & 0xff) > (block[i2] & 0xff))
+                                                    {
                                                         goto HAMMER;
-                                                    } else {
+                                                    }
+                                                    else {
                                                         goto END_HAMMER;
                                                     }
                                                 }
-                                            } else if ((block[i1 + 5] & 0xff) > (block[i2 + 5] & 0xff)) {
+                                            }
+                                            else if ((block[i1 + 5] & 0xff) > (block[i2 + 5] & 0xff))
+                                            {
                                                 goto HAMMER;
-                                            } else {
+                                            }
+                                            else {
                                                 goto END_HAMMER;
                                             }
-                                        } else if ((block[i1 + 4] & 0xff) > (block[i2 + 4] & 0xff)) {
+                                        }
+                                        else if ((block[i1 + 4] & 0xff) > (block[i2 + 4] & 0xff))
+                                        {
                                             goto HAMMER;
-                                        } else {
+                                        }
+                                        else {
                                             goto END_HAMMER;
                                         }
-                                    } else if ((block[i1 + 3] & 0xff) > (block[i2 + 3] & 0xff)) {
+                                    }
+                                    else if ((block[i1 + 3] & 0xff) > (block[i2 + 3] & 0xff))
+                                    {
                                         goto HAMMER;
-                                    } else {
+                                    }
+                                    else {
                                         goto END_HAMMER;
                                     }
-                                } else if ((block[i1 + 2] & 0xff) > (block[i2 + 2] & 0xff)) {
+                                }
+                                else if ((block[i1 + 2] & 0xff) > (block[i2 + 2] & 0xff))
+                                {
                                     goto HAMMER;
-                                } else {
+                                }
+                                else {
                                     goto END_HAMMER;
                                 }
-                            } else if ((block[i1 + 1] & 0xff) > (block[i2 + 1] & 0xff)) {
+                            }
+                            else if ((block[i1 + 1] & 0xff) > (block[i2 + 1] & 0xff))
+                            {
                                 goto HAMMER;
-                            } else {
+                            }
+                            else {
                                 goto END_HAMMER;
                             }
 
                         } // HAMMER
 
-                    END_HAMMER:
+                        END_HAMMER:
                         // end inline mainGTU
 
                         fmap[j] = v;
                     }
 
                     if (firstAttemptShadow && (i <= hi)
-                        && (workDoneShadow > workLimitShadow)) {
+                        && (workDoneShadow > workLimitShadow))
+                    {
                         goto END_HP;
                     }
                 }
             }
-        END_HP:
+            END_HP:
 
             this.workDone = workDoneShadow;
             return firstAttemptShadow && (workDoneShadow > workLimitShadow);
@@ -839,16 +958,19 @@ namespace Ionic.BZip2 {
 
 
 
-        private static void vswap(int[] fmap, int p1, int p2, int n) {
+        private static void vswap(int[] fmap, int p1, int p2, int n)
+        {
             n += p1;
-            while (p1 < n) {
+            while (p1 < n)
+            {
                 int t = fmap[p1];
                 fmap[p1++] = fmap[p2];
                 fmap[p2++] = t;
             }
         }
 
-        private static byte med3(byte a, byte b, byte c) {
+        private static byte med3(byte a, byte b, byte c)
+        {
             return (a < b) ? (b < c ? b : a < c ? c : a) : (b > c ? b : a > c ? c
                                                             : a);
         }
@@ -858,7 +980,8 @@ namespace Ionic.BZip2 {
          * Method "mainQSort3", file "blocksort.c", BZip2 1.0.2
          */
         private void mainQSort3(CompressionState dataShadow, int loSt,
-                                int hiSt, int dSt) {
+                                int hiSt, int dSt)
+        {
             int[] stack_ll = dataShadow.stack_ll;
             int[] stack_hh = dataShadow.stack_hh;
             int[] stack_dd = dataShadow.stack_dd;
@@ -869,16 +992,20 @@ namespace Ionic.BZip2 {
             stack_hh[0] = hiSt;
             stack_dd[0] = dSt;
 
-            for (int sp = 1; --sp >= 0;) {
+            for (int sp = 1; --sp >= 0;)
+            {
                 int lo = stack_ll[sp];
                 int hi = stack_hh[sp];
                 int d = stack_dd[sp];
 
-                if ((hi - lo < SMALL_THRESH) || (d > DEPTH_THRESH)) {
-                    if (mainSimpleSort(dataShadow, lo, hi, d)) {
+                if ((hi - lo < SMALL_THRESH) || (d > DEPTH_THRESH))
+                {
+                    if (mainSimpleSort(dataShadow, lo, hi, d))
+                    {
                         return;
                     }
-                } else {
+                }
+                else {
                     int d1 = d + 1;
                     int med = med3(block[fmap[lo] + d1],
                                    block[fmap[hi] + d1], block[fmap[(lo + hi) >> 1] + d1]) & 0xff;
@@ -888,50 +1015,65 @@ namespace Ionic.BZip2 {
                     int ltLo = lo;
                     int gtHi = hi;
 
-                    while (true) {
-                        while (unLo <= unHi) {
+                    while (true)
+                    {
+                        while (unLo <= unHi)
+                        {
                             int n = (block[fmap[unLo] + d1] & 0xff)
                                 - med;
-                            if (n == 0) {
+                            if (n == 0)
+                            {
                                 int temp = fmap[unLo];
                                 fmap[unLo++] = fmap[ltLo];
                                 fmap[ltLo++] = temp;
-                            } else if (n < 0) {
+                            }
+                            else if (n < 0)
+                            {
                                 unLo++;
-                            } else {
+                            }
+                            else {
                                 break;
                             }
                         }
 
-                        while (unLo <= unHi) {
+                        while (unLo <= unHi)
+                        {
                             int n = (block[fmap[unHi] + d1] & 0xff)
                                 - med;
-                            if (n == 0) {
+                            if (n == 0)
+                            {
                                 int temp = fmap[unHi];
                                 fmap[unHi--] = fmap[gtHi];
                                 fmap[gtHi--] = temp;
-                            } else if (n > 0) {
+                            }
+                            else if (n > 0)
+                            {
                                 unHi--;
-                            } else {
+                            }
+                            else {
                                 break;
                             }
                         }
 
-                        if (unLo <= unHi) {
+                        if (unLo <= unHi)
+                        {
                             int temp = fmap[unLo];
                             fmap[unLo++] = fmap[unHi];
                             fmap[unHi--] = temp;
-                        } else {
+                        }
+                        else {
                             break;
                         }
                     }
 
-                    if (gtHi < ltLo) {
+                    if (gtHi < ltLo)
+                    {
                         stack_ll[sp] = lo;
                         stack_hh[sp] = hi;
                         stack_dd[sp] = d1;
                         sp++;
-                    } else {
+                    }
+                    else {
                         int n = ((ltLo - lo) < (unLo - ltLo)) ? (ltLo - lo)
                             : (unLo - ltLo);
                         vswap(fmap, lo, unLo - n, n);
@@ -963,7 +1105,8 @@ namespace Ionic.BZip2 {
 
 
 
-        private void generateMTFValues() {
+        private void generateMTFValues()
+        {
             int lastShadow = this.last;
             CompressionState dataShadow = this.cstate;
             bool[] inUse = dataShadow.inUse;
@@ -976,9 +1119,11 @@ namespace Ionic.BZip2 {
 
             // make maps
             int nInUseShadow = 0;
-            for (int i = 0; i < 256; i++) {
-                if (inUse[i]) {
-                    unseqToSeq[i] = (byte)nInUseShadow;
+            for (int i = 0; i < 256; i++)
+            {
+                if (inUse[i])
+                {
+                    unseqToSeq[i] = (byte) nInUseShadow;
                     nInUseShadow++;
                 }
             }
@@ -986,23 +1131,27 @@ namespace Ionic.BZip2 {
 
             int eob = nInUseShadow + 1;
 
-            for (int i = eob; i >= 0; i--) {
+            for (int i = eob; i >= 0; i--)
+            {
                 mtfFreq[i] = 0;
             }
 
-            for (int i = nInUseShadow; --i >= 0;) {
-                yy[i] = (byte)i;
+            for (int i = nInUseShadow; --i >= 0;)
+            {
+                yy[i] = (byte) i;
             }
 
             int wr = 0;
             int zPend = 0;
 
-            for (int i = 0; i <= lastShadow; i++) {
+            for (int i = 0; i <= lastShadow; i++)
+            {
                 byte ll_i = unseqToSeq[block[fmap[i]] & 0xff];
                 byte tmp = yy[0];
                 int j = 0;
 
-                while (ll_i != tmp) {
+                while (ll_i != tmp)
+                {
                     j++;
                     byte tmp2 = tmp;
                     tmp = yy[j];
@@ -1010,70 +1159,93 @@ namespace Ionic.BZip2 {
                 }
                 yy[0] = tmp;
 
-                if (j == 0) {
+                if (j == 0)
+                {
                     zPend++;
-                } else {
-                    if (zPend > 0) {
+                }
+                else
+                {
+                    if (zPend > 0)
+                    {
                         zPend--;
-                        while (true) {
-                            if ((zPend & 1) == 0) {
+                        while (true)
+                        {
+                            if ((zPend & 1) == 0)
+                            {
                                 sfmap[wr] = BZip2.RUNA;
                                 wr++;
                                 mtfFreq[BZip2.RUNA]++;
-                            } else {
+                            }
+                            else
+                            {
                                 sfmap[wr] = BZip2.RUNB;
                                 wr++;
                                 mtfFreq[BZip2.RUNB]++;
                             }
 
-                            if (zPend >= 2) {
+                            if (zPend >= 2)
+                            {
                                 zPend = (zPend - 2) >> 1;
-                            } else {
+                            }
+                            else
+                            {
                                 break;
                             }
                         }
                         zPend = 0;
                     }
-                    sfmap[wr] = (char)(j + 1);
+                    sfmap[wr] = (char) (j + 1);
                     wr++;
                     mtfFreq[j + 1]++;
                 }
             }
 
-            if (zPend > 0) {
+            if (zPend > 0)
+            {
                 zPend--;
-                while (true) {
-                    if ((zPend & 1) == 0) {
+                while (true)
+                {
+                    if ((zPend & 1) == 0)
+                    {
                         sfmap[wr] = BZip2.RUNA;
                         wr++;
                         mtfFreq[BZip2.RUNA]++;
-                    } else {
+                    }
+                    else
+                    {
                         sfmap[wr] = BZip2.RUNB;
                         wr++;
                         mtfFreq[BZip2.RUNB]++;
                     }
 
-                    if (zPend >= 2) {
+                    if (zPend >= 2)
+                    {
                         zPend = (zPend - 2) >> 1;
-                    } else {
+                    }
+                    else
+                    {
                         break;
                     }
                 }
             }
 
-            sfmap[wr] = (char)eob;
+            sfmap[wr] = (char) eob;
             mtfFreq[eob]++;
             this.nMTF = wr + 1;
         }
 
 
-        private static void hbAssignCodes(int[] code, byte[] length,
+        private static void hbAssignCodes(int[] code,  byte[] length,
                                           int minLen, int maxLen,
-                                          int alphaSize) {
+                                          int alphaSize)
+        {
             int vec = 0;
-            for (int n = minLen; n <= maxLen; n++) {
-                for (int i = 0; i < alphaSize; i++) {
-                    if ((length[i] & 0xff) == n) {
+            for (int n = minLen; n <= maxLen; n++)
+            {
+                for (int i = 0; i < alphaSize; i++)
+                {
+                    if ((length[i] & 0xff) == n)
+                    {
                         code[i] = vec;
                         vec++;
                     }
@@ -1085,13 +1257,16 @@ namespace Ionic.BZip2 {
 
 
 
-        private void sendMTFValues() {
+        private void sendMTFValues()
+        {
             byte[][] len = this.cstate.sendMTFValues_len;
             int alphaSize = this.nInUse + 2;
 
-            for (int t = BZip2.NGroups; --t >= 0;) {
+            for (int t = BZip2.NGroups; --t >= 0;)
+            {
                 byte[] len_t = len[t];
-                for (int v = alphaSize; --v >= 0;) {
+                for (int v = alphaSize; --v >= 0;)
+                {
                     len_t[v] = GREATER_ICOST;
                 }
             }
@@ -1128,32 +1303,39 @@ namespace Ionic.BZip2 {
             sendMTFValues7(nSelectors);
         }
 
-        private void sendMTFValues0(int nGroups, int alphaSize) {
+        private void sendMTFValues0(int nGroups, int alphaSize)
+        {
             byte[][] len = this.cstate.sendMTFValues_len;
             int[] mtfFreq = this.cstate.mtfFreq;
 
             int remF = this.nMTF;
             int gs = 0;
 
-            for (int nPart = nGroups; nPart > 0; nPart--) {
+            for (int nPart = nGroups; nPart > 0; nPart--)
+            {
                 int tFreq = remF / nPart;
                 int ge = gs - 1;
                 int aFreq = 0;
 
-                for (int a = alphaSize - 1; (aFreq < tFreq) && (ge < a);) {
+                for (int a = alphaSize - 1; (aFreq < tFreq) && (ge < a);)
+                {
                     aFreq += mtfFreq[++ge];
                 }
 
                 if ((ge > gs) && (nPart != nGroups) && (nPart != 1)
-                    && (((nGroups - nPart) & 1) != 0)) {
+                    && (((nGroups - nPart) & 1) != 0))
+                {
                     aFreq -= mtfFreq[ge--];
                 }
 
                 byte[] len_np = len[nPart - 1];
-                for (int v = alphaSize; --v >= 0;) {
-                    if ((v >= gs) && (v <= ge)) {
+                for (int v = alphaSize; --v >= 0;)
+                {
+                    if ((v >= gs) && (v <= ge))
+                    {
                         len_np[v] = LESSER_ICOST;
-                    } else {
+                    }
+                    else {
                         len_np[v] = GREATER_ICOST;
                     }
                 }
@@ -1164,9 +1346,10 @@ namespace Ionic.BZip2 {
         }
 
 
-        private static void hbMakeCodeLengths(byte[] len, int[] freq,
+        private static void hbMakeCodeLengths(byte[] len,  int[] freq,
                                               CompressionState state1, int alphaSize,
-                                              int maxLen) {
+                                              int maxLen)
+        {
             /*
              * Nodes and heap entries run from 1. Entry 0 for both the heap and
              * nodes is a sentinel.
@@ -1175,11 +1358,13 @@ namespace Ionic.BZip2 {
             int[] weight = state1.weight;
             int[] parent = state1.parent;
 
-            for (int i = alphaSize; --i >= 0;) {
+            for (int i = alphaSize; --i >= 0;)
+            {
                 weight[i + 1] = (freq[i] == 0 ? 1 : freq[i]) << 8;
             }
 
-            for (bool tooLong = true; tooLong;) {
+            for (bool tooLong = true; tooLong;)
+            {
                 tooLong = false;
 
                 int nNodes = alphaSize;
@@ -1188,21 +1373,24 @@ namespace Ionic.BZip2 {
                 weight[0] = 0;
                 parent[0] = -2;
 
-                for (int i = 1; i <= alphaSize; i++) {
+                for (int i = 1; i <= alphaSize; i++)
+                {
                     parent[i] = -1;
                     nHeap++;
                     heap[nHeap] = i;
 
                     int zz = nHeap;
                     int tmp = heap[zz];
-                    while (weight[tmp] < weight[heap[zz >> 1]]) {
+                    while (weight[tmp] < weight[heap[zz >> 1]])
+                    {
                         heap[zz] = heap[zz >> 1];
                         zz >>= 1;
                     }
                     heap[zz] = tmp;
                 }
 
-                while (nHeap > 1) {
+                while (nHeap > 1)
+                {
                     int n1 = heap[1];
                     heap[1] = heap[nHeap];
                     nHeap--;
@@ -1211,19 +1399,23 @@ namespace Ionic.BZip2 {
                     int zz = 1;
                     int tmp = heap[1];
 
-                    while (true) {
+                    while (true)
+                    {
                         yy = zz << 1;
 
-                        if (yy > nHeap) {
+                        if (yy > nHeap)
+                        {
                             break;
                         }
 
                         if ((yy < nHeap)
-                            && (weight[heap[yy + 1]] < weight[heap[yy]])) {
+                            && (weight[heap[yy + 1]] < weight[heap[yy]]))
+                        {
                             yy++;
                         }
 
-                        if (weight[tmp] < weight[heap[yy]]) {
+                        if (weight[tmp] < weight[heap[yy]])
+                        {
                             break;
                         }
 
@@ -1241,19 +1433,23 @@ namespace Ionic.BZip2 {
                     zz = 1;
                     tmp = heap[1];
 
-                    while (true) {
+                    while (true)
+                    {
                         yy = zz << 1;
 
-                        if (yy > nHeap) {
+                        if (yy > nHeap)
+                        {
                             break;
                         }
 
                         if ((yy < nHeap)
-                            && (weight[heap[yy + 1]] < weight[heap[yy]])) {
+                            && (weight[heap[yy + 1]] < weight[heap[yy]]))
+                        {
                             yy++;
                         }
 
-                        if (weight[tmp] < weight[heap[yy]]) {
+                        if (weight[tmp] < weight[heap[yy]])
+                        {
                             break;
                         }
 
@@ -1267,7 +1463,7 @@ namespace Ionic.BZip2 {
 
                     int weight_n1 = weight[n1];
                     int weight_n2 = weight[n2];
-                    weight[nNodes] = (int)(((uint)weight_n1 & 0xffffff00U)
+                    weight[nNodes] = (int) (((uint)weight_n1 & 0xffffff00U)
                                             + ((uint)weight_n2 & 0xffffff00U))
                         | (1 + (((weight_n1 & 0x000000ff)
                                  > (weight_n2 & 0x000000ff))
@@ -1282,7 +1478,8 @@ namespace Ionic.BZip2 {
                     zz = nHeap;
                     tmp = heap[zz];
                     int weight_tmp = weight[tmp];
-                    while (weight_tmp < weight[heap[zz >> 1]]) {
+                    while (weight_tmp < weight[heap[zz >> 1]])
+                    {
                         heap[zz] = heap[zz >> 1];
                         zz >>= 1;
                     }
@@ -1290,23 +1487,28 @@ namespace Ionic.BZip2 {
 
                 }
 
-                for (int i = 1; i <= alphaSize; i++) {
+                for (int i = 1; i <= alphaSize; i++)
+                {
                     int j = 0;
                     int k = i;
 
-                    for (int parent_k; (parent_k = parent[k]) >= 0;) {
+                    for (int parent_k; (parent_k = parent[k]) >= 0;)
+                    {
                         k = parent_k;
                         j++;
                     }
 
-                    len[i - 1] = (byte)j;
-                    if (j > maxLen) {
+                    len[i - 1] = (byte) j;
+                    if (j > maxLen)
+                    {
                         tooLong = true;
                     }
                 }
 
-                if (tooLong) {
-                    for (int i = 1; i < alphaSize; i++) {
+                if (tooLong)
+                {
+                    for (int i = 1; i < alphaSize; i++)
+                    {
                         int j = weight[i] >> 8;
                         j = 1 + (j >> 1);
                         weight[i] = j << 8;
@@ -1316,7 +1518,8 @@ namespace Ionic.BZip2 {
         }
 
 
-        private int sendMTFValues1(int nGroups, int alphaSize) {
+        private int sendMTFValues1(int nGroups, int alphaSize)
+        {
             CompressionState dataShadow = this.cstate;
             int[][] rfreq = dataShadow.sendMTFValues_rfreq;
             int[] fave = dataShadow.sendMTFValues_fave;
@@ -1334,18 +1537,22 @@ namespace Ionic.BZip2 {
 
             int nSelectors = 0;
 
-            for (int iter = 0; iter < BZip2.N_ITERS; iter++) {
-                for (int t = nGroups; --t >= 0;) {
+            for (int iter = 0; iter < BZip2.N_ITERS; iter++)
+            {
+                for (int t = nGroups; --t >= 0;)
+                {
                     fave[t] = 0;
                     int[] rfreqt = rfreq[t];
-                    for (int i = alphaSize; --i >= 0;) {
+                    for (int i = alphaSize; --i >= 0;)
+                    {
                         rfreqt[i] = 0;
                     }
                 }
 
                 nSelectors = 0;
 
-                for (int gs = 0; gs < this.nMTF;) {
+                for (int gs = 0; gs < this.nMTF;)
+                {
                     /* Set group start & end marks. */
 
                     /*
@@ -1355,12 +1562,14 @@ namespace Ionic.BZip2 {
 
                     int ge = Math.Min(gs + BZip2.G_SIZE - 1, nMTFShadow - 1);
 
-                    if (nGroups == BZip2.NGroups) {
+                    if (nGroups == BZip2.NGroups)
+                    {
                         // unrolled version of the else-block
 
                         int[] c = new int[6];
 
-                        for (int i = gs; i <= ge; i++) {
+                        for (int i = gs; i <= ge; i++)
+                        {
                             int icv = sfmap[i];
                             c[0] += len_0[icv] & 0xff;
                             c[1] += len_1[icv] & 0xff;
@@ -1370,21 +1579,26 @@ namespace Ionic.BZip2 {
                             c[5] += len_5[icv] & 0xff;
                         }
 
-                        cost[0] = (short)c[0];
-                        cost[1] = (short)c[1];
-                        cost[2] = (short)c[2];
-                        cost[3] = (short)c[3];
-                        cost[4] = (short)c[4];
-                        cost[5] = (short)c[5];
-                    } else {
-                        for (int t = nGroups; --t >= 0;) {
+                        cost[0] = (short) c[0];
+                        cost[1] = (short) c[1];
+                        cost[2] = (short) c[2];
+                        cost[3] = (short) c[3];
+                        cost[4] = (short) c[4];
+                        cost[5] = (short) c[5];
+                    }
+                    else
+                    {
+                        for (int t = nGroups; --t >= 0;)
+                        {
                             cost[t] = 0;
                         }
 
-                        for (int i = gs; i <= ge; i++) {
+                        for (int i = gs; i <= ge; i++)
+                        {
                             int icv = sfmap[i];
-                            for (int t = nGroups; --t >= 0;) {
-                                cost[t] += (short)(len[t][icv] & 0xff);
+                            for (int t = nGroups; --t >= 0;)
+                            {
+                                cost[t] += (short) (len[t][icv] & 0xff);
                             }
                         }
                     }
@@ -1394,23 +1608,26 @@ namespace Ionic.BZip2 {
                      * record its identity in the selector table.
                      */
                     int bt = -1;
-                    for (int t = nGroups, bc = 999999999; --t >= 0;) {
+                    for (int t = nGroups, bc = 999999999; --t >= 0;)
+                    {
                         int cost_t = cost[t];
-                        if (cost_t < bc) {
+                        if (cost_t < bc)
+                        {
                             bc = cost_t;
                             bt = t;
                         }
                     }
 
                     fave[bt]++;
-                    selector[nSelectors] = (byte)bt;
+                    selector[nSelectors] = (byte) bt;
                     nSelectors++;
 
                     /*
                      * Increment the symbol frequencies for the selected table.
                      */
                     int[] rfreq_bt = rfreq[bt];
-                    for (int i = gs; i <= ge; i++) {
+                    for (int i = gs; i <= ge; i++)
+                    {
                         rfreq_bt[sfmap[i]]++;
                     }
 
@@ -1420,7 +1637,8 @@ namespace Ionic.BZip2 {
                 /*
                  * Recompute the tables based on the accumulated frequencies.
                  */
-                for (int t = 0; t < nGroups; t++) {
+                for (int t = 0; t < nGroups; t++)
+                {
                     hbMakeCodeLengths(len[t], rfreq[t], this.cstate, alphaSize, 20);
                 }
             }
@@ -1428,22 +1646,26 @@ namespace Ionic.BZip2 {
             return nSelectors;
         }
 
-        private void sendMTFValues2(int nGroups, int nSelectors) {
+        private void sendMTFValues2(int nGroups, int nSelectors)
+        {
             // assert (nGroups < 8) : nGroups;
 
             CompressionState dataShadow = this.cstate;
             byte[] pos = dataShadow.sendMTFValues2_pos;
 
-            for (int i = nGroups; --i >= 0;) {
-                pos[i] = (byte)i;
+            for (int i = nGroups; --i >= 0;)
+            {
+                pos[i] = (byte) i;
             }
 
-            for (int i = 0; i < nSelectors; i++) {
+            for (int i = 0; i < nSelectors; i++)
+            {
                 byte ll_i = dataShadow.selector[i];
                 byte tmp = pos[0];
                 int j = 0;
 
-                while (ll_i != tmp) {
+                while (ll_i != tmp)
+                {
                     j++;
                     byte tmp2 = tmp;
                     tmp = pos[j];
@@ -1451,24 +1673,29 @@ namespace Ionic.BZip2 {
                 }
 
                 pos[0] = tmp;
-                dataShadow.selectorMtf[i] = (byte)j;
+                dataShadow.selectorMtf[i] = (byte) j;
             }
         }
 
-        private void sendMTFValues3(int nGroups, int alphaSize) {
+        private void sendMTFValues3(int nGroups, int alphaSize)
+        {
             int[][] code = this.cstate.sendMTFValues_code;
             byte[][] len = this.cstate.sendMTFValues_len;
 
-            for (int t = 0; t < nGroups; t++) {
+            for (int t = 0; t < nGroups; t++)
+            {
                 int minLen = 32;
                 int maxLen = 0;
                 byte[] len_t = len[t];
-                for (int i = alphaSize; --i >= 0;) {
+                for (int i = alphaSize; --i >= 0;)
+                {
                     int l = len_t[i] & 0xff;
-                    if (l > maxLen) {
+                    if (l > maxLen)
+                    {
                         maxLen = l;
                     }
-                    if (l < minLen) {
+                    if (l < minLen)
+                    {
                         minLen = l;
                     }
                 }
@@ -1480,34 +1707,43 @@ namespace Ionic.BZip2 {
             }
         }
 
-        private void sendMTFValues4() {
+        private void sendMTFValues4()
+        {
             bool[] inUse = this.cstate.inUse;
             bool[] inUse16 = this.cstate.sentMTFValues4_inUse16;
 
-            for (int i = 16; --i >= 0;) {
+            for (int i = 16; --i >= 0;)
+            {
                 inUse16[i] = false;
                 int i16 = i * 16;
-                for (int j = 16; --j >= 0;) {
-                    if (inUse[i16 + j]) {
+                for (int j = 16; --j >= 0;)
+                {
+                    if (inUse[i16 + j])
+                    {
                         inUse16[i] = true;
                     }
                 }
             }
 
             uint u = 0;
-            for (int i = 0; i < 16; i++) {
+            for (int i = 0; i < 16; i++)
+            {
                 if (inUse16[i])
                     u |= 1U << (16 - i - 1);
             }
             this.bw.WriteBits(16, u);
 
 
-            for (int i = 0; i < 16; i++) {
-                if (inUse16[i]) {
+            for (int i = 0; i < 16; i++)
+            {
+                if (inUse16[i])
+                {
                     int i16 = i * 16;
                     u = 0;
-                    for (int j = 0; j < 16; j++) {
-                        if (inUse[i16 + j]) {
+                    for (int j = 0; j < 16; j++)
+                    {
+                        if (inUse[i16 + j])
+                        {
                             u |= 1U << (16 - j - 1);
                         }
                     }
@@ -1517,14 +1753,17 @@ namespace Ionic.BZip2 {
         }
 
 
-        private void sendMTFValues5(int nGroups, int nSelectors) {
-            this.bw.WriteBits(3, (uint)nGroups);
-            this.bw.WriteBits(15, (uint)nSelectors);
+        private void sendMTFValues5(int nGroups, int nSelectors)
+        {
+            this.bw.WriteBits(3, (uint) nGroups);
+            this.bw.WriteBits(15, (uint) nSelectors);
 
             byte[] selectorMtf = this.cstate.selectorMtf;
 
-            for (int i = 0; i < nSelectors; i++) {
-                for (int j = 0, hj = selectorMtf[i] & 0xff; j < hj; j++) {
+            for (int i = 0; i < nSelectors; i++)
+            {
+                for (int j = 0, hj = selectorMtf[i] & 0xff; j < hj; j++)
+                {
                     this.bw.WriteBits(1, 1);
                 }
 
@@ -1532,22 +1771,27 @@ namespace Ionic.BZip2 {
             }
         }
 
-        private void sendMTFValues6(int nGroups, int alphaSize) {
+        private void sendMTFValues6(int nGroups, int alphaSize)
+        {
             byte[][] len = this.cstate.sendMTFValues_len;
 
-            for (int t = 0; t < nGroups; t++) {
+            for (int t = 0; t < nGroups; t++)
+            {
                 byte[] len_t = len[t];
-                uint curr = (uint)(len_t[0] & 0xff);
+                uint curr = (uint) (len_t[0] & 0xff);
                 this.bw.WriteBits(5, curr);
 
-                for (int i = 0; i < alphaSize; i++) {
+                for (int i = 0; i < alphaSize; i++)
+                {
                     int lti = len_t[i] & 0xff;
-                    while (curr < lti) {
+                    while (curr < lti)
+                    {
                         this.bw.WriteBits(2, 2U);
                         curr++; /* 10 */
                     }
 
-                    while (curr > lti) {
+                    while (curr > lti)
+                    {
                         this.bw.WriteBits(2, 3U);
                         curr--; /* 11 */
                     }
@@ -1558,25 +1802,28 @@ namespace Ionic.BZip2 {
         }
 
 
-        private void sendMTFValues7(int nSelectors) {
-            byte[][] len = this.cstate.sendMTFValues_len;
-            int[][] code = this.cstate.sendMTFValues_code;
+        private void sendMTFValues7(int nSelectors)
+        {
+            byte[][] len    = this.cstate.sendMTFValues_len;
+            int[][] code    = this.cstate.sendMTFValues_code;
             byte[] selector = this.cstate.selector;
-            char[] sfmap = this.cstate.sfmap;
-            int nMTFShadow = this.nMTF;
+            char[] sfmap    = this.cstate.sfmap;
+            int nMTFShadow  = this.nMTF;
 
             int selCtr = 0;
 
-            for (int gs = 0; gs < nMTFShadow;) {
+            for (int gs = 0; gs < nMTFShadow;)
+            {
                 int ge = Math.Min(gs + BZip2.G_SIZE - 1, nMTFShadow - 1);
                 int ix = selector[selCtr] & 0xff;
                 int[] code_selCtr = code[ix];
                 byte[] len_selCtr = len[ix];
 
-                while (gs <= ge) {
+                while (gs <= ge)
+                {
                     int sfmap_i = sfmap[gs];
                     int n = len_selCtr[sfmap_i] & 0xFF;
-                    this.bw.WriteBits(n, (uint)code_selCtr[sfmap_i]);
+                    this.bw.WriteBits(n, (uint) code_selCtr[sfmap_i]);
                     gs++;
                 }
 
@@ -1585,8 +1832,9 @@ namespace Ionic.BZip2 {
             }
         }
 
-        private void moveToFrontCodeAndSend() {
-            this.bw.WriteBits(24, (uint)this.origPtr);
+        private void moveToFrontCodeAndSend()
+        {
+            this.bw.WriteBits(24, (uint) this.origPtr);
             generateMTFValues();
             sendMTFValues();
         }
@@ -1596,7 +1844,8 @@ namespace Ionic.BZip2 {
 
 
 
-        private class CompressionState {
+        private class CompressionState
+        {
             // with blockSize 900k
             public readonly bool[] inUse = new bool[256]; // 256 byte
             public readonly byte[] unseqToSeq = new byte[256]; // 256 byte
@@ -1650,15 +1899,16 @@ namespace Ionic.BZip2 {
              */
             public char[] quadrant;
 
-            public CompressionState(int blockSize100k) {
+            public CompressionState(int blockSize100k)
+            {
                 int n = blockSize100k * BZip2.BlockSizeMultiple;
                 this.block = new byte[(n + 1 + BZip2.NUM_OVERSHOOT_BYTES)];
                 this.fmap = new int[n];
                 this.sfmap = new char[2 * n];
                 this.quadrant = this.sfmap;
-                this.sendMTFValues_len = BZip2.InitRectangularArray<byte>(BZip2.NGroups, BZip2.MaxAlphaSize);
-                this.sendMTFValues_rfreq = BZip2.InitRectangularArray<int>(BZip2.NGroups, BZip2.MaxAlphaSize);
-                this.sendMTFValues_code = BZip2.InitRectangularArray<int>(BZip2.NGroups, BZip2.MaxAlphaSize);
+                this.sendMTFValues_len = BZip2.InitRectangularArray<byte>(BZip2.NGroups,BZip2.MaxAlphaSize);
+                this.sendMTFValues_rfreq = BZip2.InitRectangularArray<int>(BZip2.NGroups,BZip2.MaxAlphaSize);
+                this.sendMTFValues_code = BZip2.InitRectangularArray<int>(BZip2.NGroups,BZip2.MaxAlphaSize);
             }
 
         }

@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using MSAst = System.Linq.Expressions;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 
-using IronPython.Runtime.Binding;
-
 using Microsoft.Scripting;
 
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -66,8 +68,8 @@ namespace IronPython.Compiler.Ast {
                         Binders.UnaryOperationBinder(
                             parent.GlobalParent.PyContext,
                             PythonOperationKind.GetEnumeratorForIteration
-                        ),
-                        parent.GlobalParent.CompilationMode,
+                        ), 
+                        parent.GlobalParent.CompilationMode, 
                         AstUtils.Convert(list, typeof(object))
                     )
                 );

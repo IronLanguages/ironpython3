@@ -6,11 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using IronPython.Modules;
-using IronPython.Runtime.Operations;
-
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Modules;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     /// <summary>

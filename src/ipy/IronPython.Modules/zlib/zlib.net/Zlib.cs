@@ -44,11 +44,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Text;
 
-namespace ComponentAce.Compression.Libs.ZLib {
+namespace ComponentAce.Compression.Libs.ZLib
+{
     /// <summary>
     /// Some constants for specifying compression levels. Methods which takes a compression level as a parameter expects an integer value from 0 to 9. You can either specify an integer value or use constants for some most widely used compression levels.
     /// </summary>
-    public static class ZLibCompressionLevel {
+    public static class ZLibCompressionLevel
+    {
         /// <summary>
         ///  No compression should be used at all.
         /// </summary>
@@ -70,7 +72,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
     /// <summary>
     /// Compression strategies. The strategy parameter is used to tune the compression algorithm. The strategy parameter only affects the compression ratio but not the correctness of the compressed output even if it is not set appropriately.
     /// </summary>
-    public enum CompressionStrategy {
+    public enum CompressionStrategy
+    {
         /// <summary>
         /// This strategy is designed for filtered data. Data which consists of mostly small values, with random distribution should use Z_FILTERED. With this strategy, less string matching is performed.
         /// </summary>
@@ -88,7 +91,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
     /// <summary>
     /// Flush strategies
     /// </summary>
-    public enum FlushStrategy {
+    public enum FlushStrategy
+    {
         /// <summary>
         ///   Do not internalFlush data, but just write data as normal to the output buffer. This is the normal way in which data is written to the output buffer.
         /// </summary>
@@ -114,7 +118,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
     /// <summary>
     /// Results of operations in ZLib library
     /// </summary>
-    public enum ZLibResultCode {
+    public enum ZLibResultCode
+    {
         /// <summary>
         ///  No failure was encountered, the operation completed without problem.
         /// </summary>
@@ -130,33 +135,34 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// <summary>
         /// An internal error occurred
         /// </summary>
-		Z_ERRNO = -1,
+		Z_ERRNO = - 1,
         /// <summary>
         /// The stream structure was inconsistent
         /// </summary>
-		Z_STREAM_ERROR = -2,
+		Z_STREAM_ERROR = - 2,
         /// <summary>
         /// Input data has been corrupted (for decompression).
         /// </summary>
-		Z_DATA_ERROR = -3,
+		Z_DATA_ERROR = - 3,
         /// <summary>
         /// Memory allocation failed.
         /// </summary>
-		Z_MEM_ERROR = -4,
+		Z_MEM_ERROR = - 4,
         /// <summary>
         /// There was not enough space in the output buffer.
         /// </summary>
-		Z_BUF_ERROR = -5,
+		Z_BUF_ERROR = - 5,
         /// <summary>
         /// The version supplied does not match that supported by the ZLib module.
         /// </summary>
-		Z_VERSION_ERROR = -6
+		Z_VERSION_ERROR = - 6
     }
 
     /// <summary>
     /// States of deflate operation
     /// </summary>
-    internal enum DeflateState {
+    internal enum DeflateState
+    {
         INIT_STATE = 42,
         BUSY_STATE = 113,
         FINISH_STATE = 666
@@ -165,7 +171,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
     /// <summary>
     /// Data block types, i.e. binary or ascii text
     /// </summary>
-    public enum BlockType {
+    public enum BlockType
+    {
         Z_BINARY = 0,
         Z_ASCII = 1,
         Z_UNKNOWN = 2
@@ -174,10 +181,12 @@ namespace ComponentAce.Compression.Libs.ZLib {
     /// <summary>
     /// Helper class
     /// </summary>
-    public static class ZLibUtil {
+    public static class ZLibUtil
+    {
         #region Copy large array to a small one in several steps
 
-        internal class CopyLargeArrayToSmall {
+        internal class CopyLargeArrayToSmall
+        {
 
             private static byte[] srcBuf;
             private static int srcOff;
@@ -187,7 +196,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
             private static int destLen;
             private static int nWritten;
 
-            public static void Initialize(byte[] srcBuf, int srcOff, int srcDataLen, byte[] destBuff, int destOff, int destLen) {
+            public static void Initialize(byte[] srcBuf, int srcOff, int srcDataLen, byte[] destBuff, int destOff, int destLen)
+            {
                 ZLibUtil.CopyLargeArrayToSmall.srcBuf = srcBuf;
                 ZLibUtil.CopyLargeArrayToSmall.srcOff = srcOff;
                 ZLibUtil.CopyLargeArrayToSmall.srcDataLen = srcDataLen;
@@ -196,21 +206,25 @@ namespace ComponentAce.Compression.Libs.ZLib {
                 ZLibUtil.CopyLargeArrayToSmall.destLen = destLen;
                 ZLibUtil.CopyLargeArrayToSmall.nWritten = 0;
             }
-
+            
             public static int GetRemainingDataSize() { return srcDataLen; }
 
             /// <summary>
             /// Copies large array which was passed as srcBuf to the Initialize method into the destination array which were passes as destBuff
             /// </summary>
             /// <returns>The number of bytes copied</returns>
-            public static int CopyData() {
-                if (srcDataLen > destLen) {
+            public static int CopyData()
+            {
+                if (srcDataLen > destLen)
+                {
                     Array.Copy(srcBuf, srcOff, destBuff, destOff, destLen);
                     srcDataLen -= destLen;
                     srcOff += destLen;
                     nWritten = destLen;
                     return nWritten;
-                } else {
+                }
+                else
+                {
                     Array.Copy(srcBuf, srcOff, destBuff, destOff, srcDataLen);
                     nWritten = srcDataLen;
                     srcDataLen = 0;
@@ -254,146 +268,158 @@ namespace ComponentAce.Compression.Libs.ZLib {
 		/// </summary>
 		/// <param name="literal">The literal to return</param>
 		/// <returns>The received value</returns>
-		internal static long Identity(long literal) {
-            return literal;
-        }
+		internal static long Identity(long literal)
+		{
+			return literal;
+		}
 
-        /// <summary>
-        /// This method returns the literal value received
-        /// </summary>
-        /// <param name="literal">The literal to return</param>
-        /// <returns>The received value</returns>
-        internal static ulong Identity(ulong literal) {
-            return literal;
-        }
+		/// <summary>
+		/// This method returns the literal value received
+		/// </summary>
+		/// <param name="literal">The literal to return</param>
+		/// <returns>The received value</returns>
+        internal static ulong Identity(ulong literal)
+		{
+			return literal;
+		}
 
-        /// <summary>
-        /// This method returns the literal value received
-        /// </summary>
-        /// <param name="literal">The literal to return</param>
-        /// <returns>The received value</returns>
-        internal static float Identity(float literal) {
-            return literal;
-        }
+		/// <summary>
+		/// This method returns the literal value received
+		/// </summary>
+		/// <param name="literal">The literal to return</param>
+		/// <returns>The received value</returns>
+		internal static float Identity(float literal)
+		{
+			return literal;
+		}
 
-        /// <summary>
-        /// This method returns the literal value received
-        /// </summary>
-        /// <param name="literal">The literal to return</param>
-        /// <returns>The received value</returns>
-        internal static double Identity(double literal) {
-            return literal;
-        }
+		/// <summary>
+		/// This method returns the literal value received
+		/// </summary>
+		/// <param name="literal">The literal to return</param>
+		/// <returns>The received value</returns>
+		internal static double Identity(double literal)
+		{
+			return literal;
+		}
 
-        /*******************************/
-        /// <summary>
-        /// Performs an unsigned bitwise right shift with the specified number
-        /// </summary>
-        /// <param name="number">Number to operate on</param>
-        /// <param name="bits">Ammount of bits to shift</param>
-        /// <returns>The resulting number from the shift operation</returns>
-        internal static int URShift(int number, int bits) {
-            if (number >= 0)
-                return number >> bits;
-            else
-                return (number >> bits) + (2 << ~bits);
-        }
+		/*******************************/
+		/// <summary>
+		/// Performs an unsigned bitwise right shift with the specified number
+		/// </summary>
+		/// <param name="number">Number to operate on</param>
+		/// <param name="bits">Ammount of bits to shift</param>
+		/// <returns>The resulting number from the shift operation</returns>
+		internal static int URShift(int number, int bits)
+		{
+			if ( number >= 0)
+				return number >> bits;
+			else
+				return (number >> bits) + (2 << ~bits);
+		}
 
-        /// <summary>
-        /// Performs an unsigned bitwise right shift with the specified number
-        /// </summary>
-        /// <param name="number">Number to operate on</param>
-        /// <param name="bits">Ammount of bits to shift</param>
-        /// <returns>The resulting number from the shift operation</returns>
-        internal static int URShift(int number, long bits) {
-            return URShift(number, (int)bits);
-        }
+		/// <summary>
+		/// Performs an unsigned bitwise right shift with the specified number
+		/// </summary>
+		/// <param name="number">Number to operate on</param>
+		/// <param name="bits">Ammount of bits to shift</param>
+		/// <returns>The resulting number from the shift operation</returns>
+		internal static int URShift(int number, long bits)
+		{
+			return URShift(number, (int)bits);
+		}
 
-        /// <summary>
-        /// Performs an unsigned bitwise right shift with the specified number
-        /// </summary>
-        /// <param name="number">Number to operate on</param>
-        /// <param name="bits">Ammount of bits to shift</param>
-        /// <returns>The resulting number from the shift operation</returns>
-        internal static long URShift(long number, int bits) {
-            if (number >= 0)
-                return number >> bits;
-            else
-                return (number >> bits) + (2L << ~bits);
-        }
+		/// <summary>
+		/// Performs an unsigned bitwise right shift with the specified number
+		/// </summary>
+		/// <param name="number">Number to operate on</param>
+		/// <param name="bits">Ammount of bits to shift</param>
+		/// <returns>The resulting number from the shift operation</returns>
+		internal static long URShift(long number, int bits)
+		{
+			if ( number >= 0)
+				return number >> bits;
+			else
+				return (number >> bits) + (2L << ~bits);
+		}
 
-        /// <summary>
-        /// Performs an unsigned bitwise right shift with the specified number
-        /// </summary>
-        /// <param name="number">Number to operate on</param>
-        /// <param name="bits">Ammount of bits to shift</param>
-        /// <returns>The resulting number from the shift operation</returns>
-        internal static long URShift(long number, long bits) {
-            return URShift(number, (int)bits);
-        }
+		/// <summary>
+		/// Performs an unsigned bitwise right shift with the specified number
+		/// </summary>
+		/// <param name="number">Number to operate on</param>
+		/// <param name="bits">Ammount of bits to shift</param>
+		/// <returns>The resulting number from the shift operation</returns>
+		internal static long URShift(long number, long bits)
+		{
+			return URShift(number, (int)bits);
+		}
 
-        /*******************************/
-        /// <summary>Reads a number of characters from the current source Stream and writes the data to the target array at the specified index.</summary>
-        /// <param name="sourceStream">The source Stream to ReadPos from.</param>
-        /// <param name="target">Contains the array of characters ReadPos from the source Stream.</param>
-        /// <param name="start">The starting index of the target array.</param>
-        /// <param name="count">The maximum number of characters to ReadPos from the source Stream.</param>
-        /// <returns>The number of characters ReadPos. The number will be less than or equal to count depending on the data available in the source Stream. Returns -1 if the End of the stream is reached.</returns>
-        internal static System.Int32 ReadInput(System.IO.Stream sourceStream, byte[] target, int start, int count) {
-            // Returns 0 bytes if not enough space in target
-            if (target.Length == 0)
-                return 0;
+		/*******************************/
+		/// <summary>Reads a number of characters from the current source Stream and writes the data to the target array at the specified index.</summary>
+		/// <param name="sourceStream">The source Stream to ReadPos from.</param>
+		/// <param name="target">Contains the array of characters ReadPos from the source Stream.</param>
+		/// <param name="start">The starting index of the target array.</param>
+		/// <param name="count">The maximum number of characters to ReadPos from the source Stream.</param>
+		/// <returns>The number of characters ReadPos. The number will be less than or equal to count depending on the data available in the source Stream. Returns -1 if the End of the stream is reached.</returns>
+		internal static System.Int32 ReadInput(System.IO.Stream sourceStream, byte[] target, int start, int count)
+		{
+			// Returns 0 bytes if not enough space in target
+			if (target.Length == 0)
+				return 0;
 
-            byte[] receiver = new byte[target.Length];
-            int bytesRead = sourceStream.Read(receiver, start, count);
+			byte[] receiver = new byte[target.Length];
+			int bytesRead   = sourceStream.Read(receiver, start, count);
 
-            // Returns -1 if EOF
-            if (bytesRead == 0)
-                return -1;
+			// Returns -1 if EOF
+			if (bytesRead == 0)	
+				return -1;
+                
+			for(int i = start; i < start + bytesRead; i++)
+				target[i] = (byte)receiver[i];
+                
+			return bytesRead;
+		}
 
-            for (int i = start; i < start + bytesRead; i++)
-                target[i] = (byte)receiver[i];
+		/// <summary>Reads a number of characters from the current source TextReader and writes the data to the target array at the specified index.</summary>
+		/// <param name="sourceTextReader">The source TextReader to ReadPos from</param>
+		/// <param name="target">Contains the array of characteres ReadPos from the source TextReader.</param>
+		/// <param name="start">The starting index of the target array.</param>
+		/// <param name="count">The maximum number of characters to ReadPos from the source TextReader.</param>
+		/// <returns>The number of characters ReadPos. The number will be less than or equal to count depending on the data available in the source TextReader. Returns -1 if the End of the stream is reached.</returns>
+		internal static System.Int32 ReadInput(System.IO.TextReader sourceTextReader, byte[] target, int start, int count)
+		{
+			// Returns 0 bytes if not enough space in target
+			if (target.Length == 0) return 0;
 
-            return bytesRead;
-        }
+			char[] charArray = new char[target.Length];
+			int bytesRead = sourceTextReader.Read(charArray, start, count);
 
-        /// <summary>Reads a number of characters from the current source TextReader and writes the data to the target array at the specified index.</summary>
-        /// <param name="sourceTextReader">The source TextReader to ReadPos from</param>
-        /// <param name="target">Contains the array of characteres ReadPos from the source TextReader.</param>
-        /// <param name="start">The starting index of the target array.</param>
-        /// <param name="count">The maximum number of characters to ReadPos from the source TextReader.</param>
-        /// <returns>The number of characters ReadPos. The number will be less than or equal to count depending on the data available in the source TextReader. Returns -1 if the End of the stream is reached.</returns>
-        internal static System.Int32 ReadInput(System.IO.TextReader sourceTextReader, byte[] target, int start, int count) {
-            // Returns 0 bytes if not enough space in target
-            if (target.Length == 0) return 0;
+			// Returns -1 if EOF
+			if (bytesRead == 0) return -1;
 
-            char[] charArray = new char[target.Length];
-            int bytesRead = sourceTextReader.Read(charArray, start, count);
+			for(int index=start; index<start+bytesRead; index++)
+				target[index] = (byte)charArray[index];
 
-            // Returns -1 if EOF
-            if (bytesRead == 0) return -1;
+			return bytesRead;
+		}
 
-            for (int index = start; index < start + bytesRead; index++)
-                target[index] = (byte)charArray[index];
+		/// <summary>
+		/// Converts a string to an array of bytes
+		/// </summary>
+		/// <param name="sourceString">The string to be converted</param>
+		/// <returns>The new array of bytes</returns>
+		internal static byte[] ToByteArray(string sourceString)
+		{
+			return Encoding.UTF8.GetBytes(sourceString);
+		}
 
-            return bytesRead;
-        }
-
-        /// <summary>
-        /// Converts a string to an array of bytes
-        /// </summary>
-        /// <param name="sourceString">The string to be converted</param>
-        /// <returns>The new array of bytes</returns>
-        internal static byte[] ToByteArray(string sourceString) {
-            return Encoding.UTF8.GetBytes(sourceString);
-        }
-
-        /// <summary>
-        /// Converts an array of bytes to an array of chars
-        /// </summary>
-        /// <param name="byteArray">The array of bytes to convert</param>
-        /// <returns>The new array of chars</returns>
-        internal static char[] ToCharArray(byte[] byteArray) {
+		/// <summary>
+		/// Converts an array of bytes to an array of chars
+		/// </summary>
+		/// <param name="byteArray">The array of bytes to convert</param>
+		/// <returns>The new array of chars</returns>
+		internal static char[] ToCharArray(byte[] byteArray) 
+		{
             return Encoding.UTF8.GetChars(byteArray);
         }
 
@@ -450,8 +476,8 @@ namespace ComponentAce.Compression.Libs.ZLib {
         /// </summary>
         internal const int DIST_CODE_LEN = 512;
 
-        internal static readonly byte[] _dist_code = new byte[]{0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0, 0, 16, 17, 18, 18, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29};
+        internal static readonly byte[] _dist_code = new byte[]{0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0, 0, 16, 17, 18, 18, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 
+			29, 29, 29, 29, 29, 29, 29, 29, 29};
 
         internal static readonly byte[] _length_code = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18, 18, 19, 19, 19, 19, 19, 19, 19, 19, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28 };
 

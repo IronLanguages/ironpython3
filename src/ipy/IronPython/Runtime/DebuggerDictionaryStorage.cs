@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
+using Microsoft.Scripting;
 
 namespace IronPython.Runtime {
     /// <summary>

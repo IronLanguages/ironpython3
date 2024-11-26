@@ -2,16 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-using IronPython.Runtime.Binding;
-
 using Microsoft.Scripting;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using MSAst = System.Linq.Expressions;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -91,7 +94,7 @@ namespace IronPython.Compiler.Ast {
 
             if (!isStarred && seLeft != null && seRight != null && seLeft.Items.Count == seRight.Items.Count) {
                 int cnt = seLeft.Items.Count;
-
+                
                 // a, b = 1, 2, or [a,b] = 1,2 - not something like a, b = range(2)
                 // we can do a fast parallel assignment
                 MSAst.ParameterExpression[] tmps = new MSAst.ParameterExpression[cnt];
@@ -118,7 +121,7 @@ namespace IronPython.Compiler.Ast {
                 for (int i = 0; i < cnt; i++) {
                     body[i + cnt] = seLeft.Items[i].TransformSet(SourceSpan.None, tmps[i], PythonOperationKind.None);
                 }
-
+                
                 // 4. Create and return the resulting suite
                 body[cnt * 2] = AstUtils.Empty();
                 return GlobalParent.AddDebugInfoAndVoid(Ast.Block(tmps, body), Span);

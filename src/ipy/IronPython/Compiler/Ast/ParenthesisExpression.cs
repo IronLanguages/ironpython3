@@ -4,9 +4,9 @@
 
 using System;
 
-using IronPython.Runtime.Binding;
-
 using Microsoft.Scripting;
+
+using IronPython.Runtime.Binding;
 
 using MSAst = System.Linq.Expressions;
 

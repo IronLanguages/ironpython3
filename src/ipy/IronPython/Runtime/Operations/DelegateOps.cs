@@ -7,11 +7,11 @@
 using System;
 using System.Collections.Generic;
 
-using IronPython.Runtime.Types;
-
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
 
@@ -48,7 +48,7 @@ namespace IronPython.Runtime.Operations {
             return context.LanguageContext.CallSplat(@delegate, args);
         }
 
-        public static object Call(CodeContext/*!*/ context, Delegate @delegate, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+        public static object Call(CodeContext/*!*/ context, Delegate @delegate, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             return context.LanguageContext.CallWithKeywords(@delegate, args, dict);
         }
 

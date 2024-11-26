@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Scripting;
+
 namespace IronPython.Compiler.Ast {
     public class ModuleName : DottedName {
         public ModuleName(string[] names)

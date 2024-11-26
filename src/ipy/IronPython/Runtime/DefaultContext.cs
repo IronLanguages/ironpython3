@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 using System.Threading;
-
+using IronPython.Runtime.Binding;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
@@ -14,13 +14,13 @@ namespace IronPython.Runtime {
         internal static CodeContext _default;
         [MultiRuntimeAware]
         internal static CodeContext _defaultCLS;
-
+        
         public static ContextId Id {
             get {
                 return Default.LanguageContext.ContextId;
             }
         }
-
+        
         public static CodeContext Default {
             get {
                 Debug.Assert(_default != null);

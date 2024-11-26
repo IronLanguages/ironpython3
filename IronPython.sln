@@ -44,7 +44,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "eng", "eng", "{17737ACB-40C
 		eng\Tasks.Targets = eng\Tasks.Targets
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.CompilerServices", "src\platforms\IronPython.CompilerServices\IronPython.CompilerServices.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Compiler", "src\platforms\IronPython.Compiler\IronPython.Compiler.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "runtime", "runtime", "{AC38EFB1-820D-4E90-BF40-BEF3AC825542}"
 EndProject

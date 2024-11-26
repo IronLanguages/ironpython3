@@ -11,8 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ipy\IronPython\IronPython.csproj" />
-    <ProjectReference Include="..\..\ipy\IronPython.Modules\IronPython.Modules.csproj">
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\core\IronPython.Modules\IronPython.Modules.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

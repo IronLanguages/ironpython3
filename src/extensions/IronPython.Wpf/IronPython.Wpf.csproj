@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ipy\IronPython\IronPython.csproj" Private="false" />
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" Private="false" />
     <ProjectReference Include="..\..\runtime\Src\Microsoft.Scripting\Microsoft.Scripting.csproj" Private="false" />
     <ProjectReference Include="..\..\runtime\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" Private="false" />
   </ItemGroup>

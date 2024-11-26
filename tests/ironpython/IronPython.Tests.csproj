@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ipy\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\src\core\IronPython\IronPython.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">

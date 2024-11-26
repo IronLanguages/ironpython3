@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython", "src\ipy\IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython", "src\core\IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Modules", "src\ipy\IronPython.Modules\IronPython.Modules.csproj", "{155CE436-1669-4A48-8095-410F2430237F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Modules", "src\core\IronPython.Modules\IronPython.Modules.csproj", "{155CE436-1669-4A48-8095-410F2430237F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Wpf", "src\extensions\IronPython.Wpf\IronPython.Wpf.csproj", "{65E997B7-E99B-4C83-B29E-9951429BB293}"
 EndProject
@@ -44,7 +44,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "eng", "eng", "{17737ACB-40C
 		eng\Tasks.Targets = eng\Tasks.Targets
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.CompilerServices", "src\ipy\IronPython.CompilerServices\IronPython.CompilerServices.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.CompilerServices", "src\core\IronPython.CompilerServices\IronPython.CompilerServices.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "runtime", "runtime", "{AC38EFB1-820D-4E90-BF40-BEF3AC825542}"
 EndProject

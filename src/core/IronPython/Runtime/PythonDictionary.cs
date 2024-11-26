@@ -36,11 +36,11 @@ namespace IronPython.Runtime {
             _storage = EmptyDictionaryStorage.Instance;
         }
 
-        internal PythonDictionary(DictionaryStorage storage) {
+        public PythonDictionary(DictionaryStorage storage) {
             _storage = storage;
         }
 
-        internal PythonDictionary(IDictionary dict) {
+        public PythonDictionary(IDictionary dict) {
             var storage = new CommonDictionaryStorage();
 
             foreach (DictionaryEntry de in dict) {
@@ -49,7 +49,7 @@ namespace IronPython.Runtime {
             _storage = storage;
         }
 
-        internal PythonDictionary(IDictionary<object, object> dict) {
+        public PythonDictionary(IDictionary<object, object> dict) {
             var storage = new CommonDictionaryStorage();
 
             foreach (var pair in dict) {
@@ -58,16 +58,16 @@ namespace IronPython.Runtime {
             _storage = storage;
         }
 
-        internal PythonDictionary(PythonDictionary dict) {
+        public PythonDictionary(PythonDictionary dict) {
             _storage = dict._storage.Clone();
         }
 
-        internal PythonDictionary(CodeContext/*!*/ context, object o)
+        public PythonDictionary(CodeContext/*!*/ context, object o)
             : this() {
             update(context, o);
         }
 
-        internal PythonDictionary(int size) {
+        public PythonDictionary(int size) {
             _storage = size == 0 ? (DictionaryStorage)EmptyDictionaryStorage.Instance : new CommonDictionaryStorage(size);
         }
 

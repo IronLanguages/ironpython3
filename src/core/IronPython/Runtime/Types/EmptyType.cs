@@ -53,7 +53,7 @@ namespace IronPython.Runtime.Types {
         
         private NotImplementedType() { }
         
-        internal static NotImplementedType Value {
+        public static NotImplementedType Value {
             get {
                 if (_instance == null) {
                     Interlocked.CompareExchange(ref _instance, new NotImplementedType(), null);

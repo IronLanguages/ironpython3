@@ -45,6 +45,6 @@ This package contains the IronPython interpreter engine.</description>
     <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp3.1\**\*;net9.0*\**\*" />
     <file src="LICENSE" />
     <file src="..\..\..\nuget\README.md" target="" />
-    <file src="..\..\..\..\Documentation\logo.png" target="" />
+    <file src="..\..\..\..\docs\logo.png" target="" />
   </files>
 </package>

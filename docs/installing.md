@@ -158,7 +158,7 @@ Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython
 
 # Installing from Sources
 
-To build and install IronPython from sources, first follow instructions in [_Getting the Sources_](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/getting-the-sources.md) and [_Building IronPython3_](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/building.md).
+To build and install IronPython from sources, first follow instructions in [_Getting the Sources_](https://github.com/IronLanguages/ironpython3/blob/main/docs/getting-the-sources.md) and [_Building IronPython3_](https://github.com/IronLanguages/ironpython3/blob/main/docs/building.md).
 
 When the command `./make.ps1 debug` completes successfully, runnable and usable `ipy` executables are available in subdirectories of `./bin/Debug`. To run executables from the release configuration (produced by a successful run of `./make.ps1`), first set environment variable `IRONPYTHONPATH`.
 

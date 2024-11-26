@@ -42,6 +42,7 @@ namespace IronPythonTest.Stress {
         }
 
 #if FEATURE_REFEMIT
+#if !NETFRAMEWORK
         [Test]
         public void ScenarioXGC() {
             long initialMemory = GetTotalMemory();
@@ -79,6 +80,7 @@ namespace IronPythonTest.Stress {
                 System.Console.WriteLine("Skipping memory usage test under SaveSnippets and/or Debug mode.");
             }
         }
+#endif
 #endif
     }
 }

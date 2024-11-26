@@ -220,7 +220,7 @@ namespace IronPython.Runtime {
         /// onto and may be mutated in the future by the list.
         /// </summary>
         /// <param name="data">params array to use for lists storage</param>
-        internal static PythonList FromArrayNoCopy(params object[] data)
+        public static PythonList FromArrayNoCopy(params object[] data)
             => new PythonList(data);
 
         #endregion

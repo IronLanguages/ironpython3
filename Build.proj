@@ -9,8 +9,8 @@
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)IronPython.sln</Solution>
-    <UtilDir>$(RootDir)utils</UtilDir>
-    <ReferenceDir>$(RootDir)utils\References</ReferenceDir>
+    <UtilDir>$(RootDir)eng\utils</UtilDir>
+    <ReferenceDir>$(RootDir)eng\utils\References</ReferenceDir>
     <BinDir>$(RootDir)bin</BinDir>
     <BuildSysDir>$(RootDir)eng</BuildSysDir>
   </PropertyGroup>

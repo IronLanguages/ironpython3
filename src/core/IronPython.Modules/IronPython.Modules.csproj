@@ -10,7 +10,7 @@
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
     <Reference Include="Mono.Posix" Version="4.0.0">
       <Private>True</Private>
-      <HintPath>..\..\..\utils\References\Mono.Posix.dll</HintPath>
+      <HintPath>..\..\..\eng\utils\References\Mono.Posix.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">

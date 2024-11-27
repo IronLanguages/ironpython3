@@ -6,10 +6,10 @@
     <!-- These are normally set by Build.proj, except when building from VS. -->
     <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)</RootDir>
     <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)eng</BuildSysDir>
-    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)utils\References</ReferenceDir>
+    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)eng\utils\References</ReferenceDir>
 
     <Mono Condition=" '$(Mono)' == '' AND '$(MSBuildRuntimeType)' == 'Mono' ">true</Mono>
-    
+
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding
          additional assembly references. -->
     <NoConfig>true</NoConfig>

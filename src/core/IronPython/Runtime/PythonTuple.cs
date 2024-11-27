@@ -113,12 +113,12 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        public static PythonTuple Make(object o) {
+        internal static PythonTuple Make(object o) {
             if (o is PythonTuple t) return t;
             return new PythonTuple(o);
         }
 
-        public static PythonTuple MakeTuple(params object?[] items) {
+        internal static PythonTuple MakeTuple(params object?[] items) {
             if (items.Length == 0) return EMPTY;
             return new PythonTuple(items);
         }

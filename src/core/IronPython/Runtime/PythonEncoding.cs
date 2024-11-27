@@ -39,7 +39,7 @@ namespace IronPython.Runtime {
     /// to the constructor. Also, the fallbacks have to be of type <see cref="PythonEncoderFallback"/>
     /// and <see cref="PythonDecoderFallback"/>, which implement the extended fallback protocol.
     /// </remarks>
-    public class PythonEncoding : Encoding {
+    internal class PythonEncoding : Encoding {
         // The following two must be different from each other and be pass-through characters for UTF-7
         private const char Pass1Marker = '?';
         private const char Pass2Marker = '-';
@@ -931,7 +931,7 @@ namespace IronPython.Runtime {
 
     }
 
-    public class PythonSurrogateEscapeEncoding : PythonEncoding {
+    internal class PythonSurrogateEscapeEncoding : PythonEncoding {
         // Defined in PEP 383
         private const ushort LoneSurrogateBase = 0xdc00;
 
@@ -1007,7 +1007,7 @@ namespace IronPython.Runtime {
         }
     }
 
-    public class PythonSurrogatePassEncoding : PythonEncoding {
+    internal class PythonSurrogatePassEncoding : PythonEncoding {
         private const ushort SurrogateRangeStart = 0xd800;
         private const ushort SurrogateRangeEnd = 0xdfff;
         private const byte Utf8LeadByte = 0b_1110_0000;

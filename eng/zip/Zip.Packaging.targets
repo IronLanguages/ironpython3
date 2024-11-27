@@ -6,8 +6,8 @@
     <ItemGroup>
       <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\README.md;$(StageDir)\**\*.pdb;$(StageDir)\netstandard2.0\**\*;$(StageDir)\netcoreapp3.1\**\*;$(StageDir)\net9.0*\**\*" />
       <ZipFiles Include="README.md" Link="$(MSBuildThisFileDirectory)README.md" />
-      <ZipFiles Include="scripts/Enter-IronPythonEnvironment.ps1" Link="$(RootDir)tests\scripts\Enter-IronPythonEnvironment.ps1" />
-      <ZipFiles Include="scripts/Install-IronPython.ps1" Link="$(RootDir)tests\scripts\Install-IronPython.ps1" />
+      <ZipFiles Include="scripts/Enter-IronPythonEnvironment.ps1" Link="$(RootDir)eng\scripts\Enter-IronPythonEnvironment.ps1" />
+      <ZipFiles Include="scripts/Install-IronPython.ps1" Link="$(RootDir)eng\scripts\Install-IronPython.ps1" />
     </ItemGroup>
     <Zip Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
 

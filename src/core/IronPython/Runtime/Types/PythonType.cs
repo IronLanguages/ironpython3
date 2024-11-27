@@ -749,7 +749,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Gets the name of the dynamic type
         /// </summary>
-        public string Name { get; set; }
+        internal string Name { get; set; }
 
         internal string QualName { get; set; }
 

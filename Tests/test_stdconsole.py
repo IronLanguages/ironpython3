@@ -7,7 +7,7 @@ import re
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cli32, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -82,6 +82,8 @@ class StdConsoleTest(IronPythonTestCase):
         realargs.extend(args)
         exitcode = os.spawnv(0, self.batfile, realargs)
         cmdline = "ipy " + ' '.join(args)
+        if is_cli32:
+            cmdline = "ipy32 " + ' '.join(args)
 
         print('')
         print('    {}'.format(cmdline))

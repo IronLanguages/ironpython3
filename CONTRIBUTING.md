@@ -2,9 +2,9 @@
 
 The steps to contribute a change are:
 
-1. Fork the IronPython3 repository. For more information see [Getting the Sources](Documentation/getting-the-sources.md).
-2. Build the repository. For more information see [Building](Documentation/building.md).
-1. Make your changes on your machine, ensure ```make.ps1 test-all``` runs successfully, and commit your changes. For more information see [Modifying the Sources](Documentation/modifying-the-sources.md).
+1. Fork the IronPython3 repository. For more information see [Getting the Sources](docs/getting-the-sources.md).
+2. Build the repository. For more information see [Building](docs/building.md).
+1. Make your changes on your machine, ensure ```make.ps1 test-all``` runs successfully, and commit your changes. For more information see [Modifying the Sources](docs/modifying-the-sources.md).
 1. Push the commits to your fork. This way your name will be the author of the commit in the main IronPython3 tree (once the commits are pulled into the main tree).
 1. Create a pull request on Github, this will initiate a code review and CLA signing request
 1. The IronPython team will review, and possibly request changes, to your PR

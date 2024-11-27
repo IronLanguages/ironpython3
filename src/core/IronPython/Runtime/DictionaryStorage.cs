@@ -24,7 +24,7 @@ namespace IronPython.Runtime {
     /// around large operations and call lock free functions.
     /// </remarks>
     [Serializable]
-    public abstract class DictionaryStorage {
+    internal abstract class DictionaryStorage {
         public abstract void Add(ref DictionaryStorage storage, object? key, object? value);
 
         public virtual void AddNoLock(ref DictionaryStorage storage, object? key, object? value) {

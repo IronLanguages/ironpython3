@@ -37,7 +37,7 @@ namespace IronPython.Runtime {
     /// array to ensure that readers are not seeing multiple bucket arrays.
     /// </summary>
     [Serializable]
-    public class CommonDictionaryStorage : DictionaryStorage, ISerializable, IDeserializationCallback {
+    internal class CommonDictionaryStorage : DictionaryStorage, ISerializable, IDeserializationCallback {
         protected Bucket[] _buckets;
         private int _count;
         private int _version;

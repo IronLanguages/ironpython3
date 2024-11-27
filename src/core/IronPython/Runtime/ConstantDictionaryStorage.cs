@@ -17,7 +17,7 @@ namespace IronPython.Runtime {
     /// Copy on write constant dictionary storage used for dictionaries created with constant items.
     /// </summary>
     [Serializable]
-    public class ConstantDictionaryStorage : DictionaryStorage, IExpressionSerializable {
+    internal class ConstantDictionaryStorage : DictionaryStorage, IExpressionSerializable {
         private readonly CommonDictionaryStorage _storage;
 
         public ConstantDictionaryStorage(CommonDictionaryStorage storage) {

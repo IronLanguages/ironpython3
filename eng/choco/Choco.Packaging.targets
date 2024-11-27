@@ -6,7 +6,7 @@
       <ChocolateyVersion>0.10.8</ChocolateyVersion>
     </PropertyGroup>
     <Exec Command="$(NuGet) install chocolatey -Version $(ChocolateyVersion) -OutputDirectory &quot;$(RootDir)packages&quot; -Source https://api.nuget.org/v3/index.json" />
-    <Exec Command="$(RootDir)packages\chocolatey.$(ChocolateyVersion)\tools\chocolateyInstall\choco.exe pack -r &quot;$(RootDir)Package\choco\IronPython.nuspec&quot; --outputdirectory &quot;$(StageDir)&quot; --version $(PackageVersion) STAGEDIR=&quot;$(StageDir)&quot;" />
+    <Exec Command="$(RootDir)packages\chocolatey.$(ChocolateyVersion)\tools\chocolateyInstall\choco.exe pack -r &quot;$(RootDir)eng\choco\IronPython.nuspec&quot; --outputdirectory &quot;$(StageDir)&quot; --version $(PackageVersion) STAGEDIR=&quot;$(StageDir)&quot;" />
     <Move SourceFiles="$(StageDir)\ironpython.$(PackageVersion).nupkg" DestinationFiles="$(PackageDir)\ironpython.chocolatey.$(PackageVersion).nupkg" />
   </Target>
 </Project>

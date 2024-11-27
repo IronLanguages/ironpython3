@@ -5,7 +5,7 @@
   <metadata>
     <id>ironpython</id>
     <version>3.4.0</version>
-    <packageSourceUrl>https://github.com/IronLanguages/ironpython3/tree/main/Package/choco</packageSourceUrl>
+    <packageSourceUrl>https://github.com/IronLanguages/ironpython3/tree/main/eng/choco</packageSourceUrl>
     <title>IronPython</title>
     <authors>IronPython Contributors, Microsoft</authors>
     <copyright>© IronPython Contributors</copyright>

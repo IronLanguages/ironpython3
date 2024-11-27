@@ -3,7 +3,7 @@
   <Target Name="DebPackage" Condition="'$(OS)' == 'Unix' AND '$(MacOS)' != 'true'" DependsOnTargets="Stage" AfterTargets="Package">
     <PropertyGroup>
       <TempFolder>temp</TempFolder>
-      <PackageDebFolder>Package/deb</PackageDebFolder>
+      <PackageDebFolder>eng/deb</PackageDebFolder>
       <PackageTempFolder>$(PackageDebFolder)/$(TempFolder)</PackageTempFolder>
     </PropertyGroup>
 

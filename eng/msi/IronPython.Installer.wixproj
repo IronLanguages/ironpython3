@@ -6,7 +6,7 @@
     <SuppressPdbOutput>true</SuppressPdbOutput>
     <SuppressSpecificWarnings>5151</SuppressSpecificWarnings>
     <SuppressIces>ICE61</SuppressIces>
-    <BindInputPaths Condition=" '$(BindInputPaths)' == '' ">$(RootDir)Package\$(Configuration)\Stage\IronPython-$(DisplayVersion)</BindInputPaths>
+    <BindInputPaths Condition=" '$(BindInputPaths)' == '' ">$(RootDir)eng\$(Configuration)\Stage\IronPython-$(DisplayVersion)</BindInputPaths>
     <BuildDir Condition=" '$(BuildDir)' == '' ">$(RootDir)bin\$(Configuration)</BuildDir>
     <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</MsiVersion>
     <SetMsiAssemblyNameFileVersion>True</SetMsiAssemblyNameFileVersion>

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
@@ -19,13 +19,13 @@ namespace IronPythonTest {
             : base(context) {
         }
 
-        protected override void Initialize(CodeContext codeContext, Dictionary<string, PythonGlobal> globals) {
+        protected internal override void Initialize(CodeContext codeContext, Dictionary<string, PythonGlobal> globals) {
             _test_attr = globals["test_attr"];
             _test_min = globals["min"];
             base.Initialize(codeContext, globals);
         }
 
-        protected override IEnumerable<string> GetGlobalVariableNames() {
+        protected internal override IEnumerable<string> GetGlobalVariableNames() {
             return new string[] { "test_attr", "test_overlap_method", "test_overlap_type", "min" };
         }
 

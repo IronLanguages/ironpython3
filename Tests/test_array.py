@@ -180,7 +180,7 @@ class ArrayTest(IronPythonTestCase):
         self.assertEqual(a[2:4], System.Array[int]((2,3)))
         self.assertEqual(a[-1], 4)
 
-        self.assertEqual(repr(a), 'Array[int]((0, 1, 2, 3, 4))')
+        self.assertEqual(repr(a), 'Array[int]((0, 1, 2, 3, 4), base: 5)')
 
         a = System.Array.CreateInstance(int, (5,), (15,))
         b = System.Array.CreateInstance(int, (5,), (20,))

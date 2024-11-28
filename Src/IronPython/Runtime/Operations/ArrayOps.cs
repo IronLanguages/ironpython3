@@ -214,24 +214,29 @@ namespace IronPython.Runtime.Operations {
                     ret.Append("Array[");
                     Type elemType = self.GetType().GetElementType()!;
                     ret.Append(DynamicHelpers.GetPythonTypeFromType(elemType).Name);
-                    ret.Append("]");
+                    ret.Append(']');
                     ret.Append("((");
                     for (int i = 0; i < self.Length; i++) {
                         if (i > 0) ret.Append(", ");
                         ret.Append(PythonOps.Repr(context, self.GetValue(i + self.GetLowerBound(0))));
                     }
-                    ret.Append("))");
+                    ret.Append(')');
+                    if (self.GetLowerBound(0) != 0) {
+                        ret.Append(", base: ");
+                        ret.Append(self.GetLowerBound(0));
+                    }
+                    ret.Append(')');
                 } else {
                     // multi dimensional arrays require multiple statements to construct so we just
                     // give enough info to identify the object and its type.
-                    ret.Append("<");
+                    ret.Append('<');
                     ret.Append(self.Rank);
                     ret.Append(" dimensional Array[");
                     Type elemType = self.GetType().GetElementType()!;
                     ret.Append(DynamicHelpers.GetPythonTypeFromType(elemType).Name);
                     ret.Append("] at ");
                     ret.Append(PythonOps.HexId(self));
-                    ret.Append(">");
+                    ret.Append('>');
                 }
                 return ret.ToString();
             } finally {

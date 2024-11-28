@@ -38,7 +38,7 @@
     <None Include="Lib\**\*.py" Link="lib\%(RecursiveDir)%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\extensions\StdLib\Lib\os.py" Link="lib\os.py">
+    <None Include="..\..\core\IronPython.StdLib\Lib\os.py" Link="lib\os.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -46,7 +46,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData-3.2.0.txt.gz" />
-    <EmbeddedResource Include="..\..\extensions\StdLib\Lib\importlib\_bootstrap.py" Link="Modules\_bootstrap.py" />
+    <EmbeddedResource Include="..\..\core\IronPython.StdLib\Lib\importlib\_bootstrap.py" Link="Modules\_bootstrap.py" />
   </ItemGroup>
 
   <ItemGroup>

@@ -173,35 +173,55 @@ class ArrayTest(IronPythonTestCase):
 
     def test_nonzero_lowerbound(self):
         a = System.Array.CreateInstance(int, (5,), (5,))
-        for i in range(5): a[i] = i
+        for i in range(5, 5 + a.Length): a[i] = i
 
-        self.assertEqual(a[:2], System.Array[int]((0,1)))
-        self.assertEqual(a[2:], System.Array[int]((2,3,4)))
-        self.assertEqual(a[2:4], System.Array[int]((2,3)))
-        self.assertEqual(a[-1], 4)
+        self.assertEqual(a[:7], System.Array[int]((5,6)))
+        self.assertEqual(a[7:], System.Array[int]((7,8,9)))
+        self.assertEqual(a[7:9], System.Array[int]((7,8)))
+        self.assertEqual(a[-1:-3:-1], System.Array[int]((9,8)))
+        self.assertEqual(a[-1], 9)
 
-        self.assertEqual(repr(a), 'Array[int]((0, 1, 2, 3, 4), base: 5)')
+        self.assertEqual(repr(a), 'Array[int]((5, 6, 7, 8, 9), base: 5)')
 
         a = System.Array.CreateInstance(int, (5,), (15,))
         b = System.Array.CreateInstance(int, (5,), (20,))
         self.assertEqual(a.Length, b.Length)
         for i in range(a.Length):
-            self.assertEqual(a[i], b[i])
+            self.assertEqual(a[i + 15], b[i + 20])
 
-        ## 5-dimension
+        a0 = System.Array.CreateInstance(int, 5) # regular, 0-based
+        for i in range(5): a0[i] = i
+
+        a[17:19] = a0[2:4]
+        self.assertEqual(a[17:19], System.Array[int]((2, 3)))
+
+        self.assertEqual(a0[3:1:-1], System.Array[int]((3, 2)))
+        self.assertEqual(a[18:16:-1], System.Array[int]((3, 2)))
+
+        self.assertEqual(a0[-3:-1], System.Array[int]((2, 3)))
+        self.assertEqual(a[-3:-1], System.Array[int]((2, 3)))
+
+        a[18:16:-1] = a0[2:4]
+        self.assertEqual(a[17:19], System.Array[int]((3, 2)))
+
+        ## 5-dimension, 2-length/dim, progressive lowerbound
         a = System.Array.CreateInstance(int, (2,2,2,2,2), (1,2,3,4,5))
-        self.assertEqual(a[0,0,0,0,0], 0)
+        self.assertEqual(a[1,2,3,4,5], 0)
+
+        ## 5-dimension, 2-length/dim, progressive lowerbound
+        a = System.Array.CreateInstance(int, (2,2,2,2,2), (1,2,3,4,5))
+        self.assertEqual(a[1,2,3,4,5], 0)
 
         for i in range(5):
-            index = [0,0,0,0,0]
-            index[i] = 1
+            index = [1,2,3,4,5]
+            index[i] += 1
 
             a[index[0], index[1], index[2], index[3], index[4]] = i
             self.assertEqual(a[index[0], index[1], index[2], index[3], index[4]], i)
 
         for i in range(5):
-            index = [0,0,0,0,0]
-            index[i] = 0
+            index = [2,3,4,5,6]
+            index[i] -= 1
 
             a[index[0], index[1], index[2], index[3], index[4]] = i
             self.assertEqual(a[index[0], index[1], index[2], index[3], index[4]], i)
@@ -217,6 +237,35 @@ class ArrayTest(IronPythonTestCase):
         self.assertRaises(NotImplementedError, sliceArray, a, -200)
         self.assertRaises(NotImplementedError, sliceArrayAssign, a, -200, 1)
         self.assertRaises(NotImplementedError, sliceArrayAssign, a, 1, 1)
+
+    def test_base1(self):
+        # 1-based 2x2 matrix
+        arr = System.Array.CreateInstance(str, (2,2), (1,1))
+        
+        self.assertEqual(arr.GetLowerBound(0), 1)
+        self.assertEqual(arr.GetLowerBound(1), 1)
+        self.assertEqual(arr.GetUpperBound(0), 2)
+        self.assertEqual(arr.GetUpperBound(1), 2)
+
+        arr.SetValue("a_1,1", System.Array[System.Int32]((1,1)))
+        arr.SetValue("a_1,2", System.Array[System.Int32]((1,2)))
+        arr.SetValue("a_2,1", System.Array[System.Int32]((2,1)))
+        arr.SetValue("a_2,2", System.Array[System.Int32]((2,2)))
+
+        self.assertEqual(arr[1, 1], "a_1,1")
+        self.assertEqual(arr[1, 2], "a_1,2")
+        self.assertEqual(arr[2, 1], "a_2,1")
+        self.assertEqual(arr[2, 2], "a_2,2")
+
+        arr[1, 1] = "b_1,1"
+        arr[1, 2] = "b_1,2"
+        arr[2, 1] = "b_2,1"
+        arr[2, 2] = "b_2,2"
+
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((1,1))), "b_1,1")
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((1,2))), "b_1,2")
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((2,1))), "b_2,1")
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((2,2))), "b_2,2")
 
     def test_array_type(self):
 

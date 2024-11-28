@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
     [TestFixture(Category = "IronPython")]
-    public class IronPythonCases : CommonCases {        
+    public class IronPythonCases : CommonCases {
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
         public override int Test(TestInfo testcase) {
             return TestImpl(testcase);
@@ -20,7 +20,7 @@ namespace IronPythonTest.Cases {
         protected override IEnumerable<TestInfo> GetTests() {
             return GetFilenames(new[] {
                 System.Tuple.Create(category, "Tests"),
-                System.Tuple.Create($"{category}.scripts", Path.Combine("Src", "Scripts")),
+                System.Tuple.Create($"{category}.scripts", Path.Combine("src", "Scripts")),
             })
             .OrderBy(testcase => testcase.Name);
 

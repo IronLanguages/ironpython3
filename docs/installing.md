@@ -87,7 +87,7 @@ Use Powershell's `help` command on the script for information about available op
 The script is also available online, so it can be downloaded and invoked without unzipping the archive first.
 
 ```
-PS> Invoke-WebRequest https://raw.githubusercontent.com/IronLanguages/ironpython3/main/Src/Scripts/Install-IronPython.ps1 -OutFile ./Install-IronPython.ps1
+PS> Invoke-WebRequest https://raw.githubusercontent.com/IronLanguages/ironpython3/main/src/Scripts/Install-IronPython.ps1 -OutFile ./Install-IronPython.ps1
 PS> ./Install-IronPython ~/ipyenv ~/Downloads/IronPython.3.X.Y.zip
 PS> ~/ipyenv/Enter-IronPythonEnvironment
 «ipyenv» PS> ipy
@@ -170,10 +170,10 @@ If those executables test out successfully, the binaries can be installed outsid
 
 The artifacts are placed in directory `./Package/Release/Packages/IronPython-3.X.Y`. Pick a package suitable for your installation target and follow instructions above for the officially released packages.
 
-Note: as a convenience, if you run `Install-IronPython.ps1` directly from directory `./Src/Scripts` to install IronPython from the zip file, there is no need to pass the location to the zip file; the script finds it automatically using the relative path.
+Note: as a convenience, if you run `Install-IronPython.ps1` directly from directory `./src/Scripts` to install IronPython from the zip file, there is no need to pass the location to the zip file; the script finds it automatically using the relative path.
 
 Installation example:
 
 ```
-./Src/Scripts/Install-IronPython.ps1 /path/to/install/directory -framework net462
+./src/Scripts/Install-IronPython.ps1 /path/to/install/directory -framework net462
 ```

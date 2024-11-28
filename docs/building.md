@@ -45,6 +45,6 @@ If the build is successful the binaries are stored in `ironpython3/bin/{Configur
 
 ## Running
 
-The standard library is not copied over to the `bin` folder during the build process, it lives in `Src/StdLib/Lib`.
+The standard library is not copied over to the `bin` folder during the build process, it lives in `src/IronPython.StdLib/Lib`.
 - When running the `Release` configuration executable, you should set the environment variable `IRONPYTHONPATH` to this folder.
 - When running the `Debug` configuration executable, this folder is automatically added to `sys.path`.

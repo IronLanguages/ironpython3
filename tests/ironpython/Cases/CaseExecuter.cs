@@ -65,11 +65,11 @@ namespace IronPythonTest.Cases {
         }
 
         internal static string FindRoot() {
-            // we start at the current directory and look up until we find the "Src" directory
+            // we start at the current directory and look up until we find the "src" directory
             var current = System.Reflection.Assembly.GetExecutingAssembly().Location;
             var found = false;
             while (!found && !string.IsNullOrEmpty(current)) {
-                var test = Path.Combine(current, "Src", "StdLib", "Lib");
+                var test = Path.Combine(current, "src", "core", "IronPython.StdLib", "Lib");
                 if (Directory.Exists(test)) {
                     return current;
                 }
@@ -84,7 +84,7 @@ namespace IronPythonTest.Cases {
             if (!paths.Any(x => x.Contains("stdlib", StringComparison.OrdinalIgnoreCase))) {
                 var root = FindRoot();
                 if (!string.IsNullOrEmpty(root)) {
-                    paths.Insert(0, Path.Combine(root, "Src", "StdLib", "Lib"));
+                    paths.Insert(0, Path.Combine(root, "src", "core", "IronPython.StdLib", "Lib"));
                 }
             }
             engine.SetSearchPaths(paths);
@@ -140,7 +140,7 @@ namespace IronPythonTest.Cases {
         }
 
         private static string GetIronPythonPath() {
-            var path = Path.Combine(FindRoot(), "Src", "StdLib", "Lib");
+            var path = Path.Combine(FindRoot(), "src", "core", "IronPython.StdLib", "Lib");
             if (Directory.Exists(path)) {
                 return path;
             }

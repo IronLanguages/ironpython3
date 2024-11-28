@@ -15,13 +15,13 @@ def get_root_dir():
 root_dir = get_root_dir()
 
 source_directories = [
-    os.path.join(root_dir, "Src"),
-    os.path.join(root_dir, "Src", "DLR", "Src"),
+    os.path.join(root_dir, "src"),
+    os.path.join(root_dir, "src", "runtime", "Src"),
 ]
 
 exclude_directories = [
-    os.path.join(root_dir, "Src", "DLR"),
-    os.path.join(root_dir, "Src", "StdLib"),
+    os.path.join(root_dir, "src", "runtime"),
+    os.path.join(root_dir, "src", "core", "IronPython.StdLib"),
 ]
 
 START_COMMON = "#region Generated"

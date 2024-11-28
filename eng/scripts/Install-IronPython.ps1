@@ -30,7 +30,7 @@
 
     PS>./make
     PS>./make package
-    PS>./Src/Scripts/Install-IronPython.ps1 env
+    PS>./eng/scripts/Install-IronPython.ps1 env
 
     These commands should be issued on a Powershell prompt with the current directory set to the project root.
     The project is first built, then packaged, and finally the script uses the zipfile produced during packaging to install IronPython in directory "env".
@@ -60,11 +60,11 @@ if (-not $ZipFile) {
     if ($splitPSScriptRoot[-1] -eq "scripts" -and (Test-Path (Join-Path (Split-Path $PSScriptRoot) "lib"))) {
         # Script run from within already expanded zip file
         $unzipDir = $PSScriptRoot | Split-Path
-    } elseif ($splitPSScriptRoot[-2] -eq "Src" -and $splitPSScriptRoot[-1] -eq "Scripts") {
+    } elseif ($splitPSScriptRoot[-2] -eq "eng" -and $splitPSScriptRoot[-1] -eq "scripts") {
         # Script run from within a checked out code base
         # Locate the zip archive in the standard location of the package target
         $projectRoot = $PSScriptRoot | Split-Path | Split-Path
-        $zipFiles = @(Resolve-Path (Join-Path $projectRoot "Package/Release/Packages/IronPython-*/IronPython.3.*.zip"))
+        $zipFiles = @(Resolve-Path (Join-Path $projectRoot "eng/Release/Packages/IronPython-*/IronPython.3.*.zip"))
         if ($zipFiles.Count -gt 1) {
             Write-Error (@("Ambiguous implicit project zip files:") + $zipFiles -join "`n")
         } elseif ($zipFiles.Count -lt 1) {

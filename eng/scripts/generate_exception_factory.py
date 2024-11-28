@@ -172,7 +172,7 @@ def gen_expr_factory_com(cw):
     gen_expr_factory(cw, generate.root_dir + "\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic\\System.Dynamic.txt")
 
 def gen_expr_factory_scripting(cw):
-    gen_expr_factory(cw, generate.root_dir + "\\Src\\DLR\\Src\\Microsoft.Dynamic\\Microsoft.Scripting.txt")
+    gen_expr_factory(cw, generate.root_dir + "\\src\\runtime\\Src\\Microsoft.Dynamic\\Microsoft.Scripting.txt")
 
 def main():
     return generate.generate(

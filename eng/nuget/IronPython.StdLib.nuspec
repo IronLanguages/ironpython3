@@ -5,7 +5,7 @@
     <title>IronPython Standard Library</title>
     <version>3.4.0</version>
     <authors>IronPython Contributors, Python Contributors</authors>
-    <copyright>© IronPython Contributors</copyright>
+    <copyright>© .NET Foundation</copyright>
     <projectUrl>https://ironpython.net</projectUrl>
     <license type="file">StdLib.License.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>

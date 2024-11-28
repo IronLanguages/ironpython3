@@ -5,7 +5,7 @@
     <title>IronPython</title>
     <version>3.4.0</version>
     <authors>IronPython Contributors, Microsoft</authors>
-    <copyright>© IronPython Contributors</copyright>
+    <copyright>© .NET Foundation</copyright>
     <projectUrl>https://ironpython.net</projectUrl>
     <repository type="git" url="https://github.com/IronLanguages/ironpython3.git" />
     <license type="expression">Apache-2.0</license>

@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic;
 using System.Linq;
+using System.Reflection;
+
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
@@ -56,7 +58,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object CallParams(CodeContext/*!*/ context, PythonType cls, params object[] args\u03c4) {
-            if (args\u03c4 == null) args\u03c4 = ArrayUtils.EmptyObjects;
+            if (args\u03c4 == null) args\u03c4 = [];
 
             return CallWorker(context, cls, args\u03c4);
         }
@@ -83,7 +85,7 @@ namespace IronPython.Runtime.Operations {
                 argNames[i++ - args.Length] = kvp.Key;
             }
 
-            return CallWorker(context, dt, new KwCallInfo(allArgs, argNames));        
+            return CallWorker(context, dt, new KwCallInfo(allArgs, argNames));
         }
 
         internal static object CallWorker(CodeContext/*!*/ context, PythonType dt, KwCallInfo args) {
@@ -114,7 +116,7 @@ namespace IronPython.Runtime.Operations {
                 PythonType cdt = dt.ResolutionOrder[i];
                 PythonTypeSlot dts;
                 object value;
-               
+
                 if (cdt.TryLookupSlot(context, "__init__", out dts) &&
                     dts.TryGetValue(context, newObject, dt, out value)) {
                     return value;
@@ -170,7 +172,7 @@ namespace IronPython.Runtime.Operations {
             // or if this is the user doing type(x), or if it's a standard
             // .NET type which doesn't have an __init__ method (this is a perf optimization)
             return (!cls.IsSystemType || cls.IsPythonType) &&
-                newObjectType.IsSubclassOf(cls) &&                
+                newObjectType.IsSubclassOf(cls) &&
                 (cls != TypeCache.PythonType || argCnt > 1);
         }
 
@@ -230,7 +232,7 @@ namespace IronPython.Runtime.Operations {
 
             group = FilterNewSlots(group);
             TrackerTypes tt = GetMemberType(group);
-            switch(tt) {
+            switch (tt) {
                 case TrackerTypes.Method:
                     bool checkStatic = false;
                     List<MemberInfo> mems = new List<MemberInfo>();
@@ -241,37 +243,37 @@ namespace IronPython.Runtime.Operations {
                     }
 
                     Type declType = group[0].DeclaringType;
-                    MemberInfo[] memArray = mems.ToArray(); 
+                    MemberInfo[] memArray = mems.ToArray();
                     FunctionType ft = GetMethodFunctionType(declType, memArray, checkStatic);
                     return GetFinalSlotForFunction(GetBuiltinFunction(declType, group[0].Name, name, ft, memArray));
-                
+
                 case TrackerTypes.Field:
                     return GetReflectedField(((FieldTracker)group[0]).Field);
-                
+
                 case TrackerTypes.Property:
-                    return GetReflectedProperty((PropertyTracker)group[0], group, privateBinding);       
-                
+                    return GetReflectedProperty((PropertyTracker)group[0], group, privateBinding);
+
                 case TrackerTypes.Event:
                     return GetReflectedEvent(((EventTracker)group[0]));
-                
+
                 case TrackerTypes.Type:
                     TypeTracker type = (TypeTracker)group[0];
                     for (int i = 1; i < group.Count; i++) {
                         type = TypeGroup.UpdateTypeEntity(type, (TypeTracker)group[i]);
                     }
-                    
+
                     if (type is TypeGroup) {
                         return new PythonTypeUserDescriptorSlot(type, true);
                     }
 
                     return new PythonTypeUserDescriptorSlot(DynamicHelpers.GetPythonTypeFromType(type.Type), true);
-                
+
                 case TrackerTypes.Constructor:
                     return GetConstructorFunction(group[0].DeclaringType, privateBinding);
-                
+
                 case TrackerTypes.Custom:
                     return ((PythonCustomTracker)group[0]).GetSlot();
-                
+
                 default:
                     // if we have a new slot in the derived class filter out the 
                     // members from the base class.
@@ -311,7 +313,7 @@ namespace IronPython.Runtime.Operations {
 
             return GetConstructor(t, ctorFunc, ctors);
         }
-        
+
         internal static MethodBase[] GetConstructors(Type t, bool privateBinding, bool includeProtected = false) {
             MethodBase[] ctors = CompilerHelpers.GetConstructors(t, privateBinding, includeProtected);
             if (t.IsEnum) {
@@ -320,7 +322,8 @@ namespace IronPython.Runtime.Operations {
             }
             return ctors;
         }
-         // support for EnumType(number)
+
+        // support for EnumType(number)
         private static T CreateEnum<T>(object value) {
             if (value == null) {
                 throw PythonOps.ValueError(
@@ -364,7 +367,7 @@ namespace IronPython.Runtime.Operations {
                     methods.Add(ci);
                 }
             }
-            
+
             if (type.IsValueType && !hasDefaultConstructor && type != typeof(void)) {
                 try {
                     methods.Add(typeof(ScriptingRuntimeHelpers).GetMethod(nameof(ScriptingRuntimeHelpers.CreateInstance), ReflectionUtils.EmptyTypes).MakeGenericMethod(type));
@@ -480,7 +483,7 @@ namespace IronPython.Runtime.Operations {
             BuiltinFunction res = null;
 
             if (mems.Length != 0) {
-                FunctionType ft = funcType ?? GetMethodFunctionType(type, mems); 
+                FunctionType ft = funcType ?? GetMethodFunctionType(type, mems);
                 type = GetBaseDeclaringType(type, mems);
 
                 BuiltinFunctionKey cache = new BuiltinFunctionKey(type, new ReflectionCache.MethodBaseCache(cacheName, GetNonBaseHelperMethodInfos(mems)), ft);
@@ -540,7 +543,7 @@ namespace IronPython.Runtime.Operations {
         private static Type GetBaseDeclaringType(Type type, MemberInfo/*!*/[] mems) {
             // get the base most declaring type, first sort the list so that
             // the most derived class is at the beginning.
-            Array.Sort<MemberInfo>(mems, delegate(MemberInfo x, MemberInfo y) {
+            Array.Sort<MemberInfo>(mems, delegate (MemberInfo x, MemberInfo y) {
                 if (x.DeclaringType.IsSubclassOf(y.DeclaringType)) {
                     return -1;
                 } else if (y.DeclaringType.IsSubclassOf(x.DeclaringType)) {
@@ -602,7 +605,7 @@ namespace IronPython.Runtime.Operations {
                 if (mi.IsStatic && mi.IsSpecialName) {
                     ParameterInfo[] pis = mi.GetParameters();
 
-                    if ((pis.Length == 2 && pis[0].ParameterType != typeof(CodeContext)) || 
+                    if ((pis.Length == 2 && pis[0].ParameterType != typeof(CodeContext)) ||
                         (pis.Length == 3 && pis[0].ParameterType == typeof(CodeContext))) {
                         ft |= FunctionType.BinaryOperator;
 
@@ -658,7 +661,7 @@ namespace IronPython.Runtime.Operations {
                 }
             } else if (type.IsAssignableFrom(typeof(int))) { // GH #52
                 // only show methods defined outside of int
-                 foreach (MethodInfo mi in methods) {
+                foreach (MethodInfo mi in methods) {
                     Debug.Assert(!mi.DeclaringType.IsInterface || typeof(int).GetInterfaces().Contains(mi.DeclaringType));
                     if (PythonBinder.IsPythonSupportingType(mi.DeclaringType) ||
                         mi.DeclaringType.IsInterface ||
@@ -675,7 +678,7 @@ namespace IronPython.Runtime.Operations {
         /// a function is static if it's a static .NET method and it's defined on the type or is an extension method 
         /// with StaticExtensionMethod decoration.
         /// </summary>
-        private static bool IsStaticFunction(Type type, MethodInfo mi) {            
+        private static bool IsStaticFunction(Type type, MethodInfo mi) {
             return mi.IsStatic &&       // method must be truly static
                 !mi.IsDefined(typeof(WrapperDescriptorAttribute), false) &&     // wrapper descriptors are instance methods
                 (mi.DeclaringType.IsAssignableFrom(type) || mi.IsDefined(typeof(StaticExtensionMethodAttribute), false)); // or it's not an extension method or it's a static extension method
@@ -814,7 +817,7 @@ namespace IronPython.Runtime.Operations {
                 _propertyCache[pt] = rp;
 
                 return rp;
-            }            
+            }
         }
 
         private static MethodInfo FilterProtectedGetterOrSetter(MethodInfo info, bool privateBinding) {
@@ -884,7 +887,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         internal static PythonTuple EnsureBaseType(PythonTuple bases) {
             bool hasInterface = false;
-            foreach (object baseClass in bases) {               
+            foreach (object baseClass in bases) {
                 PythonType dt = baseClass as PythonType;
 
                 if (!dt.UnderlyingSystemType.IsInterface) {

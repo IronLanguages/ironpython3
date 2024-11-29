@@ -6,11 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Dynamic;
 using System.IO;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -122,7 +119,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _OSError {
-            public static new object __new__(PythonType cls, [ParamDictionary]IDictionary<string, object> kwArgs, params object[] args) {
+            public static new object __new__(PythonType cls, [ParamDictionary] IDictionary<string, object> kwArgs, params object[] args) {
                 if (cls == OSError && args.Length >= 1 && args[0] is int errno) {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         if (args.Length >= 4 && args[3] is int winerror) {
@@ -223,8 +220,7 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             private static PythonType ErrnoToPythonType(Error errno) {
-                var res = errno switch
-                {
+                var res = errno switch {
                     Error.EPERM => PermissionError,
                     Error.ENOENT => FileNotFoundError,
                     Error.ESRCH => ProcessLookupError,
@@ -239,8 +235,7 @@ namespace IronPython.Runtime.Exceptions {
                     _ => null
                 };
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    res ??= errno switch
-                    {
+                    res ??= errno switch {
                         // Windows or remapped OSX
                         Error.WSAEWOULDBLOCK => BlockingIOError,
                         Error.WSAEINPROGRESS => BlockingIOError,
@@ -253,8 +248,7 @@ namespace IronPython.Runtime.Exceptions {
                         _ => null
                     };
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                    res ??= errno switch
-                    {
+                    res ??= errno switch {
                         // Linux
                         Error.ECONNABORTED => ConnectionAbortedError,
                         Error.ECONNRESET => ConnectionResetError,
@@ -529,7 +523,7 @@ for k, v in toError.items():
         }
 
         public partial class _ImportError {
-            public void __init__([ParamDictionary]IDictionary<string, object> kwargs, params object[] args) {
+            public void __init__([ParamDictionary] IDictionary<string, object> kwargs, params object[] args) {
                 base.__init__(args);
 
                 foreach (var pair in kwargs) {
@@ -702,7 +696,7 @@ for k, v in toError.items():
             if (PythonOps.IsInstance(value, type)) {
                 pyEx = value;
             } else if (value is PythonTuple) {
-                pyEx = PythonOps.CallWithArgsTuple(type, ArrayUtils.EmptyObjects, value);
+                pyEx = PythonOps.CallWithArgsTuple(type, [], value);
             } else if (value != null) {
                 pyEx = PythonCalls.Call(context, type, value);
             } else {

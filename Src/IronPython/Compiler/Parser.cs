@@ -804,7 +804,7 @@ namespace IronPython.Compiler {
                 dotCount++;
             }
 
-            string[] names = ArrayUtils.EmptyStrings;
+            string[] names = [];
             if (PeekToken() is NameToken) {
                 names = ReadNames();
             }

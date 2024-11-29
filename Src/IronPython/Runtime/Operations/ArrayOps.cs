@@ -87,6 +87,30 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        [StaticExtensionMethod]
+        public static object __eq__(CodeContext context, Array self, [NotNone] Array other) {
+            if (self is null) throw PythonOps.TypeError("expected Array, got None");
+            if (other is null) throw PythonOps.TypeError("expected Array, got None");
+
+            if (self.GetType() != other.GetType()) return ScriptingRuntimeHelpers.False;
+
+            return ScriptingRuntimeHelpers.BooleanToObject(
+                ((IStructuralEquatable)self).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
+            );
+        }
+
+        [StaticExtensionMethod]
+        [return: MaybeNotImplemented]
+        public static object __eq__(CodeContext context, object self, object? other) => NotImplementedType.Value;
+
+        [StaticExtensionMethod]
+        public static object __ne__(CodeContext context, Array self, [NotNone] Array other)
+            => ScriptingRuntimeHelpers.BooleanToObject(ReferenceEquals(__eq__(context, self, other), ScriptingRuntimeHelpers.False));
+
+        [StaticExtensionMethod]
+        [return: MaybeNotImplemented]
+        public static object __ne__(CodeContext context, object self, object? other) => NotImplementedType.Value;
+
         /// <summary>
         /// Multiply two object[] arrays - slow version, we need to get the type, etc...
         /// </summary>

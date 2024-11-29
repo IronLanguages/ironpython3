@@ -279,4 +279,43 @@ class ArrayTest(IronPythonTestCase):
         array1[0,0] = 5
         self.assertEqual(array1[0,0], array1[(0,0)])
 
+    def test_equality(self):
+        a = System.Array.CreateInstance(int, 5)
+        a2 = System.Array.CreateInstance(int, 5) # same as a
+        b = System.Array.CreateInstance(int, 5, 6) # different rank
+        c = System.Array.CreateInstance(int, 6) # different length
+        d = System.Array.CreateInstance(int, (5,), (1,)) # different base
+        e = System.Array.CreateInstance(System.Int32, 5) # different element type
+        l = [0] * 5 # different type
+
+        self.assertTrue(a == a2)
+        self.assertTrue(a2 == a)
+        self.assertFalse(a != a2)
+        self.assertFalse(a2 != a)
+
+        self.assertFalse(a == b)
+        self.assertFalse(b == a)
+        self.assertTrue(a != b)
+        self.assertTrue(b != a)
+
+        self.assertFalse(a == c)
+        self.assertFalse(c == a)
+        self.assertTrue(a != c)
+        self.assertTrue(c != a)
+
+        self.assertFalse(a == d)
+        self.assertFalse(d == a)
+        self.assertTrue(a != d)
+        self.assertTrue(d != a)
+
+        self.assertFalse(a == e)
+        self.assertFalse(e == a)
+        self.assertTrue(a != e)
+        self.assertTrue(e != a)
+
+        self.assertFalse(a == l)
+        self.assertFalse(l == a)
+        self.assertTrue(a != l)
+        self.assertTrue(l != a)
+
 run_test(__name__)

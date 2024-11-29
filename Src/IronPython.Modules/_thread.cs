@@ -228,9 +228,9 @@ namespace IronPython.Modules {
                 try {
 #pragma warning disable 618 // TODO: obsolete
                     if (_kwargs != null) {
-                        PythonOps.CallWithArgsTupleAndKeywordDictAndContext(_context, _func, ArrayUtils.EmptyObjects, ArrayUtils.EmptyStrings, _args, _kwargs);
+                        PythonOps.CallWithArgsTupleAndKeywordDictAndContext(_context, _func, [], [], _args, _kwargs);
                     } else {
-                        PythonOps.CallWithArgsTuple(_func, ArrayUtils.EmptyObjects, _args);
+                        PythonOps.CallWithArgsTuple(_func, [], _args);
                     }
 #pragma warning restore 618
                 } catch (SystemExitException) {

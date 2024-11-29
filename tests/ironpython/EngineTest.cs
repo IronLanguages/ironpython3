@@ -54,7 +54,7 @@ namespace IronPythonTest {
             RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).Assembly.Location);
             RootDirectory = FindRoot();
             ScriptTestDirectory = Path.Combine(RootDirectory, "tests", "python");
-            InputTestDirectory = Path.Combine(ScriptTestDirectory, "inputs");
+            InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");
         }
 
         private static string FindRoot() {

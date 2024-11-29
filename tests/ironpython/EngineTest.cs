@@ -53,8 +53,8 @@ namespace IronPythonTest {
         static Common() {
             RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).Assembly.Location);
             RootDirectory = FindRoot();
-            ScriptTestDirectory = Path.Combine(RootDirectory, "Tests");
-            InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");
+            ScriptTestDirectory = Path.Combine(RootDirectory, "tests", "python");
+            InputTestDirectory = Path.Combine(ScriptTestDirectory, "inputs");
         }
 
         private static string FindRoot() {

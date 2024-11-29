@@ -20,7 +20,7 @@ namespace IronPythonTest.Cases {
         protected override IEnumerable<TestInfo> GetTests() {
             return GetFilenames(new[] {
                 System.Tuple.Create(category, "Tests"),
-                System.Tuple.Create($"{category}.scripts", Path.Combine("src", "Scripts")),
+                System.Tuple.Create($"{category}.scripts", Path.Combine("eng", "scripts")),
             })
             .OrderBy(testcase => testcase.Name);
 

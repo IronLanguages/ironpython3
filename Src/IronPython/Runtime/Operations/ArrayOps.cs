@@ -10,10 +10,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -291,7 +291,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object?[] GetSlice(object?[] data, int start, int stop) {
-            if (stop <= start) return ArrayUtils.EmptyObjects;
+            if (stop <= start) return [];
 
             var ret = new object?[stop - start];
             int index = 0;
@@ -309,7 +309,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             int size = PythonOps.GetSliceCount(start, stop, step);
-            if (size <= 0) return ArrayUtils.EmptyObjects;
+            if (size <= 0) return [];
 
             var res = new object?[size];
             for (int i = 0, index = start; i < res.Length; i++, index += step) {
@@ -330,7 +330,7 @@ namespace IronPython.Runtime.Operations {
 
             if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
                 if (data.GetType().GetElementType() == typeof(object))
-                    return ArrayUtils.EmptyObjects;
+                    return Array.Empty<object>();
 
                 return Array.CreateInstance(data.GetType().GetElementType()!, 0);
             }
@@ -352,7 +352,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object?[] CopyArray(object?[] data, int newSize) {
-            if (newSize == 0) return ArrayUtils.EmptyObjects;
+            if (newSize == 0) return [];
 
             var newData = new object?[newSize];
             if (data.Length < 20) {

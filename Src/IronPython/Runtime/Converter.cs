@@ -532,7 +532,7 @@ namespace IronPython.Runtime {
         private static TypeConverter GetTypeConverter(TypeConverterAttribute tca) {
             try {
                 ConstructorInfo ci = Type.GetType(tca.ConverterTypeName).GetConstructor(ReflectionUtils.EmptyTypes);
-                if (ci != null) return ci.Invoke(ArrayUtils.EmptyObjects) as TypeConverter;
+                if (ci != null) return ci.Invoke([]) as TypeConverter;
             } catch (TargetInvocationException) {
             }
             return null;

@@ -68,7 +68,7 @@ namespace IronPython.Runtime {
                 _context = new CodeContext(new PythonDictionary(), new ModuleContext(globals, DefaultContext.DefaultPythonContext));
             }
 
-            _defaults = defaults == null ? ArrayUtils.EmptyObjects : defaults.ToArray();
+            _defaults = defaults == null ? [] : defaults.ToArray();
             _code = code;
             _doc = code._initialDoc;
             _name = name ?? code.PythonCode.Name;
@@ -90,7 +90,7 @@ namespace IronPython.Runtime {
             Assert.NotNull(context, funcInfo);
 
             _context = context;
-            _defaults = defaults ?? ArrayUtils.EmptyObjects;
+            _defaults = defaults ?? [];
             _kwdefaults = kwdefaults;
             _code = funcInfo;
             _doc = funcInfo._initialDoc;
@@ -99,7 +99,7 @@ namespace IronPython.Runtime {
             _annotations = annotations ?? new PythonDictionary();
 
             Debug.Assert(_defaults.Length <= _code.co_argcount);
-            Debug.Assert((__kwdefaults__ ?.Count ?? 0) <= _code.co_kwonlyargcount);
+            Debug.Assert((__kwdefaults__?.Count ?? 0) <= _code.co_kwonlyargcount);
             if (modName != Uninitialized.Instance) {
                 _module = modName;
             }
@@ -142,7 +142,7 @@ namespace IronPython.Runtime {
                 return new PythonTuple(_defaults);
             }
             set {
-                _defaults = value == null ? ArrayUtils.EmptyObjects : value.ToArray();
+                _defaults = value == null ? [] : value.ToArray();
                 FunctionCompatibility = CalculatedCachedCompat();
             }
         }
@@ -211,7 +211,7 @@ namespace IronPython.Runtime {
 
         public FunctionCode __code__ {
             get {
-                return _code; 
+                return _code;
             }
             set {
                 if (value == null) {
@@ -226,7 +226,7 @@ namespace IronPython.Runtime {
             return PythonCalls.Call(context, this, args);
         }
 
-        public object __call__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+        public object __call__(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
             return PythonCalls.CallWithKeywordArgs(context, this, args, dict);
         }
 
@@ -417,7 +417,7 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-       
+
         #region Custom member lookup operators
 
         IList<string> IMembersList.GetMemberNames() {
@@ -471,7 +471,7 @@ namespace IronPython.Runtime {
             }
             return _dict;
         }
-        
+
         internal static int AddRecursionDepth(int change) {
             // ManagedThreadId starts at 1 and increases as we get more threads.
             // Therefore we keep track of a limited number of threads in an array
@@ -523,8 +523,7 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("cell")]
-    public sealed class ClosureCell : ICodeFormattable
-    {
+    public sealed class ClosureCell : ICodeFormattable {
         [PythonHidden]
         public object Value;
 

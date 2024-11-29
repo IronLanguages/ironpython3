@@ -15,7 +15,6 @@ using System.Threading;
 using IronPython.Runtime;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -403,7 +402,7 @@ namespace IronPython.Compiler.Ast {
 
                 if (parameters.Count == 0) {
                     // no point analyzing function with no parameters
-                    return ArrayUtils.EmptyStrings;
+                    return [];
                 }
 
                 var finder = new SelfNameFinder(function, parameters[0]);

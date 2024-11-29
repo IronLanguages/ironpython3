@@ -2,21 +2,19 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -55,7 +53,7 @@ namespace IronPython.Runtime.Types {
 
             if (instance == null) {
                 foreach (MethodInfo mi in Setter) {
-                    if(mi.IsStatic && DeclaringType != owner.UnderlyingSystemType) {
+                    if (mi.IsStatic && DeclaringType != owner.UnderlyingSystemType) {
                         return false;
                     } else if (mi.IsProtected()) {
                         throw PythonOps.TypeErrorForProtectedMember(owner.UnderlyingSystemType, _info.Name);
@@ -69,7 +67,7 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
-            return CallSetter(context, context.LanguageContext.GetGenericCallSiteStorage(), instance, ArrayUtils.EmptyObjects, value);
+            return CallSetter(context, context.LanguageContext.GetGenericCallSiteStorage(), instance, [], value);
         }
 
         internal override Type DeclaringType {
@@ -198,7 +196,7 @@ namespace IronPython.Runtime.Types {
                         ).Expression,
                         typeof(object)
                     )
-                );                
+                );
             }
         }
 

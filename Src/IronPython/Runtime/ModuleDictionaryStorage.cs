@@ -6,11 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+
 using IronPython.Compiler;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -162,7 +163,7 @@ namespace IronPython.Runtime {
 
                             var propInfo = (PropertyInfo)members[0];
                             if ((propInfo.GetGetMethod() ?? propInfo.GetSetMethod()).IsStatic) {
-                                value = ((PropertyInfo)members[0]).GetValue(null, ArrayUtils.EmptyObjects);
+                                value = ((PropertyInfo)members[0]).GetValue(null, []);
                             } else {
                                 throw new InvalidOperationException("instance property declared on module.  Propreties should be declared as static, marked as PythonHidden, or you should use a PythonGlobal.");
                             }
@@ -217,7 +218,7 @@ namespace IronPython.Runtime {
                 return value != Uninitialized.Instance;
             }
 
-            if(key is string strKey) {
+            if (key is string strKey) {
                 return TryGetLazyValue(strKey, out value);
             }
 

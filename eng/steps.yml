@@ -97,7 +97,7 @@ steps:
   - task: CopyFiles@2
     displayName: Copy NuGet and Zip Packages
     inputs:
-      SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+      SourceFolder: '$(Build.Repository.LocalPath)/eng/Release/Packages'
       Contents: |
         **/*.nupkg
         **/*.snupkg
@@ -109,7 +109,7 @@ steps:
     - task: CopyFiles@2
       displayName: Copy MSI Installer
       inputs:
-        SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+        SourceFolder: '$(Build.Repository.LocalPath)/eng/Release/Packages'
         Contents: '**/*.msi'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
       condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
@@ -118,7 +118,7 @@ steps:
     - task: CopyFiles@2
       displayName: Copy Deb Installer
       inputs:
-        SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+        SourceFolder: '$(Build.Repository.LocalPath)/eng/Release/Packages'
         Contents: '**/*.deb'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
       condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
@@ -127,7 +127,7 @@ steps:
     - task: CopyFiles@2
       displayName: Copy Pkg Installer
       inputs:
-        SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+        SourceFolder: '$(Build.Repository.LocalPath)/eng/Release/Packages'
         Contents: '**/*.pkg'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
       condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))

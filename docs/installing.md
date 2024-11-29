@@ -168,7 +168,7 @@ If those executables test out successfully, the binaries can be installed outsid
 ./make.ps1 package
 ```
 
-The artifacts are placed in directory `./Package/Release/Packages/IronPython-3.X.Y`. Pick a package suitable for your installation target and follow instructions above for the officially released packages.
+The artifacts are placed in directory `./eng/Release/Packages/IronPython-3.X.Y`. Pick a package suitable for your installation target and follow instructions above for the officially released packages.
 
 Note: as a convenience, if you run `Install-IronPython.ps1` directly from directory `./src/Scripts` to install IronPython from the zip file, there is no need to pass the location to the zip file; the script finds it automatically using the relative path.
 

@@ -198,6 +198,26 @@ class ArrayTest(IronPythonTestCase):
             for y in range(array3.GetLength(1)):
                 self.assertEqual(array3[x, y], 0)
 
+    def test_constructor_nonzero_lowerbound(self):
+        # 1-based
+        arr = System.Array[int]((1, 2), base=1)
+        self.assertEqual(arr.Rank, 1)
+        self.assertEqual(arr.Length, 2)
+        self.assertEqual(arr.GetLowerBound(0), 1)
+        self.assertEqual(arr.GetUpperBound(0), 2)
+        self.assertEqual(arr[1], 1)
+        self.assertEqual(arr[2], 2)
+        for i in range(1, 3):
+            self.assertEqual(arr[i], i)
+
+    def test_repr(self):
+        from System import Array
+        arr = Array[int]((5, 1), base=1)
+        s = repr(arr)
+        self.assertEqual(s, "Array[int]((5, 1), base=1)")
+        array4eval = eval(s, globals(), locals())
+        self.assertEqual(arr, array4eval)
+
     def test_nonzero_lowerbound(self):
         a = System.Array.CreateInstance(int, (5,), (5,))
         for i in range(5, 5 + a.Length): a[i] = i
@@ -208,7 +228,7 @@ class ArrayTest(IronPythonTestCase):
         self.assertEqual(a[-1:-3:-1], System.Array[int]((9,8)))
         self.assertEqual(a[-1], 9)
 
-        self.assertEqual(repr(a), 'Array[int]((5, 6, 7, 8, 9), base: 5)')
+        self.assertEqual(repr(a), 'Array[int]((5, 6, 7, 8, 9), base=5)')
 
         a = System.Array.CreateInstance(int, (5,), (15,))
         b = System.Array.CreateInstance(int, (5,), (20,))
@@ -320,9 +340,7 @@ class ArrayTest(IronPythonTestCase):
 
         # test slice indexing
         # 1-dim array [-1, 0, 1]
-        arr1 = System.Array.CreateInstance(int, (3,), (-1,))
-        for i in range(-1, 2):
-            arr1[i] = i
+        arr1 = System.Array[int]((-1, 0, 1), base=-1)
         self.assertEqual(arr1[-1:1], System.Array[int]((-1, 0)))
         self.assertEqual(arr1[-2:1], System.Array[int]((-1, 0)))
         self.assertEqual(arr1[0:], System.Array[int]((0, 1)))

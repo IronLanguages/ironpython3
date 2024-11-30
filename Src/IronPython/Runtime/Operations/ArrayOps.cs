@@ -93,10 +93,38 @@ namespace IronPython.Runtime.Operations {
             if (other is null) throw PythonOps.TypeError("expected Array, got None");
 
             if (self.GetType() != other.GetType()) return ScriptingRuntimeHelpers.False;
+            // same type implies: same rank, same element type
+            for (int d = 0; d < self.Rank; d++) {
+                if (self.GetLowerBound(d) != other.GetLowerBound(d)) return ScriptingRuntimeHelpers.False;
+                if (self.GetUpperBound(d) != other.GetUpperBound(d)) return ScriptingRuntimeHelpers.False;
+            }
+            if (self.Length == 0) return ScriptingRuntimeHelpers.True; // fast track
 
-            return ScriptingRuntimeHelpers.BooleanToObject(
-                ((IStructuralEquatable)self).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
-            );
+            if (self.Rank == 1 && self.GetLowerBound(0) == 0 ) {
+                // IStructuralEquatable.Equals only works for 1-dim, 0-based arrays
+                return ScriptingRuntimeHelpers.BooleanToObject(
+                    ((IStructuralEquatable)self).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
+                );
+            } else {
+                int[] ix = new int[self.Rank];
+                for (int d = 0; d < self.Rank; d++) {
+                    ix[d] = self.GetLowerBound(d);
+                }
+                for (int i = 0; i < self.Length; i++) {
+                    if (!PythonOps.EqualRetBool(self.GetValue(ix), other.GetValue(ix))) {
+                        return ScriptingRuntimeHelpers.False;
+                    }
+                    for (int d = self.Rank - 1; d >= 0; d--) {
+                        if (ix[d] < self.GetUpperBound(d)) {
+                            ix[d]++;
+                            break;
+                        } else {
+                            ix[d] = self.GetLowerBound(d);
+                        }
+                    }
+                }
+                return ScriptingRuntimeHelpers.True;
+            }
         }
 
         [StaticExtensionMethod]

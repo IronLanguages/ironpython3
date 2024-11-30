@@ -67,19 +67,23 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, PythonType pythonType, object items) {
+        public static object __new__(CodeContext context, PythonType pythonType, object items)
+            => __new__(context, pythonType, items, @base: 0);
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, PythonType pythonType, object items, /*[KeywordOnly]*/ int @base) {
             Type type = pythonType.UnderlyingSystemType.GetElementType()!;
 
-            object? lenFunc;
-            if (!PythonOps.TryGetBoundAttr(items, "__len__", out lenFunc))
+            if (!PythonOps.TryGetBoundAttr(items, "__len__", out object? lenFunc))
                 throw PythonOps.TypeErrorForBadInstance("expected object with __len__ function, got {0}", items);
 
             int len = context.LanguageContext.ConvertToInt32(PythonOps.CallWithContext(context, lenFunc));
 
-            Array res = Array.CreateInstance(type, len);
+            Array res = @base == 0 ?
+                Array.CreateInstance(type, len) : Array.CreateInstance(type, [len], [@base]);
 
             IEnumerator ie = PythonOps.GetEnumerator(items);
-            int i = 0;
+            int i = @base;
             while (ie.MoveNext()) {
                 res.SetValue(Converter.Convert(ie.Current, type), i++);
             }
@@ -277,7 +281,7 @@ namespace IronPython.Runtime.Operations {
                     }
                     ret.Append(')');
                     if (self.GetLowerBound(0) != 0) {
-                        ret.Append(", base: ");
+                        ret.Append(", base=");
                         ret.Append(self.GetLowerBound(0));
                     }
                     ret.Append(')');

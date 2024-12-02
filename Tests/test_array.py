@@ -6,6 +6,26 @@
 ## Test array support by IronPython (System.Array)
 ##
 
+"""
+Indexing of CLI arrays in IronPython:
+
+
+| Base | Index >= 0                           | Index < 0         |
+|------|--------------------------------------|-------------------|
+|  > 0 | absolue                              | relative from end |
+|    0 | absolute == relative from beginning  | relative from end |
+|  < 0 | absolute                             | absolute          |
+
+Comparison to indexing in C# and CPython:
+
+* Index >= 0, any base is C# compliant.
+* Base 0, any index is CPython compliant.
+* Base 0, index < 0 is not supported by C# but can be achieved by `System.Index` with 1-dim arrays only; then IronPython indexing is C# compliant.
+* Base > 0, index < 0 is not supported by C#; IronPython follows CPython convention as more practical.
+* Base < 0, index < 0 is C# compliant.
+* Base != 0 is not supported by CPython for any builtin structures.
+"""
+
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 if is_cli:
@@ -146,6 +166,13 @@ class ArrayTest(IronPythonTestCase):
         def f(): array1[::2] = [x * 2 for x in range(11)]
         self.assertRaises(ValueError, f)
 
+        # slices on non-1-dim arrays are not supported
+        array2 = System.Array.CreateInstance(int, 20, 20)
+        self.assertRaises(NotImplementedError, lambda: array2[:]) # TODO: TypeError?
+        self.assertRaises(TypeError, lambda: array2[:, :])        # TODO: NotImplementedError? This would work in Numpy and Sympy
+        self.assertRaises(TypeError, lambda: array2[:, :, :])     # OK
+
+
     def test_creation(self):
         t = System.Array
         ti = type(System.Array.CreateInstance(int, 1))
@@ -173,35 +200,55 @@ class ArrayTest(IronPythonTestCase):
 
     def test_nonzero_lowerbound(self):
         a = System.Array.CreateInstance(int, (5,), (5,))
-        for i in range(5): a[i] = i
+        for i in range(5, 5 + a.Length): a[i] = i
 
-        self.assertEqual(a[:2], System.Array[int]((0,1)))
-        self.assertEqual(a[2:], System.Array[int]((2,3,4)))
-        self.assertEqual(a[2:4], System.Array[int]((2,3)))
-        self.assertEqual(a[-1], 4)
+        self.assertEqual(a[:7], System.Array[int]((5,6)))
+        self.assertEqual(a[7:], System.Array[int]((7,8,9)))
+        self.assertEqual(a[7:9], System.Array[int]((7,8)))
+        self.assertEqual(a[-1:-3:-1], System.Array[int]((9,8)))
+        self.assertEqual(a[-1], 9)
 
-        self.assertEqual(repr(a), 'Array[int]((0, 1, 2, 3, 4), base: 5)')
+        self.assertEqual(repr(a), 'Array[int]((5, 6, 7, 8, 9), base: 5)')
 
         a = System.Array.CreateInstance(int, (5,), (15,))
         b = System.Array.CreateInstance(int, (5,), (20,))
         self.assertEqual(a.Length, b.Length)
         for i in range(a.Length):
-            self.assertEqual(a[i], b[i])
+            self.assertEqual(a[i + 15], b[i + 20])
 
-        ## 5-dimension
+        a0 = System.Array.CreateInstance(int, 5) # regular, 0-based
+        for i in range(5): a0[i] = i
+
+        a[17:19] = a0[2:4]
+        self.assertEqual(a[17:19], System.Array[int]((2, 3)))
+
+        self.assertEqual(a0[3:1:-1], System.Array[int]((3, 2)))
+        self.assertEqual(a[18:16:-1], System.Array[int]((3, 2)))
+
+        self.assertEqual(a0[-3:-1], System.Array[int]((2, 3)))
+        self.assertEqual(a[-3:-1], System.Array[int]((2, 3)))
+
+        a[18:16:-1] = a0[2:4]
+        self.assertEqual(a[17:19], System.Array[int]((3, 2)))
+
+        ## 5-dimension, 2-length/dim, progressive lowerbound
         a = System.Array.CreateInstance(int, (2,2,2,2,2), (1,2,3,4,5))
-        self.assertEqual(a[0,0,0,0,0], 0)
+        self.assertEqual(a[1,2,3,4,5], 0)
+
+        ## 5-dimension, 2-length/dim, progressive lowerbound
+        a = System.Array.CreateInstance(int, (2,2,2,2,2), (1,2,3,4,5))
+        self.assertEqual(a[1,2,3,4,5], 0)
 
         for i in range(5):
-            index = [0,0,0,0,0]
-            index[i] = 1
+            index = [1,2,3,4,5]
+            index[i] += 1
 
             a[index[0], index[1], index[2], index[3], index[4]] = i
             self.assertEqual(a[index[0], index[1], index[2], index[3], index[4]], i)
 
         for i in range(5):
-            index = [0,0,0,0,0]
-            index[i] = 0
+            index = [2,3,4,5,6]
+            index[i] -= 1
 
             a[index[0], index[1], index[2], index[3], index[4]] = i
             self.assertEqual(a[index[0], index[1], index[2], index[3], index[4]], i)
@@ -217,6 +264,71 @@ class ArrayTest(IronPythonTestCase):
         self.assertRaises(NotImplementedError, sliceArray, a, -200)
         self.assertRaises(NotImplementedError, sliceArrayAssign, a, -200, 1)
         self.assertRaises(NotImplementedError, sliceArrayAssign, a, 1, 1)
+
+    def test_base1(self):
+        # For positive base arrays, indices are indexing elements directly (in absolute terms)
+        # rather than relative form the base.
+        # Negative indices are indexing relative form the end.
+
+        # 1-based 2x2 matrix
+        arr = System.Array.CreateInstance(str, (2,2), (1,1))
+        
+        self.assertEqual(arr.GetLowerBound(0), 1)
+        self.assertEqual(arr.GetLowerBound(1), 1)
+        self.assertEqual(arr.GetUpperBound(0), 2)
+        self.assertEqual(arr.GetUpperBound(1), 2)
+
+        arr.SetValue("a_1,1", System.Array[System.Int32]((1,1)))
+        arr.SetValue("a_1,2", System.Array[System.Int32]((1,2)))
+        arr.SetValue("a_2,1", System.Array[System.Int32]((2,1)))
+        arr.SetValue("a_2,2", System.Array[System.Int32]((2,2)))
+
+        self.assertEqual(arr[1, 1], "a_1,1")
+        self.assertEqual(arr[1, 2], "a_1,2")
+        self.assertEqual(arr[2, 1], "a_2,1")
+        self.assertEqual(arr[2, 2], "a_2,2")
+
+        arr[1, 1] = "b_1,1"
+        arr[1, 2] = "b_1,2"
+        arr[2, 1] = "b_2,1"
+        arr[2, 2] = "b_2,2"
+
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((1,1))), "b_1,1")
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((1,2))), "b_1,2")
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((2,1))), "b_2,1")
+        self.assertEqual(arr.GetValue(System.Array[System.Int32]((2,2))), "b_2,2")
+
+    def test_base_negative(self):
+        # For negative base arrays, negative indices are indexing elements directly (like non negative indices)
+        # rather than indexing relative from the end.
+
+        # 2-dim array [-1, 0, 1] x [-1, 0, 1]
+        arr = System.Array.CreateInstance(str, (3,3), (-1,-1))
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                arr[i, j] = "a_%d,%d" % (i, j)
+
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                self.assertEqual(arr[i, j], "a_%d,%d" % (i, j))
+
+        # test that VauleError is raised when the index is out of range
+        self.assertRaises(IndexError, lambda: arr[-2, 0])
+        self.assertRaises(IndexError, lambda: arr[2, 0])
+        self.assertRaises(IndexError, lambda: arr[0, -2])
+        self.assertRaises(IndexError, lambda: arr[0, 2])
+
+        # test slice indexing
+        # 1-dim array [-1, 0, 1]
+        arr1 = System.Array.CreateInstance(int, (3,), (-1,))
+        for i in range(-1, 2):
+            arr1[i] = i
+        self.assertEqual(arr1[-1:1], System.Array[int]((-1, 0)))
+        self.assertEqual(arr1[-2:1], System.Array[int]((-1, 0)))
+        self.assertEqual(arr1[0:], System.Array[int]((0, 1)))
+        self.assertEqual(arr1[:1], System.Array[int]((-1, 0)))
+        self.assertEqual(arr1[:], System.Array[int]((-1, 0, 1)))
+        self.assertEqual(arr1[:-2], System.Array[int](0))
 
     def test_array_type(self):
 

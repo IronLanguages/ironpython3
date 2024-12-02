@@ -437,8 +437,12 @@ namespace IronPython.Runtime.Operations {
 
         private static int FixIndex(Array a, int v, int axis) {
             int idx = v;
-            if (idx < 0) idx += a.GetUpperBound(axis) + 1;
-            if (idx < a.GetLowerBound(axis) || idx > a.GetUpperBound(axis)) {
+            int lb = a.GetLowerBound(axis);
+            int ub = a.GetUpperBound(axis);
+            if (idx < 0 && lb >= 0) {
+                idx += ub + 1;
+            }
+            if (idx < lb || idx > ub) {
                 throw PythonOps.IndexError("index out of range: {0}", v);
             }
             return idx;
@@ -464,7 +468,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 ostart = Converter.ConvertToIndex(slice.start);
                 if (ostart < lb) {
-                    if (ostart < 0) {
+                    if (ostart < 0 && lb >= 0) {
                         ostart += ub + 1;
                     }
                     if (ostart < lb) {
@@ -480,7 +484,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 ostop = Converter.ConvertToIndex(slice.stop);
                 if (ostop < lb) {
-                    if (ostop < 0) {
+                    if (ostop < 0 && lb >= 0) {
                         ostop += ub + 1;
                     }
                     if (ostop < 0) {

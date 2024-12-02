@@ -6,6 +6,26 @@
 ## Test array support by IronPython (System.Array)
 ##
 
+"""
+Indexing of CLI arrays in IronPython:
+
+
+| Base | Index >= 0                           | Index < 0         |
+|------|--------------------------------------|-------------------|
+|  > 0 | absolue                              | relative from end |
+|    0 | absolute == relative from beginning  | relative from end |
+|  < 0 | absolute                             | absolute          |
+
+Comparison to indexing in C# and CPython:
+
+* Index >= 0, any base is C# compliant.
+* Base 0, any index is CPython compliant.
+* Base 0, index < 0 is not supported by C# but can be achieved by `System.Index` with 1-dim arrays only; then IronPython indexing is C# compliant.
+* Base > 0, index < 0 is not supported by C#; IronPython follows CPython convention as more practical.
+* Base < 0, index < 0 is C# compliant.
+* Base != 0 is not supported by CPython for any builtin structures.
+"""
+
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 if is_cli:
@@ -146,6 +166,13 @@ class ArrayTest(IronPythonTestCase):
         def f(): array1[::2] = [x * 2 for x in range(11)]
         self.assertRaises(ValueError, f)
 
+        # slices on non-1-dim arrays are not supported
+        array2 = System.Array.CreateInstance(int, 20, 20)
+        self.assertRaises(NotImplementedError, lambda: array2[:]) # TODO: TypeError?
+        self.assertRaises(TypeError, lambda: array2[:, :])        # TODO: NotImplementedError? This would work in Numpy and Sympy
+        self.assertRaises(TypeError, lambda: array2[:, :, :])     # OK
+
+
     def test_creation(self):
         t = System.Array
         ti = type(System.Array.CreateInstance(int, 1))
@@ -239,6 +266,10 @@ class ArrayTest(IronPythonTestCase):
         self.assertRaises(NotImplementedError, sliceArrayAssign, a, 1, 1)
 
     def test_base1(self):
+        # For positive base arrays, indices are indexing elements directly (in absolute terms)
+        # rather than relative form the base.
+        # Negative indices are indexing relative form the end.
+
         # 1-based 2x2 matrix
         arr = System.Array.CreateInstance(str, (2,2), (1,1))
         
@@ -266,6 +297,38 @@ class ArrayTest(IronPythonTestCase):
         self.assertEqual(arr.GetValue(System.Array[System.Int32]((1,2))), "b_1,2")
         self.assertEqual(arr.GetValue(System.Array[System.Int32]((2,1))), "b_2,1")
         self.assertEqual(arr.GetValue(System.Array[System.Int32]((2,2))), "b_2,2")
+
+    def test_base_negative(self):
+        # For negative base arrays, negative indices are indexing elements directly (like non negative indices)
+        # rather than indexing relative from the end.
+
+        # 2-dim array [-1, 0, 1] x [-1, 0, 1]
+        arr = System.Array.CreateInstance(str, (3,3), (-1,-1))
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                arr[i, j] = "a_%d,%d" % (i, j)
+
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                self.assertEqual(arr[i, j], "a_%d,%d" % (i, j))
+
+        # test that VauleError is raised when the index is out of range
+        self.assertRaises(IndexError, lambda: arr[-2, 0])
+        self.assertRaises(IndexError, lambda: arr[2, 0])
+        self.assertRaises(IndexError, lambda: arr[0, -2])
+        self.assertRaises(IndexError, lambda: arr[0, 2])
+
+        # test slice indexing
+        # 1-dim array [-1, 0, 1]
+        arr1 = System.Array.CreateInstance(int, (3,), (-1,))
+        for i in range(-1, 2):
+            arr1[i] = i
+        self.assertEqual(arr1[-1:1], System.Array[int]((-1, 0)))
+        self.assertEqual(arr1[-2:1], System.Array[int]((-1, 0)))
+        self.assertEqual(arr1[0:], System.Array[int]((0, 1)))
+        self.assertEqual(arr1[:1], System.Array[int]((-1, 0)))
+        self.assertEqual(arr1[:], System.Array[int]((-1, 0, 1)))
+        self.assertEqual(arr1[:-2], System.Array[int](0))
 
     def test_array_type(self):
 

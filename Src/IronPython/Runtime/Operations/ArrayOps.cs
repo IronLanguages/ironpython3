@@ -390,10 +390,10 @@ namespace IronPython.Runtime.Operations {
                 return Array.CreateInstance(data.GetType().GetElementType()!, 0);
             }
 
-            if (step == 1) {
+            if (step == 1 && (!ClrModule.IsMono || data.GetLowerBound(0) == 0)) {
                 int n = stop - start;
                 Array ret = Array.CreateInstance(data.GetType().GetElementType()!, n);
-                Array.Copy(data, start, ret, 0, n);
+                Array.Copy(data, start, ret, 0, n);  // doesn't work OK on Mono with non-0-based arrays
                 return ret;
             } else {
                 int n = PythonOps.GetSliceCount(start, stop, step);

@@ -87,6 +87,58 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        [StaticExtensionMethod]
+        public static object __eq__(CodeContext context, Array self, [NotNone] Array other) {
+            if (self is null) throw PythonOps.TypeError("expected Array, got None");
+            if (other is null) throw PythonOps.TypeError("expected Array, got None");
+
+            if (self.GetType() != other.GetType()) return ScriptingRuntimeHelpers.False;
+            // same type implies: same rank, same element type
+            for (int d = 0; d < self.Rank; d++) {
+                if (self.GetLowerBound(d) != other.GetLowerBound(d)) return ScriptingRuntimeHelpers.False;
+                if (self.GetUpperBound(d) != other.GetUpperBound(d)) return ScriptingRuntimeHelpers.False;
+            }
+            if (self.Length == 0) return ScriptingRuntimeHelpers.True; // fast track
+
+            if (self.Rank == 1 && self.GetLowerBound(0) == 0 ) {
+                // IStructuralEquatable.Equals only works for 1-dim, 0-based arrays
+                return ScriptingRuntimeHelpers.BooleanToObject(
+                    ((IStructuralEquatable)self).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
+                );
+            } else {
+                int[] ix = new int[self.Rank];
+                for (int d = 0; d < self.Rank; d++) {
+                    ix[d] = self.GetLowerBound(d);
+                }
+                for (int i = 0; i < self.Length; i++) {
+                    if (!PythonOps.EqualRetBool(self.GetValue(ix), other.GetValue(ix))) {
+                        return ScriptingRuntimeHelpers.False;
+                    }
+                    for (int d = self.Rank - 1; d >= 0; d--) {
+                        if (ix[d] < self.GetUpperBound(d)) {
+                            ix[d]++;
+                            break;
+                        } else {
+                            ix[d] = self.GetLowerBound(d);
+                        }
+                    }
+                }
+                return ScriptingRuntimeHelpers.True;
+            }
+        }
+
+        [StaticExtensionMethod]
+        [return: MaybeNotImplemented]
+        public static object __eq__(CodeContext context, object self, object? other) => NotImplementedType.Value;
+
+        [StaticExtensionMethod]
+        public static object __ne__(CodeContext context, Array self, [NotNone] Array other)
+            => ScriptingRuntimeHelpers.BooleanToObject(ReferenceEquals(__eq__(context, self, other), ScriptingRuntimeHelpers.False));
+
+        [StaticExtensionMethod]
+        [return: MaybeNotImplemented]
+        public static object __ne__(CodeContext context, object self, object? other) => NotImplementedType.Value;
+
         /// <summary>
         /// Multiply two object[] arrays - slow version, we need to get the type, etc...
         /// </summary>

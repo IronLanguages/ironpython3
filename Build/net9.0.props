@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <IsFullFramework>false</IsFullFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Features>$(Features);FEATURE_APARTMENTSTATE</Features>
+    <Features>$(Features);FEATURE_ASSEMBLY_GETFORWARDEDTYPES</Features>
+    <Features>$(Features);FEATURE_ASSEMBLY_RESOLVE</Features>
+    <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>
+    <Features>$(Features);FEATURE_CODEDOM</Features>
+    <Features>$(Features);FEATURE_COM</Features>
+    <Features>$(Features);FEATURE_CONFIGURATION</Features>
+    <Features>$(Features);FEATURE_CTYPES</Features>
+    <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
+    <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
+    <Features>$(Features);FEATURE_FILESYSTEM</Features>
+    <Features>$(Features);FEATURE_FULL_CRYPTO</Features>
+    <Features>$(Features);FEATURE_FULL_NET</Features>
+    <Features>$(Features);FEATURE_LCG</Features>
+    <Features>$(Features);FEATURE_LOADWITHPARTIALNAME</Features>
+    <Features>$(Features);FEATURE_METADATA_READER</Features>
+    <Features>$(Features);FEATURE_MMAP</Features>
+    <Features>$(Features);FEATURE_NATIVE</Features>
+    <Features>$(Features);FEATURE_OSPLATFORMATTRIBUTE</Features>
+    <Features>$(Features);FEATURE_PIPES</Features>
+    <Features>$(Features);FEATURE_PROCESS</Features>
+    <Features>$(Features);FEATURE_REFEMIT</Features>
+    <Features>$(Features);FEATURE_REGISTRY</Features>
+    <Features>$(Features);FEATURE_RUNTIMEINFORMATION</Features>
+    <Features>$(Features);FEATURE_SECURITY_RULES</Features>
+    <Features>$(Features);FEATURE_STACK_TRACE</Features>
+    <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
+    <Features>$(Features);FEATURE_THREAD</Features>
+    <Features>$(Features);FEATURE_XMLDOC</Features>
+  </PropertyGroup>
+</Project>

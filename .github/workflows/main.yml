@@ -10,23 +10,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest-large]
 
     steps:
     - name: Install tools
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get -yq install mono-vbnc dos2unix
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Setup .NET Core 3.1
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '3.1.x'
     - name: Setup .NET 6.0
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '6.0.x'
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
     - name: Version Information
       run: |
         dotnet --info
@@ -37,9 +41,9 @@ jobs:
       run: pwsh make.ps1
     - name: Package
       run: pwsh make.ps1 package
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
-        name: packages
+        name: packages-${{ matrix.os }}
         path: Package/Release/Packages
     - name: Test (net462)
       run: ./make.ps1 -frameworks net462 test-all
@@ -49,4 +53,7 @@ jobs:
       shell: pwsh
     - name: Test (net6.0)
       run: ./make.ps1 -frameworks net6.0 test-all
+      shell: pwsh
+    - name: Test (net8.0)
+      run: ./make.ps1 -frameworks net8.0 test-all
       shell: pwsh

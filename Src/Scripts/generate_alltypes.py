@@ -30,6 +30,19 @@ class NumType:
         except:
             self.is_float = True
 
+        try:
+            class _(type): pass
+            self.is_extensible = True
+        except:
+            self.is_extensible = False
+
+        if self.is_float:
+            self.cast_type = "double"
+        elif self.max > Int32.MaxValue:
+            self.cast_type = "BigInteger"
+        else:
+            self.cast_type = "int"
+
     def get_dict(self):
         toObj = "(%s)" % self.name
         toObjFooter = ""
@@ -107,6 +120,9 @@ public static %(type)s %(method_name)s(%(type)s x) => x;"""
 unchecked_cast_method = """
 public static %(cast_type)s %(method_name)s(%(type)s x) => unchecked((%(cast_type)s)x);"""
 
+getnewargs_method = """
+public static PythonTuple __getnewargs__(%(type)s self) => PythonTuple.MakeTuple(unchecked((%(cast_type)s)self));"""
+
 identity_method = """
 [SpecialName]
 public static %(type)s %(method_name)s(%(type)s x) => x;"""
@@ -173,17 +189,17 @@ def gen_unaryops(cw, ty):
         cw.writeline()
         cw.write('public static string __repr__(%s x) => x.ToString(CultureInfo.InvariantCulture);' % (ty.name))
 
+    # for extensible types, this is handled in another Ops file
+    if not ty.is_extensible:
+        cw.write(getnewargs_method, type=ty.name, cast_type=ty.cast_type)
+
     if ty.is_float:
         cw.write(float_trunc, type=ty.name)
     else:
         cw.write(simple_identity_method, type=ty.name, method_name="__trunc__")
 
-        if ty.max > Int32.MaxValue:
-            cw.write(unchecked_cast_method, type=ty.name, method_name="__int__", cast_type="BigInteger")
-            cw.write(unchecked_cast_method, type=ty.name, method_name="__index__", cast_type="BigInteger")
-        else:
-            cw.write(unchecked_cast_method, type=ty.name, method_name="__int__", cast_type="int")
-            cw.write(unchecked_cast_method, type=ty.name, method_name="__index__", cast_type="int")
+        cw.write(unchecked_cast_method, type=ty.name, method_name="__int__", cast_type=ty.cast_type)
+        cw.write(unchecked_cast_method, type=ty.name, method_name="__index__", cast_type=ty.cast_type)
 
         cw.writeline()
         cw.enter_block('public static int __hash__(%s x)' % (ty.name))

@@ -890,9 +890,9 @@ namespace IronPython.Runtime {
                     try {
                         res = double.Parse(s, NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
                     } catch (OverflowException) {
-                        res = text.lstrip().StartsWith("-", StringComparison.Ordinal) ? double.NegativeInfinity : double.PositiveInfinity;
+                        res = text.lstrip().StartsWith('-') ? Double.NegativeInfinity : Double.PositiveInfinity;
                     }
-                    return (res == 0.0 && text.lstrip().StartsWith("-", StringComparison.Ordinal)) ? DoubleOps.NegativeZero : res;
+                    return (res == 0.0 && text.lstrip().StartsWith('-')) ? DoubleOps.NegativeZero : res;
             }
         }
 
@@ -927,7 +927,7 @@ namespace IronPython.Runtime {
             string text = s.Trim().ToLowerInvariant();
 
             // remove 1 layer of parens
-            if (text.StartsWith("(", StringComparison.Ordinal) && text.EndsWith(")", StringComparison.Ordinal)) {
+            if (text.StartsWith('(') && text.EndsWith(')')) {
                 text = text.Substring(1, text.Length - 2);
             }
 

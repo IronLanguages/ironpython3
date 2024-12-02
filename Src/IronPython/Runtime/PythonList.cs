@@ -12,14 +12,13 @@ using System.Numerics;
 using System.Text;
 using System.Threading;
 
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -156,7 +155,7 @@ namespace IronPython.Runtime {
 
         internal PythonList(int capacity) {
             if (capacity == 0) {
-                _data = ArrayUtils.EmptyObjects;
+                _data = [];
             } else {
                 _data = new object[capacity];
             }
@@ -871,8 +870,8 @@ namespace IronPython.Runtime {
 
         public object? pop(int index) {
             lock (this) {
-                index = PythonOps.FixIndex(index, _size);
                 if (_size == 0) throw PythonOps.IndexError("pop off of empty list");
+                index = PythonOps.FixIndex(index, _size);
 
                 object? ret = _data[index];
                 _size -= 1;
@@ -956,7 +955,7 @@ namespace IronPython.Runtime {
 
                 try {
                     // make the list appear empty for the duration of the sort...
-                    _data = ArrayUtils.EmptyObjects;
+                    _data = [];
                     _size = 0;
 
                     if (key != null) {

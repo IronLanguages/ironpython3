@@ -863,7 +863,7 @@ namespace IronPython.Modules {
             /// </summary>
             internal static Socket? HandleToSocket(Int64 handle) {
                 lock (_handleToSocket) {
-                    if (_handleToSocket.TryGetValue((IntPtr)handle, out WeakReference? weakref)) {
+                    if (_handleToSocket.TryGetValue(checked((IntPtr)handle), out WeakReference? weakref)) {
                         return weakref.Target as Socket;
                     }
                 }
@@ -2216,10 +2216,6 @@ namespace IronPython.Modules {
         [DllImport("ws2_32.dll", SetLastError = true)]
         private static extern Int32 WSACleanup();
 
-        private static T PtrToStructure<T>(IntPtr result) {
-            return (T)Marshal.PtrToStructure(result, typeof(T))!;
-        }
-
         public static string GetServiceByPort(ushort port, string? protocol) {
             if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
                 return GetServiceByPortNonWindows(port, protocol);
@@ -2236,9 +2232,9 @@ namespace IronPython.Modules {
                     throw new SocketUtilException(string.Format("Could not resolve service for port {0}", port));
 
                 if (Environment.Is64BitProcess)
-                    return PtrToStructure<servent64>(result).s_name;
+                    return Marshal.PtrToStructure<servent64>(result).s_name;
                 else
-                    return PtrToStructure<servent>(result).s_name;
+                    return Marshal.PtrToStructure<servent>(result).s_name;
             }
 
             static string GetServiceByPortNonWindows(ushort port, string? protocol) {
@@ -2249,7 +2245,7 @@ namespace IronPython.Modules {
                         string.Format("Could not resolve service for port {0}", port));
                 }
 
-                return PtrToStructure<servent>(result).s_name;
+                return Marshal.PtrToStructure<servent>(result).s_name;
             }
         }
 
@@ -2268,9 +2264,9 @@ namespace IronPython.Modules {
 
                 ushort port;
                 if (Environment.Is64BitProcess)
-                    port = PtrToStructure<servent64>(result).s_port;
+                    port = Marshal.PtrToStructure<servent64>(result).s_port;
                 else
-                    port = PtrToStructure<servent>(result).s_port;
+                    port = Marshal.PtrToStructure<servent>(result).s_port;
 
                 var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
                 return unchecked((ushort)hostport);
@@ -2283,7 +2279,7 @@ namespace IronPython.Modules {
                         string.Format("Could not resolve port for service {0}", service));
                 }
 
-                ushort port = PtrToStructure<servent>(result).s_port;
+                ushort port = Marshal.PtrToStructure<servent>(result).s_port;
                 var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
                 return unchecked((ushort)hostport);
             }

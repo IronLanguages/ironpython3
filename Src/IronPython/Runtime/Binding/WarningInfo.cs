@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Dynamic;
 using System.Linq.Expressions;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Binding {
                 codeContext,
                 AstUtils.Constant(_type),
                 AstUtils.Constant(_message),
-                AstUtils.Constant(ArrayUtils.EmptyObjects)
+                AstUtils.Constant(Array.Empty<object>())
             );
 
             if (_condition != null) {

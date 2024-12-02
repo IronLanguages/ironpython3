@@ -92,7 +92,7 @@ namespace IronPython.Compiler.Ast {
         ///
         /// It is used to ensure that the first argument is accessible through a closure cell.
         /// </summary>
-        internal bool ContainsSuperCall{ get; set; }
+        internal bool ContainsSuperCall { get; set; }
 
         public virtual string Name => "<unknown scope>";
 
@@ -116,7 +116,7 @@ namespace IronPython.Compiler.Ast {
         internal bool NeedsLocalContext
             => NeedsLocalsDictionary || ContainsNestedFreeVariables || ContainsSuperCall;
 
-        internal virtual string[] ParameterNames => ArrayUtils.EmptyStrings;
+        internal virtual string[] ParameterNames => [];
 
         internal virtual int ArgCount => 0;
 
@@ -439,7 +439,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal void EnsureNonlocalVariable(string name, NonlocalStatement node) {
-           _nonlocalVars ??= new();
+            _nonlocalVars ??= new();
             if (!_nonlocalVars.ContainsKey(name)) {
                 CreateNonlocalVariable(name);
                 _nonlocalVars[name] = node;
@@ -611,7 +611,7 @@ namespace IronPython.Compiler.Ast {
 
         internal MSAst.MethodCallExpression CreateLocalContext(MSAst.Expression parentContext, bool newNamespace = true) {
             var closureVariables = _closureVariables ?? Array.Empty<ClosureInfo>();
-            
+
             int numFreeVars = FreeVariables?.Count ?? 0;
             int firstArgIdx = -1;
             if ((NeedsLocalsDictionary || ContainsSuperCall) && ArgCount > 0) {

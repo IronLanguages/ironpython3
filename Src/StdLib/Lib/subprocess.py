@@ -967,7 +967,7 @@ class Popen(object):
                 errread, errwrite = _winapi.CreatePipe(None, 0)
                 errread, errwrite = Handle(errread), Handle(errwrite)
             elif stderr == STDOUT:
-                errwrite = c2pwrite
+                errwrite = int(c2pwrite) # ironpython: cast to int to prevent closing in _make_inheritable
             elif stderr == DEVNULL:
                 errwrite = msvcrt.get_osfhandle(self._get_devnull())
             elif isinstance(stderr, int):

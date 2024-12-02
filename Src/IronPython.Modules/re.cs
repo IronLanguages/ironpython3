@@ -733,12 +733,15 @@ namespace IronPython.Modules {
                             return bytes.MakeString();
                         case ByteArray byteArray:
                             return byteArray.MakeString();
-                        case ArrayModule.array array:
-                            return Bytes.Make(array.ToByteArray()).MakeString();
 #if FEATURE_MMAP
                         case MmapModule.MmapDefault mmapFile:
                             return mmapFile.GetSearchString().MakeString();
 #endif
+                        case IBufferProtocol bufferProtocol: {
+                                using var buffer = bufferProtocol.GetBuffer();
+                                return buffer.AsReadOnlySpan().MakeString();
+                            }
+
                         default:
                             throw PythonOps.TypeError($"expected string or bytes-like object");
                     }

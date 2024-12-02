@@ -1710,4 +1710,15 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
     def test_map_type_int(self):
         self.assertEqual(list(map(type, [0])), [type(0)])
 
+    def test_ipy3_gh1135(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1135
+        import sys
+        import subprocess
+        with subprocess.Popen([sys.executable, '-c', 'print("aaa", end="")'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as p:
+            out, err = p.communicate()
+
+        # ensure out is the expected value and not empty
+        self.assertEqual(out, b"aaa")
+
+
 run_test(__name__)

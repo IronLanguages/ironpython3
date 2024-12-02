@@ -21,8 +21,8 @@
     <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'final'">1000</AssemblyFileRevision>
 
     <Product>IronPython</Product>
-    <Company>IronPython Team</Company>
-    <Copyright>© IronPython Contributors</Copyright>
+    <Company>.NET Foundation</Company>
+    <Copyright>© .NET Foundation and Contributors</Copyright>
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyRevision)</AssemblyVersion>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</FileVersion>
     <InformationalVersion>$(MSBuildProjectName) $(MajorVersion).$(MinorVersion).$(MicroVersion) $(ReleaseLevel) $(ReleaseSerial)</InformationalVersion>
@@ -121,7 +121,7 @@
 
   <!-- Release -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols>false</DebugSymbols>
+    <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>

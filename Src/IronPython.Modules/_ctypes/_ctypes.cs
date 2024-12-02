@@ -540,10 +540,12 @@ namespace IronPython.Modules {
             lock (_nativeTypes) {
                 if (!_nativeTypes.TryGetValue(size, out Type res)) {
                     int sizeRemaining = size;
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
                     TypeBuilder tb = DynamicModule.DefineType("interop_type_size_" + size,
                         TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.Serializable,
                         typeof(ValueType),
                         size);
+#pragma warning restore SYSLIB0050 // Type or member is obsolete
 
                     while (sizeRemaining > 8) {
                         tb.DefineField("field" + sizeRemaining, typeof(long), FieldAttributes.Private);
@@ -678,10 +680,6 @@ namespace IronPython.Modules {
             }
             intPtrHandle = new IntPtr((long)intHandle);
             return intPtrHandle;
-        }
-
-        private static void ValidateArraySizes(ArrayModule.array array, int offset, int size) {
-            ValidateArraySizes(array.__len__() * array.itemsize, offset, size);
         }
 
         private static void ValidateArraySizes(int arraySize, int offset, int size) {

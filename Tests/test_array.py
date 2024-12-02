@@ -180,7 +180,7 @@ class ArrayTest(IronPythonTestCase):
         self.assertEqual(a[2:4], System.Array[int]((2,3)))
         self.assertEqual(a[-1], 4)
 
-        self.assertEqual(repr(a), 'Array[int]((0, 1, 2, 3, 4))')
+        self.assertEqual(repr(a), 'Array[int]((0, 1, 2, 3, 4), base: 5)')
 
         a = System.Array.CreateInstance(int, (5,), (15,))
         b = System.Array.CreateInstance(int, (5,), (20,))
@@ -278,5 +278,91 @@ class ArrayTest(IronPythonTestCase):
         array1 = System.Array.CreateInstance(int, 20, 20)
         array1[0,0] = 5
         self.assertEqual(array1[0,0], array1[(0,0)])
+
+    def test_equality(self):
+        a = System.Array.CreateInstance(int, 5)
+        a2 = System.Array.CreateInstance(int, 5) # same as a
+        b = System.Array.CreateInstance(int, 5, 6) # different rank
+        c = System.Array.CreateInstance(int, 6) # different length
+        d = System.Array.CreateInstance(int, (5,), (1,)) # different base
+        e = System.Array.CreateInstance(System.Int32, 5) # different element type
+        l = [0] * 5 # different type
+
+        self.assertTrue(a == a2)
+        self.assertTrue(a2 == a)
+        self.assertFalse(a != a2)
+        self.assertFalse(a2 != a)
+
+        self.assertFalse(a == b)
+        self.assertFalse(b == a)
+        self.assertTrue(a != b)
+        self.assertTrue(b != a)
+
+        self.assertFalse(a == c)
+        self.assertFalse(c == a)
+        self.assertTrue(a != c)
+        self.assertTrue(c != a)
+
+        self.assertFalse(a == d)
+        self.assertFalse(d == a)
+        self.assertTrue(a != d)
+        self.assertTrue(d != a)
+
+        self.assertFalse(a == e)
+        self.assertFalse(e == a)
+        self.assertTrue(a != e)
+        self.assertTrue(e != a)
+
+        self.assertFalse(a == l)
+        self.assertFalse(l == a)
+        self.assertTrue(a != l)
+        self.assertTrue(l != a)
+
+    def test_equality_base(self):
+        a = System.Array.CreateInstance(int, (5,), (5,))
+        a2 = System.Array.CreateInstance(int, (5,), (5,))
+        b = System.Array.CreateInstance(int, (6,), (5,))
+        c = System.Array.CreateInstance(int, (5,), (6,))
+        d = System.Array.CreateInstance(int, (6,), (6,))
+
+        self.assertTrue(a == a2)
+        self.assertFalse(a == b)
+        self.assertFalse(a == c)
+        self.assertFalse(a == d)
+
+        self.assertFalse(a != a2)
+        self.assertTrue(a != b)
+        self.assertTrue(a != c)
+        self.assertTrue(a != d)
+
+    def test_equality_rank(self):
+        a = System.Array.CreateInstance(int, 5, 6)
+        a2 = System.Array.CreateInstance(int, 5, 6)
+        b = System.Array.CreateInstance(int, 5, 6)
+        b[0, 0] = 1
+        c = System.Array.CreateInstance(int, (6, 5), (0, 0))
+        c[0, 0] = 1
+        d = System.Array.CreateInstance(int, (6, 5), (1, 1))
+        d[1, 1] = 1
+        d1 = System.Array.CreateInstance(int, (6, 5), (1, 1))
+        d1[1, 1] = 1
+
+        self.assertTrue(a == a2)
+        self.assertFalse(a == b) # different element
+        self.assertFalse(a == c) # different rank
+        self.assertFalse(a == d) # different rank
+        self.assertFalse(b == c) # different shape
+        self.assertFalse(b == d) # different shape & base
+        self.assertFalse(c == d) # different base
+        self.assertTrue(d == d1)
+
+        self.assertFalse(a != a2)
+        self.assertTrue(a != b)
+        self.assertTrue(a != c)
+        self.assertTrue(a != d)
+        self.assertTrue(b != c)
+        self.assertTrue(b != d)
+        self.assertTrue(c != d)
+        self.assertFalse(d != d1)
 
 run_test(__name__)

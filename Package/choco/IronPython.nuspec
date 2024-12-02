@@ -5,13 +5,13 @@
   <metadata>
     <id>ironpython</id>
     <version>3.4.0</version>
-    <packageSourceUrl>https://github.com/IronLanguages/ironpython3/tree/master/Package/choco</packageSourceUrl>
+    <packageSourceUrl>https://github.com/IronLanguages/ironpython3/tree/main/Package/choco</packageSourceUrl>
     <title>IronPython</title>
     <authors>IronPython Contributors, Microsoft</authors>
     <copyright>© IronPython Contributors</copyright>
     <owners>IronPython Community</owners>
     <projectUrl>https://ironpython.net</projectUrl>
-    <licenseUrl>https://github.com/IronLanguages/ironpython3/blob/master/LICENSE</licenseUrl>
+    <licenseUrl>https://github.com/IronLanguages/ironpython3/blob/main/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>IronPython is an open-source implementation of the Python programming language that is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.</description>
     <summary>IronPython is an open-source implementation of the Python programming language that is tightly integrated with the .NET Framework.</summary>

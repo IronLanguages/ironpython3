@@ -288,7 +288,7 @@ namespace IronPython.Hosting {
                 for (var i = 0; i < 2; i++) {
                     if (File.Exists(path)) {
                         foreach (var line in File.ReadAllLines(path, Encoding.UTF8)) { // TODO: this actually needs to be decoded with surrogateescape
-                            if (line.StartsWith("#", StringComparison.Ordinal)) continue;
+                            if (line.StartsWith('#')) continue;
                             var split = line.Split(new[] { '=' }, 2);
                             if (split.Length != 2) continue;
                             if (split[0].Trim() == "home") {

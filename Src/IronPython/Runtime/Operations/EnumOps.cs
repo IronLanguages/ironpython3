@@ -7,6 +7,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
+using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
@@ -50,6 +53,14 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.ValueError("one's complement cannot be applied to {0}", self.GetType());
         }
 
+
+        [StaticExtensionMethod]
+        public static object __new__(PythonType cls, object value) {
+            // Note that this method is not required to construct enums but useful for serialization
+            if (!cls.UnderlyingSystemType.IsEnum) throw PythonOps.TypeError("Enum.__new__: first argument must be an Enum type.");
+            return Enum.ToObject(cls.UnderlyingSystemType, value);
+        }
+
         public static bool __bool__(object self) {
             if (self is Enum) {
                 Type selfType = self.GetType();
@@ -78,5 +89,7 @@ namespace IronPython.Runtime.Operations {
 
             return $"<enum {self.GetType().FullName}: {self.ToString()}>";
         }
+
+        public static object __getnewargs__(Enum self) => PythonTuple.MakeTuple(Convert.ChangeType(self, Enum.GetUnderlyingType(self.GetType())));
     }
 }

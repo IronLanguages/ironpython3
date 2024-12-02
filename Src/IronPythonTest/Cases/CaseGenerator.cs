@@ -108,7 +108,7 @@ namespace IronPythonTest.Cases {
             var replacements = new Dictionary<string, string>() {
                 // variables
                 { "$(IS_NETCOREAPP)", IronPython.Runtime.ClrModule.IsNetCoreApp.ToString() },
-                { "$(IS_NETCOREAPP21)", (IronPython.Runtime.ClrModule.IsNetCoreApp && IronPython.Runtime.ClrModule.FrameworkDescription.StartsWith(".NET Core 2.", StringComparison.Ordinal)).ToString() },
+                { "$(IS_NETSTANDARD)", IronPython.Runtime.ClrModule.TargetFramework.StartsWith(".NETStandard", StringComparison.Ordinal).ToString() },
                 { "$(IS_MONO)", IronPython.Runtime.ClrModule.IsMono.ToString() },
                 { "$(IS_DEBUG)", IronPython.Runtime.ClrModule.IsDebug.ToString() },
                 { "$(IS_POSIX)", (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)).ToString() },

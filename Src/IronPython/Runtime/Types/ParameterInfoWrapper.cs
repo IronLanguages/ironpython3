@@ -4,8 +4,6 @@
 
 using System;
 using System.Reflection;
-using Microsoft.Scripting.Utils;
-using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Generation {
     /// <summary>
@@ -41,11 +39,11 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public override object[] GetCustomAttributes(bool inherit) {
-            return ArrayUtils.EmptyObjects;
+            return [];
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) {
-            return ArrayUtils.EmptyObjects;
+            return [];
         }
     }
 }

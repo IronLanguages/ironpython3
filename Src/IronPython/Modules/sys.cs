@@ -29,7 +29,7 @@ namespace IronPython.Modules {
         // argv is set by PythonContext and only on the initial load
         public static readonly string byteorder = BitConverter.IsLittleEndian ? "little" : "big";
         // builtin_module_names is set by PythonContext and updated on reload
-        public const string copyright = "Copyright (c) IronPython Team";
+        public const string copyright = "Copyright (c) .NET Foundation and Contributors";
 
         private static string GetPrefix() {
             string prefix;

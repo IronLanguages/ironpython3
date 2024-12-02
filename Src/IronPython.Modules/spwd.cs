@@ -90,7 +90,7 @@ or via the object attributes as named in the above tuple.")]
         }
 
         private static struct_spwd Make(IntPtr pwd) {
-            spwd p = (spwd)Marshal.PtrToStructure(pwd, typeof(spwd));
+            spwd p = Marshal.PtrToStructure<spwd>(pwd);
             return new struct_spwd(p.sp_namp, p.sp_pwdp, p.sp_lstchg, p.sp_min, p.sp_max, p.sp_warn, p.sp_inact, p.sp_expire, p.sp_flag);
         }
 

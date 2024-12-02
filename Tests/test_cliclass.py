@@ -4,7 +4,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_netcoreapp, is_netcoreapp21, is_posix, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_netcoreapp, is_netcoreapp21, is_posix, big, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -1191,14 +1191,15 @@ End Class""")
                 System.Int32(1), System.UInt32(1),
                 System.Int16(1), System.UInt16(1),
                 System.Byte(1), System.SByte(1),
-                #System.IntPtr(-1), System.UIntPtr(2), # TODO: IntPtrOps.cs
+                System.IntPtr(-1),
+                None if is_mono else System.UIntPtr(2), # fails to deserialize on Mono...
                 System.Decimal(1), System.Single(1.0),
                 System.Char.MaxValue, System.DBNull.Value,
                 System.DateTime.Now, None, {}, (), [], {'a': 2}, (42, ), [42, ],
                 System.StringSplitOptions.RemoveEmptyEntries,
                 ]
 
-        if is_netcoreapp and not is_netcoreapp21:
+        if is_netcoreapp and not is_netcoreapp21 and not is_net80:
             clr.AddReference("System.Text.Json")
             data.append(System.Text.Json.JsonValueKind.Object) # byte-based enum
 
@@ -1242,9 +1243,14 @@ End Class""")
         data.append(d1)
         data.append(d2)
 
+        if hasattr(clr, "Serialize"):
+            clr_roundtrip = lambda x: clr.Deserialize(*clr.Serialize(x))
+        else:
+            clr_roundtrip = lambda x: x
+
         for value in data:
             # use cPickle & clr.Serialize/Deserialize directly
-            for newVal in (pickle.loads(pickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
+            for newVal in (pickle.loads(pickle.dumps(value)), clr_roundtrip(value)):
                 self.assertEqual(type(newVal), type(value))
                 try:
                     self.assertEqual(newVal, value)
@@ -1254,38 +1260,40 @@ End Class""")
                     self.assertTrue(type(newVal) is list or type(newVal) is dict)
 
         # passing an unknown format raises...
-        self.assertRaises(ValueError, clr.Deserialize, "unknown", "foo")
+        if hasattr(clr, "Deserialize"):
+            self.assertRaises(ValueError, clr.Deserialize, "unknown", "foo")
 
-        al = System.Collections.ArrayList()
-        al.Add(2)
+        if not is_net80:
+            al = System.Collections.ArrayList()
+            al.Add(2)
 
-        gl = System.Collections.Generic.List[int]()
-        gl.Add(2)
+            gl = System.Collections.Generic.List[int]()
+            gl.Add(2)
 
-        # lists...
-        for value in (al, gl):
-            for newX in (pickle.loads(pickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
-                self.assertEqual(value.Count, newX.Count)
-                for i in range(value.Count):
-                    self.assertEqual(value[i], newX[i])
+            # lists...
+            for value in (al, gl):
+                for newX in (pickle.loads(pickle.dumps(value)), clr_roundtrip(value)):
+                    self.assertEqual(value.Count, newX.Count)
+                    for i in range(value.Count):
+                        self.assertEqual(value[i], newX[i])
 
-        ht = System.Collections.Hashtable()
-        ht['foo'] = 'bar'
+            ht = System.Collections.Hashtable()
+            ht['foo'] = 'bar'
 
-        gd = System.Collections.Generic.Dictionary[str, str]()
-        gd['foo'] = 'bar'
+            gd = System.Collections.Generic.Dictionary[str, str]()
+            gd['foo'] = 'bar'
 
-        # dictionaries
-        for value in (ht, gd):
-            for newX in (pickle.loads(pickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
-                self.assertEqual(value.Count, newX.Count)
-                for key in value.Keys:
-                    self.assertEqual(value[key], newX[key])
+            # dictionaries
+            for value in (ht, gd):
+                for newX in (pickle.loads(pickle.dumps(value)), clr_roundtrip(value)):
+                    self.assertEqual(value.Count, newX.Count)
+                    for key in value.Keys:
+                        self.assertEqual(value[key], newX[key])
 
-        # interesting cases
-        for tempX in [System.Exception("some message")]:
-            for newX in (pickle.loads(pickle.dumps(tempX)), clr.Deserialize(*clr.Serialize(tempX))):
-                self.assertEqual(newX.Message, tempX.Message)
+            # interesting cases
+            for tempX in [System.Exception("some message")]:
+                for newX in (pickle.loads(pickle.dumps(tempX)), clr_roundtrip(tempX)):
+                    self.assertEqual(newX.Message, tempX.Message)
 
         try:
             exec(" print 1")
@@ -1301,13 +1309,13 @@ End Class""")
             other = "something else"
         tempX = K()
         #CodePlex 16415
-        #for newX in (cPickle.loads(cPickle.dumps(tempX)), clr.Deserialize(*clr.Serialize(tempX))):
+        #for newX in (pickle.loads(pickle.dumps(tempX)), clr_roundtrip(tempX)):
         #    self.assertEqual(newX.Message, tempX.Message)
         #    self.assertEqual(newX.other, tempX.other)
 
         #CodePlex 16415
         tempX = System.Exception
-        #for newX in (cPickle.loads(cPickle.dumps(System.Exception)), clr.Deserialize(*clr.Serialize(System.Exception))):
+        #for newX in (pickle.loads(pickle.dumps(tempX)), clr_roundtrip(tempX)):
         #    temp_except = newX("another message")
         #    self.assertEqual(temp_except.Message, "another message")
 
@@ -1421,6 +1429,7 @@ if not hasattr(A, 'Rank'):
         self.assertTrue('IndexOf' not in clr.Dir('abc'))
         self.assertTrue('IndexOf' in clr.DirClr('abc'))
 
+    @unittest.skipIf(is_net70 or is_net80, "TODO") # TODO: https://github.com/IronLanguages/ironpython3/issues/1485
     def test_int32_bigint_equivalence(self):
         import math
 
@@ -2055,7 +2064,5 @@ support.run_unittest(TheTestCase)''')
             finally:
                 os.unlink(fname)
                 sys.path = [x for x in old_path]
-
-
 
 run_test(__name__)

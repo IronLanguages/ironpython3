@@ -6,19 +6,19 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Text;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -44,7 +44,7 @@ namespace IronPython.Runtime.Types {
         private FieldInfo _dictField;
         private FieldInfo _slotsField;
         private FieldInfo _explicitMO;
-        
+
         private ILGen _cctor;
         private int _site;
 
@@ -70,7 +70,7 @@ namespace IronPython.Runtime.Types {
         private static readonly Dictionary<Type, Dictionary<string, List<MethodInfo>>> _overriddenMethods = new Dictionary<Type, Dictionary<string, List<MethodInfo>>>();
         [MultiRuntimeAware]
         private static readonly Dictionary<Type, Dictionary<string, List<ExtensionPropertyTracker>>> _overriddenProperties = new Dictionary<Type, Dictionary<string, List<ExtensionPropertyTracker>>>();
-        
+
 
         private NewTypeMaker(NewTypeInfo typeInfo) {
             _baseType = typeInfo.BaseType;
@@ -105,7 +105,7 @@ namespace IronPython.Runtime.Types {
                     // creation code                    
                     return new NewTypeMaker(typeInfo).CreateNewType();
                 });
-            
+
             return ret;
         }
 
@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Types {
 
             MethodBuilder mb = tb.DefineMethod(_constructorMethodName, MethodAttributes.Public | MethodAttributes.Static, typeof(CachedNewTypeInfo[]), ReflectionUtils.EmptyTypes);
             ILGenerator ilg = mb.GetILGenerator();
-            
+
             // new CachedTypeInfo[types.Count]
             // we leave this on the stack (duping it) and storing into it.
             EmitInt(ilg, types.Count);
@@ -127,7 +127,7 @@ namespace IronPython.Runtime.Types {
 
             foreach (var v in types) {
                 NewTypeInfo nti = NewTypeInfo.GetTypeInfo(String.Empty, v);
-                
+
                 var typeInfos = new NewTypeMaker(nti).SaveType(ag, "Python" + _typeCount++ + "$" + nti.BaseType.Name);
 
                 // prepare for storing the element into our final array
@@ -138,14 +138,14 @@ namespace IronPython.Runtime.Types {
 
                 // load the type
                 ilg.Emit(OpCodes.Ldtoken, typeInfos.Key);
-                ilg.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));                
+                ilg.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle"));
 
                 // create the dictionary<str, str[]> of special names
                 ilg.Emit(OpCodes.Newobj, typeof(Dictionary<string, string[]>).GetConstructor(Array.Empty<Type>()));
                 foreach (var specialName in typeInfos.Value) {
                     // dup dict
                     ilg.Emit(OpCodes.Dup);
-                    
+
                     // emit key
                     ilg.Emit(OpCodes.Ldstr, specialName.Key);
 
@@ -161,7 +161,7 @@ namespace IronPython.Runtime.Types {
                     }
 
                     // assign to dict
-                    ilg.Emit(OpCodes.Call, typeof(Dictionary<string, string[]>).GetMethod("set_Item"));                    
+                    ilg.Emit(OpCodes.Call, typeof(Dictionary<string, string[]>).GetMethod("set_Item"));
                 }
 
                 // emit the interface types (if any)
@@ -412,13 +412,13 @@ namespace IronPython.Runtime.Types {
                     // parameter based attribute logic
                     if (pi.IsDefined(typeof(ParamArrayAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
-                            typeof(ParamArrayAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
+                            typeof(ParamArrayAttribute).GetConstructor(ReflectionUtils.EmptyTypes), []));
                     } else if (pi.IsDefined(typeof(ParamDictionaryAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
-                            typeof(ParamDictionaryAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
+                            typeof(ParamDictionaryAttribute).GetConstructor(ReflectionUtils.EmptyTypes), []));
                     } else if (pi.IsDefined(typeof(BytesLikeAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
-                            typeof(BytesLikeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
+                            typeof(BytesLikeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), []));
                     }
 
                     if ((pi.Attributes & ParameterAttributes.HasDefault) != 0) {
@@ -465,7 +465,7 @@ namespace IronPython.Runtime.Types {
             MethodInfo init = typeof(PythonOps).GetMethod(nameof(PythonOps.InitializeUserTypeSlots));
 
             il.EmitLoadArg(0);
-            
+
             il.EmitLoadArg(typeArg);
             il.EmitCall(init);
 
@@ -531,6 +531,7 @@ namespace IronPython.Runtime.Types {
             ImplementInterface(typeof(ICustomTypeDescriptor));
 
             foreach (MethodInfo m in typeof(ICustomTypeDescriptor).GetMethods()) {
+                if (!m.IsAbstract) continue;
                 ImplementCTDOverride(m);
             }
         }
@@ -563,7 +564,7 @@ namespace IronPython.Runtime.Types {
 
         private void ImplementDynamicObject() {
             // true if the user has explicitly included IDynamicMetaObjectProvider in the list of interfaces
-            bool explicitDynamicObject = false; 
+            bool explicitDynamicObject = false;
             foreach (Type t in _interfaceTypes) {
                 if (t == typeof(IDynamicMetaObjectProvider)) {
                     explicitDynamicObject = true;
@@ -633,7 +634,7 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Dup);
                 il.Emit(OpCodes.Ldnull);
                 il.Emit(OpCodes.Beq, retNull);
-                
+
                 // store the local value
                 il.Emit(OpCodes.Stloc_S, retVal.LocalIndex);
 
@@ -643,7 +644,7 @@ namespace IronPython.Runtime.Types {
                 // user returned null, fallback to base impl
                 il.MarkLabel(retNull);
                 il.Emit(OpCodes.Pop);
-                
+
                 // no override exists
                 il.MarkLabel(noOverride);
 
@@ -664,7 +665,7 @@ namespace IronPython.Runtime.Types {
 
             il.EmitLoadArg(0);  // this
             il.EmitLoadArg(1);  // parameter
-                
+
             // baseMetaObject
             if (baseIdo) {
                 InterfaceMapping imap = _baseType.GetInterfaceMap(typeof(IDynamicMetaObjectProvider));
@@ -735,7 +736,7 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Ret);
                 _tg.DefineMethodOverride(impl, decl);
             }
-            
+
             // Types w/ DynamicBaseType attribute still need new slots implementation
 
             _slotsField = _tg.DefineField(SlotsAndWeakRefFieldName, typeof(object[]), FieldAttributes.Public);
@@ -804,7 +805,7 @@ namespace IronPython.Runtime.Types {
             // we need to create public helper methods that expose them. These methods are
             // used by the IDynamicMetaObjectProvider implementation (in MetaUserObject)
 
-            foreach (FieldInfo fi in  _baseType.GetInheritedFields(flattenHierarchy: true)) {
+            foreach (FieldInfo fi in _baseType.GetInheritedFields(flattenHierarchy: true)) {
                 if (!fi.IsProtected()) {
                     continue;
                 }
@@ -900,13 +901,13 @@ namespace IronPython.Runtime.Types {
                     added[key] = mi;
                 }
             }
-            
+
             if (type.IsAbstract && !type.IsInterface) {
                 // abstract types can define interfaces w/o implementations
                 foreach (Type iface in type.GetInterfaces()) {
                     InterfaceMapping mapping = type.GetInterfaceMap(iface);
                     for (int i = 0; i < mapping.TargetMethods.Length; i++) {
-                        
+
                         if (mapping.TargetMethods[i] == null) {
                             MethodInfo mi = mapping.InterfaceMethods[i];
 
@@ -1149,7 +1150,7 @@ namespace IronPython.Runtime.Types {
             // we're accessing a property
             return callTarget;
         }
-        
+
         private MethodBuilder CreateVTableGetterOverride(MethodInfo mi, string name) {
             MethodBuilder impl;
             ILGen il;
@@ -1273,7 +1274,7 @@ namespace IronPython.Runtime.Types {
             DefineVTableMethodOverride(mi, out impl, out il);
             //CompilerHelpers.GetArgumentNames(parameters));  TODO: Set names
 
-            LocalBuilder callTarget = EmitNonInheritedMethodLookup(name, il);            
+            LocalBuilder callTarget = EmitNonInheritedMethodLookup(name, il);
             Label instanceCall = il.DefineLabel();
             il.Emit(OpCodes.Brtrue, instanceCall);
 
@@ -1602,7 +1603,7 @@ namespace IronPython.Runtime.Types {
                 }
             }
         }
-        
+
         private static void StoreOverriddenField(MethodInfo mi, string newName) {
             Type baseType = mi.DeclaringType.BaseType;
             string fieldName = newName.Substring(FieldGetterPrefix.Length); // get_ or set_
@@ -1704,7 +1705,7 @@ namespace IronPython.Runtime.Types {
             lock (PythonTypeOps._propertyCache) {
                 string propName = newName.Substring(4); // get_ or set_
                 ExtensionPropertyTracker newProp = null;
-                foreach (PropertyInfo pi in baseType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {                    
+                foreach (PropertyInfo pi in baseType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {
                     if (pi.Name == propName) {
                         Type declType = pi.DeclaringType;
                         if (newName.StartsWith("get_", StringComparison.Ordinal)) {
@@ -1800,6 +1801,5 @@ namespace IronPython.Runtime.Types {
         }
 
         #endregion
-
     }
 }

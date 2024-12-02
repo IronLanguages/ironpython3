@@ -35,6 +35,8 @@ namespace IronPython.Runtime.Operations {
 
         public static string __repr__(char self) => StringOps.__repr__(char.ToString(self));
 
+        public static PythonTuple __getnewargs__(char self) => PythonTuple.MakeTuple(char.ToString(self));
+
         public static int __hash__(char self) => char.ToString(self).GetHashCode();
 
         public static int __index__(char self) => self;

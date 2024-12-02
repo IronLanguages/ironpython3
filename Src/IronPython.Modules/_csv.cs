@@ -652,7 +652,7 @@ in CSV format.")]
                             // If we ended on an escaped newline, then we want to continue onto
                             // the nextline without processing the end of this one, as the newline
                             // is in the middle of the field.
-                            if ((line.EndsWith("\n", StringComparison.Ordinal) || line.EndsWith("\r", StringComparison.Ordinal)) && _state == State.InField) {
+                            if ((line.EndsWith('\n') || line.EndsWith('\r')) && _state == State.InField) {
                                 continue;
                             }
                         }

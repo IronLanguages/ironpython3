@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp3.1;net6.0</TargetFrameworks>
+    <TargetFrameworks>net462;netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
     <!-- EOL netcoreapp3.1 is used to test netstandard2.0 assemblies -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <PreventStaging>true</PreventStaging>
@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUnitLite" Version="3.13.3" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageReference Include="NUnitLite" Version="3.14.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
 

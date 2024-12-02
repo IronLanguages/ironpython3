@@ -4045,7 +4045,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception InvalidType(object o, RuntimeTypeHandle handle) {
-            return PythonOps.TypeErrorForTypeMismatch(DynamicHelpers.GetPythonTypeFromType(Type.GetTypeFromHandle(handle)).Name, o);
+            return PythonOps.TypeErrorForTypeMismatch(DynamicHelpers.GetPythonTypeFromType(Type.GetTypeFromHandle(handle)!).Name, o);
         }
 
         public static Exception ZeroDivisionError() {
@@ -4243,6 +4243,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static LightLambdaExpression ToGenerator(this LightLambdaExpression code, bool shouldInterpret, bool debuggable, int compilationThreshold) {
+#pragma warning disable CA2263 // Prefer generic overload when type is known
             return Utils.LightLambda(
                 typeof(object),
                 code.Type,
@@ -4250,6 +4251,7 @@ namespace IronPython.Runtime.Operations {
                 code.Name,
                 code.Parameters
             );
+#pragma warning restore CA2263 // Prefer generic overload when type is known
         }
 
         public static void UpdateStackTrace(Exception e, CodeContext context, FunctionCode funcCode, int line) {

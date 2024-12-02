@@ -10,10 +10,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -86,6 +86,58 @@ namespace IronPython.Runtime.Operations {
 
             return res;
         }
+
+        [StaticExtensionMethod]
+        public static object __eq__(CodeContext context, Array self, [NotNone] Array other) {
+            if (self is null) throw PythonOps.TypeError("expected Array, got None");
+            if (other is null) throw PythonOps.TypeError("expected Array, got None");
+
+            if (self.GetType() != other.GetType()) return ScriptingRuntimeHelpers.False;
+            // same type implies: same rank, same element type
+            for (int d = 0; d < self.Rank; d++) {
+                if (self.GetLowerBound(d) != other.GetLowerBound(d)) return ScriptingRuntimeHelpers.False;
+                if (self.GetUpperBound(d) != other.GetUpperBound(d)) return ScriptingRuntimeHelpers.False;
+            }
+            if (self.Length == 0) return ScriptingRuntimeHelpers.True; // fast track
+
+            if (self.Rank == 1 && self.GetLowerBound(0) == 0 ) {
+                // IStructuralEquatable.Equals only works for 1-dim, 0-based arrays
+                return ScriptingRuntimeHelpers.BooleanToObject(
+                    ((IStructuralEquatable)self).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
+                );
+            } else {
+                int[] ix = new int[self.Rank];
+                for (int d = 0; d < self.Rank; d++) {
+                    ix[d] = self.GetLowerBound(d);
+                }
+                for (int i = 0; i < self.Length; i++) {
+                    if (!PythonOps.EqualRetBool(self.GetValue(ix), other.GetValue(ix))) {
+                        return ScriptingRuntimeHelpers.False;
+                    }
+                    for (int d = self.Rank - 1; d >= 0; d--) {
+                        if (ix[d] < self.GetUpperBound(d)) {
+                            ix[d]++;
+                            break;
+                        } else {
+                            ix[d] = self.GetLowerBound(d);
+                        }
+                    }
+                }
+                return ScriptingRuntimeHelpers.True;
+            }
+        }
+
+        [StaticExtensionMethod]
+        [return: MaybeNotImplemented]
+        public static object __eq__(CodeContext context, object self, object? other) => NotImplementedType.Value;
+
+        [StaticExtensionMethod]
+        public static object __ne__(CodeContext context, Array self, [NotNone] Array other)
+            => ScriptingRuntimeHelpers.BooleanToObject(ReferenceEquals(__eq__(context, self, other), ScriptingRuntimeHelpers.False));
+
+        [StaticExtensionMethod]
+        [return: MaybeNotImplemented]
+        public static object __ne__(CodeContext context, object self, object? other) => NotImplementedType.Value;
 
         /// <summary>
         /// Multiply two object[] arrays - slow version, we need to get the type, etc...
@@ -214,24 +266,29 @@ namespace IronPython.Runtime.Operations {
                     ret.Append("Array[");
                     Type elemType = self.GetType().GetElementType()!;
                     ret.Append(DynamicHelpers.GetPythonTypeFromType(elemType).Name);
-                    ret.Append("]");
+                    ret.Append(']');
                     ret.Append("((");
                     for (int i = 0; i < self.Length; i++) {
                         if (i > 0) ret.Append(", ");
                         ret.Append(PythonOps.Repr(context, self.GetValue(i + self.GetLowerBound(0))));
                     }
-                    ret.Append("))");
+                    ret.Append(')');
+                    if (self.GetLowerBound(0) != 0) {
+                        ret.Append(", base: ");
+                        ret.Append(self.GetLowerBound(0));
+                    }
+                    ret.Append(')');
                 } else {
                     // multi dimensional arrays require multiple statements to construct so we just
                     // give enough info to identify the object and its type.
-                    ret.Append("<");
+                    ret.Append('<');
                     ret.Append(self.Rank);
                     ret.Append(" dimensional Array[");
                     Type elemType = self.GetType().GetElementType()!;
                     ret.Append(DynamicHelpers.GetPythonTypeFromType(elemType).Name);
                     ret.Append("] at ");
                     ret.Append(PythonOps.HexId(self));
-                    ret.Append(">");
+                    ret.Append('>');
                 }
                 return ret.ToString();
             } finally {
@@ -286,7 +343,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object?[] GetSlice(object?[] data, int start, int stop) {
-            if (stop <= start) return ArrayUtils.EmptyObjects;
+            if (stop <= start) return [];
 
             var ret = new object?[stop - start];
             int index = 0;
@@ -304,7 +361,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             int size = PythonOps.GetSliceCount(start, stop, step);
-            if (size <= 0) return ArrayUtils.EmptyObjects;
+            if (size <= 0) return [];
 
             var res = new object?[size];
             for (int i = 0, index = start; i < res.Length; i++, index += step) {
@@ -325,7 +382,7 @@ namespace IronPython.Runtime.Operations {
 
             if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
                 if (data.GetType().GetElementType() == typeof(object))
-                    return ArrayUtils.EmptyObjects;
+                    return Array.Empty<object>();
 
                 return Array.CreateInstance(data.GetType().GetElementType()!, 0);
             }
@@ -347,7 +404,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object?[] CopyArray(object?[] data, int newSize) {
-            if (newSize == 0) return ArrayUtils.EmptyObjects;
+            if (newSize == 0) return [];
 
             var newData = new object?[newSize];
             if (data.Length < 20) {

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp3.1;net6.0</TargetFrameworks>
+    <TargetFrameworks>net462;netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
     <!-- EOL netcoreapp3.1 is used to test netstandard2.0 assemblies -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <OutputType>Exe</OutputType>

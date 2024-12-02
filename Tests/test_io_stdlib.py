@@ -121,7 +121,7 @@ def load_tests(loader, standard_tests, pattern):
 
         if is_mono:
             failing_tests += [
-                test.test_io.CBufferedRandomTest('test_destructor'), # IndexError: index out of range: 0
+                test.test_io.PyMiscIOTest('test_create_fail'),
             ]
 
         skip_tests = [

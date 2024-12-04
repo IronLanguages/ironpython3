@@ -171,14 +171,14 @@ namespace IronPython.Runtime.Operations {
             if (data == null) throw PythonOps.TypeError("expected Array, got None");
             if (data.Rank != 1) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", 1, data.Rank);
 
-            return data.GetValue(PythonOps.FixIndex(index, data.Length) + data.GetLowerBound(0));
+            return data.GetValue(FixIndex(data, index, 0));
         }
 
         [SpecialName]
         public static object GetItem(Array data, Slice slice) {
             if (data == null) throw PythonOps.TypeError("expected Array, got None");
 
-            return GetSlice(data, data.Length, slice);
+            return GetSlice(data, slice);
         }
 
         [SpecialName]
@@ -201,7 +201,6 @@ namespace IronPython.Runtime.Operations {
             int[] iindices = TupleToIndices(data, indices);
             if (data.Rank != indices.Length) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", indices.Length, data.Rank);
 
-            for (int i = 0; i < iindices.Length; i++) iindices[i] += data.GetLowerBound(i);
             return data.GetValue(iindices);
         }
 
@@ -210,7 +209,7 @@ namespace IronPython.Runtime.Operations {
             if (data == null) throw PythonOps.TypeError("expected Array, got None");
             if (data.Rank != 1) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", 1, data.Rank);
 
-            data.SetValue(Converter.Convert(value, data.GetType().GetElementType()), PythonOps.FixIndex(index, data.Length) + data.GetLowerBound(0));
+            data.SetValue(Converter.Convert(value, data.GetType().GetElementType()), FixIndex(data, index, 0));
         }
 
         [SpecialName]
@@ -231,8 +230,6 @@ namespace IronPython.Runtime.Operations {
 
             if (a.Rank != args.Length) throw PythonOps.TypeError("bad dimensions for array, got {0} expected {1}", args.Length, a.Rank);
 
-            for (int i = 0; i < indices.Length; i++) indices[i] += a.GetLowerBound(i);
-
             Type elm = t.GetElementType()!;
             a.SetValue(Converter.Convert(indexAndValue[indexAndValue.Length - 1], elm), indices);
         }
@@ -243,9 +240,15 @@ namespace IronPython.Runtime.Operations {
 
             Type elm = a.GetType().GetElementType()!;
 
+            int lb = a.GetLowerBound(0);
+            if (lb != 0) {
+                FixSlice(index, a, out int start, out int stop, out int step);
+                index = new Slice(start - lb, stop - lb, step);
+            }
+
             index.DoSliceAssign(
                 delegate (int idx, object? val) {
-                    a.SetValue(Converter.Convert(val, elm), idx + a.GetLowerBound(0));
+                    a.SetValue(Converter.Convert(val, elm), idx + lb);
                 },
                 a.Length,
                 value);
@@ -375,10 +378,10 @@ namespace IronPython.Runtime.Operations {
             return GetSlice(data, start, stop, step);
         }
 
-        internal static Array GetSlice(Array data, int size, Slice slice) {
+        private static Array GetSlice(Array data, Slice slice) {
             if (data.Rank != 1) throw PythonOps.NotImplementedError("slice on multi-dimensional array");
 
-            slice.Indices(size, out int start, out int stop, out int step);
+            FixSlice(slice, data, out int start, out int stop, out int step);
 
             if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
                 if (data.GetType().GetElementType() == typeof(object))
@@ -387,17 +390,17 @@ namespace IronPython.Runtime.Operations {
                 return Array.CreateInstance(data.GetType().GetElementType()!, 0);
             }
 
-            if (step == 1) {
+            if (step == 1 && (!ClrModule.IsMono || data.GetLowerBound(0) == 0)) {
                 int n = stop - start;
                 Array ret = Array.CreateInstance(data.GetType().GetElementType()!, n);
-                Array.Copy(data, start + data.GetLowerBound(0), ret, 0, n);
+                Array.Copy(data, start, ret, 0, n);  // doesn't work OK on Mono with non-0-based arrays
                 return ret;
             } else {
                 int n = PythonOps.GetSliceCount(start, stop, step);
                 Array ret = Array.CreateInstance(data.GetType().GetElementType()!, n);
                 int ri = 0;
                 for (int i = 0, index = start; i < n; i++, index += step) {
-                    ret.SetValue(data.GetValue(index + data.GetLowerBound(0)), ri++);
+                    ret.SetValue(data.GetValue(index), ri++);
                 }
                 return ret;
             }
@@ -427,9 +430,70 @@ namespace IronPython.Runtime.Operations {
             int[] indices = new int[tuple.Count];
             for (int i = 0; i < indices.Length; i++) {
                 int iindex = Converter.ConvertToInt32(tuple[i]);
-                indices[i] = i < a.Rank ? PythonOps.FixIndex(iindex, a.GetLength(i)) : int.MinValue;
+                indices[i] = i < a.Rank ? FixIndex(a, iindex, i) : int.MinValue;
             }
             return indices;
+        }
+
+        private static int FixIndex(Array a, int v, int axis) {
+            int idx = v;
+            int lb = a.GetLowerBound(axis);
+            int ub = a.GetUpperBound(axis);
+            if (idx < 0 && lb >= 0) {
+                idx += ub + 1;
+            }
+            if (idx < lb || idx > ub) {
+                throw PythonOps.IndexError("index out of range: {0}", v);
+            }
+            return idx;
+        }
+
+        private static void FixSlice(Slice slice, Array a, out int ostart, out int ostop, out int ostep) {
+            Debug.Assert(a.Rank == 1);
+
+            if (slice.step == null) {
+                ostep = 1;
+            } else {
+                ostep = Converter.ConvertToIndex(slice.step);
+                if (ostep == 0) {
+                    throw PythonOps.ValueError("step cannot be zero");
+                }
+            }
+
+            int lb = a.GetLowerBound(0);
+            int ub = a.GetUpperBound(0);
+
+            if (slice.start == null) {
+                ostart = ostep > 0 ? lb : ub;
+            } else {
+                ostart = Converter.ConvertToIndex(slice.start);
+                if (ostart < lb) {
+                    if (ostart < 0 && lb >= 0) {
+                        ostart += ub + 1;
+                    }
+                    if (ostart < lb) {
+                        ostart = ostep > 0 ? lb : lb - 1;
+                    }
+                } else if (ostart > ub) {
+                    ostart = ostep > 0 ? ub + 1 : ub;
+                }
+            }
+
+            if (slice.stop == null) {
+                ostop = ostep > 0 ? ub + 1 : lb - 1;
+            } else {
+                ostop = Converter.ConvertToIndex(slice.stop);
+                if (ostop < lb) {
+                    if (ostop < 0 && lb >= 0) {
+                        ostop += ub + 1;
+                    }
+                    if (ostop < 0) {
+                        ostop = ostep > 0 ? lb : lb - 1;
+                    }
+                } else if (ostop > ub) {
+                    ostop = ostep > 0 ? ub + 1 : ub;
+                }
+            }
         }
 
         #endregion

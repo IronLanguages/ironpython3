@@ -429,7 +429,11 @@ namespace IronPython.Runtime.Operations {
         private static int[] TupleToIndices(Array a, IList<object?> tuple) {
             int[] indices = new int[tuple.Count];
             for (int i = 0; i < indices.Length; i++) {
-                int iindex = Converter.ConvertToInt32(tuple[i]);
+                object? oindex = tuple[i];
+                if (a.Rank != 1 && oindex is Slice) {
+                    throw PythonOps.NotImplementedError("slice on multi-dimensional array");
+                }
+                int iindex = Converter.ConvertToInt32(oindex);
                 indices[i] = i < a.Rank ? FixIndex(a, iindex, i) : int.MinValue;
             }
             return indices;

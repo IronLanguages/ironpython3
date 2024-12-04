@@ -166,12 +166,14 @@ class ArrayTest(IronPythonTestCase):
         def f(): array1[::2] = [x * 2 for x in range(11)]
         self.assertRaises(ValueError, f)
 
-        # slices on non-1-dim arrays are not supported
+        # slices on non-1D arrays are not supported yet
         array2 = System.Array.CreateInstance(int, 20, 20)
-        self.assertRaises(NotImplementedError, lambda: array2[:]) # TODO: TypeError?
-        self.assertRaises(TypeError, lambda: array2[:, :])        # TODO: NotImplementedError? This would work in Numpy and Sympy
-        self.assertRaises(TypeError, lambda: array2[:, :, :])     # OK
-
+        # TODO: memoryview can slice ND views with a single slice
+        self.assertRaises(NotImplementedError, lambda: array2[:])
+        # TODO: Numpy and Sympy can slice ND arrays with exactly N slices
+        self.assertRaises(NotImplementedError, lambda: array2[:, :])
+        # TODO: Error matches memoryview; if slicing of ND arrays were supported, TypeError here would be expected
+        self.assertRaises(NotImplementedError, lambda: array2[:, :, :])
 
     def test_creation(self):
         t = System.Array

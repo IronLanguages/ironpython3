@@ -495,7 +495,7 @@ namespace IronPython.Runtime.Operations {
                     if (ostop < 0 && lb >= 0) {
                         ostop += ub + 1;
                     }
-                    if (ostop < 0) {
+                    if (ostop < lb) {
                         ostop = ostep > 0 ? lb : lb - 1;
                     }
                 } else if (ostop > ub) {

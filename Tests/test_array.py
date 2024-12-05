@@ -497,4 +497,20 @@ class ArrayTest(IronPythonTestCase):
         self.assertTrue(c != d)
         self.assertFalse(d != d1)
 
+    def test_slice_down(self):
+        #arr = System.Array[int]((2, 3, 4), base=2)
+        arr = System.Array.CreateInstance(int, (3,), (2,))
+        for i in range(2, 2 + 3):
+            arr[i] = i
+
+        self.assertEqual(arr[-1:-4:-1], System.Array[int]((4, 3, 2)))
+        self.assertEqual(arr[-1:-5:-1], System.Array[int]((4, 3, 2)))
+        self.assertEqual(arr[-1:-6:-1], System.Array[int]((4, 3, 2)))
+
+        self.assertEqual(arr[2:1:-1], System.Array[int]((2,)))
+        self.assertEqual(arr[2:-5:-1], System.Array[int]((2,)))
+        self.assertEqual(arr[2:-6:-1], System.Array[int]((2,)))
+        self.assertEqual(arr[1:-5:-1], System.Array[int](()))
+        self.assertEqual(arr[0:-5:-1], System.Array[int](()))
+
 run_test(__name__)

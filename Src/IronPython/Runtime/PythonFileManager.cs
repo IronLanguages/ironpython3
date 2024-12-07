@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 using Microsoft.Scripting.Runtime;
@@ -87,13 +88,16 @@ namespace IronPython.Runtime {
 
             // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
             bool isattyUnix() {
-                // TODO: console streams may be dupped to differend FD numbers, do not use hard-coded 0, 1, 2
-                return StreamType switch {
-                    ConsoleStreamType.Input => Mono.Unix.Native.Syscall.isatty(0),
-                    ConsoleStreamType.Output => Mono.Unix.Native.Syscall.isatty(1),
-                    ConsoleStreamType.ErrorOutput => Mono.Unix.Native.Syscall.isatty(2),
-                    _ => false
-                };
+                if (Id >= 0) {
+                    return Mono.Unix.Native.Syscall.isatty(Id);
+                } else {
+                    return StreamType switch {
+                        ConsoleStreamType.Input => Mono.Unix.Native.Syscall.isatty(0),
+                        ConsoleStreamType.Output => Mono.Unix.Native.Syscall.isatty(1),
+                        ConsoleStreamType.ErrorOutput => Mono.Unix.Native.Syscall.isatty(2),
+                        _ => false
+                    };
+                }
             }
         }
 
@@ -213,7 +217,8 @@ namespace IronPython.Runtime {
         private int _current = _offset; // lowest potentially unused key in _objects at or above _offset
         private readonly ConcurrentDictionary<Stream, int> _refs = new();
 
-        // Mandatory Add for Unix, on Windows only for dup2 case
+        // This version of Add is used with genuine file descriptors (Unix).
+        // Exception: support dup2 on all frameworks/platfroms.
         public int Add(int id, StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
             ContractUtils.Requires(streams.Id < 0, nameof(streams));
@@ -228,6 +233,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        // This version of Add is used for emulated file descriptors.
+        // Must not be used on Unix.
         [SupportedOSPlatform("windows")]
         public int Add(StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
@@ -280,7 +287,13 @@ namespace IronPython.Runtime {
             lock (_synchObject) {
                 int res = streams.Id;
                 if (res == -1) {
-                    res = Add(streams);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        res = Add(streams);
+                    } else {
+                        res = GetGenuineFileDescriptor(streams.ReadStream);
+                        if (res < 0) throw new InvalidOperationException("stream not associated with a file descriptor");
+                        Add(res, streams);
+                    }
                 }
                 return res;
             }
@@ -312,6 +325,18 @@ namespace IronPython.Runtime {
 
         public bool ValidateFdRange(int fd) {
             return fd >= 0 && fd < LIMIT_OFILE;
+        }
+
+        [UnsupportedOSPlatform("windows")]
+        private static int GetGenuineFileDescriptor(Stream stream) {
+            return stream switch {
+                FileStream fs => checked((int)fs.SafeFileHandle.DangerousGetHandle()),
+#if FEATURE_PIPES
+                System.IO.Pipes.PipeStream ps => checked((int)ps.SafePipeHandle.DangerousGetHandle()),
+#endif
+                Mono.Unix.UnixStream us => us.Handle,
+                _ => -1
+            };
         }
     }
 }

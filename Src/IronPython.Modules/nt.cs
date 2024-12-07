@@ -351,19 +351,24 @@ namespace IronPython.Modules {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
-            fileManager.EnsureRefStreams(streams);
-            fileManager.AddRefStreams(streams);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
                 return fileManager.Add(new(streams));
             } else {
-                return fileManager.Add(UnixDup(fd), new(streams));
-            }
-
-            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-            static int UnixDup(int fd) {
-                int res = Mono.Unix.Native.Syscall.dup(fd);
-                if (res < 0) throw GetLastUnixError();
-                return res;
+                if (!streams.IsSingleStream && fd is 1 or 2) {
+                    // If there is a separate write stream, dupping over stout or sderr uses write stream's file descriptor
+                    fd = streams.WriteStream is FileStream fs ? fs.SafeFileHandle.DangerousGetHandle().ToInt32() : fd;
+                }
+                int fd2 = UnixDup(fd, -1, out Stream? dupstream);
+                if (dupstream is not null) {
+                    return fileManager.Add(fd2, new(dupstream));
+                } else {
+                    // Share the same set of streams between the original and the dupped descriptor
+                    fileManager.EnsureRefStreams(streams);
+                    fileManager.AddRefStreams(streams);
+                    return fileManager.Add(fd2, new(streams));
+                }
             }
         }
 
@@ -384,22 +389,45 @@ namespace IronPython.Modules {
                 close(context, fd2);
             }
 
-            // TODO: race condition: `open` or `dup` on another thread may occupy fd2 
+            // TODO: race condition: `open` or `dup` on another thread may occupy fd2 (simulated desctiptors only)
 
-            fileManager.EnsureRefStreams(streams);
-            fileManager.AddRefStreams(streams);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
                 return fileManager.Add(fd2, new(streams));
             } else {
-                return fileManager.Add(UnixDup2(fd, fd2), new(streams));
+                if (!streams.IsSingleStream && fd is 1 or 2) {
+                    // If there is a separate write stream, dupping over stout or sderr uses write stream's file descriptor
+                    fd = streams.WriteStream is FileStream fs ? fs.SafeFileHandle.DangerousGetHandle().ToInt32() : fd;
+                }
+                fd2 = UnixDup(fd, fd2, out Stream? dupstream); // closes fd2 atomically if reopened in the meantime
+                fileManager.Remove(fd2);
+                if (dupstream is not null) {
+                    return fileManager.Add(fd2, new(dupstream));
+                } else {
+                    // Share the same set of streams between the original and the dupped descriptor
+                    fileManager.EnsureRefStreams(streams);
+                    fileManager.AddRefStreams(streams);
+                    return fileManager.Add(fd2, new(streams));
+                }
             }
+        }
 
-            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-            static int UnixDup2(int fd, int fd2) {
-                int res = Mono.Unix.Native.Syscall.dup2(fd, fd2);
-                if (res < 0) throw GetLastUnixError();
-                return res;
+
+        private static int UnixDup(int fd, int fd2, out Stream? stream) {
+            int res = fd2 < 0 ? Mono.Unix.Native.Syscall.dup(fd) : Mono.Unix.Native.Syscall.dup2(fd, fd2);
+            if (res < 0) throw GetLastUnixError();
+            if (ClrModule.IsMono) {
+                // This does not work on .NET, probably because .NET FileStream is not aware of Mono.Unix.UnxiStream
+                stream = new Mono.Unix.UnixStream(res, ownsHandle: true);
+            } else {
+                // This does not work 100% correctly on .NET, probably because each FileStream has its own read/write cursor
+                // (it should be shared between dupped descriptors)
+                //stream = new FileStream(new SafeFileHandle((IntPtr)res, ownsHandle: true), FileAccess.ReadWrite);
+                // Accidentaly, this would also not work on Mono: https://github.com/mono/mono/issues/12783
+                stream = null; // Handle stream sharing in PythonFileManager
             }
+            return res;
         }
 
 #if FEATURE_PROCESS
@@ -849,25 +877,27 @@ namespace IronPython.Modules {
                 FileMode fileMode = FileModeFromFlags(flags);
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
-                Stream fs;
+                Stream s;
+                FileStream? fs;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsNulFile(path)) {
-                    fs = Stream.Null;
+                    fs = null;
+                    s = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
                     fs = new FileStream(path, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
-                    fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else {
-                    fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    return context.LanguageContext.FileManager.Add(new(fs));
+                    return context.LanguageContext.FileManager.Add(new(s));
                 } else {
-                    return context.LanguageContext.FileManager.Add((int)fs.SafeFileHandle.DangerousGetHandle(), new(fs));
+                    return context.LanguageContext.FileManager.Add((int)fs!.SafeFileHandle.DangerousGetHandle(), new(s));
                 }
             } catch (Exception e) {
                 throw ToPythonException(e, path);
@@ -916,14 +946,14 @@ namespace IronPython.Modules {
             } else {
                 var pipeStreams = CreatePipeStreamsUnix();
                 return PythonTuple.MakeTuple(
-                    manager.Add((int)pipeStreams.Item1.SafeFileHandle.DangerousGetHandle(), new(pipeStreams.Item1)),
-                    manager.Add((int)pipeStreams.Item2.SafeFileHandle.DangerousGetHandle(), new(pipeStreams.Item2))
+                    manager.Add(pipeStreams.Item1, new(pipeStreams.Item2)),
+                    manager.Add(pipeStreams.Item3, new(pipeStreams.Item4))
                 );
             }
 
-            static Tuple<Stream, Stream> CreatePipeStreamsUnix() {
+            static Tuple<int, Stream, int, Stream> CreatePipeStreamsUnix() {
                 Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
-                return Tuple.Create<Stream, Stream>(pipes.Reading, pipes.Writing);
+                return Tuple.Create<int, Stream, int, Stream>(pipes.Reading.Handle, pipes.Reading, pipes.Writing.Handle, pipes.Writing);
             }
         }
 #endif

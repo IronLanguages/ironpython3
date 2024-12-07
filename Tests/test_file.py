@@ -787,6 +787,10 @@ class FileTest(IronPythonTestCase):
         with open(self.temp_file, "ab+") as f:
             f.write(b"abc")
             f.seek(0)
-            self.assertEqual(f.read(), b"abc")
+            self.assertEqual(f.read(2), b"ab")
+            f.write(b"def")
+            self.assertEqual(f.read(2), b"")
+            f.seek(0)
+            self.assertEqual(f.read(6), b"abcdef")
 
 run_test(__name__)

@@ -9,7 +9,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, is_posix, run_test
 from threading import Timer
 
 flags = os.O_CREAT | os.O_TRUNC | os.O_RDWR
@@ -45,12 +45,11 @@ class FdTest(IronPythonTestCase):
 
         # Assigning to self must be a no-op.
         self.assertEqual(os.dup2(fd, fd), fd if is_cli or sys.version_info >= (3,7) else None)
-        self.assertTrue(is_open(fd))
 
         # The source must be valid.
-        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup2, -1, fd)
+        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor" if is_cli or sys.version_info >= (3,5) else "[Errno 0] Error", os.dup2, -1, fd)
         self.assertTrue(is_open(fd))
-        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup2, 99, fd)
+        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup2, fd + 10000, fd)
         self.assertTrue(is_open(fd))
 
         # If the source is not open, then the destination is unaffected.
@@ -67,16 +66,16 @@ class FdTest(IronPythonTestCase):
         # Using dup2 can skip fds.
         self.assertEqual(os.dup2(fd, fd + 2), fd + 2 if is_cli or sys.version_info >= (3,7) else None)
         self.assertTrue(is_open(fd))
-        self.assertTrue(not is_open(fd + 1))
+        self.assertFalse(is_open(fd + 1))
         self.assertTrue(is_open(fd + 2))
 
         # Verify that dup2 closes the previous occupant of a fd.
-        self.assertEqual(os.open(os.devnull, os.O_RDWR, 0o600), fd + 1)
-        self.assertEqual(os.dup2(fd + 1, fd), fd if is_cli or sys.version_info >= (3,7) else None)
+        fdn = os.open(os.devnull, os.O_RDWR, 0o600)
+        self.assertEqual(os.dup2(fdn, fd), fd if is_cli or sys.version_info >= (3,7) else None)
 
         self.assertTrue(is_open_nul(fd))
-        self.assertTrue(is_open_nul(fd + 1))
-        os.close(fd + 1)
+        self.assertTrue(is_open_nul(fdn))
+        os.close(fdn)
         self.assertTrue(is_open_nul(fd))
         self.assertEqual(os.write(fd, b"1"), 1)
 
@@ -87,7 +86,7 @@ class FdTest(IronPythonTestCase):
         self.assertEqual(os.read(fd, 1), b"2")
 
         os.close(fd)
-        # fd+1 is already closed
+        # fdn is already closed
         os.close(fd + 2)
         os.unlink(test_filename)
 
@@ -101,29 +100,33 @@ class FdTest(IronPythonTestCase):
 
         # The source must be valid.
         self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup, -1)
-        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup, 99)
+        self.assertRaisesMessage(OSError, "[Errno 9] Bad file descriptor", os.dup, fd1 + 10000)
 
         # Test basic functionality.
         fd2 = os.dup(fd1)
-        self.assertTrue(fd2 == fd1 + 1)
+        if not (is_cli and is_posix):
+            # On IronPython/Posix, the first call to dup or dup2 may load Mono.Unix.dll and the corresponding `.so`
+            # This makes the fd numbers less predictable
+            self.assertEqual(fd2, fd1 + 1)
         self.assertTrue(is_open(fd2))
         self.assertTrue(is_open(fd1))
         os.close(fd1)
-        self.assertTrue(not is_open(fd1))
+        self.assertFalse(is_open(fd1))
         self.assertTrue(is_open(fd2))
 
-        # dup uses the lowest-numbered unused descriptor for the new descriptor.
         fd3 = os.dup(fd2)
-        self.assertEqual(fd3, fd1)
+        # dup uses the lowest-numbered unused descriptor for the new descriptor.
+        if not (is_cli and is_posix):
+            self.assertEqual(fd3, fd1)
 
-        # writing though the duplicated fd writes to the same file
-        self.assertEqual(os.write(fd2, b"fd2"), 3)
-        self.assertEqual(os.write(fd3, b"fd3"), 3)
-        self.assertEqual(os.write(fd2, b"fd2-again"), 9)
+        # writing through the duplicated fd writes to the same file
+        self.assertEqual(os.write(fd2, b"(fd2)"), 5)
+        self.assertEqual(os.write(fd3, b"(=====fd3=====)"), 15)
+        self.assertEqual(os.write(fd2, b"(fd2-again)"), 11)
         os.close(fd3)
 
         self.assertEqual(os.lseek(fd2, 0, os.SEEK_SET), 0)
-        self.assertEqual(os.read(fd2, 15), b"fd2fd3fd2-again")
+        self.assertEqual(os.read(fd2, 5 + 15 + 11), b"(fd2)(=====fd3=====)(fd2-again)")
 
         # cleanup
         os.close(fd2)
@@ -133,20 +136,20 @@ class FdTest(IronPythonTestCase):
         test_filename = "tmp_%d.dup-file.test" % os.getpid()
 
         file1 = open(test_filename, 'w+')
-        file1.write("file1")
+        file1.write("(file1)")
         file1.flush()
 
         fd2 = os.dup(file1.fileno())
         file2 = open(fd2, 'w+')
         self.assertNotEqual(file1.fileno(), file2.fileno())
 
-        file2.write("file2")
+        file2.write("(======file2======)")
         file2.flush()
-        file1.write("file1-again")
+        file1.write("(file1-again)")
         file1.close()
 
         file2.seek(0)
-        self.assertEqual(file2.read(), "file1file2file1-again")
+        self.assertEqual(file2.read(), "(file1)(======file2======)(file1-again)")
 
         file2.close()
         os.unlink(test_filename)

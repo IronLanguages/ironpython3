@@ -10,7 +10,7 @@
     <license type="file">StdLib.License.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The Python Standard Library, for use with IronPython.</description>
-    <icon>logo.png</icon>
+    <icon>PackageLogo.png</icon>
     <language>en-US</language>
     <tags>ironpython python dynamic dlr standard library</tags>
     <dependencies>
@@ -24,6 +24,6 @@
     <file src="StdLib.License.txt" />
     <file src="lib\**" target="contentFiles\any\any\lib" />
     <file src="lib\**" target="content\lib" />
-    <file src="..\..\..\..\Documentation\logo.png" target="" />
+    <file src="..\..\..\..\.github\PackageLogo.png" target="" />
   </files>
 </package>

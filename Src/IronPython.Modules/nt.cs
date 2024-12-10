@@ -351,11 +351,7 @@ namespace IronPython.Modules {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                fileManager.EnsureRefStreams(streams);
-                fileManager.AddRefStreams(streams);
-                return fileManager.Add(new(streams));
-            } else {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 if (!streams.IsSingleStream && fd is 1 or 2) {
                     // If there is a separate write stream, dupping over stout or sderr uses write stream's file descriptor
                     fd = streams.WriteStream is FileStream fs ? fs.SafeFileHandle.DangerousGetHandle().ToInt32() : fd;
@@ -369,6 +365,10 @@ namespace IronPython.Modules {
                     fileManager.AddRefStreams(streams);
                     return fileManager.Add(fd2, new(streams));
                 }
+            } else {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
+                return fileManager.Add(new(streams));
             }
         }
 
@@ -389,7 +389,7 @@ namespace IronPython.Modules {
                 close(context, fd2);
             }
 
-            // TODO: race condition: `open` or `dup` on another thread may occupy fd2 (simulated desctiptors only)
+            // TODO: race condition: `open` or `dup` on another thread may occupy fd2 (simulated descriptors only)
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 fileManager.EnsureRefStreams(streams);
@@ -418,7 +418,7 @@ namespace IronPython.Modules {
             int res = fd2 < 0 ? Mono.Unix.Native.Syscall.dup(fd) : Mono.Unix.Native.Syscall.dup2(fd, fd2);
             if (res < 0) throw GetLastUnixError();
             if (ClrModule.IsMono) {
-                // This does not work on .NET, probably because .NET FileStream is not aware of Mono.Unix.UnxiStream
+                // This does not work on .NET, probably because .NET FileStream is not aware of Mono.Unix.UnixStream
                 stream = new Mono.Unix.UnixStream(res, ownsHandle: true);
             } else {
                 // This does not work 100% correctly on .NET, probably because each FileStream has its own read/write cursor

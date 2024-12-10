@@ -234,8 +234,8 @@ namespace IronPython.Runtime {
         }
 
         // This version of Add is used for emulated file descriptors.
-        // Must not be used on Unix.
-        [SupportedOSPlatform("windows")]
+        // Must not be used on POSIX.
+        [UnsupportedOSPlatform("linux"), UnsupportedOSPlatform("macos")]
         public int Add(StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
             ContractUtils.Requires(streams.Id < 0, nameof(streams));

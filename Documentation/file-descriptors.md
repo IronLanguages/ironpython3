@@ -15,7 +15,7 @@ Conceptually, the relationship between `FD` (a number) and `StreamBox` (a class)
 
 It is possible to have the structure above without `FileIO`; for instance when an OS file is opened with one of the low-level functions in `os`, or when an existing FD is duplicated. It is also possible to associate an FD with several `FileIO`. In such cases it is the responsibility of the user code to take care that the FD is closed at the right time.
 
-When FD is duplicated (using `dup` or `dup2`), the associated `StreamBox` is duplicated (there is always a 1-to1 relationship between FD and `StreamBox`), but the underlying `FileStream` objects remain the same, and so are the underlying OS handles. The new FD may be used to create a `FileIO` (or several, just as the original FD). All read/seek/write operations on both descriptors go though the same `FileStream` object and the same OS handle.
+When FD is duplicated (using `dup` or `dup2`), the associated `StreamBox` is duplicated (there is always a 1-to-1 relationship between FD and `StreamBox`), but the underlying `FileStream` objects remain the same, and so are the underlying OS handles. The new FD may be used to create a `FileIO` (or several, just as the original FD). All read/seek/write operations on both descriptors go though the same `FileStream` object and the same OS handle.
 
 ```mermaid
 graph LR;
@@ -52,7 +52,7 @@ FD2(FD2) <--> StreamBox2[StreamBox] --> FileStream2[FileStream] --> FDH2(FD2) --
 
 In this way, the file descriptor on the `PythonFileManager` level is the same as the file descriptor used by `FileStream`.
 
-Unfortunately, on .NET, somehow, the two independent read/write positions. This is not how duplicated file descriptors should work: both descriptors should point to the same file description structure and share the read/seek/write position. In practice, on .NET, writing through the second file object will overwrite data already written through the first file object. In regular Unix applications (incl. CPython), the subsequent writes append data, regardless which file object is used. The same principle should apply to reads.
+Unfortunately, on .NET, somehow, two `FileStream` instances using the same file descriptor will have the two independent read/write positions. This is not how duplicated file descriptors should work: both descriptors should point to the same file description structure and share the read/seek/write position. In practice, on .NET, writing through the second file object will overwrite data already written through the first file object. In regular Unix applications (incl. CPython), the subsequent writes append data, regardless which file object is used. The same principle should apply to reads.
 
 Also unfortunately, on Mono, the `FileStream` constructor accepts only descriptors opened by another call to a `FileStream` constructor[[1]]. So descriptors obtained from direct OS calls, like `open`, `creat`, `dup`, `dup2` are being rejected.
 

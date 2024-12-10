@@ -5,12 +5,13 @@ Param(
     [String] $target = "build",
     [String] $configuration = "Release",
     [String[]] $frameworks=@('net462','netcoreapp3.1','net6.0','net8.0'),
-    [String] $platform = "x64",
+    [String] $platform = [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture,
     [switch] $runIgnored,
     [int] $jobs = [System.Environment]::ProcessorCount
 )
 
 $ErrorActionPreference="Continue"
+if (-not $platform) { $platform = "x64"; }
 
 [int] $global:Result = 0
 [bool] $global:isUnix = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Unix
@@ -62,8 +63,12 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
     [System.Xml.XmlDocument]$doc = New-Object System.Xml.XmlDocument
 
 #   <RunSettings>
+#     <RunConfiguration>
+#       <TargetPlatform>x64</TargetPlatform>
+#     </RunConfiguration>
 #     <TestRunParameters>
 #       <Parameter name="FRAMEWORK" value="net462" />
+#       <Parameter name="CONFIGURATION" value="Release" />
 #     </TestRunParameters>
 #   </RunSettings>
 

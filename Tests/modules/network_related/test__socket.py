@@ -533,22 +533,27 @@ class SocketMakefileTest(IronPythonTestCase):
     def test_makefile_refcount(self):
         "Ensures that the _socket stays open while there's still a file associated"
 
-        global PORT
+        global GPORT
+        if 'GPORT' in globals():
+            del GPORT
         def echoer():
-            global PORT
+            global GPORT
             s = socket.socket()
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
             s.settimeout(15) # prevents the server from staying open if the client never connects
             s.bind(('localhost', 0))
-            PORT = s.getsockname()[1]
+            GPORT = s.getsockname()[1]
             s.listen(5)
             (s2, ignore) = s.accept()
             s2.send(s2.recv(10))
 
         _thread.start_new_thread(echoer, ())
-        time.sleep(1)
+        for _ in range(20):
+            time.sleep(1)
+            if 'GPORT' in globals():
+                break
         s = socket.socket()
-        s.connect(('localhost', PORT))
+        s.connect(('localhost', GPORT))
         f1 = s.makefile('r')
         f2 = s.makefile('w')
         s.close()

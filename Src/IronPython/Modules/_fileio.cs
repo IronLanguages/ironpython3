@@ -239,7 +239,7 @@ namespace IronPython.Modules {
 
             [Documentation("close() -> None.  Close the file.\n\n"
                 + "A closed file cannot be used for further I/O operations.  close() may be"
-                + "called more than once without error.  Changes the fileno to -1."
+                + "called more than once without error."
                 )]
             public override void close(CodeContext/*!*/ context) {
                 if (_closed) {

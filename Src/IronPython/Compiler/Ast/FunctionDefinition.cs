@@ -79,7 +79,9 @@ namespace IronPython.Compiler.Ast {
 
         public IList<Parameter> Parameters => _parameters;
 
-        internal override string[] ParameterNames => ArrayUtils.ConvertAll(_parameters, val => val.Name);
+        private string[] _parameterNames = null;
+
+        internal override string[] ParameterNames => _parameterNames ??= ArrayUtils.ConvertAll(_parameters, val => val.Name);
 
         internal override int ArgCount {
             get {

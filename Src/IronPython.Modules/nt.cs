@@ -877,8 +877,9 @@ namespace IronPython.Modules {
                 FileMode fileMode = FileModeFromFlags(flags);
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
-                Stream s;
-                FileStream? fs;
+                Stream s;            // the stream opened to acces the file
+                FileStream? fs;      // downcast of s if s is FileStream (this is always the case on POSIX)
+                Stream? rs = null;   // secondary read stream if needed, otherwise same as s
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsNulFile(path)) {
                     fs = null;
                     s = Stream.Null;
@@ -889,15 +890,20 @@ namespace IronPython.Modules {
                     fs.Close();
                     s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
+                    // .NET doesn't allow Append w/ access != Write, so open the file w/ Write
+                    // and a secondary stream w/ Read, then seek to the end.
                     s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
+                    rs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    rs.Seek(0L, SeekOrigin.End);
                 } else {
                     s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
+                rs ??= s;
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    return context.LanguageContext.FileManager.Add(new(s));
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    return context.LanguageContext.FileManager.Add(fs!.SafeFileHandle.DangerousGetHandle().ToInt32(), new(rs, s));
                 } else {
-                    return context.LanguageContext.FileManager.Add((int)fs!.SafeFileHandle.DangerousGetHandle(), new(s));
+                    return context.LanguageContext.FileManager.Add(new(rs, s));
                 }
             } catch (Exception e) {
                 throw ToPythonException(e, path);

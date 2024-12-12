@@ -287,12 +287,12 @@ namespace IronPython.Runtime {
             lock (_synchObject) {
                 int res = streams.Id;
                 if (res == -1) {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        res = Add(streams);
-                    } else {
-                        res = GetGenuineFileDescriptor(streams.ReadStream);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                        res = GetGenuineFileDescriptor(streams.WriteStream);
                         if (res < 0) throw new InvalidOperationException("stream not associated with a file descriptor");
                         Add(res, streams);
+                    } else {
+                        res = Add(streams);
                     }
                 }
                 return res;
@@ -327,7 +327,7 @@ namespace IronPython.Runtime {
             return fd >= 0 && fd < LIMIT_OFILE;
         }
 
-        [UnsupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
         private static int GetGenuineFileDescriptor(Stream stream) {
             return stream switch {
                 FileStream fs => checked((int)fs.SafeFileHandle.DangerousGetHandle()),

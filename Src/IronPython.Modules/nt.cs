@@ -352,10 +352,6 @@ namespace IronPython.Modules {
 
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                if (!streams.IsSingleStream && fd is 1 or 2) {
-                    // If there is a separate write stream, dupping over stout or sderr uses write stream's file descriptor
-                    fd = streams.WriteStream is FileStream fs ? fs.SafeFileHandle.DangerousGetHandle().ToInt32() : fd;
-                }
                 int fd2 = UnixDup(fd, -1, out Stream? dupstream);
                 if (dupstream is not null) {
                     return fileManager.Add(fd2, new(dupstream));
@@ -389,16 +385,14 @@ namespace IronPython.Modules {
                 close(context, fd2);
             }
 
-            // TODO: race condition: `open` or `dup` on another thread may occupy fd2 (simulated descriptors only)
+            // TODO: race condition: `open` or `dup` on another thread may occupy fd2
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                fileManager.EnsureRefStreams(streams);
-                fileManager.AddRefStreams(streams);
-                return fileManager.Add(fd2, new(streams));
-            } else {
-                if (!streams.IsSingleStream && fd is 1 or 2) {
-                    // If there is a separate write stream, dupping over stout or sderr uses write stream's file descriptor
-                    fd = streams.WriteStream is FileStream fs ? fs.SafeFileHandle.DangerousGetHandle().ToInt32() : fd;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                if (!streams.IsSingleStream && fd2 is 0 && streams.ReadStream is FileStream fs) {
+                    // If there is a separate read stream, dupping over stdin uses read stream's file descriptor as source
+                    long pos = fs.Position;
+                    fd = fs.SafeFileHandle.DangerousGetHandle().ToInt32();
+                    fs.Seek(pos, SeekOrigin.Begin);
                 }
                 fd2 = UnixDup(fd, fd2, out Stream? dupstream); // closes fd2 atomically if reopened in the meantime
                 fileManager.Remove(fd2);
@@ -410,6 +404,10 @@ namespace IronPython.Modules {
                     fileManager.AddRefStreams(streams);
                     return fileManager.Add(fd2, new(streams));
                 }
+            } else {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
+                return fileManager.Add(fd2, new(streams));
             }
         }
 
@@ -901,7 +899,15 @@ namespace IronPython.Modules {
                 rs ??= s;
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    return context.LanguageContext.FileManager.Add(fs!.SafeFileHandle.DangerousGetHandle().ToInt32(), new(rs, s));
+                    int fd = fs!.SafeFileHandle.DangerousGetHandle().ToInt32();
+                    // accessing SafeFileHandle may reset file position
+                    if (fileMode == FileMode.Append) {
+                        fs.Seek(0L, SeekOrigin.End);
+                    }
+                    if (!ReferenceEquals(fs, rs)) {
+                        rs.Seek(fs.Position, SeekOrigin.Begin);
+                    }
+                    return context.LanguageContext.FileManager.Add(fd, new(rs, s));
                 } else {
                     return context.LanguageContext.FileManager.Add(new(rs, s));
                 }

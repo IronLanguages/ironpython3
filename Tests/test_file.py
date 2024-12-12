@@ -783,10 +783,31 @@ class FileTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, open, "", "r", opener=uncallable_opener)
 
+    def test_open_wbplus(self):
+        with open(self.temp_file, "wb+") as f:
+            f.write(b"abc")
+            f.seek(0)
+            self.assertEqual(f.read(2), b"ab")
+            f.write(b"def")
+            self.assertEqual(f.read(2), b"")
+            f.seek(0)
+            self.assertEqual(f.read(6), b"abdef")
+            f.seek(0)
+            self.assertEqual(f.read(2), b"ab")
+            f.fileno() # does not move the file pointer
+            self.assertEqual(f.read(2), b"de")
+            f.write(b"z")
+            f.seek(0)
+            self.assertEqual(f.read(), b"abdez")
+
     def test_open_abplus(self):
         with open(self.temp_file, "ab+") as f:
             f.write(b"abc")
             f.seek(0)
-            self.assertEqual(f.read(), b"abc")
+            self.assertEqual(f.read(2), b"ab")
+            f.write(b"def")
+            self.assertEqual(f.read(2), b"")
+            f.seek(0)
+            self.assertEqual(f.read(6), b"abcdef")
 
 run_test(__name__)

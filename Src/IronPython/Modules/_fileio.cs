@@ -149,7 +149,7 @@ namespace IronPython.Modules {
                         }
 
                         if (!_context.FileManager.TryGetStreams(fd, out _streams)) {
-                            throw PythonOps.OSError(9, "Bad file descriptor");
+                            throw PythonOps.OSError(PythonFileManager.EBADF, "Bad file descriptor");
                         }
                     } else {
                         throw PythonOps.TypeError("expected integer from opener");
@@ -504,13 +504,13 @@ namespace IronPython.Modules {
             }
 
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
-                if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(2, "No such file or directory", filename: name);
+                if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(PythonFileManager.ENOENT, "No such file or directory", filename: name);
                 try {
                     return pal.OpenFileStream(name, fileMode, fileAccess, fileShare, 1); // Use a 1 byte buffer size to disable buffering (if the FileStream implementation supports it).
                 } catch (UnauthorizedAccessException) {
-                    throw PythonOps.OSError(13, "Permission denied", name);
+                    throw PythonOps.OSError(PythonFileManager.EACCES, "Permission denied", name);
                 } catch (FileNotFoundException) {
-                    throw PythonOps.OSError(2, "No such file or directory", name);
+                    throw PythonOps.OSError(PythonFileManager.ENOENT, "No such file or directory", name);
                 } catch (IOException e) {
                     AddFilename(context, name, e);
                     throw;

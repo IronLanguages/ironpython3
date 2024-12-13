@@ -130,7 +130,7 @@ namespace IronPython.Modules {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                         // On POSIX, register the file descriptor with the file manager right after file opening
                         _context.FileManager.GetOrAssignId(_streams);
-                        // accoding to [documentation](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.safefilehandle?view=net-9.0#remarks)
+                        // according to [documentation](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.safefilehandle?view=net-9.0#remarks)
                         // accessing SafeFileHandle sets the current stream position to 0
                         // in practice it doesn't seem to be the case, but better to be sure
                         if (this.mode == "ab+") {

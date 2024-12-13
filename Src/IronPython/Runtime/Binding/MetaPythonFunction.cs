@@ -551,6 +551,7 @@ namespace IronPython.Runtime.Binding {
                             // make a single copy.
                             exprArgs[_func.Value.ExpandListPosition] = Ast.Call(
                                 typeof(PythonOps).GetMethod(nameof(PythonOps.GetOrCopyParamsTuple)),
+                                _codeContext ?? AstUtils.Constant(DefaultContext.Default),
                                 GetFunctionParam(),
                                 AstUtils.Convert(_userProvidedParams, typeof(object))
                             );
@@ -653,7 +654,7 @@ namespace IronPython.Runtime.Binding {
                             Ast.Call(
                                 typeof(PythonOps).GetMethod(nameof(PythonOps.CheckParamsZero)),
                                 AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                                _params
+                                _params // Queue<object>
                             )
                         );
                     } else if (_userProvidedParams != null) {
@@ -805,7 +806,7 @@ namespace IronPython.Runtime.Binding {
                     AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                     AstUtils.Constant(dfltIndex),
                     AstUtils.Constant(argName, typeof(string)),
-                    VariableOrNull(_params, typeof(PythonList)),
+                    VariableOrNull(_params, typeof(Queue<object>)),
                     VariableOrNull(_dict, typeof(PythonDictionary))
                 );
             }
@@ -843,7 +844,7 @@ namespace IronPython.Runtime.Binding {
                     AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),  // function
                     AstUtils.Constant(name, typeof(string)),                             // name
                     _paramsLen,                                    // arg count
-                    _params,                                       // params list
+                    _params,                                       // Queue<object>
                     AstUtils.Convert(_dict, typeof(IDictionary))  // dictionary
                 );
             }
@@ -860,17 +861,13 @@ namespace IronPython.Runtime.Binding {
             /// Helper function to extract the next argument from the params list.
             /// </summary>
             private Expression ExtractNextParamsArg() {
-                if (!_extractedParams) {
-                    MakeParamsCopy(_userProvidedParams);
-
-                    _extractedParams = true;
-                }
+                EnsureParams();
 
                 return Ast.Call(
                     typeof(PythonOps).GetMethod(nameof(PythonOps.ExtractParamsArgument)),
                     AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),  // function
                     AstUtils.Constant(Signature.ArgumentCount),                   // arg count
-                    _params                                        // list
+                    _params                                        // Queue<object>
                 );
             }
 
@@ -945,7 +942,7 @@ namespace IronPython.Runtime.Binding {
             private void MakeParamsCopy(Expression/*!*/ userList) {
                 Debug.Assert(_params == null);
 
-                _temps.Add(_params = Ast.Variable(typeof(PythonList), "$list"));
+                _temps.Add(_params = Ast.Variable(typeof(Queue<object>), "$list"));
                 _temps.Add(_paramsLen = Ast.Variable(typeof(int), "$paramsLen"));
 
                 EnsureInit();
@@ -965,7 +962,7 @@ namespace IronPython.Runtime.Binding {
                 _init.Add(
                     Ast.Assign(_paramsLen,
                         Ast.Add(
-                            Ast.Call(_params, typeof(PythonList).GetMethod(nameof(PythonList.__len__))),
+                            Ast.Property(_params, nameof(Queue<object>.Count)),
                             AstUtils.Constant(Signature.GetProvidedPositionalArgumentCount())
                         )
                     )

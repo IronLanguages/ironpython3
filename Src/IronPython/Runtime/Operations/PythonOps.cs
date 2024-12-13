@@ -938,7 +938,7 @@ namespace IronPython.Runtime.Operations {
             return CallWithContext(context, func, args);
         }
 
-        [Obsolete("Use ObjectOpertaions instead")]
+        [Obsolete("Use ObjectOperations instead")]
         public static object? CallWithArgsTupleAndKeywordDictAndContext(CodeContext/*!*/ context, object func, object[] args, string[] names, object argsTuple, object kwDict) {
             IDictionary? kws = kwDict as IDictionary;
             if (kws == null && kwDict != null) throw PythonOps.TypeError("argument after ** must be a dictionary");
@@ -2634,11 +2634,26 @@ namespace IronPython.Runtime.Operations {
         }
 
 
-        public static PythonList CopyAndVerifyParamsList(CodeContext context, PythonFunction function, object list) {
-            return new PythonList(context, list);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static Queue<object?> CopyAndVerifyParamsList(CodeContext context, PythonFunction function, object list) {
+            if (list is not IEnumerable<object?> e) {
+                if (!TryGetEnumerator(context, list, out IEnumerator? enumerator)) {
+                    // TODO: CPython 3.5 uses "an iterable" in the error message instead of "a sequence"
+                    throw TypeError($"{function.__name__}() argument after * must be a sequence, not {PythonOps.GetPythonTypeName(list)}");
+                }
+                e = IEnumerableFromEnumerator(enumerator);
+            }
+            return new Queue<object?>(e);
+
+            static IEnumerable<object?> IEnumerableFromEnumerator(IEnumerator ie) {
+                while (ie.MoveNext()) {
+                    yield return ie.Current;
+                }
+            }
         }
 
-        public static PythonTuple UserMappingToPythonTuple(CodeContext/*!*/ context, object list, string funcName) {
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static PythonTuple UserMappingToPythonTuple(CodeContext/*!*/ context, object? list, string funcName) {
             if (!TryGetEnumeratorObject(context, list, out object? enumerator)) {
                 // TODO: CPython 3.5 uses "an iterable" in the error message instead of "a sequence"
                 throw TypeError($"{funcName}() argument after * must be a sequence, not {PythonOps.GetPythonTypeName(list)}");
@@ -2647,35 +2662,43 @@ namespace IronPython.Runtime.Operations {
             return PythonTuple.Make(enumerator);
         }
 
-        public static PythonTuple GetOrCopyParamsTuple(PythonFunction function, object input) {
-            if (input == null) {
-                throw PythonOps.TypeError("{0}() argument after * must be a sequence, not NoneType", function.__name__);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static PythonTuple GetOrCopyParamsTuple(CodeContext/*!*/ context, PythonFunction function, object? input) {
+            if (input is PythonTuple t && t.GetType() == typeof(PythonTuple)) {
+                return t;
             }
-
-            return PythonTuple.Make(input);
+            return UserMappingToPythonTuple(context, input, function.__name__);
         }
 
-        public static object? ExtractParamsArgument(PythonFunction function, int argCnt, PythonList list) {
-            if (list.__len__() != 0) {
-                return list.pop(0);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static object? ExtractParamsArgument(PythonFunction function, int argCnt, Queue<object?> list) {
+            if (list.Count != 0) {
+                return list.Dequeue();
             }
 
             throw function.BadArgumentError(argCnt);
         }
 
-        public static void AddParamsArguments(PythonList list, params object[] args) {
-            for (int i = 0; i < args.Length; i++) {
-                list.insert(i, args[i]);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void AddParamsArguments(Queue<object> list, params object[] args) {
+            var len = list.Count;
+            foreach (var arg in args) {
+                list.Enqueue(arg);
+            }
+            // put existing arguments at the end
+            for (int i = 0; i < len; i++) {
+                list.Enqueue(list.Dequeue());
             }
         }
 
         /// <summary>
         /// Extracts an argument from either the dictionary or params
         /// </summary>
-        public static object? ExtractAnyArgument(PythonFunction function, string name, int argCnt, PythonList list, IDictionary dict) {
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static object? ExtractAnyArgument(PythonFunction function, string name, int argCnt, Queue<object?> list, IDictionary dict) {
             object? val;
             if (dict.Contains(name)) {
-                if (list.__len__() != 0) {
+                if (list.Count != 0) {
                     throw MultipleKeywordArgumentError(function, name);
                 }
                 val = dict[name];
@@ -2683,8 +2706,8 @@ namespace IronPython.Runtime.Operations {
                 return val;
             }
 
-            if (list.__len__() != 0) {
-                return list.pop(0);
+            if (list.Count != 0) {
+                return list.Dequeue();
             }
 
             if (function.ExpandDictPosition == -1 && dict.Count > 0) {
@@ -2726,9 +2749,10 @@ namespace IronPython.Runtime.Operations {
             return function.Defaults[index];
         }
 
-        public static object? GetFunctionParameterValue(PythonFunction function, int index, string name, PythonList? extraArgs, PythonDictionary? dict) {
-            if (extraArgs != null && extraArgs.__len__() > 0) {
-                return extraArgs.pop(0);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static object? GetFunctionParameterValue(PythonFunction function, int index, string name, Queue<object?>? extraArgs, PythonDictionary? dict) {
+            if (extraArgs != null && extraArgs.Count > 0) {
+                return extraArgs.Dequeue();
             }
 
             if (dict != null && dict.TryRemoveValue(name, out object val)) {
@@ -2746,9 +2770,10 @@ namespace IronPython.Runtime.Operations {
             return function.__kwdefaults__?[name];
         }
 
-        public static void CheckParamsZero(PythonFunction function, PythonList extraArgs) {
-            if (extraArgs.__len__() != 0) {
-                throw function.BadArgumentError(extraArgs.__len__() + function.NormalArgumentCount);
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void CheckParamsZero(PythonFunction function, Queue<object?> extraArgs) {
+            if (extraArgs.Count != 0) {
+                throw function.BadArgumentError(extraArgs.Count + function.NormalArgumentCount);
             }
         }
 

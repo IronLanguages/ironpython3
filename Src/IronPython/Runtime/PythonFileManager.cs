@@ -183,7 +183,7 @@ namespace IronPython.Runtime {
     /// </summary>
     /// <remarks>
     /// PythonFileManager emulates a file descriptor table. On Windows, .NET uses Win32 API which uses file handles
-    /// rather than file descriptors. The emulation is necesary to support Python API, which in some places uses file descriptors.
+    /// rather than file descriptors. The emulation is necessary to support Python API, which in some places uses file descriptors.
     ///
     /// The manager maintains a mapping between open files (or system file-like objects) and a "descriptor", being a small non-negative integer.
     /// Unlike in CPython, the descriptors are allocated lazily, meaning they are allocated only when they become exposed (requested)
@@ -198,7 +198,7 @@ namespace IronPython.Runtime {
     /// In such situations, only one of the FileIO may be opened with flag `closefd` (CPython rule).
     ///
     /// The second lever of sharing of open files is below the file descriptor level. A file descriptor can be duplicated using dup/dup2,
-    /// but the duplicated descriptor is still refering to the same open file in the filesystem. In such case, the manager maintains
+    /// but the duplicated descriptor is still referring to the same open file in the filesystem. In such case, the manager maintains
     /// a separate StreamBox for the duplicated descriptor, but the StreamBoxes for both descriptors share the underlying Streams.
     /// Both such descriptors have to be closed independently by the user code (either explicitly by os.close(fd) or through close()
     /// on the FileIO objects), but the underlying shared streams are closed only when all such duplicated descriptors are closed.
@@ -236,7 +236,7 @@ namespace IronPython.Runtime {
         private readonly ConcurrentDictionary<Stream, int> _refs = new();
 
         // This version of Add is used with genuine file descriptors (Unix).
-        // Exception: support dup2 on all frameworks/platfroms.
+        // Exception: support dup2 on all frameworks/platforms.
         public int Add(int id, StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
             ContractUtils.Requires(streams.Id < 0, nameof(streams));

@@ -102,6 +102,18 @@ def darwin_code_expr(codes, fmt):
 def linux_code_expr(codes, fmt):
     return fmt(codes[linux_idx])
 
+common_errno_codes = ['ENOENT', 'EBADF', 'EACCES', 'EMFILE']
+
+def generate_common_errno_codes(cw):
+    for name in common_errno_codes:
+        codes = errorvalues[name]
+
+        value = windows_code_expr(codes, str)
+        if (all(c.isdigit() for c in value)):
+            cw.write(f"internal const int {name} = {value};")
+        else:
+            cw.write(f"internal static int {name} => {value};")
+
 def generate_errno_names(cw):
     def is_windows_alias(name):
         return "WSA" + name in errorvalues and name in errorvalues and errorvalues["WSA" + name][windows_idx] == errorvalues[name][windows_idx]
@@ -208,6 +220,7 @@ def generate_common_O_flags(cw):
 def main():
     return generate(
         ("Errno Codes", generate_errno_codes),
+        ("Common Errno Codes", generate_common_errno_codes),
         ("Errno Names", generate_errno_names),
         ("O_Flags", generate_all_O_flags),
         ("Common O_Flags", generate_common_O_flags),

@@ -222,6 +222,7 @@ namespace IronPython.Runtime {
         internal const int ENOENT = 2;
         internal const int EBADF = 9;
         internal const int EACCES = 13;
+        internal const int EINVAL = 22;
         internal const int EMFILE = 24;
 
         // *** END GENERATED CODE ***

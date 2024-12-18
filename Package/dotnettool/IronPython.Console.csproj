@@ -34,7 +34,7 @@
 This package contains a standalone Python interpreter, invokable from the command line as ipy. It also includes the Python Standard Library released by the Python project, but slightly modified to work better with IronPython and .NET.</Description>
     <PackageTags>ironpython python dynamic dlr</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>logo.png</PackageIcon>
+    <PackageIcon>PackageLogo.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -55,8 +55,8 @@ This package contains a standalone Python interpreter, invokable from the comman
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <None Include="$(RootDir)Documentation\logo.png" Pack="true" PackagePath="\" />
-    <None Include="$(StageDir)\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="$(RootDir).github\PackageLogo.png" Pack="true" PackagePath="\" />
+    <None Include="$(StageDir)\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="@(ToolFiles)" Pack="true" PackagePath="\tools\$(TargetFramework)\any\" />
     <None Include="$(StageDir)\lib\**" Pack="true" PackagePath="\tools\$(TargetFramework)\any\lib\" />
   </ItemGroup>

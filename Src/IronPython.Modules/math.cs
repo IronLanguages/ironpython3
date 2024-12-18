@@ -30,10 +30,12 @@ namespace IronPython.Modules {
         public const double e = Math.E;
 
         private const double degreesToRadians = Math.PI / 180.0;
+        private const double radiansToDegrees = 180.0 / Math.PI;
+
         private const int Bias = 0x3FE;
 
         public static double degrees(double radians) {
-            return Check(radians, radians / degreesToRadians);
+            return Check(radians, radians * radiansToDegrees);
         }
 
         public static double radians(double degrees) {

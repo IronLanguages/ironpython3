@@ -783,6 +783,51 @@ class FileTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, open, "", "r", opener=uncallable_opener)
 
+
+    def test_seek(self):
+        with open(self.temp_file, "w") as f:
+            f.write("abc")
+            self.assertRaises(TypeError, f.buffer.seek, 1.5)
+            if is_cli:
+                self.assertRaises(TypeError, f.seek, 1.5)  # surprisingly, this doesn't raise an error in CPython
+
+        with open(self.temp_file, "rb") as f:
+            self.assertEqual(f.tell(), 0)
+            self.assertEqual(f.read(1), b"a")
+            self.assertEqual(f.tell(), 1)
+
+            f.seek(2)
+            self.assertEqual(f.tell(), 2)
+            self.assertEqual(f.read(1), b"c")
+            self.assertEqual(f.tell(), 3)
+
+            f.seek(0, os.SEEK_SET)
+            self.assertEqual(f.tell(), 0)
+            self.assertEqual(f.read(1), b"a")
+            self.assertEqual(f.tell(), 1)
+
+            f.seek(0, os.SEEK_CUR)
+            self.assertEqual(f.tell(), 1)
+            self.assertEqual(f.read(1), b"b")
+            self.assertEqual(f.tell(), 2)
+
+            f.raw.seek(2, os.SEEK_SET)
+            f.raw.seek(-2, os.SEEK_CUR)
+            self.assertEqual(f.raw.tell(), 0)
+            self.assertEqual(f.raw.read(1), b"a")
+            self.assertEqual(f.raw.tell(), 1)
+
+            f.raw.seek(-1, os.SEEK_END)
+            self.assertEqual(f.raw.tell(), 2)
+            self.assertEqual(f.raw.read(1), b"c")
+            self.assertEqual(f.raw.tell(), 3)
+
+            self.assertRaises(TypeError, f.seek, 1.5)
+            self.assertRaises(TypeError, f.raw.seek, 1.5)
+            self.assertRaises(OSError, f.raw.seek, -1)
+            self.assertRaises(OSError, f.raw.seek, 0, -1)
+
+
     def test_open_wbplus(self):
         with open(self.temp_file, "wb+") as f:
             f.write(b"abc")

@@ -133,7 +133,7 @@ namespace IronPython.Modules {
                         // according to [documentation](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.safefilehandle?view=net-9.0#remarks)
                         // accessing SafeFileHandle sets the current stream position to 0
                         // in practice it doesn't seem to be the case, but better to be sure
-                        if (this.mode == "ab+") {
+                        if (this.mode.StartsWith("ab", StringComparison.InvariantCulture)) {
                             _streams.WriteStream.Seek(0L, SeekOrigin.End);
                         }
                         if (!_streams.IsSingleStream) {
@@ -372,25 +372,39 @@ namespace IronPython.Modules {
                 return readinto(bufferProtocol);
             }
 
-            [Documentation("seek(offset: int[, whence: int]) -> None.  Move to new file position.\n\n"
-                + "Argument offset is a byte count.  Optional argument whence defaults to\n"
-                + "0 (offset from start of file, offset should be >= 0); other values are 1\n"
-                + "(move relative to current position, positive or negative), and 2 (move\n"
-                + "relative to end of file, usually negative, although many platforms allow\n"
-                + "seeking beyond the end of a file).\n"
-                + "Note that not all file objects are seekable."
-                )]
+
+            [Documentation("""
+                seek(offset: int[, whence: int]) -> int.  Change stream position.
+
+                Argument offset is a byte count.  Optional argument whence defaults to
+                0 or `os.SEEK_SET` (offset from start of file, offset should be >= 0);
+                other values are 1 or `os.SEEK_CUR` (move relative to current position,
+                positive or negative), and 2 or `os.SEEK_END` (move relative to end of
+                file, usually negative, although many platforms allow seeking beyond
+                the end of a file, by adding zeros to enlarge the file).
+
+                Return the new absolute position.
+
+                Note that not all file objects are seekable.
+                """)]
             public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional] object whence) {
                 _checkClosed();
 
-                return _streams.ReadStream.Seek((long)offset, (SeekOrigin)GetInt(whence));
+                var origin = (SeekOrigin)GetInt(whence);
+                if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
+                    throw PythonOps.OSError(PythonFileManager.EINVAL, "Invalid argument");
+
+                long ofs = checked((long)offset);
+                if (ofs < 0 && ClrModule.IsMono && origin == SeekOrigin.Current) {
+                    // Mono does not support negative offsets with SeekOrigin.Current
+                    // so we need to calculate the absolute offset
+                    ofs += _streams.ReadStream.Position;
+                    origin = SeekOrigin.Begin;
+                }
+
+                return _streams.ReadStream.Seek(ofs, origin);
             }
 
-            public BigInteger seek(double offset, [Optional] object whence) {
-                _checkClosed();
-
-                throw PythonOps.TypeError("an integer is required");
-            }
 
             [Documentation("seekable() -> bool.  True if file supports random-access.")]
             public override bool seekable(CodeContext/*!*/ context) {

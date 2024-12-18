@@ -718,4 +718,10 @@ def %s(self, other):
         for flt, res in int_ratio_tests:
             self.assertEqual(flt.as_integer_ratio(), res)
 
+    def test_degrees(self):
+        # check that IronPython is doing the same conversion as CPython
+        self.assertNotEqual(0.06825994771674652 / (math.pi / 180), 0.06825994771674652 * (180 / math.pi))
+        self.assertEqual(0.06825994771674652 * (180 / math.pi), 3.911006913953236)
+        self.assertEqual(math.degrees(0.06825994771674652), 3.911006913953236)
+
 run_test(__name__)

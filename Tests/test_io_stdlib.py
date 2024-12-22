@@ -144,6 +144,30 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyMiscIOTest('test_attributes'), # AssertionError: 'wb+' != 'rb+'
         ]
 
+        if is_mono:
+            skip_tests += [
+                # On Mono, gc.collect() may return before collection is finished making some tests unreliable
+                test.test_io.CBufferedWriterTest('test_destructor'),
+                test.test_io.PyBufferedWriterTest('test_destructor'),
+                test.test_io.PyBufferedRandomTest('test_destructor'),
+                test.test_io.PyBufferedReaderTest('test_override_destructor'),
+                test.test_io.PyBufferedWriterTest('test_override_destructor'),
+                test.test_io.PyBufferedRandomTest('test_override_destructor'),
+
+                test.test_io.CTextIOWrapperTest('test_destructor'),
+                test.test_io.CIOTest('test_IOBase_finalize'),
+
+                test.test_io.PyTextIOWrapperTest('test_destructor'),
+                test.test_io.PyTextIOWrapperTest('test_override_destructor'),
+                test.test_io.PyIOTest('test_RawIOBase_destructor'),
+                test.test_io.PyIOTest('test_BufferedIOBase_destructor'),
+                test.test_io.PyIOTest('test_IOBase_destructor'),
+                test.test_io.PyIOTest('test_TextIOBase_destructor'),
+
+                test.test_io.CMiscIOTest('test_blockingioerror'),
+                test.test_io.PyMiscIOTest('test_blockingioerror'),
+            ]
+
         return generate_suite(tests, failing_tests, skip_tests)
 
     else:

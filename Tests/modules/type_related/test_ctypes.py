@@ -12,7 +12,7 @@ import sys
 import gc
 import unittest
 
-from iptest import IronPythonTestCase, is_posix, is_cli, big, myint, run_test
+from iptest import IronPythonTestCase, is_posix, is_cli, is_mono, big, myint, run_test
 
 class CTypesTest(IronPythonTestCase):
     export_error_msg = "Existing exports of data: object cannot be re-sized" if is_cli else "cannot resize an array that is exporting buffers"
@@ -30,11 +30,14 @@ class CTypesTest(IronPythonTestCase):
         self.assertRaisesMessage(BufferError, self.export_error_msg, arr.append, 100)
         self.assertRaisesMessage(BufferError, self.export_error_msg, arr.insert, 10, 100)
 
+        if is_mono:
+            with c: pass # gc.collect() in Mono may return before collection is finished
         del c
         gc.collect()
         arr.append(100)
         self.assertEqual(arr[-1], 100)
 
+    @unittest.skipIf(is_mono, "gc.collect() in Mono may return before collection is finished")
     def test_from_memoryview(self):
         arr = array('i', range(16))
         with memoryview(arr) as mv:

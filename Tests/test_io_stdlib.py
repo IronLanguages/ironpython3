@@ -101,11 +101,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyMiscIOTest('test_warn_on_dealloc_fd'), # AssertionError: ResourceWarning not triggered
         ]
 
-        if is_mono:
-            failing_tests += [
-                test.test_io.CBufferedRandomTest('test_destructor'), # IndexError: index out of range: 0
-            ]
-
         skip_tests = [
             test.test_io.CBufferedWriterTest('test_override_destructor'), # StackOverflowException
             test.test_io.CBufferedRandomTest('test_override_destructor'), # StackOverflowException
@@ -147,6 +142,7 @@ def load_tests(loader, standard_tests, pattern):
         if is_mono:
             skip_tests += [
                 # On Mono, gc.collect() may return before collection is finished making some tests unreliable
+                test.test_io.CBufferedRandomTest('test_destructor'),
                 test.test_io.CBufferedWriterTest('test_destructor'),
                 test.test_io.PyBufferedWriterTest('test_destructor'),
                 test.test_io.PyBufferedRandomTest('test_destructor'),

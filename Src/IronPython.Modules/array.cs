@@ -196,11 +196,7 @@ namespace IronPython.Modules {
                 if (value <= 0) {
                     _data.Clear();
                 } else {
-                    var myData = __copy__();
-
-                    for (int i = 0; i < (value - 1); i++) {
-                        ExtendArray(myData);
-                    }
+                    _data.InPlaceMultiply(value);
                 }
                 return this;
             }

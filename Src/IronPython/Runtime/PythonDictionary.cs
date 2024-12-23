@@ -1053,34 +1053,22 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public string __repr__(CodeContext context) {
-            List<object> infinite = PythonOps.GetAndCheckInfinite(this);
-            if (infinite == null) {
-                return "...";
-            }
-
-            int index = infinite.Count;
-            infinite.Add(this);
-            try {
-                StringBuilder res = new StringBuilder(20);
-                res.Append("dict_values([");
-                string comma = "";
-                foreach (object value in this) {
-                    res.Append(comma);
-                    comma = ", ";
-                    try {
-                        PythonOps.FunctionPushFrame(context.LanguageContext);
-                        res.Append(PythonOps.Repr(context, value));
-                    } finally {
-                        PythonOps.FunctionPopFrame();
-                    }
+            StringBuilder res = new StringBuilder(20);
+            res.Append("dict_values([");
+            string comma = "";
+            foreach (object value in this) {
+                res.Append(comma);
+                comma = ", ";
+                try {
+                    PythonOps.FunctionPushFrame(context.LanguageContext);
+                    res.Append(PythonOps.Repr(context, value));
+                } finally {
+                    PythonOps.FunctionPopFrame();
                 }
-                res.Append("])");
-
-                return res.ToString();
-            } finally {
-                Debug.Assert(index == infinite.Count - 1);
-                infinite.RemoveAt(index);
             }
+            res.Append("])");
+
+            return res.ToString();
         }
 
         #endregion
@@ -1784,34 +1772,22 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public string __repr__(CodeContext context) {
-            List<object> infinite = PythonOps.GetAndCheckInfinite(this);
-            if (infinite == null) {
-                return "...";
-            }
-
-            int index = infinite.Count;
-            infinite.Add(this);
-            try {
-                StringBuilder res = new StringBuilder(20);
-                res.Append("dict_items([");
-                string comma = "";
-                foreach (object item in this) {
-                    res.Append(comma);
-                    comma = ", ";
-                    try {
-                        PythonOps.FunctionPushFrame(context.LanguageContext);
-                        res.Append(PythonOps.Repr(context, item));
-                    } finally {
-                        PythonOps.FunctionPopFrame();
-                    }
+            StringBuilder res = new StringBuilder(20);
+            res.Append("dict_items([");
+            string comma = "";
+            foreach (object item in this) {
+                res.Append(comma);
+                comma = ", ";
+                try {
+                    PythonOps.FunctionPushFrame(context.LanguageContext);
+                    res.Append(PythonOps.Repr(context, item));
+                } finally {
+                    PythonOps.FunctionPopFrame();
                 }
-                res.Append("])");
-
-                return res.ToString();
-            } finally {
-                Debug.Assert(index == infinite.Count - 1);
-                infinite.RemoveAt(index);
             }
+            res.Append("])");
+
+            return res.ToString();
         }
 
         #endregion

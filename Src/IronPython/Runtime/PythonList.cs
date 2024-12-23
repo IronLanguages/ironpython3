@@ -772,7 +772,10 @@ namespace IronPython.Runtime {
 
         public void extend(CodeContext context, object? seq) {
             if (PythonOps.TryInvokeLengthHint(context, seq, out int len)) {
-                EnsureSize(len);
+                // CPython proceeds without resizing if the length overflows
+                if (int.MaxValue - len >= Count) {
+                    EnsureSize(Count + len);
+                }
             }
 
             ExtendNoLengthCheck(context, seq);

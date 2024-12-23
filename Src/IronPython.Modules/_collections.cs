@@ -551,20 +551,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            public PythonTuple __reduce__() {
-                lock (_lockObj) {
-                    object[] items = new object[_itemCnt];
-                    int curItem = 0;
-                    WalkDeque(delegate(int curIndex) {
-                        items[curItem++] = _data[curIndex];
-                        return true;
-                    });
-
-                    return PythonTuple.MakeTuple(
-                        DynamicHelpers.GetPythonType(this),
-                        PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(items))
-                    );
-                }
+            public PythonTuple __reduce__(CodeContext context) {
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    _maxLen == -1 ? PythonTuple.EMPTY : PythonTuple.MakeTuple(PythonTuple.EMPTY, maxlen),
+                    GetType() == typeof(deque) ? null : PythonOps.GetBoundAttr(context, this, "__dict__"),
+                    PythonOps.GetEnumeratorObject(context, this)
+                );
             }
 
             public int __len__() {

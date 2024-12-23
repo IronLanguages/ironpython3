@@ -120,20 +120,20 @@ The frequency argument specifies frequency, in hertz, of the sound.
 This parameter must be in the range 37 through 32,767.
 The duration argument specifies the number of milliseconds.
 ")]
-        public static void Beep(CodeContext/*!*/ context, int freq, int dur) {
-            if (freq < 37 || freq > 32767) {
+        public static void Beep(CodeContext/*!*/ context, int frequency, int duration) {
+            if (frequency < 37 || frequency > 32767) {
                 throw PythonOps.ValueError("frequency must be in 37 thru 32767");
             }
 
-            bool ok = Beep(freq, dur);
+            bool ok = Beep(frequency, duration);
             if (!ok) {
                 throw PythonOps.RuntimeError("Failed to beep");
             }
         }
 
         [Documentation("MessageBeep(x) - call Windows MessageBeep(x). x defaults to MB_OK.")]
-        public static void MessageBeep(CodeContext/*!*/ context, int x=MB_OK) {
-            MessageBeep(x);
+        public static void MessageBeep(CodeContext/*!*/ context, int type=MB_OK) {
+            MessageBeep(type);
         }
 
         #endregion

@@ -136,14 +136,27 @@ namespace IronPython.Modules {
                     throw MakeException(context, new SocketException((int)SocketError.ProtocolNotSupported));
                 }
 
-                Socket? socket;
+                Socket? socket = null;
                 if (fileno is socket sock) {
                     socket = sock._socket;
                     _hostName = sock._hostName;
                     // we now own the lifetime of the socket
                     GC.SuppressFinalize(sock);
-                } else if (fileno != null && (socket = HandleToSocket((long)fileno)) != null) {
-                    // nothing to do here
+                } else if (fileno != null) {
+                    if (!PythonOps.TryToIndex(fileno, out object? handleObj)) {
+                        throw PythonOps.TypeErrorForUnIndexableObject(fileno);
+                    }
+                    long handle = Converter.ConvertToInt64(handleObj);
+                    // Windows reserves only INVALID_SOCKET (~0) as an invalid handle
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? handle == -1 : handle < 0) {
+                        throw PythonOps.ValueError("negative file descriptor");
+                    }
+                    socket = HandleToSocket(handle);
+                    if (socket is null) {
+                        throw PythonOps.OSError(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            ? PythonErrorNumber.WSAENOTSOCK : PythonErrorNumber.EBADF,
+                            "Bad file descriptor");
+                    }
                 } else {
                     try {
                         socket = new Socket(addressFamily, socketType, protocolType);
@@ -413,7 +426,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(buffer, bufsize, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -449,7 +462,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(byteBuffer, nbytes, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -486,7 +499,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(buffer, bufsize, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -519,7 +532,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(byteBuffer, nbytes, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -548,18 +561,6 @@ namespace IronPython.Modules {
                     int remainder = nbytes % itemSize;
                     return Math.Min(remainder == 0 ? nbytes : nbytes + itemSize - remainder,
                         bufLength * itemSize);
-                }
-            }
-
-            private Exception MakeRecvException(Exception e, SocketError errorCode = SocketError.InvalidArgument) {
-                if (e is ObjectDisposedException) return MakeException(_context, e);
-
-                // on the socket recv throw a special socket error code when SendTimeout is zero
-                if (_socket.SendTimeout == 0) {
-                    var s = new SocketException((int)errorCode);
-                    return PythonExceptions.CreateThrowable(error, s.ErrorCode, s.Message);
-                } else {
-                    return MakeException(_context, e);
                 }
             }
 
@@ -1787,7 +1788,7 @@ namespace IronPython.Modules {
                 }
             } else if (exception is ObjectDisposedException) {
                 return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EBADF, "Socket is closed");
-            } else if (exception is InvalidOperationException) {
+            } else if (exception is InvalidOperationException or ArgumentException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {
                 return exception;

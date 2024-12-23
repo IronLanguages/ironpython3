@@ -881,7 +881,7 @@ for k, v in toError.items():
 
             string sourceLine = PythonContext.GetSourceLine(e);
             string fileName = e.GetSymbolDocumentName();
-            object column = (e.Column == 0 || e.Data[PythonContext._syntaxErrorNoCaret] != null) ? null : (object)e.Column;
+            int column = e.Data[PythonContext._syntaxErrorNoCaret] is not null ? 0 : e.Column;
 
             se.args = PythonTuple.MakeTuple(e.Message, PythonTuple.MakeTuple(fileName, e.Line, column, sourceLine));
 

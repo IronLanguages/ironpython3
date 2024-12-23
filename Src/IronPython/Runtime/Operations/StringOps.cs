@@ -1219,7 +1219,7 @@ namespace IronPython.Runtime.Operations {
                     return;
                 case int mappedInt:
                     if (mappedInt > 0xFFFF) {
-                        throw PythonOps.TypeError("character mapping must be in range(0x10000)");
+                        throw PythonOps.ValueError("character mapping must be in range(0x10000)");
                     }
                     ret.Append((char)mappedInt);
                     break;
@@ -1991,17 +1991,28 @@ namespace IronPython.Runtime.Operations {
 
         internal static partial class CodecsInfo {
             internal static readonly Encoding MbcsEncoding;
+            internal static readonly Encoding OemEncoding;
             internal static readonly Encoding RawUnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: true);
             internal static readonly Encoding UnicodeEscapeEncoding = new UnicodeEscapeEncoding(raw: false);
             internal static readonly IDictionary<string, Lazy<Encoding?>> Codecs;
+
+            [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = CharSet.Auto)]
+            private static extern int GetOEMCP();
 
             static CodecsInfo() {
 #if !NETFRAMEWORK
                 // This ensures that Encoding.GetEncoding(0) will return the default Windows ANSI code page
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
-                // Use Encoding.GetEncoding(0) instead of Encoding.Default (which returns UTF-8 with .NET Core)
-                MbcsEncoding = Encoding.GetEncoding(0);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    // Use Encoding.GetEncoding(0) instead of Encoding.Default (which returns UTF-8 with .NET Core)
+                    MbcsEncoding = Encoding.GetEncoding(0);
+                    OemEncoding = Encoding.GetEncoding(GetOEMCP());
+                } else {
+                    MbcsEncoding = null!;
+                    OemEncoding = null!;
+                }
                 Codecs = MakeCodecsDict();
             }
 
@@ -2030,6 +2041,7 @@ namespace IronPython.Runtime.Operations {
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     d["mbcs"] = makeEncodingProxy(() => MbcsEncoding);
+                    d["oem"] = makeEncodingProxy(() => OemEncoding);
                 }
 
                 // TODO: revisit the exceptions to rules below once _codecs_cn, _codecs_hk, _codecs_jp, and _codecs_kr are implemented
@@ -2379,7 +2391,14 @@ namespace IronPython.Runtime.Operations {
                 private int _index;
 
                 public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
-                    return false;
+                    var val = char.ConvertToUtf32(charUnknownHigh, charUnknownLow);
+                    _buffer.Add('\\');
+                    _buffer.Add('U');
+                    AddCharacter(val >> 24);
+                    AddCharacter((val >> 16) & 0xFF);
+                    AddCharacter((val >> 8) & 0xFF);
+                    AddCharacter(val & 0xFF);
+                    return true;
                 }
 
                 public override bool Fallback(char charUnknown, int index) {

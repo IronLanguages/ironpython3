@@ -30,9 +30,6 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
-using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
-
 #if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
@@ -101,7 +98,7 @@ namespace IronPython.Modules {
         private static extern int GetFinalPathNameByHandle([In] SafeFileHandle hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static string _getfinalpathname([NotNone] string path) {
+        public static string _getfinalpathname(CodeContext/*!*/ context, [NotNone] string path) {
             var hFile = CreateFile(path, 0, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
             if (hFile.IsInvalid) {
                 throw GetLastWin32Error(path);
@@ -113,6 +110,20 @@ namespace IronPython.Modules {
                 throw GetLastWin32Error(path);
             }
             return sb.ToString();
+        }
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static Bytes _getfinalpathname(CodeContext/*!*/ context, [NotNone] Bytes path)
+            => _getfinalpathname(context, path.ToFsString(context)).ToFsBytes(context);
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static object _getfinalpathname(CodeContext/*!*/ context, object? path) {
+            return ToFsPath(context, path, nameof(path)) switch {
+                string s => _getfinalpathname(context, s),
+                Extensible<string> es => _getfinalpathname(context, es.Value),
+                Bytes b => _getfinalpathname(context, b),
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         public static string _getfullpathname(CodeContext/*!*/ context, [NotNone] string/*!*/ path) {
@@ -192,8 +203,14 @@ namespace IronPython.Modules {
         public static Bytes _getfullpathname(CodeContext/*!*/ context, [NotNone] Bytes path)
             => _getfullpathname(context, path.ToFsString(context)).ToFsBytes(context);
 
-        public static Bytes _getfullpathname(CodeContext/*!*/ context, object? path)
-            => _getfullpathname(context, ConvertToFsString(context, path, nameof(path))).ToFsBytes(context);
+        public static object _getfullpathname(CodeContext/*!*/ context, object? path) {
+            return ToFsPath(context, path, nameof(path)) switch {
+                string s => _getfullpathname(context, s),
+                Extensible<string> es => _getfullpathname(context, es.Value),
+                Bytes b => _getfullpathname(context, b),
+                _ => throw new InvalidOperationException(),
+            };
+        }
 
 #if FEATURE_PROCESS
         public static void abort() {
@@ -347,6 +364,8 @@ namespace IronPython.Modules {
             }
         }
 
+        public static object? cpu_count() => null; // TODO: implement me!
+
         public static int dup(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
@@ -444,7 +463,7 @@ namespace IronPython.Modules {
         }
 
         public static object fspath(CodeContext context, [AllowNull] object path)
-            => PythonOps.FsPath(path);
+            => PythonOps.FsPath(context, path);
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
@@ -588,8 +607,8 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static PythonList listdir(CodeContext context, object? path)
-            => listdir(context, ConvertToFsString(context, path, nameof(path)));
+        public static PythonList listdir(CodeContext context, [NotNone] object path)
+            => listdir(context, ConvertToFsString(context, path, nameof(path), orType: "None"));
 
         public static BigInteger lseek(CodeContext context, int fd, long offset, int whence) {
             var streams = context.LanguageContext.FileManager.GetStreams(fd);
@@ -612,7 +631,6 @@ namespace IronPython.Modules {
         [LightThrowing, Documentation("")]
         public static object lstat(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
             => lstat(path.ToFsString(context), kwargs);
-
 
         [LightThrowing, Documentation("")]
         public static object lstat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -644,7 +662,7 @@ namespace IronPython.Modules {
 
             public bool is_file(bool follow_symlinks = true) => !is_dir();
 
-            public bool is_symlink() => throw new NotImplementedException();
+            public bool is_symlink() => info.Attributes.HasFlag(FileAttributes.ReparsePoint) ? throw new NotImplementedException() : false;
 
             [LightThrowing]
             public object? stat(bool follow_symlinks = true) => PythonNT.stat(info.FullName, new Dictionary<string, object>());
@@ -687,8 +705,8 @@ namespace IronPython.Modules {
         public static ScandirIterator scandir(CodeContext context, string? path = null)
             => new ScandirIterator(context, ScandirHelper(context, path), asBytes: false);
 
-        public static ScandirIterator scandir(CodeContext context, [NotNone] IBufferProtocol path)
-            => new ScandirIterator(context, ScandirHelper(context, ConvertToFsString(context, path, nameof(path))), asBytes: true);
+        public static ScandirIterator scandir(CodeContext context, [NotNone] object path)
+            => new ScandirIterator(context, ScandirHelper(context, ConvertToFsString(context, path, nameof(path), orType: "None")), asBytes: true);
 
         private static IEnumerable<FileSystemInfo> ScandirHelper(CodeContext context, string? path) {
             if (path == null) {
@@ -831,7 +849,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            if (Directory.Exists(path)) throw DirectoryExists();
+            if (Directory.Exists(path)) throw DirectoryExistsError(path);
             // we ignore mode
 
             try {
@@ -1532,11 +1550,15 @@ namespace IronPython.Modules {
             => stat(path.ToFsString(context), dict);
 
         [LightThrowing, Documentation("")]
-        public static object stat(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
-            // TODO: accept object? path to get nicer error message?
-            // TODO: Python 3.6: os.PathLike
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(stat)}: {nameof(path)} should be string, bytes or integer, not {PythonOps.GetPythonTypeName(path)}"); // deprecated in 3.6
-            return stat(path.ToFsBytes(context).ToFsString(context), dict);
+        public static object stat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
+            if (PythonOps.TryToIndex(path, out BigInteger bi)) {
+                if (bi.AsInt32(out int i)) {
+                    return stat(context, i);
+                }
+                throw PythonOps.OverflowError("fd is greater than maximum");
+            }
+
+            return stat(ConvertToFsString(context, path, nameof(path), orType: "integer"), dict);
         }
 
         [LightThrowing, Documentation("")]
@@ -1632,11 +1654,16 @@ namespace IronPython.Modules {
             => truncate(context, path.ToFsString(context), length);
 
         [Documentation("")]
-        public static void truncate(CodeContext context, [NotNone] IBufferProtocol path, BigInteger length) {
-            // TODO: accept object? path to get nicer error message?
-            // TODO: Python 3.6: os.PathLike
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(truncate)}: {nameof(path)} should be string, bytes or integer, not {PythonOps.GetPythonTypeName(path)}"); // deprecated in 3.6
-            truncate(context, path.ToFsBytes(context).ToFsString(context), length);
+        public static void truncate(CodeContext context, object? path, BigInteger length) {
+            if (PythonOps.TryToIndex(path, out BigInteger bi)) {
+                if (bi.AsInt32(out int i)) {
+                    truncate(context, i, length);
+                    return;
+                }
+                throw PythonOps.OverflowError("fd is greater than maximum");
+            }
+
+            truncate(context, ConvertToFsString(context, path, nameof(path), orType: "integer"), length);
         }
 
         public static void truncate(CodeContext context, int fd, BigInteger length)
@@ -2313,8 +2340,13 @@ the 'status' value."),
 
 #endif
 
-        private static Exception DirectoryExists() {
-            return PythonOps.OSError(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
+        private static Exception DirectoryExistsError(string? filename) {
+#if FEATURE_NATIVE
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return GetWin32Error(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, filename);
+            }
+#endif
+            return GetOsError(PythonErrorNumber.EEXIST, filename);
         }
 
 #if FEATURE_NATIVE
@@ -2365,21 +2397,26 @@ the 'status' value."),
 
         private static Bytes ToFsBytes(this string s, CodeContext context) => Bytes.Make(_getFileSystemEncoding(context).GetBytes(s));
 
-        private static Bytes ToFsBytes(this IBufferProtocol bp, CodeContext context) {
-            // TODO: Python 3.6: "path should be string, bytes or os.PathLike"
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "path should be string or bytes, not {0}", PythonOps.GetPythonTypeName(bp));
-            return new Bytes(bp); // accepts FULL_RO buffers in CPython
+        private static object ToFsPath(CodeContext context, object? o, string argname, [CallerMemberName] string? methodname = null, string? orType = null) {
+            if (o is not Bytes && o is IBufferProtocol bp) {
+                if (orType is null)
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes or os.PathLike, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o));
+                else
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes, os.PathLike or {3}, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o), orType);
+                o = new Bytes(bp); // accepts FULL_RO buffers in CPython
+            }
+
+            if (PythonOps.TryToFsPath(context, o, out var res))
+                return res;
+
+            if (orType is null)
+                throw PythonOps.TypeError("{0}: {1} should be string, bytes or os.PathLike, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o));
+            else
+                throw PythonOps.TypeError("{0}: {1} should be string, bytes, os.PathLike or {3}, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o), orType);
         }
 
-        private static string ConvertToFsString(CodeContext context, [NotNull] object? o, string argname, [CallerMemberName] string? methodname = null)
-            => o switch {
-                string s            => s,
-                ExtensibleString es => es.Value,
-                Bytes b             => b.ToFsString(context),
-                IBufferProtocol bp  => bp.ToFsBytes(context).ToFsString(context),
-                // TODO: Python 3.6: os.PathLike
-                _ => throw PythonOps.TypeError("{0}: {1} should be string or bytes, not '{2}'", methodname, argname, PythonOps.GetPythonTypeName(o))
-            };
+        private static string ConvertToFsString(CodeContext context, object? o, string argname, [CallerMemberName] string? methodname = null, string? orType = null)
+            => PythonOps.DecodeFsPath(context, ToFsPath(context, o, argname, methodname, orType));
 
         private static void CheckOptionalArgsCount(int numRegParms, int numOptPosParms, int numKwParms, int numOptPosArgs, int numKwArgs, [CallerMemberName] string? methodname = null) {
             if (numOptPosArgs > numOptPosParms)

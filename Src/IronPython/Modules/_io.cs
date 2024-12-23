@@ -31,7 +31,8 @@ namespace IronPython.Modules {
         private static readonly object _blockingIOErrorKey = new object();
         private static readonly object _unsupportedOperationKey = new object();
 
-        // Values of the O_flags below has to be identical with flags defined in PythonNT
+
+        // Values of the O_flags below have to be identical with flags defined in PythonNT
 
         #region Generated Common O_Flags
 
@@ -56,6 +57,7 @@ namespace IronPython.Modules {
         // *** END GENERATED CODE ***
 
         #endregion
+
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {

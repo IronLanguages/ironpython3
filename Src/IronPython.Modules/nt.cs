@@ -370,9 +370,21 @@ namespace IronPython.Modules {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
-            fileManager.EnsureRefStreams(streams);
-            fileManager.AddRefStreams(streams);
-            return fileManager.Add(new(streams));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                int fd2 = UnixDup(fd, -1, out Stream? dupstream);
+                if (dupstream is not null) {
+                    return fileManager.Add(fd2, new(dupstream));
+                } else {
+                    // Share the same set of streams between the original and the dupped descriptor
+                    fileManager.EnsureRefStreams(streams);
+                    fileManager.AddRefStreams(streams);
+                    return fileManager.Add(fd2, new(streams));
+                }
+            } else {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
+                return fileManager.Add(new(streams));
+            }
         }
 
 
@@ -385,7 +397,7 @@ namespace IronPython.Modules {
             }
 
             if (!fileManager.ValidateFdRange(fd2)) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
+                throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
             }
 
             if (fileManager.TryGetStreams(fd2, out _)) {
@@ -394,9 +406,45 @@ namespace IronPython.Modules {
 
             // TODO: race condition: `open` or `dup` on another thread may occupy fd2
 
-            fileManager.EnsureRefStreams(streams);
-            fileManager.AddRefStreams(streams);
-            return fileManager.Add(fd2, new(streams));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                if (!streams.IsSingleStream && fd2 is 0 && streams.ReadStream is FileStream fs) {
+                    // If there is a separate read stream, dupping over stdin uses read stream's file descriptor as source
+                    long pos = fs.Position;
+                    fd = fs.SafeFileHandle.DangerousGetHandle().ToInt32();
+                    fs.Seek(pos, SeekOrigin.Begin);
+                }
+                fd2 = UnixDup(fd, fd2, out Stream? dupstream); // closes fd2 atomically if reopened in the meantime
+                fileManager.Remove(fd2);
+                if (dupstream is not null) {
+                    return fileManager.Add(fd2, new(dupstream));
+                } else {
+                    // Share the same set of streams between the original and the dupped descriptor
+                    fileManager.EnsureRefStreams(streams);
+                    fileManager.AddRefStreams(streams);
+                    return fileManager.Add(fd2, new(streams));
+                }
+            } else {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
+                return fileManager.Add(fd2, new(streams));
+            }
+        }
+
+
+        private static int UnixDup(int fd, int fd2, out Stream? stream) {
+            int res = fd2 < 0 ? Mono.Unix.Native.Syscall.dup(fd) : Mono.Unix.Native.Syscall.dup2(fd, fd2);
+            if (res < 0) throw GetLastUnixError();
+            if (ClrModule.IsMono) {
+                // This does not work on .NET, probably because .NET FileStream is not aware of Mono.Unix.UnixStream
+                stream = new Mono.Unix.UnixStream(res, ownsHandle: true);
+            } else {
+                // This does not work 100% correctly on .NET, probably because each FileStream has its own read/write cursor
+                // (it should be shared between dupped descriptors)
+                //stream = new FileStream(new SafeFileHandle((IntPtr)res, ownsHandle: true), FileAccess.ReadWrite);
+                // Accidentaly, this would also not work on Mono: https://github.com/mono/mono/issues/12783
+                stream = null; // Handle stream sharing in PythonFileManager
+            }
+            return res;
         }
 
 #if FEATURE_PROCESS
@@ -426,7 +474,7 @@ namespace IronPython.Modules {
                 if (streams.IsStandardIOStream()) return new stat_result(0x1000);
                 if (StatStream(streams.ReadStream) is not null and var res) return res;
             }
-            return LightExceptions.Throw(PythonOps.OSError(9, "Bad file descriptor"));
+            return LightExceptions.Throw(PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor"));
 
             static object? StatStream(Stream stream) {
                 if (stream is FileStream fs) return lstat(fs.Name, new Dictionary<string, object>(1));
@@ -452,7 +500,7 @@ namespace IronPython.Modules {
             try {
                 streams.Flush();
             } catch (IOException) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
+                throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
             }
         }
 
@@ -845,22 +893,42 @@ namespace IronPython.Modules {
                 FileMode fileMode = FileModeFromFlags(flags);
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
-                Stream fs;
+                Stream s;            // the stream opened to acces the file
+                FileStream? fs;      // downcast of s if s is FileStream (this is always the case on POSIX)
+                Stream? rs = null;   // secondary read stream if needed, otherwise same as s
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsNulFile(path)) {
-                    fs = Stream.Null;
+                    fs = null;
+                    s = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
                     fs = new FileStream(path, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
-                    fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
+                    // .NET doesn't allow Append w/ access != Write, so open the file w/ Write
+                    // and a secondary stream w/ Read, then seek to the end.
+                    s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
+                    rs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    rs.Seek(0L, SeekOrigin.End);
                 } else {
-                    fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
+                rs ??= s;
 
-                return context.LanguageContext.FileManager.Add(new(fs));
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    int fd = fs!.SafeFileHandle.DangerousGetHandle().ToInt32();
+                    // accessing SafeFileHandle may reset file position
+                    if (fileMode == FileMode.Append) {
+                        fs.Seek(0L, SeekOrigin.End);
+                    }
+                    if (!ReferenceEquals(fs, rs)) {
+                        rs.Seek(fs.Position, SeekOrigin.Begin);
+                    }
+                    return context.LanguageContext.FileManager.Add(fd, new(rs, s));
+                } else {
+                    return context.LanguageContext.FileManager.Add(new(rs, s));
+                }
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
@@ -895,29 +963,28 @@ namespace IronPython.Modules {
 
 #if FEATURE_PIPES
 
-        private static Tuple<Stream, Stream> CreatePipeStreams() {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                return CreatePipeStreamsUnix();
-            } else {
-                var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
-                var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
-                return Tuple.Create<Stream, Stream>(inPipe, outPipe);
-            }
-
-            static Tuple<Stream, Stream> CreatePipeStreamsUnix() {
-                Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
-                return Tuple.Create<Stream, Stream>(pipes.Reading, pipes.Writing);
-            }
-        }
-
         public static PythonTuple pipe(CodeContext context) {
-            var pipeStreams = CreatePipeStreams();
             var manager = context.LanguageContext.FileManager;
 
-            return PythonTuple.MakeTuple(
-                manager.Add(new(pipeStreams.Item1)),
-                manager.Add(new(pipeStreams.Item2))
-            );
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
+                var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
+                return PythonTuple.MakeTuple(
+                    manager.Add(new(inPipe)),
+                    manager.Add(new(outPipe))
+                );
+            } else {
+                var pipeStreams = CreatePipeStreamsUnix();
+                return PythonTuple.MakeTuple(
+                    manager.Add(pipeStreams.Item1, new(pipeStreams.Item2)),
+                    manager.Add(pipeStreams.Item3, new(pipeStreams.Item4))
+                );
+            }
+
+            static Tuple<int, Stream, int, Stream> CreatePipeStreamsUnix() {
+                Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
+                return Tuple.Create<int, Stream, int, Stream>(pipes.Reading.Handle, pipes.Reading, pipes.Writing.Handle, pipes.Writing);
+            }
         }
 #endif
 
@@ -939,7 +1006,7 @@ namespace IronPython.Modules {
             try {
                 PythonContext pythonContext = context.LanguageContext;
                 var streams = pythonContext.FileManager.GetStreams(fd);
-                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(9, "Bad file descriptor");
+                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
 
                 return Bytes.Make(streams.Read(buffersize));
             } catch (Exception e) {
@@ -1832,7 +1899,7 @@ namespace IronPython.Modules {
                 using var buffer = data.GetBuffer();
                 PythonContext pythonContext = context.LanguageContext;
                 var streams = pythonContext.FileManager.GetStreams(fd);
-                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(9, "Bad file descriptor");
+                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
 
                 return streams.Write(buffer);
             } catch (Exception e) {

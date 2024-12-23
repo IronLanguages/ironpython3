@@ -47,6 +47,12 @@ namespace IronPython.Modules {
                 : base(underlyingSystemType) {
             }
 
+            public object from_buffer(object obj)
+                => throw PythonOps.TypeError("abstract class");
+
+            public object from_buffer_copy(object obj)
+                => throw PythonOps.TypeError("abstract class");
+
             public object from_param([NotNone] CData obj) {
                 return new NativeArgument((CData)PythonCalls.Call(this, obj), "P");
             }

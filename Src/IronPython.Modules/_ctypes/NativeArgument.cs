@@ -4,12 +4,9 @@
 
 #if FEATURE_CTYPES
 
-using System;
-
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -35,11 +32,8 @@ namespace IronPython.Modules {
 
             #region ICodeFormattable Members
 
-            public string __repr__(CodeContext context) {
-                return String.Format("<cparam '{0}' ({1})>",
-                    _type,
-                    IdDispenser.GetId(__obj));// TODO: should be a real address
-            }
+            public string __repr__(CodeContext context)
+                => $"<cparam '{_type}' ({PythonOps.Repr(context, __obj)})>";
 
             #endregion
         }

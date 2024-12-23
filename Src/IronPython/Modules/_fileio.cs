@@ -82,6 +82,9 @@ namespace IronPython.Modules {
 
             public FileIO(CodeContext/*!*/ context, string name, string mode = "r", bool closefd = true, object opener = null)
                 : base(context) {
+                if (name.Contains('\0')) {
+                    throw PythonOps.ValueError("embedded null character");
+                }
                 if (!closefd) {
                     throw PythonOps.ValueError("Cannot use closefd=False with file name");
                 }
@@ -543,5 +546,10 @@ namespace IronPython.Modules {
 
             #endregion
         }
+
+#if !NETCOREAPP
+        private static bool Contains(this string str, char value)
+            => str.IndexOf(value) != -1;
+#endif
     }
 }

@@ -259,6 +259,7 @@ The Dialect type records CSV parsing and generation options.")]
             private Dialect() {
             }
 
+            [PythonHidden]
             public static Dialect Create(CodeContext/*!*/ context,
                 [ParamDictionary] IDictionary<object, object> kwArgs,
                 params object[] args) {
@@ -410,6 +411,7 @@ The Dialect type records CSV parsing and generation options.")]
                 }
                 return result;
             }
+
             #endregion
 
             public Dialect(CodeContext/*!*/ context,
@@ -502,6 +504,13 @@ The Dialect type records CSV parsing and generation options.")]
                 if (_lineterminator == null)
                     throw PythonOps.TypeError("lineterminator must be set");
             }
+
+            // CPython defines these overloads on Dialect since 3.10
+            [Documentation("raises an exception to avoid pickling")]
+            public object __reduce__(params object[] args) => throw PythonOps.TypeError("cannot pickle 'Dialect' instances");
+
+            [Documentation("raises an exception to avoid pickling")]
+            public object __reduce_ex__(params object[] args) => throw PythonOps.TypeError("cannot pickle 'Dialect' instances");
 
             public string escapechar {
                 get { return _escapechar; }

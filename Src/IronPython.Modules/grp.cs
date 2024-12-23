@@ -6,18 +6,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
-using System.Numerics;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Types;
 
 [assembly: PythonModule("grp", typeof(IronPython.Modules.PythonGrp), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules {
-    
+
     public static class PythonGrp {
         public const string __doc__ = @"Access to the Unix group database.
         
@@ -79,13 +80,10 @@ or via the object attributes as named in the above tuple.
             return new struct_group(g.gr_name, g.gr_passwd, g.gr_gid, PythonList.FromEnumerable(MarshalStringArray(g.gr_mem)));
         }
 
-        private static IEnumerable<string> MarshalStringArray(IntPtr arrayPtr)
-        {
-            if (arrayPtr != IntPtr.Zero)
-            {
+        private static IEnumerable<string> MarshalStringArray(IntPtr arrayPtr) {
+            if (arrayPtr != IntPtr.Zero) {
                 IntPtr ptr = Marshal.ReadIntPtr(arrayPtr);
-                while (ptr != IntPtr.Zero)
-                {
+                while (ptr != IntPtr.Zero) {
                     string key = Marshal.PtrToStringAnsi(ptr);
                     yield return key;
                     arrayPtr = new IntPtr(arrayPtr.ToInt64() + IntPtr.Size);
@@ -96,16 +94,27 @@ or via the object attributes as named in the above tuple.
 
         public static struct_group getgrgid(int gid) {
             var grp = _getgrgid(gid);
-            if(grp == IntPtr.Zero) {
+            if (grp == IntPtr.Zero) {
                 throw PythonOps.KeyError($"getgrgid(): gid not found: {gid}");
             }
 
             return Make(grp);
         }
 
+        public static struct_group getgrgid(CodeContext context, object gid) {
+            var g = BigIntegerOps.__new__(context, TypeCache.BigInteger, gid);
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"group id must be int, not {PythonOps.GetPythonTypeName(gid)}");
+            return g switch {
+                int i => getgrgid(i),
+                BigInteger bi => getgrgid((int)bi),
+                _ => throw new InvalidOperationException(),
+            };
+        }
+
         public static struct_group getgrnam(string name) {
+            if (name is not null && name.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
             var grp = _getgrnam(name);
-            if(grp == IntPtr.Zero) {
+            if (grp == IntPtr.Zero) {
                 throw PythonOps.KeyError($"getgrnam()): name not found: {name}");
             }
 
@@ -116,31 +125,32 @@ or via the object attributes as named in the above tuple.
             var res = new PythonList();
             setgrent();
             IntPtr val = getgrent();
-            while(val != IntPtr.Zero) {
+            while (val != IntPtr.Zero) {
                 res.Add(Make(val));
                 val = getgrent();
             }
-            
+
             return res;
         }
 
 
         #region P/Invoke Declarations
 
-        [DllImport("libc", EntryPoint="getgrgid", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", EntryPoint = "getgrgid", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr _getgrgid(int uid);
 
-        [DllImport("libc", EntryPoint="getgrnam", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", EntryPoint = "getgrnam", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr _getgrnam([MarshalAs(UnmanagedType.LPStr)] string name);
 
-        [DllImport("libc", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", CallingConvention = CallingConvention.Cdecl)]
         private static extern void setgrent();
 
-        [DllImport("libc", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr getgrent();
 
         #endregion
 
     }
 }
+
 #endif

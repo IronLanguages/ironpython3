@@ -533,14 +533,14 @@ class SocketMakefileTest(IronPythonTestCase):
     def test_makefile_refcount(self):
         "Ensures that the _socket stays open while there's still a file associated"
 
-        GPORT = None
+        PORT = None
         def echoer():
-            nonlocal GPORT
+            nonlocal PORT
             s = socket.socket()
             s.settimeout(15) # prevents the server from staying open if the client never connects
             s.bind(('localhost', 0))
             s.listen(5)
-            GPORT = s.getsockname()[1]
+            PORT = s.getsockname()[1]
             (s2, _) = s.accept()
             s2.send(s2.recv(10))
             s2.close()
@@ -549,7 +549,7 @@ class SocketMakefileTest(IronPythonTestCase):
         _thread.start_new_thread(echoer, ())
         for _ in range(20):
             time.sleep(0.5)
-            if GPORT is not None:
+            if PORT is not None:
                 break
 
         if is_mono:
@@ -558,7 +558,7 @@ class SocketMakefileTest(IronPythonTestCase):
         s = socket.socket()
         if is_mono:
             dummy.close()
-        s.connect(('localhost', GPORT))
+        s.connect(('localhost', PORT))
         f1 = s.makefile('r')
         f2 = s.makefile('w')
         s.close()

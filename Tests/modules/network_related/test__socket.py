@@ -13,7 +13,7 @@ import _thread
 import time
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_osx, is_linux, is_windows, is_cpython, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, is_osx, is_linux, is_windows, is_cpython, run_test
 
 AF_DICT = {"AF_APPLETALK" : 5,
            "AF_DECnet" : 12,
@@ -432,7 +432,6 @@ import os
 HOST = 'localhost'
 PORT = 0
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 s.listen(1)
@@ -538,11 +537,10 @@ class SocketMakefileTest(IronPythonTestCase):
         def echoer():
             nonlocal GPORT
             s = socket.socket()
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
             s.settimeout(15) # prevents the server from staying open if the client never connects
             s.bind(('localhost', 0))
-            GPORT = s.getsockname()[1]
             s.listen(5)
+            GPORT = s.getsockname()[1]
             (s2, _) = s.accept()
             s2.send(s2.recv(10))
             s2.close()
@@ -554,7 +552,12 @@ class SocketMakefileTest(IronPythonTestCase):
             if GPORT is not None:
                 break
 
+        if is_mono:
+            # Warm up Mono to connecting sockets
+            dummy = socket.socket()
         s = socket.socket()
+        if is_mono:
+            dummy.close()
         s.connect(('localhost', GPORT))
         f1 = s.makefile('r')
         f2 = s.makefile('w')
@@ -582,7 +585,6 @@ import os
 HOST = 'localhost'
 PORT = 0
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 s.listen(1)

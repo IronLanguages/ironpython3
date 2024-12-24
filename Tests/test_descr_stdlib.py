@@ -6,7 +6,7 @@
 ## Run selected tests from test_descr from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, is_mono, generate_suite, run_test
 
 import test.test_descr
 
@@ -58,6 +58,14 @@ def load_tests(loader, standard_tests, pattern):
         skip_tests = [
             test.test_descr.ClassPropertiesAndMethods('test_restored_object_new'), # TODO: marked as expectedFailure but doesn't fail
         ]
+
+        if is_mono:
+            skip_tests += [
+                # On Mono, gc.collect() may return before collection is finished making some tests unreliable
+                test.test_descr.ClassPropertiesAndMethods('test_delete_hook'),
+                test.test_descr.ClassPropertiesAndMethods('test_subtype_resurrection'),
+                test.test_descr.ClassPropertiesAndMethods('test_weakrefs'),
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

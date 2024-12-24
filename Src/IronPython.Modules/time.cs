@@ -340,10 +340,12 @@ namespace IronPython.Modules {
             List<FormatInfo> newFormat = new List<FormatInfo>();
 
             for (int i = 0; i < format.Length; i++) {
-                if (format[i] == '%') {
+                var ch = format[i];
+                if (ch == '%') {
                     if (i + 1 == format.Length) throw PythonOps.ValueError("Invalid format string");
 
                     switch (format[++i]) {
+                        case '\0': throw PythonOps.ValueError("embedded null character");
                         case 'a': newFormat.Add(new FormatInfo("ddd")); break;
                         case 'A': newFormat.Add(new FormatInfo("dddd")); break;
                         case 'b': newFormat.Add(new FormatInfo("MMM")); break;
@@ -379,10 +381,11 @@ namespace IronPython.Modules {
                             throw PythonOps.ValueError("Invalid format string");
                     }
                 } else {
+                    if (ch == '\0') throw PythonOps.ValueError("embedded null character");
                     if (newFormat.Count == 0 || newFormat[newFormat.Count - 1].Type != FormatInfoType.UserText)
-                        newFormat.Add(new FormatInfo(FormatInfoType.UserText, format[i].ToString()));
+                        newFormat.Add(new FormatInfo(FormatInfoType.UserText, ch.ToString()));
                     else
-                        newFormat[newFormat.Count - 1].Text += format[i];
+                        newFormat[newFormat.Count - 1].Text += ch;
                 }
             }
 

@@ -66,7 +66,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_ssl.NetworkedTests('test_connect_cadata'), # # https://github.com/IronLanguages/ironpython3/issues/1523
                 test.test_ssl.NetworkedTests('test_connect_ex'), # https://github.com/IronLanguages/ironpython3/issues/1523
                 test.test_ssl.NetworkedTests('test_get_server_certificate'), # https://github.com/IronLanguages/ironpython3/issues/1523
-                test.test_ssl.ThreadedTests('test_rude_shutdown'), # ValueError: Value does not fall within the expected range.
             ]
 
         skip_tests = [

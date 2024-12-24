@@ -192,9 +192,22 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.Float:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteFloat(res, _isLittleEndian, (float)GetDoubleValue(context, curObj++, values));
+                                var d = GetDoubleValue(context, curObj++, values);
+                                var val = (float)d;
+                                if (float.IsInfinity(val) && !double.IsInfinity(d)) throw PythonOps.OverflowError("float too large to pack with f format");
+                                WriteFloat(res, _isLittleEndian, val);
                             }
                             break;
+#if NET6_0_OR_GREATER
+                        case FormatType.Half:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                var d = GetDoubleValue(context, curObj++, values);
+                                var val = (Half)d;
+                                if (Half.IsInfinity(val) && !double.IsInfinity(d)) throw PythonOps.OverflowError("float too large to pack with e format");
+                                WriteHalf(res, _isLittleEndian, val);
+                            }
+                            break;
+#endif
                         case FormatType.CString:
                             WriteString(res, curFormat.Count, GetStringValue(context, curObj++, values));
                             break;
@@ -273,7 +286,7 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.SignedChar:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res[res_idx++] = (int)(sbyte)CreateCharValue(context, ref curIndex, data);
+                                res[res_idx++] = (int)unchecked((sbyte)CreateCharValue(context, ref curIndex, data));
                             }
                             break;
                         case FormatType.UnsignedChar:
@@ -336,7 +349,7 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.SizeT:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res[res_idx++] = CreateUIntValue(context, ref curIndex, _isLittleEndian, data);
+                                res[res_idx++] = BigIntegerOps.__int__(CreateUIntValue(context, ref curIndex, _isLittleEndian, data));
                             }
                             break;
                         case FormatType.LongLong:
@@ -349,9 +362,16 @@ namespace IronPython.Modules {
                                 res[res_idx++] = BigIntegerOps.__int__(CreateULongValue(context, ref curIndex, _isLittleEndian, data));
                             }
                             break;
+#if NET6_0_OR_GREATER
+                        case FormatType.Half:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                res[res_idx++] = (double)CreateHalfValue(context, ref curIndex, _isLittleEndian, data);
+                            }
+                            break;
+#endif
                         case FormatType.Float:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res[res_idx++] = CreateFloatValue(context, ref curIndex, _isLittleEndian, data);
+                                res[res_idx++] = (double)CreateFloatValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.Double:
@@ -472,6 +492,12 @@ namespace IronPython.Modules {
                             res.Add(new Format(FormatType.UnsignedLongLong, count));
                             count = 1;
                             break;
+#if NET6_0_OR_GREATER
+                        case 'e': // half
+                            res.Add(new Format(FormatType.Half, count));
+                            count = 1;
+                            break;
+#endif
                         case 'f': // float
                             res.Add(new Format(FormatType.Float, count));
                             count = 1;
@@ -697,6 +723,9 @@ namespace IronPython.Modules {
 
             Short,
             UnsignedShort,
+#if NET6_0_OR_GREATER
+            Half,
+#endif
 
             Int,
             UnsignedInt,
@@ -730,6 +759,9 @@ namespace IronPython.Modules {
                     return 1;
                 case FormatType.Short:
                 case FormatType.UnsignedShort:
+#if NET6_0_OR_GREATER
+                case FormatType.Half:
+#endif
                     return 2;
                 case FormatType.Int:
                 case FormatType.UnsignedInt:
@@ -910,6 +942,18 @@ namespace IronPython.Modules {
         private static void WriteSignedNetPointer(this MemoryStream res, bool fLittleEndian, IntPtr val) {
             res.WritePointer(fLittleEndian, unchecked((ulong)val.ToInt64()));
         }
+
+#if NET6_0_OR_GREATER
+        private static void WriteHalf(this MemoryStream res, bool fLittleEndian, Half val) {
+            byte[] bytes = BitConverter.GetBytes(val);
+            if (BitConverter.IsLittleEndian == fLittleEndian) {
+                res.Write(bytes, 0, bytes.Length);
+            } else {
+                res.WriteByte(bytes[1]);
+                res.WriteByte(bytes[0]);
+            }
+        }
+#endif
 
         private static void WriteFloat(this MemoryStream res, bool fLittleEndian, float val) {
             byte[] bytes = BitConverter.GetBytes(val);
@@ -1134,7 +1178,7 @@ namespace IronPython.Modules {
         internal static double GetDoubleValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
             if (Converter.TryConvertToDouble(val, out double res)) return res;
-            throw Error(context, "expected double value");
+            throw Error(context, "required argument is not a float");
         }
 
         internal static IList<byte> GetStringValue(CodeContext/*!*/ context, int index, object[] args) {
@@ -1193,6 +1237,28 @@ namespace IronPython.Modules {
                 return (ushort)((b1 << 8) | b2);
             }
         }
+
+#if NET6_0_OR_GREATER
+        internal static Half CreateHalfValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
+            byte[] bytes = new byte[2];
+            if (fLittleEndian == BitConverter.IsLittleEndian) {
+                bytes[0] = data[index++];
+                bytes[1] = data[index++];
+            } else {
+                bytes[1] = data[index++];
+                bytes[0] = data[index++];
+            }
+            Half res = BitConverter.ToHalf(bytes, 0);
+
+            if (context.LanguageContext.FloatFormat == FloatFormat.Unknown) {
+                if (Half.IsNaN(res) || Half.IsInfinity(res)) {
+                    throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+                }
+            }
+
+            return res;
+        }
+#endif
 
         internal static float CreateFloatValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte[] bytes = new byte[4];

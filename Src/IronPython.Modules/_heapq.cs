@@ -76,6 +76,7 @@ namespace IronPython.Modules {
             }
         }
 
+        // TODO: removed in Python 3.5
         [Documentation("Find the n largest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable, reverse=True)[:n]\n"
             )]
@@ -108,6 +109,7 @@ namespace IronPython.Modules {
             return ret;
         }
 
+        // TODO: removed in Python 3.5
         [Documentation("Find the n smallest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable)[:n]\n"
             )]

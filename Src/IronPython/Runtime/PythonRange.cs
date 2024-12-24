@@ -83,9 +83,9 @@ namespace IronPython.Runtime {
             );
         }
 
-        public int __len__() {
-            return (int)_length;
-        }
+        public int __len__() => (int)_length;
+
+        public bool __bool__() => _length != 0;
 
         public object this[int index] => this[(BigInteger)index];
 

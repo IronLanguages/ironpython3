@@ -15,7 +15,6 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_codeccallbacks.CodecCallbackTest('test_backslashescape'), # UTF-16 vs. UTF-32
             test.test_codeccallbacks.CodecCallbackTest('test_badandgoodbackslashreplaceexceptions'), # UTF-16 vs. UTF-32
             test.test_codeccallbacks.CodecCallbackTest('test_badandgoodreplaceexceptions'), # UTF-16 vs. UTF-32
             test.test_codeccallbacks.CodecCallbackTest('test_badandgoodxmlcharrefreplaceexceptions'), # UTF-16 vs. UTF-32

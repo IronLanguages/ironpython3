@@ -69,6 +69,12 @@ namespace IronPython.Modules {
                 return PythonType.SetPythonType(underlyingSystemType, new CFuncPtrType(underlyingSystemType));
             }
 
+            public object from_buffer(object obj)
+                => throw PythonOps.TypeError("abstract class");
+
+            public object from_buffer_copy(object obj)
+                => throw PythonOps.TypeError("abstract class");
+
             /// <summary>
             /// Converts an object into a function call parameter.
             /// </summary>

@@ -35,8 +35,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_codecs.SurrogateEscapeTest('test_charmap'), # .NET iso-8859-3 decodes b'\xa5' to 'uf7f5' rather than undefined
             test.test_codecs.TransformCodecTest('test_custom_hex_error_is_wrapped'), # "^decoding with 'hex_codec' codec failed" does not match "Odd-length string"
             test.test_codecs.TransformCodecTest('test_custom_zlib_error_is_wrapped'), # "^decoding with 'zlib_codec' codec failed" does not match "Error -3 while decompressing data: incorrect header check"
-            test.test_codecs.TransformCodecTest('test_read'), # TypeError: expected str, got bytes
-            test.test_codecs.TransformCodecTest('test_readline'), # Exception: BZ_DATA_ERROR
             test.test_codecs.UTF7Test('test_errors'), # AssertionError: UnicodeDecodeError not raised by utf_7_decode
             test.test_codecs.UTF7Test('test_lone_surrogates'), # UnicodeEncodeError: 'utf_8' codec can't encode character '\ud801' in position 503: Unable to translate Unicode character \uD801 at index 503 to specified code page.
         ]

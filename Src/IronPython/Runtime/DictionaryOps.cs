@@ -51,7 +51,12 @@ namespace IronPython.Runtime {
                         buf.Append(PythonOps.Repr(context, kv.Key));
                     buf.Append(": ");
 
-                    buf.Append(PythonOps.Repr(context, kv.Value));
+                    try {
+                        PythonOps.FunctionPushFrame(context.LanguageContext);
+                        buf.Append(PythonOps.Repr(context, kv.Value));
+                    } finally {
+                        PythonOps.FunctionPopFrame();
+                    }
                 }
                 buf.Append("}");
                 return buf.ToString();
@@ -94,12 +99,12 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static PythonTuple popitem(IDictionary<object, object> self) {
-            IEnumerator<KeyValuePair<object, object>> ie = self.GetEnumerator();
+        public static PythonTuple popitem(PythonDictionary self) {
+            using IEnumerator<KeyValuePair<object, object>> ie = self.GetEnumerator();
             if (ie.MoveNext()) {
                 object key = ie.Current.Key;
                 object val = ie.Current.Value;
-                self.Remove(key);
+                self.RemoveDirect(key);
                 return PythonTuple.MakeTuple(key, val);
             }
             throw PythonOps.KeyError("dictionary is empty");

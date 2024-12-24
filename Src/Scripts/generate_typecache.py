@@ -45,6 +45,7 @@ data = [
     TypeData('PythonType'),
     TypeData('String', 'str'),
     TypeData('Bytes'),
+    TypeData('ByteArray'),
     TypeData('PythonTuple'),
     TypeData('WeakReference'),
     TypeData('PythonList'),

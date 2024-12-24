@@ -3144,9 +3144,8 @@ namespace IronPython.Modules {
         private static int GetInt(object? i, string? msg = null) {
             if (i == Missing.Value) return 0;
 
-            int res;
-            if (TryGetInt(i, out res)) {
-                return res;
+            if (Converter.TryConvertToIndex(i, out int index, throwOverflowError: true)) {
+                return index;
             }
 
             if (msg == null) {
@@ -3156,12 +3155,12 @@ namespace IronPython.Modules {
             throw PythonOps.TypeError(msg);
         }
 
-        private static int GetInt(object? i, int defaultValue, string? msg = null) {
-            if (i == null) {
+        private static int GetInt(object? i, int defaultValue) {
+            if (i is null) {
                 return defaultValue;
             }
 
-            return GetInt(i, msg);
+            return GetInt(i);
         }
 
         private static bool TryGetInt(object? i, out int value) {

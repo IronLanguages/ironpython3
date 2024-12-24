@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
-    <!-- EOL netcoreapp3.1 is used to test netstandard2.0 assemblies -->
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <TargetFrameworks>net462;net6.0;net8.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>IronPythonConsole</RootNamespace>
     <AssemblyName>ipy</AssemblyName>
@@ -16,12 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
     <ProjectReference Include="..\IronPython.Modules\IronPython.Modules.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </ProjectReference>
-    <!-- add reference so it gets copied to the netcoreapp3.1 folder for testing -->
-    <ProjectReference Include="..\IronPython.SQLite\IronPython.SQLite.csproj" Condition="$(TargetFramework) == 'netcoreapp3.1'">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

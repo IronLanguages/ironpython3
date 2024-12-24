@@ -41,7 +41,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\net8.0.props = Build\net8.0.props
 		Build\net9.0-windows.props = Build\net9.0-windows.props
 		Build\net9.0.props = Build\net9.0.props
-		Build\netcoreapp3.1.props = Build\netcoreapp3.1.props
 		Build\netstandard2.0.props = Build\netstandard2.0.props
 		Build\steps.yml = Build\steps.yml
 		Build\Tasks.Targets = Build\Tasks.Targets

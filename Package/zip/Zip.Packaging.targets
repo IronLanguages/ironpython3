@@ -4,7 +4,7 @@
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')"/>
 
     <ItemGroup>
-      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\README.md;$(StageDir)\**\*.pdb;$(StageDir)\netstandard2.0\**\*;$(StageDir)\netcoreapp3.1\**\*;$(StageDir)\net9.0*\**\*" />
+      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\README.md;$(StageDir)\**\*.pdb;$(StageDir)\netstandard2.0\**\*;$(StageDir)\net6.0\**\*;$(StageDir)\net9.0*\**\*" />
       <ZipFiles Include="README.md" Link="$(MSBuildThisFileDirectory)README.md" />
       <ZipFiles Include="scripts/Enter-IronPythonEnvironment.ps1" Link="$(RootDir)Src\Scripts\Enter-IronPythonEnvironment.ps1" />
       <ZipFiles Include="scripts/Install-IronPython.ps1" Link="$(RootDir)Src\Scripts\Install-IronPython.ps1" />

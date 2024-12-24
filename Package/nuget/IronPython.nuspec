@@ -40,9 +40,9 @@ This package contains the IronPython interpreter engine.</description>
     </dependencies>
   </metadata>
   <files>
-    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;netcoreapp3.1\**\*;net9.0*\**\*" />
-    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;netcoreapp3.1\**\*;net9.0*\**\*" />
-    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp3.1\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;net6.0\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;net6.0\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;net6.0\**\*;net9.0*\**\*" />
     <file src="LICENSE" />
     <file src="..\..\..\nuget\README.md" target="" />
     <file src="..\..\..\..\Documentation\logo.png" target="" />

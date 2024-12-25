@@ -37,18 +37,20 @@ class OsTest(IronPythonTestCase):
         elif is_osx:
             self.assertEqual(os.strerror(40), "Message too long")
 
+
     def test_open_abplus(self):
         # equivalent to open(self.temp_file, "ab+"), see also test_file.test_open_abplus
         fd = os.open(self.temp_file, os.O_APPEND | os.O_CREAT | os.O_RDWR)
         try:
             f = open(fd, mode="ab+", closefd=False)
-            f.write(b"abc")
-            f.seek(0)
-            self.assertEqual(f.read(2), b"ab")
-            f.write(b"def")
-            self.assertEqual(f.read(2), b"")
-            f.seek(0)
-            self.assertEqual(f.read(6), b"abcdef")
+            f.raw.write(b"abcxxxx")
+            f.raw.seek(0)
+            self.assertEqual(f.raw.read(2), b"ab")
+            f.raw.seek(0, 2)
+            f.raw.write(b"def")
+            self.assertEqual(f.raw.read(2), b"")
+            f.raw.seek(0)
+            self.assertEqual(f.raw.read(), b"abcxxxxdef")
             f.close()
         finally:
             os.close(fd)

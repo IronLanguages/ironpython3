@@ -75,13 +75,13 @@ namespace IronPython.Runtime.Operations {
                             throw new InvalidOperationException(); // unreachable
                     }
                 case string s:
-                    if (LiteralParser.TryParseIntegerSign(s, @base, FindStart(s, @base), out result)) {
+                    if (LiteralParser.TryParseIntegerSign(s.AsSpan(FindStart(s, @base)), @base, out result)) {
                         return result;
                     } else {
                         throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {PythonOps.Repr(context, s)}");
                     }
                 case Extensible<string> es:
-                    if (TryInvokeInt(context, o, out result) || LiteralParser.TryParseIntegerSign(es.Value, @base, FindStart(es.Value, @base), out result)) {
+                    if (TryInvokeInt(context, o, out result) || LiteralParser.TryParseIntegerSign(es.Value.AsSpan(FindStart(es.Value, @base)), @base, out result)) {
                         return result;
                     } else {
                         throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {PythonOps.Repr(context, es)}");
@@ -176,7 +176,7 @@ namespace IronPython.Runtime.Operations {
                     ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
 
                 var text = buf.AsReadOnlySpan().MakeString();
-                if (!LiteralParser.TryParseIntegerSign(text, @base, FindStart(text, @base), out value))
+                if (!LiteralParser.TryParseIntegerSign(text.AsSpan(FindStart(text, @base)), @base, out value))
                     throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {new Bytes(x).__repr__(context)}");
             }
 

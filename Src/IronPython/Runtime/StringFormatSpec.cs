@@ -131,7 +131,15 @@ namespace IronPython.Runtime {
                 curOffset++;
             }
 
-            // TODO: read optional underscore (new in 3.6)
+            // read optional underscore
+            if (curOffset != formatSpec.Length &&
+                formatSpec[curOffset] == '_') {
+                thousandsUnderscore = true;
+                curOffset++;
+                if (thousandsComma || curOffset != formatSpec.Length && formatSpec[curOffset] == ',') {
+                    throw PythonOps.ValueError("Cannot specify both ',' and '_'");
+                }
+            }
 
             // read precision
             if (curOffset != formatSpec.Length &&
@@ -191,9 +199,12 @@ namespace IronPython.Runtime {
                             break;
                         default:
                             throw PythonOps.ValueError("Cannot specify '_' with '{0}'", type);
-
                     }
                 }
+            }
+
+            if (curOffset != formatSpec.Length) {
+                throw PythonOps.ValueError("Invalid format specifier '{0}'", formatSpec);
             }
 
             return new StringFormatSpec(

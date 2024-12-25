@@ -727,20 +727,23 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void write([BytesLike] IList<byte> s) {
+            public int write([NotNone] IBufferProtocol s) {
+                using var buffer = s.GetBuffer();
                 using (new MmapLocker(this)) {
                     EnsureWritable();
 
                     long pos = Position;
 
-                    if (_view.Capacity - pos < s.Count) {
+                    if (_view.Capacity - pos < buffer.AsReadOnlySpan().Length) {
                         throw PythonOps.ValueError("data out of range");
                     }
 
-                    byte[] data = s as byte[] ?? (s is Bytes b ? b.UnsafeByteArray : s.ToArray());
-                    _view.WriteArray(pos, data, 0, s.Count);
+                    byte[] data = buffer.AsUnsafeArray() ?? buffer.ToArray();
+                    _view.WriteArray(pos, data, 0, data.Length);
 
-                    Position = pos + s.Count;
+                    Position = pos + data.Length;
+
+                    return data.Length;
                 }
             }
 

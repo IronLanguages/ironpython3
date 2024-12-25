@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Threading;
 
 namespace IronPython.Runtime {
     internal static class FormattingHelper {
-        private static NumberFormatInfo _invariantUnderscoreSeperatorInfo;
+        private static NumberFormatInfo? _invariantUnderscoreSeperatorInfo;
 
         /// <summary>
         /// Helper NumberFormatInfo for use by int/BigInteger __format__ routines
@@ -33,10 +36,10 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static string/*!*/ ToCultureString<T>(T/*!*/ val, NumberFormatInfo/*!*/ nfi, StringFormatSpec spec, int? overrideWidth = null) {
+        public static string/*!*/ ToCultureString<T>(T/*!*/ val, NumberFormatInfo/*!*/ nfi, StringFormatSpec spec, int? overrideWidth = null) where T : notnull {
             string separator = nfi.NumberGroupSeparator;
             int[] separatorLocations = nfi.NumberGroupSizes;
-            string digits = val.ToString();
+            string digits = val.ToString()!;
 
             // If we're adding leading zeros, we need to know how
             // many we need.
@@ -125,6 +128,59 @@ namespace IronPython.Runtime {
             }
 
             return digits;
+        }
+
+        public static string AddUnderscores(string digits, StringFormatSpec spec, bool isNegative) {
+            var length = digits.Length + (digits.Length - 1) / 4; // length including minimum number of underscores
+
+            int idx;
+            var fillLength = 0;
+            if (spec.Fill == '0') {
+                if (spec.Width > length) {
+                    var width = spec.Width.Value;
+                    if (isNegative || spec.Sign != null && spec.Sign != '-') width--;
+                    fillLength = width - length;
+                    length = width;
+                }
+
+                // index of first underscore
+                idx = length % 5;
+                if (idx == 0) {
+                    idx = 1;
+                    fillLength++;
+                    length++;
+                }
+            } else {
+                // index of first underscore
+                idx = length % 5;
+                if (idx == 0) {
+                    idx = 1;
+                    length++;
+                }
+            }
+
+            var sb = new StringBuilder(length);
+
+            for (int i = 0; i < fillLength; i++, idx--) {
+                if (idx == 0) {
+                    sb.Append('_');
+                    idx = 5;
+                } else {
+                    sb.Append('0');
+                }
+            }
+            int j = 0;
+            for (int i = fillLength; i < length; i++, idx--) {
+                if (idx == 0) {
+                    sb.Append('_');
+                    idx = 5;
+                } else {
+                    sb.Append(digits[j++]);
+                }
+            }
+            Debug.Assert(j == digits.Length);
+
+            return sb.ToString();
         }
     }
 }

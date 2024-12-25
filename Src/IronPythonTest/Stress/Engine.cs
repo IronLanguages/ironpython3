@@ -44,6 +44,8 @@ namespace IronPythonTest.Stress {
 #if FEATURE_REFEMIT
         [Test]
         public void ScenarioXGC() {
+            Assert.AreEqual(1, 1); // prevents nunit from counting towards memory usage
+
             long initialMemory = GetTotalMemory();
 
             // Create multiple scopes:

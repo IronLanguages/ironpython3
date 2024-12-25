@@ -464,7 +464,7 @@ namespace IronPython.Runtime {
             if (!PythonOps.IsMappingType(DefaultContext.Default, _data)) {
                 if ((!(_data is PythonTuple) && _dataIndex != 1) ||
                     (_data is PythonTuple && _dataIndex != ((PythonTuple)_data).__len__())) {
-                    throw PythonOps.TypeError("not all arguments converted during string formatting");
+                    throw PythonOps.TypeError("not all arguments converted during {0} formatting", _asBytes ? "bytes" : "string");
                 }
             }
         }
@@ -870,10 +870,12 @@ namespace IronPython.Runtime {
             Debug.Assert(_asBytes);
             if (_opts.Value is Bytes bytes || Bytes.TryInvokeBytesOperator(_context, _opts.Value, out bytes!)) {
                 AppendString(StringOps.Latin1Encoding.GetString(bytes.UnsafeByteArray));
-            } else if (_opts.Value is ByteArray byteArray) {
-                AppendString(StringOps.Latin1Encoding.GetString(byteArray.UnsafeByteList.AsByteSpan()));
+            } else if (_opts.Value is IBufferProtocol bufferProtocol) {
+                using var buffer = bufferProtocol.GetBuffer(BufferFlags.FullRO);
+                var span = buffer.IsCContiguous() ? buffer.AsReadOnlySpan() : buffer.ToArray();
+                AppendString(StringOps.Latin1Encoding.GetString(span));
             } else {
-                throw PythonOps.TypeError($"%b requires bytes, or an object that implements __bytes__, not '{PythonOps.GetPythonTypeName(_opts.Value)}'");
+                throw PythonOps.TypeError($"%b requires a bytes-like object, or an object that implements __bytes__, not '{PythonOps.GetPythonTypeName(_opts.Value)}'");
             }
         }
 

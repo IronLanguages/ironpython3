@@ -211,7 +211,7 @@ def generate_O_flags(cw, flagvalues, access):
 def generate_all_O_flags(cw):
     generate_O_flags(cw, O_flagvalues, 'public')
 
-common_O_flags = ['O_RDONLY', 'O_WRONLY', 'O_RDWR', 'O_APPEND', 'O_CREAT', 'O_TRUNC', 'O_EXCL']
+common_O_flags = ['O_RDONLY', 'O_WRONLY', 'O_RDWR', 'O_APPEND', 'O_CREAT', 'O_TRUNC', 'O_EXCL', 'O_CLOEXEC', 'O_BINARY', 'O_NOINHERIT']
 
 def generate_common_O_flags(cw):
     generate_O_flags(cw, OrderedDict((f, O_flagvalues[f]) for f in common_O_flags), 'private')

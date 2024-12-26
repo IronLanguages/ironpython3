@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
@@ -53,6 +54,19 @@ namespace IronPython.Modules {
         private static int O_TRUNC => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x200 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x400 : 0x200;
 
         private static int O_EXCL => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x400 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x800 : 0x80;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        private static int O_CLOEXEC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x1000000 : 0x80000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        private static int O_BINARY => 0x8000;
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        [SupportedOSPlatform("windows")]
+        private static int O_NOINHERIT => 0x80;
 
         // *** END GENERATED CODE ***
 

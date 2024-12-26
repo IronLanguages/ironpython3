@@ -9,7 +9,7 @@ import _thread
 
 CP16623_LOCK = _thread.allocate_lock()
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, is_linux, is_osx, is_windows, run_test, skipUnlessIronPython
 
 class FileTest(IronPythonTestCase):
 
@@ -505,12 +505,12 @@ class FileTest(IronPythonTestCase):
         # the number of iterations should be larger than Microsoft.Scripting.Utils.HybridMapping.SIZE (currently 4K)
         N = 5000
         for i in range(N):
-            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT)
+            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
             f = os.fdopen(fd, 'w', closefd=True)
             f.close()
 
         for i in range(N):
-            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT)
+            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
             f = os.fdopen(fd, 'w', closefd=False)
             g = os.fdopen(f.fileno(), 'w', closefd=True)
             g.close()
@@ -624,7 +624,7 @@ class FileTest(IronPythonTestCase):
         self.assertRaisesMessage(ValueError, "invalid mode: 'p'", open, 'abc', 'p')
 
         # allow anything w/ U but r and w
-        err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if is_cli or sys.version_info >= (3,7) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
+        err_msg = "mode U cannot be combined with 'x', 'w', 'a', or '+'" if is_cli or sys.version_info >= (3,7,4) else "mode U cannot be combined with x', 'w', 'a', or '+'" if sys.version_info >= (3,6) else "can't use U and writing mode at once"
         self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw')
         self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Ua')
         self.assertRaisesMessage(ValueError, err_msg, open, 'abc', 'Uw+')
@@ -701,7 +701,7 @@ class FileTest(IronPythonTestCase):
 
         with self.assertRaises(OSError) as cm:
             open('path_too_long' * 100)
-        self.assertEqual(cm.exception.errno, (36 if is_posix else 22) if is_netcoreapp and not is_posix or sys.version_info >= (3,6) else 2)
+        self.assertEqual(cm.exception.errno, (63 if is_osx else 36 if is_linux else 22) if is_netcoreapp and not is_posix or sys.version_info >= (3,6) else 2)
 
     def test_write_bytes(self):
         fname = self.temp_file
@@ -755,6 +755,39 @@ class FileTest(IronPythonTestCase):
             self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")
         with open(fileName, "rb") as f:
             self.assertEqual(f.read(), b"\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
+
+
+    def test_open_flags(self):
+        test_data = {
+            'rb': os.O_RDONLY,
+            'wb': os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+            'ab': os.O_WRONLY | os.O_CREAT | os.O_APPEND,
+            'xb': os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+            'rb+': os.O_RDWR,
+            'wb+': os.O_RDWR | os.O_CREAT | os.O_TRUNC,
+            'ab+': os.O_RDWR | os.O_CREAT | os.O_APPEND,
+            'xb+': os.O_RDWR | os.O_CREAT | os.O_EXCL,
+        }
+        extra_flags = 0
+        if is_posix:
+            extra_flags |= os.O_CLOEXEC
+        elif is_windows:
+            extra_flags |= os.O_NOINHERIT | os.O_BINARY
+        test_data = {k: v | extra_flags for k, v in test_data.items()}
+
+        flags_received = None
+        def test_open(name, flags):
+            nonlocal flags_received
+            flags_received = flags
+            if mode[0] == 'x':
+                os.unlink(name)
+            return os.open(name, flags)
+
+        for mode in sorted(test_data):
+            with self.subTest(mode=mode):
+                with open(self.temp_file, mode, opener=test_open): pass
+                self.assertEqual(flags_received, test_data[mode])
+
 
     def test_opener(self):
         data = "test message\n"

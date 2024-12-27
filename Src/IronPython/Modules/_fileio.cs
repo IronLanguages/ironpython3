@@ -152,6 +152,11 @@ namespace IronPython.Modules {
                         }
 
                         if (!_context.FileManager.TryGetStreams(fd, out _streams)) {
+                            // TODO: This is not necessarily an error on Posix.
+                            // The descriptor could have been opened by a different means than os.open.
+                            // In such case: 
+                            // _streams = new(new UnixStream(fd, ownsHandle: true))
+                            // _context.FileManager.Add(fd, _streams);
                             throw PythonOps.OSError(PythonFileManager.EBADF, "Bad file descriptor");
                         }
                     } else {
@@ -163,34 +168,40 @@ namespace IronPython.Modules {
             }
 
             private static string NormalizeMode(string mode, out int flags) {
+                flags = 0;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    flags |= O_NOINHERIT | O_BINARY;
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    flags |= O_CLOEXEC;
+                }
                 switch (StandardizeMode(mode)) {
                     case "r":
-                        flags = O_RDONLY;
+                        flags |= O_RDONLY;
                         return "rb";
                     case "w":
-                        flags = O_CREAT | O_TRUNC | O_WRONLY;
+                        flags |= O_CREAT | O_TRUNC | O_WRONLY;
                         return "wb";
                     case "a":
-                        flags = O_APPEND | O_CREAT;
+                        flags |= O_APPEND | O_CREAT | O_WRONLY;
                         return "ab";
                     case "x":
-                        flags = O_CREAT | O_EXCL;
+                        flags |= O_CREAT | O_EXCL | O_WRONLY;
                         return "xb";
                     case "r+":
                     case "+r":
-                        flags = O_RDWR;
+                        flags |= O_RDWR;
                         return "rb+";
                     case "w+":
                     case "+w":
-                        flags = O_CREAT | O_TRUNC | O_RDWR;
+                        flags |= O_CREAT | O_TRUNC | O_RDWR;
                         return "wb+";
                     case "a+":
                     case "+a":
-                        flags = O_APPEND | O_CREAT | O_RDWR;
+                        flags |= O_APPEND | O_CREAT | O_RDWR;
                         return "ab+";
                     case "x+":
                     case "+x":
-                        flags = O_CREAT | O_RDWR | O_EXCL;
+                        flags |= O_CREAT | O_EXCL | O_RDWR;
                         return "xb+";
                     default:
                         throw BadMode(mode);
@@ -225,14 +236,14 @@ namespace IronPython.Modules {
                             case 'a':
                             case 'x':
                                 if (foundMode) {
-                                    return PythonOps.ValueError("Must have exactly one of create/read/write/append mode and at most one plus");
+                                    return BadModeException();
                                 } else {
                                     foundMode = true;
                                     continue;
                                 }
                             case '+':
                                 if (foundPlus) {
-                                    return PythonOps.ValueError("Must have exactly one of create/read/write/append mode and at most one plus");
+                                    return BadModeException();
                                 } else {
                                     foundPlus = true;
                                     continue;
@@ -245,7 +256,9 @@ namespace IronPython.Modules {
                         }
                     }
 
-                    return PythonOps.ValueError("Must have exactly one of create/read/write/append mode and at most one plus");
+                    return BadModeException();
+
+                    static Exception BadModeException() => PythonOps.ValueError("Must have exactly one of create/read/write/append mode and at most one plus");
                 }
             }
 

@@ -23,12 +23,14 @@ def load_tests(loader, standard_tests, pattern):
             test.test_dict.DictTest('test_oob_indexing_dictiter_iternextitem'),
             test.test_dict.DictTest('test_setdefault_atomic'),
         ]
+
+        skip_tests = []
         if is_mono:
-            failing_tests += [
+            skip_tests += [
                 test.test_dict.DictTest('test_container_iterator'), # https://github.com/IronLanguages/ironpython3/issues/544
             ]
 
-        return generate_suite(tests, failing_tests)
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

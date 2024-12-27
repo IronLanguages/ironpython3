@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq.Expressions;
@@ -19,52 +18,61 @@ using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
-// TODO: Documentation copied from CPython is inadequate in some places and wrong in others.
+#nullable enable
+
 
 namespace IronPython.Modules {
     public static partial class PythonIOModule {
-        [Documentation("file(name: str[, mode: str]) -> file IO object\n\n"
-            + "Open a file.  The mode can be 'r', 'w' or 'a' for reading (default),\n"
-            + "writing or appending.   The file will be created if it doesn't exist\n"
-            + "when opened for writing or appending; it will be truncated when\n"
-            + "opened for writing.  Add a '+' to the mode to allow simultaneous\n"
-            + "reading and writing."
-            )]
+        [Documentation("""
+            FileIO(name, mode='r', closefd=True, opener=None) -> file IO object
+
+            Open a file.
+
+            The mode can be 'r' (default), 'w', 'x' or 'a' for reading,
+            writing, exclusive creation or appending.  The file will be created if it
+            doesn't exist when opened for writing or appending; it will be truncated when
+            opened for writing.  A FileExistsError will be raised if it already
+            exists when opened for creating. Opening a file for creating implies
+            writing so this mode behaves in a similar way to 'w'.
+            Add a '+' to the mode to allow simultaneous reading and writing.
+
+            A custom opener can be used by passing a callable as `opener`.
+            The underlying file descriptor for the file object is then obtained
+            by calling opener with (`name`, `flags`).
+            `opener` must return an open file descriptor (passing os.open as `opener`
+            results in functionality similar to passing None).
+            """)]
         [PythonType, DontMapIDisposableToContextManager]
         public class FileIO : _RawIOBase, IDisposable, IWeakReferenceable, ICodeFormattable, IDynamicMetaObjectProvider {
             #region Fields and constructors
 
             private static readonly int DEFAULT_BUF_SIZE = 32;
 
-            private StreamBox _streams;
+            private readonly StreamBox _streams;
             private bool _closed, _closefd;
-            private WeakRefTracker _tracker;
-            private PythonContext _context;
+            private WeakRefTracker? _tracker;
+            private readonly PythonContext _context;
 
-            public object name;
+            public object? name;
+
 
             internal FileIO(CodeContext/*!*/ context, Stream stream)
                 : this(context, new StreamBox(stream)) {
             }
 
+
             internal FileIO(CodeContext/*!*/ context, StreamBox streams)
                 : base(context) {
                 _context = context.LanguageContext;
 
-                Stream stream = streams.ReadStream;
-                string mode;
-                if (stream.CanRead && stream.CanWrite) mode = "w+";
-                else if (stream.CanWrite) mode = "w";
-                else mode = "r";
-                this.mode = mode;
-
+                this.mode = streams.WriteStream.CanWrite ? streams.ReadStream.CanRead ? "w+" : "w" : "r";
                 _streams = streams;
                 _closefd = !streams.IsConsoleStream();
             }
 
-            public FileIO(CodeContext/*!*/ context, int fd, string mode = "r", bool closefd = true, object opener = null)
+
+            public FileIO(CodeContext/*!*/ context, int fd, [NotNone] string mode = "r", bool closefd = true, object? opener = null)
                 : base(context) {
                 if (fd < 0) {
                     throw PythonOps.ValueError("fd must be >= 0");
@@ -80,7 +88,8 @@ namespace IronPython.Modules {
                 _closefd = closefd && !_streams.IsConsoleStream();
             }
 
-            public FileIO(CodeContext/*!*/ context, string name, string mode = "r", bool closefd = true, object opener = null)
+
+            public FileIO(CodeContext/*!*/ context, [NotNone] string name, [NotNone] string mode = "r", bool closefd = true, object? opener = null)
                 : base(context) {
                 if (name.Contains('\0')) {
                     throw PythonOps.ValueError("embedded null character");
@@ -145,16 +154,18 @@ namespace IronPython.Modules {
                     }
                 }
                 else {
-                    object fdobj = PythonOps.CallWithContext(context, opener, name, flags);
+                    object? fdobj = PythonOps.CallWithContext(context, opener, name, flags);
                     if (fdobj is int fd) {
                         if (fd < 0) {
                             throw PythonOps.ValueError("opener returned {0}", fd);
                         }
 
-                        if (!_context.FileManager.TryGetStreams(fd, out _streams)) {
+                        if (_context.FileManager.TryGetStreams(fd, out StreamBox? streams)) {
+                            _streams = streams;
+                        } else {
                             // TODO: This is not necessarily an error on Posix.
                             // The descriptor could have been opened by a different means than os.open.
-                            // In such case: 
+                            // In such case:
                             // _streams = new(new UnixStream(fd, ownsHandle: true))
                             // _context.FileManager.Add(fd, _streams);
                             throw PythonOps.OSError(PythonFileManager.EBADF, "Bad file descriptor");
@@ -166,6 +177,7 @@ namespace IronPython.Modules {
 
                 _closefd = true;
             }
+
 
             private static string NormalizeMode(string mode, out int flags) {
                 flags = 0;
@@ -266,10 +278,14 @@ namespace IronPython.Modules {
 
             #region Public API
 
-            [Documentation("close() -> None.  Close the file.\n\n"
-                + "A closed file cannot be used for further I/O operations.  close() may be"
-                + "called more than once without error."
-                )]
+            [Documentation("""
+                close() -> None
+
+                Flush and close the file.
+
+                A closed file cannot be used for further I/O operations.
+                close() may be called more than once without error.
+                """)]
             public override void close(CodeContext/*!*/ context) {
                 if (_closed) {
                     return;
@@ -288,23 +304,21 @@ namespace IronPython.Modules {
                 }
             }
 
+
             [Documentation("True if the file is closed")]
-            public override bool closed {
-                get {
-                    return _closed;
-                }
-            }
+            public override bool closed => _closed;
+
 
             public bool closefd => _closefd;
 
-            [Documentation("fileno() -> int. \"file descriptor\".\n\n"
-                + "This is needed for lower-level file interfaces, such as the fcntl module."
-                )]
+
+            [Documentation("Return underlying file descriptor if one exists.")]
             public override int fileno(CodeContext/*!*/ context) {
                 _checkClosed();
 
                 return _context.FileManager.GetOrAssignId(_streams);
             }
+
 
             [Documentation("Flush write buffers, if applicable.\n\n"
                 + "This is not implemented for read-only and non-blocking streams.\n"
@@ -315,22 +329,29 @@ namespace IronPython.Modules {
                 _streams.Flush();
             }
 
-            [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]
+
+            [Documentation("isatty() -> bool\n\nTrue if the file is connected to a tty device.")]
             public override bool isatty(CodeContext/*!*/ context) {
                 _checkClosed();
 
                 return _streams.IsConsoleStream();
             }
 
+
             [Documentation("String giving the file mode")]
             public string mode { get; }
 
-            [Documentation("read(size: int) -> bytes.  read at most size bytes, returned as bytes.\n\n"
-                + "Only makes one system call, so less data may be returned than requested\n"
-                + "In non-blocking mode, returns None if no data is available.\n"
-                + "On end-of-file, returns ''."
-                )]
-            public override object read(CodeContext/*!*/ context, object size = null) {
+
+            [Documentation("""
+                read(size: int) -> bytes
+
+                Read at most size bytes, returned as bytes.
+
+                Only makes one system call, so less data may be returned than requested.
+                In non-blocking mode, returns None if no data is available.
+                On end-of-file, returns b''.
+                """)]
+            public override object read(CodeContext/*!*/ context, object? size = null) {
                 int sizeInt = GetInt(size, -1);
                 if (sizeInt < 0) {
                     return readall();
@@ -340,17 +361,23 @@ namespace IronPython.Modules {
                 return Bytes.Make(_streams.Read(sizeInt));
             }
 
-            [Documentation("readable() -> bool.  True if file was opened in a read mode.")]
+
+            [Documentation("readable() -> bool\n\nTrue if file was opened in a read mode.")]
             public override bool readable(CodeContext/*!*/ context) {
                 _checkClosed();
 
                 return _streams.ReadStream.CanRead;
             }
 
-            [Documentation("readall() -> bytes.  read all data from the file, returned as bytes.\n\n"
-                + "In non-blocking mode, returns as much as is immediately available,\n"
-                + "or None if no data is available.  On end-of-file, returns ''."
-                )]
+
+            [Documentation("""
+                readall() -> bytes
+
+                Read all data from the file, returned as bytes.
+
+                In non-blocking mode, returns as much as is immediately available,
+                or None if no data is available.  On end-of-file, returns b''.
+                """)]
             public Bytes readall() {
                 EnsureReadable();
 
@@ -371,6 +398,7 @@ namespace IronPython.Modules {
                 return Bytes.Make(buffer);
             }
 
+
             [Documentation("readinto() -> Same as RawIOBase.readinto().")]
             public BigInteger readinto([NotNone] IBufferProtocol buffer) {
                 EnsureReadable();
@@ -383,14 +411,17 @@ namespace IronPython.Modules {
                 return _streams.ReadInto(pythonBuffer);
             }
 
-            public override BigInteger readinto(CodeContext/*!*/ context, object buf) {
+
+            public override BigInteger readinto(CodeContext/*!*/ context, [NotNone] object buf) {
                 var bufferProtocol = Converter.Convert<IBufferProtocol>(buf);
                 return readinto(bufferProtocol);
             }
 
 
             [Documentation("""
-                seek(offset: int[, whence: int]) -> int.  Change stream position.
+                seek(offset: int[, whence: int]) -> int.
+
+                Change stream position.
 
                 Argument offset is a byte count.  Optional argument whence defaults to
                 0 or `os.SEEK_SET` (offset from start of file, offset should be >= 0);
@@ -403,7 +434,7 @@ namespace IronPython.Modules {
 
                 Note that not all file objects are seekable.
                 """)]
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional] object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional, NotNone] object whence) {
                 _checkClosed();
 
                 var origin = (SeekOrigin)GetInt(whence);
@@ -411,6 +442,7 @@ namespace IronPython.Modules {
                     throw PythonOps.OSError(PythonFileManager.EINVAL, "Invalid argument");
 
                 long ofs = checked((long)offset);
+
                 if (ofs < 0 && ClrModule.IsMono && origin == SeekOrigin.Current) {
                     // Mono does not support negative offsets with SeekOrigin.Current
                     // so we need to calculate the absolute offset
@@ -422,19 +454,21 @@ namespace IronPython.Modules {
             }
 
 
-            [Documentation("seekable() -> bool.  True if file supports random-access.")]
+            [Documentation("seekable() -> bool\n\nTrue if file supports random-access.")]
             public override bool seekable(CodeContext/*!*/ context) {
                 _checkClosed();
 
                 return _streams.ReadStream.CanSeek;
             }
 
-            [Documentation("tell() -> int.  Current file position")]
+
+            [Documentation("tell() -> int\n\nCurrent file position.")]
             public override BigInteger tell(CodeContext/*!*/ context) {
                 _checkClosed();
 
                 return _streams.ReadStream.Position;
             }
+
 
             public BigInteger truncate(BigInteger size) {
                 EnsureWritable();
@@ -442,23 +476,21 @@ namespace IronPython.Modules {
                 return _streams.Truncate((long)size);
             }
 
-            public BigInteger truncate(double size) {
-                EnsureWritable();
 
-                throw PythonOps.TypeError("an integer is required");
-            }
+            [Documentation("""
+                truncate([size: int]) -> int
 
-            [Documentation("truncate([size: int]) -> None.  Truncate the file to at most size bytes.\n\n"
-                + "Size defaults to the current file position, as returned by tell()."
-                + "The current file position is changed to the value of size."
-                )]
-            public override BigInteger truncate(CodeContext/*!*/ context, object pos = null) {
+                Truncate the file to at most size bytes.
+
+                Size defaults to the current file position, as returned by tell().
+                The current file position is changed to the value of size.
+                """)]
+            public override BigInteger truncate(CodeContext/*!*/ context, object? pos = null) {
                 if (pos == null) {
                     return truncate(tell(context));
                 }
 
-                BigInteger bi;
-                if (TryGetBigInt(pos, out bi)) {
+                if (TryGetBigInt(pos, out BigInteger bi)) {
                     return truncate(bi);
                 }
 
@@ -466,19 +498,25 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            [Documentation("writable() -> bool.  True if file was opened in a write mode.")]
+
+            [Documentation("writable() -> bool\n\nTrue if file was opened in a write mode.")]
             public override bool writable(CodeContext/*!*/ context) {
                 _checkClosed();
 
                 return _streams.WriteStream.CanWrite;
             }
 
-            [Documentation("write(b: bytes) -> int.  Write bytes b to file, return number written.\n\n"
-                + "Only makes one system call, so not all the data may be written.\n"
-                + "The number of bytes actually written is returned."
-                )]
-            public override BigInteger write(CodeContext/*!*/ context, object b) {
-                var bufferProtocol = Converter.Convert<IBufferProtocol>(b);
+
+            [Documentation("""
+                write(buf: bytes) -> int
+
+                Write buffer buf to file, return number written.
+
+                Return the number of bytes witten, which is always
+                the length of b in bytes.
+                """)]
+            public override BigInteger write(CodeContext/*!*/ context, [NotNone] object buf) {
+                var bufferProtocol = Converter.Convert<IBufferProtocol>(buf);
                 using var buffer = bufferProtocol.GetBuffer();
 
                 EnsureWritable();
@@ -503,7 +541,7 @@ namespace IronPython.Modules {
 
             #region IWeakReferenceable Members
 
-            WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            WeakRefTracker? IWeakReferenceable.GetWeakRef() {
                 return _tracker;
             }
 
@@ -533,6 +571,7 @@ namespace IronPython.Modules {
                 PythonOps.SetAttr(context, pyExcep, "filename", name);
             }
 
+
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
                 if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(PythonFileManager.ENOENT, "No such file or directory", filename: name);
                 try {
@@ -551,6 +590,7 @@ namespace IronPython.Modules {
                 _checkClosed();
                 _checkReadable("File not open for reading");
             }
+
 
             private void EnsureWritable() {
                 _checkClosed();

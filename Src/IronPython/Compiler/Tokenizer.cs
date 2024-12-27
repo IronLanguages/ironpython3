@@ -735,11 +735,16 @@ namespace IronPython.Compiler {
                 }
                 isPrefix0 = true;
 
-                while (NextChar('0')) { } // skip leading zeroes
+                // skip leading zeroes
+                while (true) {
+                    NextChar('_');
+                    if (!NextChar('0')) break;
+                }
             }
 
             bool isFirstChar = true;
             while (true) {
+                NextChar('_');
                 int ch = NextChar();
 
                 switch (ch) {
@@ -755,7 +760,7 @@ namespace IronPython.Compiler {
                         MarkTokenEnd();
 
                         // TODO: parse in place
-                        return new ConstantValueToken(ParseInteger(GetTokenString(), 10));
+                        return new ConstantValueToken(ParseInteger(GetTokenSpan(), 10));
 
                     case 'j':
                     case 'J':
@@ -784,7 +789,7 @@ namespace IronPython.Compiler {
                         }
 
                         // TODO: parse in place
-                        return new ConstantValueToken(ParseInteger(GetTokenString(), 10));
+                        return new ConstantValueToken(ParseInteger(GetTokenSpan(), 10));
                 }
                 isFirstChar = false;
             }
@@ -795,8 +800,9 @@ namespace IronPython.Compiler {
             int iVal = 0;
             bool useBigInt = false;
             BigInteger bigInt = BigInteger.Zero;
-            bool first = true;
+            bool isFirstChar = true;
             while (true) {
+                NextChar('_');
                 int ch = NextChar();
                 switch (ch) {
                     case '0':
@@ -812,7 +818,7 @@ namespace IronPython.Compiler {
                             bigInt = (BigInteger)iVal;
                         }
 
-                        if (bits >= 32) {
+                        if (useBigInt) {
                             bigInt = (bigInt << 1) | (ch - '0');
                         } else {
                             iVal = iVal << 1 | (ch - '0');
@@ -822,22 +828,21 @@ namespace IronPython.Compiler {
                         BufferBack();
                         MarkTokenEnd();
 
-                        if (first) {
-                            ReportSyntaxError(
-                            new SourceSpan(new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1),
-                            BufferTokenEnd),
-                            Resources.InvalidToken, ErrorCodes.SyntaxError);
+                        if (isFirstChar) {
+                            var errorStart = new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1);
+                            ReportSyntaxError(new SourceSpan(errorStart, BufferTokenEnd), Resources.InvalidToken, ErrorCodes.SyntaxError);
                         }
 
                         return new ConstantValueToken(useBigInt ? bigInt : (object)iVal);
                 }
-                first = false;
+                isFirstChar = false;
             }
         }
 
         private Token ReadOctalNumber() {
-            bool first = true;
+            bool isFirstChar = true;
             while (true) {
+                NextChar('_');
                 int ch = NextChar();
 
                 switch (ch) {
@@ -855,23 +860,24 @@ namespace IronPython.Compiler {
                         BufferBack();
                         MarkTokenEnd();
 
-                        if (first) {
-                            ReportSyntaxError(
-                            new SourceSpan(new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1),
-                            BufferTokenEnd),
-                            Resources.InvalidToken, ErrorCodes.SyntaxError);
+                        if (isFirstChar) {
+                            var errorStart = new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1);
+                            ReportSyntaxError(new SourceSpan(errorStart, BufferTokenEnd), Resources.InvalidToken, ErrorCodes.SyntaxError);
                         }
 
                         // TODO: parse in place
-                        return new ConstantValueToken(ParseInteger(GetTokenSubstring(2), 8));
+                        var span = GetTokenSpan().Slice(2);
+                        if (!span.IsEmpty && span[0] == '_') span = span.Slice(1);
+                        return new ConstantValueToken(ParseInteger(span, 8));
                 }
-                first = false;
+                isFirstChar = false;
             }
         }
 
         private Token ReadHexNumber() {
-            bool first = true;
+            bool isFirstChar = true;
             while (true) {
+                NextChar('_');
                 int ch = NextChar();
 
                 switch (ch) {
@@ -903,17 +909,17 @@ namespace IronPython.Compiler {
                         BufferBack();
                         MarkTokenEnd();
 
-                        if (first) {
-                            ReportSyntaxError(
-                            new SourceSpan(new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1),
-                            BufferTokenEnd),
-                            Resources.InvalidToken, ErrorCodes.SyntaxError);
+                        if (isFirstChar) {
+                            var errorStart = new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1);
+                            ReportSyntaxError(new SourceSpan(errorStart, BufferTokenEnd), Resources.InvalidToken, ErrorCodes.SyntaxError);
                         }
 
                         // TODO: parse in place
-                        return new ConstantValueToken(ParseInteger(GetTokenSubstring(2), 16));
+                        var span = GetTokenSpan().Slice(2);
+                        if (!span.IsEmpty && span[0] == '_') span = span.Slice(1);
+                        return new ConstantValueToken(ParseInteger(span, 16));
                 }
-                first = false;
+                isFirstChar = false;
             }
         }
 
@@ -1431,10 +1437,8 @@ namespace IronPython.Compiler {
                 current = DoDedent(spaces, current);
 
                 if (spaces != current) {
-                    ReportSyntaxError(
-                        new SourceSpan(new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1),
-                            BufferTokenEnd),
-                        Resources.IndentationMismatch, ErrorCodes.IndentationError);
+                    var errorStart = new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1);
+                    ReportSyntaxError(new SourceSpan(errorStart, BufferTokenEnd), Resources.IndentationMismatch, ErrorCodes.IndentationError);
                 }
             }
         }
@@ -1448,12 +1452,11 @@ namespace IronPython.Compiler {
             return current;
         }
 
-        private object ParseInteger(string s, int radix) {
-            try {
-                return LiteralParser.ParseInteger(s, radix);
-            } catch (ArgumentException e) {
-                ReportSyntaxError(BufferTokenSpan, e.Message, ErrorCodes.SyntaxError);
+        private object ParseInteger(ReadOnlySpan<char> s, int radix) {
+            if (LiteralParser.TryParseIntegerSign(s, radix, out object result)) {
+                return result;
             }
+            ReportSyntaxError(BufferTokenSpan, "invalid token", ErrorCodes.SyntaxError);
             return ScriptingRuntimeHelpers.Int32ToObject(0);
         }
 
@@ -1672,6 +1675,9 @@ namespace IronPython.Compiler {
 
             return new String(_buffer, _start + offset, length);
         }
+
+        private ReadOnlySpan<char> GetTokenSpan()
+            => _buffer.AsSpan(_start, _tokenEnd - _start);
 
         [Conditional("DEBUG")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]

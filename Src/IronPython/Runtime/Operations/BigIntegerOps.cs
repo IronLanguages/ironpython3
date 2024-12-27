@@ -75,9 +75,17 @@ namespace IronPython.Runtime.Operations {
                             throw new InvalidOperationException(); // unreachable
                     }
                 case string s:
-                    return LiteralParser.ParseIntegerSign(s, @base, FindStart(s, @base));
+                    if (LiteralParser.TryParseIntegerSign(s.AsSpan(FindStart(s, @base)), @base, out result)) {
+                        return result;
+                    } else {
+                        throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {PythonOps.Repr(context, s)}");
+                    }
                 case Extensible<string> es:
-                    return TryInvokeInt(context, o, out result) ? result : LiteralParser.ParseIntegerSign(es.Value, @base, FindStart(es.Value, @base));
+                    if (TryInvokeInt(context, o, out result) || LiteralParser.TryParseIntegerSign(es.Value.AsSpan(FindStart(es.Value, @base)), @base, out result)) {
+                        return result;
+                    } else {
+                        throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {PythonOps.Repr(context, es)}");
+                    }
                 default:
                     break;
             }
@@ -168,7 +176,7 @@ namespace IronPython.Runtime.Operations {
                     ?? throw PythonOps.TypeErrorForBadInstance("int() argument must be a string, a bytes-like object or a number, not '{0}'", x);
 
                 var text = buf.AsReadOnlySpan().MakeString();
-                if (!LiteralParser.TryParseIntegerSign(text, @base, FindStart(text, @base), out value))
+                if (!LiteralParser.TryParseIntegerSign(text.AsSpan(FindStart(text, @base)), @base, out value))
                     throw PythonOps.ValueError($"invalid literal for int() with base {@base}: {new Bytes(x).__repr__(context)}");
             }
 
@@ -203,6 +211,8 @@ namespace IronPython.Runtime.Operations {
             => cls == TypeCache.BigInteger ? value : cls.CreateInstance(context, value);
 
         private static int FindStart(string s, int radix) {
+            if (radix == 10) return 0;
+
             int i = 0;
 
             // skip whitespace
@@ -757,8 +767,7 @@ namespace IronPython.Runtime.Operations {
 
                     if (spec.Fill == '0' && spec.Width > 1) {
                         digits = FormattingHelper.ToCultureString(val, culture.NumberFormat, spec, (spec.Sign != null && spec.Sign != '-' || self < 0) ? spec.Width - 1 : null);
-                    }
-                    else {
+                    } else {
                         digits = FormattingHelper.ToCultureString(val, culture.NumberFormat, spec);
                     }
                     break;
@@ -795,25 +804,37 @@ namespace IronPython.Runtime.Operations {
                     if (spec.Precision != null) {
                         throw PythonOps.ValueError("Precision not allowed in integer format specifier");
                     }
-                    digits = AbsToHex(val, lowercase: false);
+                    digits = ToHexDigits(val, lowercase: false);
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self.IsNegative());
+                    }
                     break;
                 case 'x':
                     if (spec.Precision != null) {
                         throw PythonOps.ValueError("Precision not allowed in integer format specifier");
                     }
-                    digits = AbsToHex(val, lowercase: true);
+                    digits = ToHexDigits(val, lowercase: true);
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self.IsNegative());
+                    }
                     break;
                 case 'o': // octal
                     if (spec.Precision != null) {
                         throw PythonOps.ValueError("Precision not allowed in integer format specifier");
                     }
-                    digits = ToOctal(val, lowercase: true);
+                    digits = ToOctalDigits(val);
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self.IsNegative());
+                    }
                     break;
                 case 'b': // binary
                     if (spec.Precision != null) {
                         throw PythonOps.ValueError("Precision not allowed in integer format specifier");
                     }
-                    digits = ToBinary(val, includeType: false, lowercase: true);
+                    digits = ToBinaryDigits(val);
+                    if (spec.ThousandsUnderscore) {
+                        digits = FormattingHelper.AddUnderscores(digits, spec, self.IsNegative());
+                    }
                     break;
                 case 'c': // single char
                     if (spec.Precision != null) {
@@ -825,7 +846,7 @@ namespace IronPython.Runtime.Operations {
                     int iVal;
                     if (!self.AsInt32(out iVal)) {
                         throw PythonOps.OverflowError("Python int too large to convert to System.Int32");
-                    } else if(iVal < 0 || iVal > 0x10ffff) {
+                    } else if (iVal < 0 || iVal > 0x10ffff) {
                         throw PythonOps.OverflowError("%c arg not in range(0x110000)");
                     }
 
@@ -906,10 +927,9 @@ namespace IronPython.Runtime.Operations {
             var val = new BigInteger(bytesArr);
 #endif
 
-            // prevents a TypeError: int.__new__(bool) is not safe
-            if (type == TypeCache.Boolean) return val == 0 ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
+            if (type == TypeCache.BigInteger) return val;
 
-            return __new__(context, type, val);
+            return PythonTypeOps.CallParams(context, type, val);
         }
 
         #endregion
@@ -1044,8 +1064,10 @@ namespace IronPython.Runtime.Operations {
 
         #region Helpers
 
+        /// <summary>
+        /// Unlike ConvertToDouble, this method produces a Python-specific overflow error messge.
+        /// </summary>
         internal static double ToDouble(BigInteger self) {
-            // Unlike ConvertToDouble, this method produces a Python-specific overflow error messge.
             if (MathUtils.TryToFloat64(self, out double res)) {
                 return res;
             }
@@ -1056,27 +1078,24 @@ namespace IronPython.Runtime.Operations {
             return ToDigits(val, 16, lowercase);
         }
 
-        private static string ToOctal(BigInteger val, bool lowercase) {
-            return ToDigits(val, 8, lowercase);
+        private static string ToHexDigits(BigInteger val, bool lowercase) {
+            Debug.Assert(val >= 0);
+            return ToDigits(val, 16, lower: lowercase);
+        }
+
+        private static string ToOctalDigits(BigInteger val) {
+            Debug.Assert(val >= 0);
+            return ToDigits(val, 8, lower: false);
+        }
+
+        private static string ToBinaryDigits(BigInteger val) {
+            Debug.Assert(val >= 0);
+            return ToDigits(val, 2, lower: false);
         }
 
         internal static string ToBinary(BigInteger val) {
-            string res = ToBinary(BigInteger.Abs(val), true, true);
-            if (val.IsNegative()) {
-                res = "-" + res;
-            }
-            return res;
-        }
-
-        private static string ToBinary(BigInteger val, bool includeType, bool lowercase) {
-            Debug.Assert(!val.IsNegative());
-
-            string digits = ToDigits(val, 2, lowercase);
-
-            if (includeType) {
-                digits = (lowercase ? "0b" : "0B") + digits;
-            }
-            return digits;
+            var digits = ToBinaryDigits(BigInteger.Abs(val));
+            return ((val < 0) ? "-0b" : "0b") + digits;
         }
 
         private static string/*!*/ ToDigits(BigInteger/*!*/ val, int radix, bool lower) {
@@ -1085,12 +1104,12 @@ namespace IronPython.Runtime.Operations {
             }
 
             StringBuilder str = new StringBuilder();
+            char a = lower ? 'a' : 'A';
 
             while (val != 0) {
                 int digit = (int)(val % radix);
                 if (digit < 10) str.Append((char)((digit) + '0'));
-                else if (lower) str.Append((char)((digit - 10) + 'a'));
-                else str.Append((char)((digit - 10) + 'A'));
+                else str.Append((char)((digit - 10) + a));
 
                 val /= radix;
             }

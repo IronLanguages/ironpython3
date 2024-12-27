@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import errno
 import os
 import sys
 import unittest
@@ -9,7 +10,7 @@ import _thread
 
 CP16623_LOCK = _thread.allocate_lock()
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, is_linux, is_osx, is_windows, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_netcoreapp, is_posix, is_windows, run_test, skipUnlessIronPython
 
 class FileTest(IronPythonTestCase):
 
@@ -701,7 +702,7 @@ class FileTest(IronPythonTestCase):
 
         with self.assertRaises(OSError) as cm:
             open('path_too_long' * 100)
-        self.assertEqual(cm.exception.errno, (63 if is_osx else 36 if is_linux else 22) if is_netcoreapp and not is_posix or sys.version_info >= (3,6) else 2)
+        self.assertEqual(cm.exception.errno, (errno.ENAMETOOLONG if is_posix else errno.EINVAL) if is_netcoreapp and not is_posix or sys.version_info >= (3,6) else errno.ENOENT)
 
     def test_write_bytes(self):
         fname = self.temp_file

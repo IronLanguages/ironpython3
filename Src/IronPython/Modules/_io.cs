@@ -55,16 +55,13 @@ namespace IronPython.Modules {
 
         private static int O_EXCL => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x400 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x800 : 0x80;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         private static int O_CLOEXEC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x1000000 : 0x80000;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         [SupportedOSPlatform("windows")]
         private static int O_BINARY => 0x8000;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         [SupportedOSPlatform("windows")]
         private static int O_NOINHERIT => 0x80;
 

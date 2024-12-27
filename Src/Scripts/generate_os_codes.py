@@ -199,7 +199,7 @@ def generate_O_flags(cw, flagvalues, access):
             if codes[darwin_idx] is None:
                 hidden_on += ["PlatformID.MacOSX"]
                 supported_on.discard(systems[darwin_idx])
-        if hidden_on:
+        if hidden_on and (access == 'public' or access == 'protected' or access == 'protected internal'):
             cw.write(f"[PythonHidden({', '.join(hidden_on)})]")
         if len(supported_on) != len(systems):
             for s in sorted(supported_on):

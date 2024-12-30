@@ -702,7 +702,7 @@ class FileTest(IronPythonTestCase):
 
         with self.assertRaises(OSError) as cm:
             open('path_too_long' * 100)
-        self.assertEqual(cm.exception.errno, (errno.ENAMETOOLONG if is_posix else errno.EINVAL) if is_netcoreapp and not is_posix or sys.version_info >= (3,6) else errno.ENOENT)
+        self.assertEqual(cm.exception.errno, (errno.ENAMETOOLONG if is_posix else errno.EINVAL) if is_netcoreapp or sys.version_info >= (3,6) else errno.ENOENT)
 
     def test_write_bytes(self):
         fname = self.temp_file

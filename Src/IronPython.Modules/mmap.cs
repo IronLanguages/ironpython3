@@ -15,6 +15,8 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
@@ -24,6 +26,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Utils;
+using Microsoft.Win32.SafeHandles;
 
 [assembly: PythonModule("mmap", typeof(IronPython.Modules.MmapModule))]
 namespace IronPython.Modules {
@@ -92,6 +95,7 @@ namespace IronPython.Modules {
             private readonly long _offset;
             private readonly string _mapName;
             private readonly MemoryMappedFileAccess _fileAccess;
+            private readonly SafeFileHandle _handle;  // only used on some POSIX platforms, null otherwise
 
             private volatile bool _isClosed;
             private int _refCount = 1;
@@ -148,46 +152,65 @@ namespace IronPython.Modules {
 
                     PythonContext pContext = context.LanguageContext;
                     if (pContext.FileManager.TryGetStreams(fileno, out StreamBox streams)) {
-                        if ((_sourceStream = streams.ReadStream as FileStream) == null) {
-                            throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
+                        Stream stream = streams.ReadStream;
+                        if (stream is FileStream fs) {
+                            _sourceStream = fs;
+                        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                            // use file descriptor
+#if NET8_0_OR_GREATER
+                            CheckFileAccess(_fileAccess, stream);
+                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: false);
+                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, length, _fileAccess, HandleInheritability.None, leaveOpen: true);
+#else
+                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: false);
+                            FileAccess fileAccess = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
+                            // This may or may not work on Mono, but on Mono streams.ReadStream is FileStream (unless dupped in some cases)
+                            _sourceStream = new FileStream(_handle, fileAccess);
+#endif
                         }
+                        // otherwise leaves _file as null and _sourceStream as null
                     } else {
                         throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
                     }
 
-                    if (_fileAccess == MemoryMappedFileAccess.ReadWrite && !_sourceStream.CanWrite) {
-                        throw WindowsError(PythonExceptions._OSError.ERROR_ACCESS_DENIED);
-                    }
+                    if (_file is null) {
+                        // create _file form _sourceStream
+                        if (_sourceStream is null) {
+                            throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
+                        }
 
-                    if (length == 0) {
-                        length = _sourceStream.Length;
+                        CheckFileAccess(_fileAccess, _sourceStream);
+
                         if (length == 0) {
-                            throw PythonOps.ValueError("cannot mmap an empty file");
+                            length = _sourceStream.Length;
+                            if (length == 0) {
+                                throw PythonOps.ValueError("cannot mmap an empty file");
+                            }
+                            if (_offset >= length) {
+                                throw PythonOps.ValueError("mmap offset is greater than file size");
+                            }
+                            length -= _offset;
                         }
-                        if (_offset >= length) {
-                            throw PythonOps.ValueError("mmap offset is greater than file size");
+
+                        long capacity = checked(_offset + length);
+
+                        // Enlarge the file as needed.
+                        if (capacity > _sourceStream.Length) {
+                            if (_sourceStream.CanWrite) {
+                                _sourceStream.SetLength(capacity);
+                            } else {
+                                throw WindowsError(PythonExceptions._OSError.ERROR_NOT_ENOUGH_MEMORY);
+                            }
                         }
-                        length -= _offset;
+
+                        _file = CreateFromFile(
+                            _sourceStream,
+                            _mapName,
+                            _sourceStream.Length,
+                            _fileAccess,
+                            HandleInheritability.None,
+                            true);
                     }
-
-                    long capacity = checked(_offset + length);
-
-                    // Enlarge the file as needed.
-                    if (capacity > _sourceStream.Length) {
-                        if (_sourceStream.CanWrite) {
-                            _sourceStream.SetLength(capacity);
-                        } else {
-                            throw WindowsError(PythonExceptions._OSError.ERROR_NOT_ENOUGH_MEMORY);
-                        }
-                    }
-
-                    _file = CreateFromFile(
-                        _sourceStream,
-                        _mapName,
-                        _sourceStream.Length,
-                        _fileAccess,
-                        HandleInheritability.None,
-                        true);
                 }
 
                 try {
@@ -198,7 +221,24 @@ namespace IronPython.Modules {
                     throw;
                 }
                 _position = 0L;
-            }
+
+                void CheckFileAccess(MemoryMappedFileAccess mmapAccess, Stream stream) {
+                    bool isValid = mmapAccess switch {
+                        MemoryMappedFileAccess.Read => stream.CanRead,
+                        MemoryMappedFileAccess.ReadWrite => stream.CanRead && stream.CanWrite,
+                        MemoryMappedFileAccess.CopyOnWrite => stream.CanRead,
+                        _ => false
+                    };
+
+                    if (!isValid) {
+                        if (_handle is not null && _sourceStream is not null) {
+                            _sourceStream.Dispose();
+                        }
+                        throw PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode");
+                    }
+                }
+            }  // end of constructor
+
 
             public object __len__() {
                 using (new MmapLocker(this)) {
@@ -325,6 +365,11 @@ namespace IronPython.Modules {
                     _view.Flush();
                     _view.Dispose();
                     _file.Dispose();
+                    if (_handle is not null) {
+                        // mmap owns _sourceStream too in this case
+                        _sourceStream?.Dispose();
+                        _handle.Dispose();
+                    }
                     _sourceStream = null;
                     _view = null;
                     _file = null;
@@ -557,6 +602,11 @@ namespace IronPython.Modules {
                     }
 
                     if (_sourceStream == null) {
+                        if (_handle is not null && !_handle.IsInvalid 
+                          && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
+                            // resize on Posix platforms
+                            PythonNT.ftruncateUnix(unchecked((int)_handle.DangerousGetHandle()), newsize);
+                        }
                         // resizing is not supported without an underlying file
                         throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_PARAMETER);
                     }
@@ -716,6 +766,9 @@ namespace IronPython.Modules {
 
             public object size() {
                 using (new MmapLocker(this)) {
+                    if (_handle is not null && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
+                        return GetFileSizeUnix(_handle);
+                    }
                     if (_sourceStream == null) return ReturnLong(_view.Capacity);
                     return ReturnLong(new FileInfo(_sourceStream.Name).Length);
                 }
@@ -828,6 +881,25 @@ namespace IronPython.Modules {
                 using (new MmapLocker(this)) {
                     return this[new Slice(0, null)];
                 }
+            }
+
+            [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+            private static long GetFileSizeUnix(SafeFileHandle handle) {
+                long size;
+                if (handle.IsInvalid) {
+                    throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_HANDLE, "Invalid file handle");
+                }
+
+                if (Mono.Unix.Native.Syscall.fstat((int)handle.DangerousGetHandle(), out Mono.Unix.Native.Stat status) == 0) {
+                    size = status.st_size;
+                } else {
+                    Mono.Unix.Native.Errno errno = Mono.Unix.Native.Stdlib.GetLastError();
+                    string msg = Mono.Unix.UnixMarshal.GetErrorDescription(errno);
+                    int error = Mono.Unix.Native.NativeConvert.FromErrno(errno);
+                    throw PythonOps.OSError(error, msg);
+                }
+
+                return size;
             }
 
             #endregion

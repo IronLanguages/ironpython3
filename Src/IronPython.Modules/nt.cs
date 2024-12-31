@@ -883,8 +883,6 @@ namespace IronPython.Modules {
         public static void mkdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => mkdir(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
-        private const int DefaultBufferSize = 4096;
-
         [Documentation("""
             open(path, flags, mode=511, *, dir_fd=None)
 
@@ -926,6 +924,12 @@ namespace IronPython.Modules {
             }
 
             try {
+                // FileStream buffer size must be >= 0 on .NET, and >= 1 on .NET Framework and Mono.
+                // On .NET, buffer size 0 or 1 disables buffering.
+                // On .NET Framework, buffer size 1 disables buffering.
+                // On Mono, buffer size 1 makes writes of length >= 2 bypass the buffer.
+                const int NoBuffering = 1;
+
                 FileMode fileMode = FileModeFromFlags(flags);
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
@@ -940,15 +944,15 @@ namespace IronPython.Modules {
                     // open it again w/ just read access.
                     fs = new FileStream(path, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, NoBuffering, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
                     // .NET doesn't allow Append w/ access != Write, so open the file w/ Write
                     // and a secondary stream w/ Read, then seek to the end.
-                    s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
-                    rs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, NoBuffering, options);
+                    rs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, NoBuffering, options);
                     rs.Seek(0L, SeekOrigin.End);
                 } else {
-                    s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, NoBuffering, options);
                 }
                 rs ??= s;
 

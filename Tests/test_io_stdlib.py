@@ -6,7 +6,7 @@
 ## Run selected tests from test_io from StdLib
 ##
 
-from iptest import is_ironpython, is_mono, generate_suite, run_test
+from iptest import is_ironpython, is_mono, is_windows, generate_suite, run_test
 
 import test.test_io
 
@@ -100,7 +100,7 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyMiscIOTest('test_warn_on_dealloc_fd'), # AssertionError: ResourceWarning not triggered
         ]
 
-        if is_mono:
+        if is_mono or is_windows:
             failing_tests += [
                 test.test_io.PyTextIOWrapperTest('test_seek_append_bom'), # OSError: [Errno -2146232800] Unable seek backward to overwrite data that previously existed in a file opened in Append mode.
             ]

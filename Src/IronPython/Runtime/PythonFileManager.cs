@@ -29,19 +29,10 @@ namespace IronPython.Runtime {
         private int _id = -1;
         private Stream _readStream;
         private Stream _writeStream;
-        private readonly bool _writeNeedsFlush;
 
         public StreamBox(Stream readStream, Stream writeStream) {
             _readStream = readStream;
             _writeStream = writeStream;
-
-            // a hack but it does improve perfomance a lot if flushing is not needed
-            _writeNeedsFlush = writeStream switch {
-                FileStream => true,         // FileStream is buffered by default, used on Windows and mostly Mono
-                PosixFileStream => false,   // PosixFileStream is unbuffered, used on .NET/Posix
-                UnixStream => false,        // UnixStream is unbuffered, used sometimes on Mono
-                _ => true                   // if in doubt, flush
-            };
         }
 
         public StreamBox(Stream stream) : this(stream, stream) { }
@@ -162,8 +153,8 @@ namespace IronPython.Runtime {
             count = buffer.NumBytes();
             _writeStream.Write(bytes, 0, count);
 #endif
-            if (_writeNeedsFlush) {
-                _writeStream.Flush(); // IO at this level is not supposed to buffer so we need to call Flush.
+            if (ClrModule.IsMono && count == 1) {
+                _writeStream.Flush(); // IO at this level is not supposed to buffer so we need to call Flush (only needed on Mono)
             }
             if (!IsSingleStream) {
                 _readStream.Seek(_writeStream.Position, SeekOrigin.Begin);

@@ -305,10 +305,10 @@ namespace IronPython.Modules {
 
                 try {
                     flush(context);
-                } catch (IOException) {
-                    // flushing can fail, esp. if the other half of a pipe is closed
-                    // ignore it because we're closing anyway
-                }
+                } catch (IOException) { /* ignore */ } catch (OSException) { /* ignore */ }
+                // flushing can fail, esp. if the other half of a pipe is closed
+                // ignore it because we're closing anyway
+
                 _closed = true;
 
                 if (_closefd) {

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Data;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -105,7 +106,7 @@ namespace IronPythonTest.Cases {
         private bool EvaluateExpression(string expression) {
             var dummy = new DataTable();
             string filter = expression;
-            var replacements = new Dictionary<string, string>() {
+            var replacements = new OrderedDictionary() {
                 // variables
                 { "$(IS_NETCOREAPP)", IronPython.Runtime.ClrModule.IsNetCoreApp.ToString() },
                 { "$(IS_NETSTANDARD)", IronPython.Runtime.ClrModule.TargetFramework.StartsWith(".NETStandard", StringComparison.Ordinal).ToString() },
@@ -119,20 +120,20 @@ namespace IronPythonTest.Cases {
                 // operators
                 { "==", "=" },
                 { "||", "OR" },
+                { "\"", "'" },    // replace double quotes before double-double quotes
                 { "\"\"", "\"" },
-                { "\"", "'" },
                 { "&&", "AND" },
-                { "!=", "<>" }
+                { "!=", "<>" },
             };
 
-            foreach (var replacement in replacements) {
-                expression = expression.Replace(replacement.Key, replacement.Value);
+            foreach (DictionaryEntry replacement in replacements) {
+                expression = expression.Replace((string)replacement.Key, replacement.Value?.ToString());
             }
 
             try {
                 object res = dummy.Compute(expression, null);
-                if (res is bool) {
-                    return (bool)res;
+                if (res is bool result) {
+                    return result;
                 }
             } catch (EvaluateException ex) {
                 if (ex.Message.StartsWith("The expression contains undefined function call", StringComparison.Ordinal))

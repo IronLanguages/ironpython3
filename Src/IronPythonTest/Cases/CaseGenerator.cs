@@ -108,6 +108,7 @@ namespace IronPythonTest.Cases {
             string filter = expression;
             var replacements = new OrderedDictionary() {
                 // variables
+                { "$(FRAMEWORK)", IronPython.Runtime.ClrModule.TargetFramework },
                 { "$(IS_NETCOREAPP)", IronPython.Runtime.ClrModule.IsNetCoreApp.ToString() },
                 { "$(IS_NETSTANDARD)", IronPython.Runtime.ClrModule.TargetFramework.StartsWith(".NETStandard", StringComparison.Ordinal).ToString() },
                 { "$(IS_MONO)", IronPython.Runtime.ClrModule.IsMono.ToString() },

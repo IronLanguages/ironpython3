@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+ - name: Discussion
+   url: https://github.com/IronLanguages/ironpython3/discussions
+   about: "Ask questions, discuss implementation, or just have a chat! If you're unsure what to choose, a discussion is probably best."

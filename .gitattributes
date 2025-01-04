@@ -44,3 +44,11 @@ Tests/file_without_BOM.txt -text
 
 # Do not normalize on commit.
 *.pdf -text
+
+# Ignore languages from GitHub Linguist
+*.1 linguist-detectable=false
+*.2 linguist-detectable=false
+*.3 linguist-detectable=false
+*.html linguist-detectable=false
+*.pck linguist-detectable=false
+*.ps1 linguist-detectable=false

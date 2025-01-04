@@ -1,0 +1,89 @@
+name: Bug Report
+description: Create a bug report to help improve!
+labels: [bug]
+title: "Bug: "
+# type: Bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ##### ⏱️ Before you start...
+        - Are you on the latest version? You might be using an old version.
+        - Have you checked whether or not a similar bug has already been reported?
+  - type: textarea
+    attributes:
+      label: 🪟 What OS build is this issue present?
+      description: Windows key + R > winver.exe / Apple Logo (in menu bar) > About This Mac (may not be like this on Ventura)
+      placeholder: Windows 11 Insider Beta 22623.1250 / macOS Monterey 12.6.3
+  - type: textarea
+    attributes:
+      label: 🔢 What version are you on?
+      placeholder: '3.4.1 (3.4.1.1000) [.NETFramework,Version=v4.6.2 on .NET Framework 4.8.9282.0 (64-bit)]'
+      description: If you are using the console program, provide the value of `sys.version`. If it is a local build, provide also the git hash of the commit used to build IronPython. If you are using IronPython embedded inside a .NET app, provide the version of the NuGet package you installed.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: 📦 What .NET platform did you use?
+      multiple: false
+      options:
+        - .NET
+        - .NET Core
+        - .NET Framework
+        - Mono
+        - Unity
+        - Xamarin
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 📄 Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 🪜 Steps To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '....'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See the error
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: 🤔 Expected behavior
+      description: A clear and concise description of what you expected to happen.
+  - type: dropdown
+    id: platforms-affected
+    attributes:
+      label: Affected platforms
+      description: Select all or any platform that you see this issue on. This helps us determine if it's something platform-specific or in the core. If you were only able to test on 1 platform, please check the last option to inform us about that.
+      multiple: true
+      options:
+        - 📱 Android
+        - 📲 iOS
+        - 💻 macOS
+        - 🪨 Rosetta (macOS Catalyst)
+        - 🪟 Windows
+        - 🪟 WPF
+        - 🐧 GTK
+        - 🐧 Linux Framebuffer
+        - ⌨️ Skia Desktop
+        - 🕸️ WebAssembly
+        - ❓ Other
+        - ☹️ I was unable to test on other platforms
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: ⚒️ Did you find any workaround?
+      description: Did you find any workaround for this issue? This can unblock other people while waiting for this issue to be resolved or even give us a hint on how to fix this.
+  - type: textarea
+    attributes:
+      label: 📸 Assets
+      description: |
+        A list of assets (errors, screenshots) relevant to the bug.

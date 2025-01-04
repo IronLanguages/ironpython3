@@ -121,15 +121,20 @@ def test_compile(self):
     self.assertRaises(SyntaxError, compile, "x <= ", "Error", "exec")
     self.assertRaises(SyntaxError, compile, "x <= ", "Error", "eval")
     self.assertRaises(SyntaxError, compile, "x <= ", "Error", "single")
-    #indentation errors - BUG 864
+    # indentation errors - BUG 864
     self.assertRaises(IndentationError if is_cli or sys.version_info >= (3,9) else SyntaxError, compile, "class C:\nx=2\n", "Error", "exec")
     self.assertRaises(IndentationError if sys.version_info >= (3,9) else SyntaxError, compile, "class C:\n\n", "Error", "single")
 
-    #allow \f
+    # allow \f
     compile('\f\f\f\f\fclass C:\f\f\f pass', 'ok', 'exec')
     compile('\f\f\f\f\fclass C:\n\f\f\f    print("hello")\n\f\f\f\f\f\f\f\f\f\f    print("goodbye")', 'ok', 'exec')
     compile('class C:\n\f\f\f    print("hello")\n\f\f\f\f\f\f\f\f\f\f    print("goodbye")', 'ok', 'exec')
     compile('class \f\f\f\fC:\n\f    print("hello")\n\f\f\f\f\f\f\f\f\f\f    print("goodbye")', 'ok', 'exec')
+    compile('if True:\n\t\f    pass\n', 'ok', 'exec')
+
+    # mixed indentation
+    self.assertRaises(TabError, compile, 'if True:\n  \tpass\n\tpass\n', 'Error', 'exec')
+    compile('if True:\n  \tpass\n  \tpass\n', 'ok', 'exec')
 
     # multiline expression passed to exec (positive test)
     s = """

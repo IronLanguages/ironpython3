@@ -28,6 +28,7 @@ using Microsoft.Scripting.Utils;
 [assembly: PythonModule("mmap", typeof(IronPython.Modules.MmapModule))]
 namespace IronPython.Modules {
     public static class MmapModule {
+        public const int ACCESS_DEFAULT = 0;  // Since Python 3.7
         public const int ACCESS_READ = 1;
         public const int ACCESS_WRITE = 2;
         public const int ACCESS_COPY = 3;
@@ -42,8 +43,6 @@ namespace IronPython.Modules {
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int MAP_PRIVATE = 2;
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public const int PROT_NONE = 0;
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int PROT_READ = 1;
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
@@ -78,8 +77,28 @@ namespace IronPython.Modules {
 
         [PythonType("mmap"), PythonHidden]
         public class MmapUnix : MmapDefault {
-            public MmapUnix(CodeContext/*!*/ context, int fileno, long length, int flags = MAP_SHARED, int prot = PROT_WRITE | PROT_READ, int access = ACCESS_WRITE, long offset = 0)
-                : base(context, fileno, length, null, access, offset) { }
+            public MmapUnix(CodeContext/*!*/ context, int fileno, long length, int flags = MAP_SHARED, int prot = PROT_WRITE | PROT_READ, int access = ACCESS_DEFAULT, long offset = 0)
+                : base(context, fileno, length, null, NormalizeAccess(flags, prot, access), offset) { }
+
+            private static int NormalizeAccess(int flags, int prot, int access) {
+                if (access == ACCESS_DEFAULT) {
+                    if ((flags & (MAP_PRIVATE | MAP_SHARED)) == 0) {
+                        throw PythonOps.OSError(PythonErrorNumber.EINVAL, "Invalid argument");
+                    }
+                    if ((prot & PROT_WRITE) != 0) {
+                        return (flags & MAP_PRIVATE) != 0 ? ACCESS_COPY : ACCESS_WRITE;
+                    }
+                    if ((prot & PROT_READ) != 0) {
+                        return ACCESS_READ;
+                    }
+                    throw PythonOps.NotImplementedError("this combination of flags and prot is not supported");
+                } else if (flags != MAP_SHARED || prot != (PROT_WRITE | PROT_READ)) {
+                    throw PythonOps.ValueError("mmap can't specify both access and flags, prot.");
+                } else if (access != ACCESS_READ && access != ACCESS_WRITE && access != ACCESS_COPY) {
+                    throw PythonOps.ValueError("mmap invalid access parameter");
+                }
+                return access;
+            }
         }
 
         [PythonType("mmap"), PythonHidden]
@@ -96,11 +115,12 @@ namespace IronPython.Modules {
             private volatile bool _isClosed;
             private int _refCount = 1;
 
-            public MmapDefault(CodeContext/*!*/ context, int fileno, long length, string tagname = null, int access = ACCESS_WRITE, long offset = 0) {
+            public MmapDefault(CodeContext/*!*/ context, int fileno, long length, string tagname = null, int access = ACCESS_DEFAULT, long offset = 0) {
                 switch (access) {
                     case ACCESS_READ:
                         _fileAccess = MemoryMappedFileAccess.Read;
                         break;
+                    case ACCESS_DEFAULT:  // On Windows, default access is write-through
                     case ACCESS_WRITE:
                         _fileAccess = MemoryMappedFileAccess.ReadWrite;
                         break;
@@ -168,6 +188,13 @@ namespace IronPython.Modules {
                             throw PythonOps.ValueError("mmap offset is greater than file size");
                         }
                         length -= _offset;
+                    }
+
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        // Unix map does not support increasing size on open
+                        if (_offset + length > _sourceStream.Length) {
+                            throw PythonOps.ValueError("mmap length is greater than file size");
+                        }
                     }
 
                     long capacity = checked(_offset + length);

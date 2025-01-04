@@ -68,40 +68,65 @@ namespace IronPython.Modules {
         public static PythonType mmap {
             get {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    return DynamicHelpers.GetPythonTypeFromType(typeof(MmapDefault));
+                    return DynamicHelpers.GetPythonTypeFromType(typeof(MmapWindows));
                 }
 
                 return DynamicHelpers.GetPythonTypeFromType(typeof(MmapUnix));
             }
         }
 
+
         [PythonType("mmap"), PythonHidden]
         public class MmapUnix : MmapDefault {
             public MmapUnix(CodeContext/*!*/ context, int fileno, long length, int flags = MAP_SHARED, int prot = PROT_WRITE | PROT_READ, int access = ACCESS_DEFAULT, long offset = 0)
-                : base(context, fileno, length, null, NormalizeAccess(flags, prot, access), offset) { }
+                : base(context, fileno, length, null, ToMmapFileAccess(flags, prot, access), offset) { }
 
-            private static int NormalizeAccess(int flags, int prot, int access) {
+            private static MemoryMappedFileAccess ToMmapFileAccess(int flags, int prot, int access) {
                 if (access == ACCESS_DEFAULT) {
                     if ((flags & (MAP_PRIVATE | MAP_SHARED)) == 0) {
                         throw PythonOps.OSError(PythonErrorNumber.EINVAL, "Invalid argument");
                     }
                     if ((prot & PROT_WRITE) != 0) {
-                        return (flags & MAP_PRIVATE) != 0 ? ACCESS_COPY : ACCESS_WRITE;
+                        prot |= PROT_READ;
                     }
-                    if ((prot & PROT_READ) != 0) {
-                        return ACCESS_READ;
-                    }
-                    throw PythonOps.NotImplementedError("this combination of flags and prot is not supported");
+                    return (prot & (PROT_READ | PROT_WRITE | PROT_EXEC)) switch {
+                        PROT_READ => MemoryMappedFileAccess.Read,
+                        PROT_READ | PROT_WRITE => (flags & MAP_PRIVATE) == 0 ? MemoryMappedFileAccess.ReadWrite : MemoryMappedFileAccess.CopyOnWrite,
+                        PROT_READ | PROT_EXEC => MemoryMappedFileAccess.ReadExecute,
+                        PROT_READ | PROT_WRITE | PROT_EXEC when (flags & MAP_PRIVATE) == 0 => MemoryMappedFileAccess.ReadWriteExecute,
+                        _ => throw PythonOps.NotImplementedError("this combination of prot is not supported"),
+                    };
                 } else if (flags != MAP_SHARED || prot != (PROT_WRITE | PROT_READ)) {
                     throw PythonOps.ValueError("mmap can't specify both access and flags, prot.");
-                } else if (access != ACCESS_READ && access != ACCESS_WRITE && access != ACCESS_COPY) {
-                    throw PythonOps.ValueError("mmap invalid access parameter");
+                } else {
+                    return access switch {
+                        ACCESS_READ => MemoryMappedFileAccess.Read,
+                        ACCESS_WRITE => MemoryMappedFileAccess.ReadWrite,
+                        ACCESS_COPY => MemoryMappedFileAccess.CopyOnWrite,
+                        _ => throw PythonOps.ValueError("mmap invalid access parameter"),
+                    };
                 }
-                return access;
             }
         }
 
+
         [PythonType("mmap"), PythonHidden]
+        public class MmapWindows : MmapDefault {
+            public MmapWindows(CodeContext context, int fileno, long length, string tagname = null, int access = ACCESS_DEFAULT, long offset = 0)
+                : base(context, fileno, length, tagname, ToMmapFileAccess(access), offset) { }
+
+            private static MemoryMappedFileAccess ToMmapFileAccess(int access) {
+                return access switch {
+                    ACCESS_READ => MemoryMappedFileAccess.Read,
+                    // On Windows, default access is write-through
+                    ACCESS_DEFAULT or ACCESS_WRITE => MemoryMappedFileAccess.ReadWrite,
+                    ACCESS_COPY => MemoryMappedFileAccess.CopyOnWrite,
+                    _ => throw PythonOps.ValueError("mmap invalid access parameter"),
+                };
+            }
+        }
+
+        [PythonHidden]
         public class MmapDefault : IWeakReferenceable {
             private MemoryMappedFile _file;
             private MemoryMappedViewAccessor _view;
@@ -115,21 +140,8 @@ namespace IronPython.Modules {
             private volatile bool _isClosed;
             private int _refCount = 1;
 
-            public MmapDefault(CodeContext/*!*/ context, int fileno, long length, string tagname = null, int access = ACCESS_DEFAULT, long offset = 0) {
-                switch (access) {
-                    case ACCESS_READ:
-                        _fileAccess = MemoryMappedFileAccess.Read;
-                        break;
-                    case ACCESS_DEFAULT:  // On Windows, default access is write-through
-                    case ACCESS_WRITE:
-                        _fileAccess = MemoryMappedFileAccess.ReadWrite;
-                        break;
-                    case ACCESS_COPY:
-                        _fileAccess = MemoryMappedFileAccess.CopyOnWrite;
-                        break;
-                    default:
-                        throw PythonOps.ValueError("mmap invalid access parameter");
-                }
+            public MmapDefault(CodeContext/*!*/ context, int fileno, long length, string tagname, MemoryMappedFileAccess fileAccess, long offset) {
+                _fileAccess = fileAccess;
 
                 if (length < 0) {
                     throw PythonOps.OverflowError("memory mapped size must be positive");
@@ -175,7 +187,7 @@ namespace IronPython.Modules {
                         throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
                     }
 
-                    if (_fileAccess == MemoryMappedFileAccess.ReadWrite && !_sourceStream.CanWrite) {
+                    if (_fileAccess is MemoryMappedFileAccess.ReadWrite or MemoryMappedFileAccess.ReadWriteExecute && !_sourceStream.CanWrite) {
                         throw WindowsError(PythonExceptions._OSError.ERROR_ACCESS_DENIED);
                     }
 
@@ -579,7 +591,7 @@ namespace IronPython.Modules {
 
             public void resize(long newsize) {
                 using (new MmapLocker(this)) {
-                    if (_fileAccess != MemoryMappedFileAccess.ReadWrite) {
+                    if (_fileAccess is not MemoryMappedFileAccess.ReadWrite and not MemoryMappedFileAccess.ReadWriteExecute) {
                         throw PythonOps.TypeError("mmap can't resize a readonly or copy-on-write memory map.");
                     }
 
@@ -802,7 +814,7 @@ namespace IronPython.Modules {
             }
 
             private void EnsureWritable() {
-                if (_fileAccess == MemoryMappedFileAccess.Read) {
+                if (_fileAccess is MemoryMappedFileAccess.Read or MemoryMappedFileAccess.ReadExecute) {
                     throw PythonOps.TypeError("mmap can't modify a read-only memory map.");
                 }
             }

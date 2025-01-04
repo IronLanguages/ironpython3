@@ -2,17 +2,20 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-using System.Numerics;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Reflection;
 using System.Threading;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -20,10 +23,6 @@ using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -43,7 +42,7 @@ namespace IronPython.Runtime.Binding {
             ContractUtils.RequiresNotNull(pythonContext, nameof(pythonContext));
 
             _dlrExtensionTypes = MakeExtensionTypes();
-            _context = pythonContext;           
+            _context = pythonContext;
             if (context != null) {
                 context.LanguageContext.DomainManager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(DomainManager_AssemblyLoaded);
 
@@ -82,7 +81,7 @@ namespace IronPython.Runtime.Binding {
                 }
                 return expr;
             }
-            
+
             Type visType = Context.Binder.PrivateBinding ? toType : CompilerHelpers.GetVisibleType(toType);
 
             if (exprType == typeof(PythonType) && visType == typeof(Type)) {
@@ -185,17 +184,17 @@ namespace IronPython.Runtime.Binding {
                     Expression.Assign(
                         Expression.Field(
                             AstUtils.Convert(
-                                instance.Expression, 
+                                instance.Expression,
                                 field.DeclaringType
-                            ), 
+                            ),
                             field.Field
                         ),
                         ConvertExpression(
-                            value.Expression, 
-                            field.FieldType, 
-                            ConversionResultKind.ExplicitCast, 
+                            value.Expression,
+                            field.FieldType,
+                            ConversionResultKind.ExplicitCast,
                             new PythonOverloadResolverFactory(
-                                this, 
+                                this,
                                 Expression.Constant(_context.SharedContext)
                             )
                         )
@@ -237,7 +236,7 @@ namespace IronPython.Runtime.Binding {
             return MakeMissingMemberError(accessingType, instance, info.Name);
         }
 
-        public override ErrorInfo/*!*/ MakeStaticPropertyInstanceAccessError(PropertyTracker/*!*/ tracker, bool isAssignment, IList<DynamicMetaObject>/*!*/ parameters) {            
+        public override ErrorInfo/*!*/ MakeStaticPropertyInstanceAccessError(PropertyTracker/*!*/ tracker, bool isAssignment, IList<DynamicMetaObject>/*!*/ parameters) {
             ContractUtils.RequiresNotNull(tracker, nameof(tracker));
             ContractUtils.RequiresNotNull(parameters, nameof(parameters));
 
@@ -281,7 +280,7 @@ namespace IronPython.Runtime.Binding {
         }
 
 
-        public override ErrorInfo/*!*/ MakeEventValidation(MemberGroup/*!*/ members, DynamicMetaObject eventObject, DynamicMetaObject/*!*/ value, OverloadResolverFactory/*!*/ factory) {            
+        public override ErrorInfo/*!*/ MakeEventValidation(MemberGroup/*!*/ members, DynamicMetaObject eventObject, DynamicMetaObject/*!*/ value, OverloadResolverFactory/*!*/ factory) {
             EventTracker ev = (EventTracker)members[0];
 
             return ErrorInfo.FromValueNoError(
@@ -405,7 +404,7 @@ namespace IronPython.Runtime.Binding {
 
             return list;
         }
-        
+
         private void AddExtensionTypes(Type t, List<Type> list) {
             ExtensionTypeInfo extType;
             if (_sysTypes.TryGetValue(t, out extType)) {
@@ -461,16 +460,16 @@ namespace IronPython.Runtime.Binding {
                 case TrackerTypes.Bound:
                     return new DynamicMetaObject(ReturnBoundTracker((BoundMemberTracker)memberTracker, privateBinding), BindingRestrictions.Empty);
                 case TrackerTypes.Property:
-                    return new DynamicMetaObject(ReturnPropertyTracker((PropertyTracker)memberTracker, privateBinding), BindingRestrictions.Empty);;
+                    return new DynamicMetaObject(ReturnPropertyTracker((PropertyTracker)memberTracker, privateBinding), BindingRestrictions.Empty); ;
                 case TrackerTypes.Event:
                     return new DynamicMetaObject(Ast.Call(
                         typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBoundEvent)),
                         AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)memberTracker)),
                         AstUtils.Constant(null),
                         AstUtils.Constant(type)
-                    ), BindingRestrictions.Empty);;
+                    ), BindingRestrictions.Empty);
                 case TrackerTypes.Field:
-                    return new DynamicMetaObject(ReturnFieldTracker((FieldTracker)memberTracker), BindingRestrictions.Empty);;
+                    return new DynamicMetaObject(ReturnFieldTracker((FieldTracker)memberTracker), BindingRestrictions.Empty); ;
                 case TrackerTypes.MethodGroup:
                     return new DynamicMetaObject(ReturnMethodGroup((MethodGroup)memberTracker), BindingRestrictions.Empty); ;
                 case TrackerTypes.Constructor:
@@ -589,7 +588,7 @@ namespace IronPython.Runtime.Binding {
 
                     if (!members.ContainsKey(rm.Name)) {
                         members[rm.Name] = new KeyValuePair<PythonTypeSlot, MemberGroup>(
-                            PythonTypeOps.GetSlot(rm.Member, rm.Name, PrivateBinding), 
+                            PythonTypeOps.GetSlot(rm.Member, rm.Name, PrivateBinding),
                             rm.Member
                         );
                     }
@@ -625,7 +624,7 @@ namespace IronPython.Runtime.Binding {
 
                     if (!members.ContainsKey(rm.Name)) {
                         members[rm.Name] = new KeyValuePair<PythonTypeSlot, MemberGroup>(
-                            PythonTypeOps.GetSlot(rm.Member, rm.Name, PrivateBinding), 
+                            PythonTypeOps.GetSlot(rm.Member, rm.Name, PrivateBinding),
                             rm.Member
                         );
                     }
@@ -1084,7 +1083,7 @@ namespace IronPython.Runtime.Binding {
             private class SlotCacheInfo {
                 public SlotCacheInfo() {
                     Members = new Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot, MemberGroup/*!*/>>(StringComparer.Ordinal);
-                }               
+                }
 
                 public bool TryGetSlot(string/*!*/ name, out PythonTypeSlot slot) {
                     Debug.Assert(name != null);

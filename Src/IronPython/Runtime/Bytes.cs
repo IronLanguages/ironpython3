@@ -214,11 +214,11 @@ namespace IronPython.Runtime {
             => center(width, (byte)' ');
 
         public Bytes center(int width, [BytesLike, NotNone] IList<byte> fillchar)
-            => center(width, fillchar.ToByte("center", 2));
+            => center(width, fillchar.ToByte(nameof(center), 2));
 
         private Bytes center(int width, byte fillchar) {
             var res = _bytes.TryCenter(width, fillchar);
-            return res == null ? this.AsBytes() : new Bytes(res);
+            return res == null ? AsBytes() : new Bytes(res);
         }
 
         public int count([BytesLike, NotNone] IList<byte> sub)
@@ -456,8 +456,8 @@ namespace IronPython.Runtime {
         /// in the sequence seq. The separator between elements is the
         /// string providing this method
         /// </summary>
-        public Bytes join(object? sequence) {
-            IEnumerator seq = PythonOps.GetEnumerator(sequence);
+        public Bytes join(object? iterable) {
+            IEnumerator seq = PythonOps.GetEnumerator(iterable);
             if (!seq.MoveNext()) {
                 return Empty;
             }
@@ -484,30 +484,28 @@ namespace IronPython.Runtime {
             return new Bytes(ret);
         }
 
-        public Bytes join([NotNone] PythonList sequence) {
-            if (sequence.__len__() == 0) {
+        public Bytes join([NotNone] PythonList iterable) {
+            if (iterable.__len__() == 0) {
                 return Empty;
-            } else if (sequence.__len__() == 1) {
-                return JoinOne(sequence[0]);
+            } else if (iterable.__len__() == 1) {
+                return JoinOne(iterable[0]);
             }
 
             List<byte> ret = new List<byte>();
-            ByteOps.AppendJoin(sequence._data[0], 0, ret);
-            for (int i = 1; i < sequence._size; i++) {
+            ByteOps.AppendJoin(iterable._data[0], 0, ret);
+            for (int i = 1; i < iterable._size; i++) {
                 ret.AddRange(this);
-                ByteOps.AppendJoin(sequence._data[i], i, ret);
+                ByteOps.AppendJoin(iterable._data[i], i, ret);
             }
 
             return new Bytes(ret);
         }
 
-        public Bytes ljust(int width) {
-            return ljust(width, (byte)' ');
-        }
+        public Bytes ljust(int width)
+            => ljust(width, (byte)' ');
 
-        public Bytes ljust(int width, [BytesLike, NotNone] IList<byte> fillchar) {
-            return ljust(width, fillchar.ToByte("ljust", 2));
-        }
+        public Bytes ljust(int width, [BytesLike, NotNone] IList<byte> fillchar)
+            => ljust(width, fillchar.ToByte(nameof(ljust), 2));
 
         private Bytes ljust(int width, byte fillchar) {
             int spaces = width - Count;
@@ -662,13 +660,11 @@ namespace IronPython.Runtime {
         public int rindex(BigInteger @byte, object? start, object? end)
             => rindex(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
-        public Bytes rjust(int width) {
-            return rjust(width, (byte)' ');
-        }
+        public Bytes rjust(int width)
+            => rjust(width, (byte)' ');
 
-        public Bytes rjust(int width, [BytesLike, NotNone] IList<byte> fillchar) {
-            return rjust(width, fillchar.ToByte("rjust", 2));
-        }
+        public Bytes rjust(int width, [BytesLike, NotNone] IList<byte> fillchar)
+            => rjust(width, fillchar.ToByte(nameof(rjust), 2));
 
         private Bytes rjust(int width, byte fillchar) {
             int spaces = width - Count;
@@ -1059,9 +1055,11 @@ namespace IronPython.Runtime {
                 return new Bytes(b);
             }
             if (curVal is IBufferProtocol bp) {
-                return new Bytes(bp);
+                using var buf = bp.GetBufferNoThrow();
+                if (buf is null) throw ByteOps.JoinSequenceError(curVal, 0);
+                return Make(buf.AsReadOnlySpan().ToArray());
             }
-            throw PythonOps.TypeError("can only join an iterable of bytes");
+            throw ByteOps.JoinSequenceError(curVal, 0);
         }
 
         internal static Bytes Concat(IList<Bytes> list, int length) {

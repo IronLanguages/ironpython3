@@ -263,7 +263,7 @@ namespace IronPython.Runtime {
         public ByteArray center(int width) => center(width, (byte)' ');
 
         public ByteArray center(int width, [BytesLike, NotNone] IList<byte> fillchar)
-            => center(width, fillchar.ToByte("center", 2));
+            => center(width, fillchar.ToByte(nameof(center), 2));
 
         private ByteArray center(int width, byte fillchar) {
             lock (this) {
@@ -301,7 +301,7 @@ namespace IronPython.Runtime {
             int istart = start != null ? Converter.ConvertToIndex(start) : 0;
             lock (this) {
                 int iend = end != null ? Converter.ConvertToIndex(end) : _bytes.Count;
-                return _bytes.CountOf(sub, istart, iend); 
+                return _bytes.CountOf(sub, istart, iend);
             }
         }
 
@@ -585,13 +585,13 @@ namespace IronPython.Runtime {
         /// in the sequence seq. The separator between elements is the 
         /// string providing this method
         /// </summary>
-        public ByteArray join(object? sequence) {
-            IEnumerator seq = PythonOps.GetEnumerator(sequence);
+        public ByteArray join(object? iterable) {
+            IEnumerator seq = PythonOps.GetEnumerator(iterable);
             if (!seq.MoveNext()) {
                 return new ByteArray();
             }
 
-            // check if we have just a sequnce of just one value - if so just
+            // check if we have a sequence of just one value - if so just
             // return that value.
             object? curVal = seq.Current;
             if (!seq.MoveNext()) {
@@ -613,34 +613,32 @@ namespace IronPython.Runtime {
             return new ByteArray(ret);
         }
 
-        public ByteArray join([NotNone] PythonList sequence) {
-            if (sequence.__len__() == 0) {
+        public ByteArray join([NotNone] PythonList iterable) {
+            if (iterable.__len__() == 0) {
                 return new ByteArray();
             }
 
             lock (this) {
-                if (sequence.__len__() == 1) {
-                    return JoinOne(sequence[0]);
+                if (iterable.__len__() == 1) {
+                    return JoinOne(iterable[0]);
                 }
 
                 List<byte> ret = new List<byte>();
-                ByteOps.AppendJoin(sequence._data[0], 0, ret);
-                for (int i = 1; i < sequence._size; i++) {
+                ByteOps.AppendJoin(iterable._data[0], 0, ret);
+                for (int i = 1; i < iterable._size; i++) {
                     ret.AddRange(this);
-                    ByteOps.AppendJoin(sequence._data[i], i, ret);
+                    ByteOps.AppendJoin(iterable._data[i], i, ret);
                 }
 
                 return new ByteArray(ret);
             }
         }
 
-        public ByteArray ljust(int width) {
-            return ljust(width, (byte)' ');
-        }
+        public ByteArray ljust(int width)
+            => ljust(width, (byte)' ');
 
-        public ByteArray ljust(int width, [BytesLike, NotNone] IList<byte> fillchar) {
-            return ljust(width, fillchar.ToByte("ljust", 2));
-        }
+        public ByteArray ljust(int width, [BytesLike, NotNone] IList<byte> fillchar)
+            => ljust(width, fillchar.ToByte(nameof(ljust), 2));
 
         private ByteArray ljust(int width, byte fillchar) {
             lock (this) {
@@ -671,7 +669,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray lstrip([BytesLike]IList<byte>? chars) {
+        public ByteArray lstrip([BytesLike] IList<byte>? chars) {
             if (chars == null) return lstrip();
             lock (this) {
                 var res = _bytes.LeftStrip(chars);
@@ -806,13 +804,11 @@ namespace IronPython.Runtime {
         public int rindex(BigInteger @byte, object? start, object? end)
             => rindex(Bytes.FromByte(@byte.ToByteChecked()), start, end);
 
-        public ByteArray rjust(int width) {
-            return rjust(width, (byte)' ');
-        }
+        public ByteArray rjust(int width)
+            => rjust(width, (byte)' ');
 
-        public ByteArray rjust(int width, [BytesLike, NotNone] IList<byte> fillchar) {
-            return rjust(width, fillchar.ToByte("rjust", 2));
-        }
+        public ByteArray rjust(int width, [BytesLike, NotNone] IList<byte> fillchar)
+            => rjust(width, fillchar.ToByte(nameof(rjust), 2));
 
         private ByteArray rjust(int width, int fillchar) {
             byte fill = fillchar.ToByteChecked();
@@ -855,7 +851,7 @@ namespace IronPython.Runtime {
         }
 
         [return: SequenceTypeInfo(typeof(ByteArray))]
-        public PythonList rsplit([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
+        public PythonList rsplit([BytesLike] IList<byte>? sep = null, int maxsplit = -1) {
             lock (this) {
                 return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
             }
@@ -868,7 +864,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray rstrip([BytesLike]IList<byte>? chars) {
+        public ByteArray rstrip([BytesLike] IList<byte>? chars) {
             if (chars == null) return rstrip();
             lock (this) {
                 var res = _bytes.RightStrip(chars);
@@ -877,7 +873,7 @@ namespace IronPython.Runtime {
         }
 
         [return: SequenceTypeInfo(typeof(ByteArray))]
-        public PythonList split([BytesLike]IList<byte>? sep = null, int maxsplit = -1) {
+        public PythonList split([BytesLike] IList<byte>? sep = null, int maxsplit = -1) {
             lock (this) {
                 return _bytes.Split(sep, maxsplit, x => new ByteArray(x));
             }
@@ -973,7 +969,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray strip([BytesLike]IList<byte>? chars) {
+        public ByteArray strip([BytesLike] IList<byte>? chars) {
             if (chars == null) return strip();
             lock (this) {
                 var res = _bytes.Strip(chars);
@@ -1000,7 +996,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray translate([BytesLike]IList<byte>? table) {
+        public ByteArray translate([BytesLike] IList<byte>? table) {
             ValidateTable(table);
             lock (this) {
                 return new ByteArray(_bytes.Translate(table, null));
@@ -1008,14 +1004,14 @@ namespace IronPython.Runtime {
         }
 
 
-        public ByteArray translate([BytesLike]IList<byte>? table, [BytesLike, NotNone] IList<byte> delete) {
+        public ByteArray translate([BytesLike] IList<byte>? table, [BytesLike, NotNone] IList<byte> delete) {
             ValidateTable(table);
             lock (this) {
                 return new ByteArray(_bytes.Translate(table, delete));
             }
         }
 
-        public ByteArray translate([BytesLike]IList<byte>? table, object? delete) {
+        public ByteArray translate([BytesLike] IList<byte>? table, object? delete) {
             if (delete is IBufferProtocol bufferProtocol) {
                 using var buffer = bufferProtocol.GetBuffer();
                 return translate(table, buffer.AsReadOnlySpan().ToArray());
@@ -1353,11 +1349,11 @@ namespace IronPython.Runtime {
                 return new ByteArray(new List<byte>(bytes));
             }
             if (curVal is IBufferProtocol bp) {
-                using (IPythonBuffer buf = bp.GetBuffer()) {
-                    return new ByteArray(new ArrayData<byte>(buf.AsReadOnlySpan()));
-                }
+                using var buf = bp.GetBufferNoThrow();
+                if (buf is null) throw ByteOps.JoinSequenceError(curVal, 0);
+                return new ByteArray(new ArrayData<byte>(buf.AsReadOnlySpan()));
             }
-            throw PythonOps.TypeError("can only join an iterable of bytes");
+            throw ByteOps.JoinSequenceError(curVal, 0);
         }
 
         private ByteArray CopyThis() {

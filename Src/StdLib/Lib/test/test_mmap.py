@@ -4,6 +4,7 @@ import unittest
 import os
 import re
 import itertools
+import struct   # IronPython: for platform architecture detection
 import socket
 import sys
 import weakref
@@ -721,7 +722,6 @@ class MmapTests(unittest.TestCase):
         gc_collect()
         self.assertIs(wr(), None)
 
-@unittest.skipIf(sys.implementation.name == "ironpython", "TODO")
 class LargeMmapTests(unittest.TestCase):
 
     def setUp(self):
@@ -754,7 +754,8 @@ class LargeMmapTests(unittest.TestCase):
 
     def test_large_filesize(self):
         with self._make_test_file(0x17FFFFFFF, b" ") as f:
-            if sys.maxsize < 0x180000000:
+            #if sys.maxsize < 0x180000000: # original CPython test
+            if struct.calcsize('P') * 8 == 32: # IronPython: better detection of 32-bit platform
                 # On 32 bit platforms the file is larger than sys.maxsize so
                 # mapping the whole file should fail -- Issue #16743
                 with self.assertRaises(OverflowError):
@@ -774,11 +775,13 @@ class LargeMmapTests(unittest.TestCase):
             with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as m:
                 self.assertEqual(m[start:end], tail)
 
-    @unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems")
+    #@unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems") # original CPython decorator
+    @unittest.skipUnless(struct.calcsize('P') * 8 > 32, "test cannot run on 32-bit systems") # IronPython: better detection of 32-bit platform
     def test_around_2GB(self):
         self._test_around_boundary(_2G)
 
-    @unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems")
+    #@unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems") # original CPython decorator
+    @unittest.skipUnless(struct.calcsize('P') * 8 > 32, "test cannot run on 32-bit systems") # IronPython: better detection of 32-bit platform
     def test_around_4GB(self):
         self._test_around_boundary(_4G)
 

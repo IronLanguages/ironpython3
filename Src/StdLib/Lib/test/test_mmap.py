@@ -242,6 +242,7 @@ class MmapTests(unittest.TestCase):
             # Try writing with PROT_EXEC and without PROT_WRITE
             prot = mmap.PROT_READ | getattr(mmap, 'PROT_EXEC', 0)
             with open(TESTFN, "r+b") as f:
+                # try/except backported from Python 3.12
                 try:
                     m = mmap.mmap(f.fileno(), mapsize, prot=prot)
                 except PermissionError:

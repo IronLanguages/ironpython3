@@ -120,7 +120,7 @@ namespace IronPython.Runtime.Exceptions {
 
         public partial class _OSError {
             public static new object __new__(PythonType cls, [ParamDictionary] IDictionary<string, object> kwArgs, params object[] args) {
-                if (cls == OSError && args.Length >= 1 && args[0] is int errno) {
+                if (cls == OSError && args.Length >= 2 && args[0] is int errno) {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         if (args.Length >= 4 && args[3] is int winerror) {
                             errno = WinErrorToErrno(winerror);
@@ -139,8 +139,8 @@ namespace IronPython.Runtime.Exceptions {
                 set { _filename = value; }
             }
 
-            // TODO: hide property on Unix
             private object _winerror = Undefined;
+            [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
             public object winerror {
                 get { return ReferenceEquals(_winerror, Undefined) ? null : _winerror; }
                 set { _winerror = value; }
@@ -719,7 +719,7 @@ for k, v in toError.items():
         /// <summary>
         /// Given a CLR exception returns the Python exception which most closely maps to the CLR exception.
         /// </summary>
-        public static object ToPython(System.Exception/*!*/ clrException) {
+        public static BaseException ToPython(System.Exception/*!*/ clrException) {
             var res = clrException.GetPythonException();
             if (res is null) {
                 // explicit extra conversions that need a special transformation

@@ -7,10 +7,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-
-using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
     public static partial class ByteOps {
@@ -85,12 +82,17 @@ namespace IronPython.Runtime.Operations {
             if (value is IList<byte> bytesValue) {
                 byteList.AddRange(bytesValue);
             } else if (value is IBufferProtocol bp) {
-                using (IPythonBuffer buf = bp.GetBuffer()) {
-                    byteList.AddRange(buf.AsReadOnlySpan().ToArray());
-                }
-            } else {
-                throw PythonOps.TypeError("sequence item {0}: expected bytes or byte array, {1} found", index.ToString(), PythonOps.GetPythonTypeName(value));
+                using var buf = bp.GetBufferNoThrow();
+                if (buf is null) throw JoinSequenceError(value, index);
+                byteList.AddRange(buf.AsReadOnlySpan().ToArray());
             }
+            else {
+                throw JoinSequenceError(value, index);
+            }
+        }
+
+        internal static Exception JoinSequenceError(object? value, int index) {
+            return PythonOps.TypeError("sequence item {0}: expected a bytes-like object, {1} found", index.ToString(), PythonOps.GetPythonTypeName(value));
         }
 
         internal static IList<byte> CoerceBytes(object? obj) {

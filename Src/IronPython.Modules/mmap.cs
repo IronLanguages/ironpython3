@@ -190,9 +190,9 @@ namespace IronPython.Modules {
                         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                             // use file descriptor
 #if NET8_0_OR_GREATER
-                            CheckFileAccess(_fileAccess, stream);
+                            CheckFileAccessAndSize(stream);
                             _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: false);
-                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, length, _fileAccess, HandleInheritability.None, leaveOpen: true);
+                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, stream.Length, _fileAccess, HandleInheritability.None, leaveOpen: true);
 #else
                             _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: false);
                             FileAccess fa = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
@@ -211,18 +211,11 @@ namespace IronPython.Modules {
                             throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
                         }
 
-                        CheckFileAccess(_fileAccess, _sourceStream);
-
                         if (length == 0) {
-                            length = _sourceStream.Length;
-                            if (length == 0) {
-                                throw PythonOps.ValueError("cannot mmap an empty file");
-                            }
-                            if (_offset >= length) {
-                                throw PythonOps.ValueError("mmap offset is greater than file size");
-                            }
-                            length -= _offset;
+                            length = _sourceStream.Length - _offset;
                         }
+
+                        CheckFileAccessAndSize(_sourceStream);
 
                         long capacity = checked(_offset + length);
 
@@ -254,8 +247,8 @@ namespace IronPython.Modules {
                 }
                 _position = 0L;
 
-                void CheckFileAccess(MemoryMappedFileAccess mmapAccess, Stream stream) {
-                    bool isValid = mmapAccess switch {
+                void CheckFileAccessAndSize(Stream stream) {
+                    bool isValid = _fileAccess switch {
                         MemoryMappedFileAccess.Read => stream.CanRead,
                         MemoryMappedFileAccess.ReadWrite => stream.CanRead && stream.CanWrite,
                         MemoryMappedFileAccess.CopyOnWrite => stream.CanRead,
@@ -265,20 +258,27 @@ namespace IronPython.Modules {
                     };
 
                     if (!isValid) {
-                        if (_handle is not null && _sourceStream is not null) {
-                            _sourceStream.Dispose();
-                        }
-                        throw PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode");
+                        ThrowException(PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode"));
                     }
 
                     if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         // Unix map does not support increasing size on open
-                        if (_offset + length > stream.Length) {
-                            if (_handle is not null && _sourceStream is not null) {
-                                _sourceStream.Dispose();
-                            }
-                            throw PythonOps.ValueError("mmap length is greater than file size");
+                        if (length != 0 && _offset + length > stream.Length) {
+                            ThrowException(PythonOps.ValueError("mmap length is greater than file size"));
                         }
+                    }
+                    if (length == 0 && stream.Length == 0) {
+                        ThrowException(PythonOps.ValueError("cannot mmap an empty file"));
+                    }
+                    if (_offset >= stream.Length) {
+                        ThrowException(PythonOps.ValueError("mmap offset is greater than file size"));
+                    }
+
+                    void ThrowException(Exception ex) {
+                        if (_handle is not null && _sourceStream is not null) {  // .NET 6.0 on POSIX only
+                            _sourceStream.Dispose(); 
+                        }
+                        throw ex;
                     }
                 }
             }  // end of constructor

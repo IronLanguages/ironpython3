@@ -7,6 +7,8 @@
 #if FEATURE_MMAP
 
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -278,7 +280,7 @@ namespace IronPython.Modules {
         }
 
         [PythonHidden]
-        public class MmapDefault : IWeakReferenceable {
+        public class MmapDefault : IWeakReferenceable, IBufferProtocol {
             private MemoryMappedFile _file;
             private MemoryMappedViewAccessor _view;
             private long _position;
@@ -635,6 +637,9 @@ namespace IronPython.Modules {
                     if (exclusive) {
                         newState &= ~StateBits.Exclusive;
                     }
+                    if ((newState & StateBits.RefCount) == StateBits.RefCountOne) {
+                        newState &= ~StateBits.Exporting;
+                    }
                 } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
 
                 if (performDispose) {
@@ -648,25 +653,33 @@ namespace IronPython.Modules {
                 }
             }
 
+#if !NET5_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static int InterlockedOr(ref int location1, int value) {
+                int current = location1;
+                while (true) {
+                    int newValue = current | value;
+                    int oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+                    if (oldValue == current) {
+                        return oldValue;
+                    }
+                    current = oldValue;
+                }
+            }
+#endif
 
             public void close() {
                 // close is idempotent; it must never block
 #if NET5_0_OR_GREATER
                 if ((Interlocked.Or(ref _state, StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
-                    // freshly closed, release the construction time reference
-                    Release(exclusive: false);
-                }
 #else
-                int oldState, newState;
-                do {
-                    oldState = _state;
-                    newState = oldState | StateBits.Closed;
-                } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
-                if ((oldState & StateBits.Closed) != StateBits.Closed) {
+#pragma warning disable CS0420 // A reference to a volatile field will not be treated as volatile
+                if ((InterlockedOr(ref _state, StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
+#pragma warning restore CS0420 // A reference to a volatile field will not be treated as volatile
+#endif
                     // freshly closed, release the construction time reference
                     Release(exclusive: false);
                 }
-#endif
             }
 
 
@@ -897,7 +910,6 @@ namespace IronPython.Modules {
                 }
             }
 
-
             public void resize(long newsize) {
                 using (new MmapLocker(this, exclusive: true)) {
                     if (_fileAccess is not MemoryMappedFileAccess.ReadWrite and not MemoryMappedFileAccess.ReadWriteExecute) {
@@ -931,13 +943,13 @@ namespace IronPython.Modules {
                             int fd = unchecked((int)_handle.DangerousGetHandle());
                             PythonNT.ftruncateUnix(fd, newsize);
 
-    #if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
                             _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
-    #else
+#else
                             _sourceStream?.Dispose();
                             _sourceStream = new FileStream(new SafeFileHandle((IntPtr)fd, ownsHandle: false), FileAccess.ReadWrite);
                             _file = CreateFromFile(_sourceStream, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
-    #endif
+#endif
                             _view = _file.CreateViewAccessor(_offset, newsize, _fileAccess);
                             return;
                         } catch {
@@ -1168,8 +1180,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            private bool IsReadOnly => _fileAccess is MemoryMappedFileAccess.Read or MemoryMappedFileAccess.ReadExecute;
+
             private void EnsureWritable() {
-                if (_fileAccess is MemoryMappedFileAccess.Read or MemoryMappedFileAccess.ReadExecute) {
+                if (IsReadOnly) {
                     throw PythonOps.TypeError("mmap can't modify a read-only memory map.");
                 }
             }
@@ -1299,8 +1313,83 @@ namespace IronPython.Modules {
             }
 
             #endregion
-        }
 
+            public IPythonBuffer GetBuffer(BufferFlags flags = BufferFlags.Simple) {
+                if (flags.HasFlag(BufferFlags.Writable) && IsReadOnly)
+                    throw PythonOps.BufferError("Object is not writable.");
+
+                return new MmapBuffer(this, flags);
+            }
+
+            private sealed unsafe class MmapBuffer : IPythonBuffer {
+                private readonly MmapDefault _mmap;
+                private readonly MmapLocker _locker;
+                private readonly BufferFlags _flags;
+                private SafeMemoryMappedViewHandle? _handle;
+                private byte* _pointer = null;
+
+                public MmapBuffer(MmapDefault mmap, BufferFlags flags) {
+                    _mmap = mmap;
+                    _flags = flags;
+                    _locker = new MmapLocker(mmap);
+#if NET5_0_OR_GREATER
+                    Interlocked.Or(ref mmap._state, StateBits.Exporting);
+#else
+#pragma warning disable CS0420 // A reference to a volatile field will not be treated as volatile
+                    InterlockedOr(ref mmap._state, StateBits.Exporting);
+#pragma warning restore CS0420 // A reference to a volatile field will not be treated as volatile
+#endif
+                    _handle = _mmap._view.SafeMemoryMappedViewHandle;
+                    ItemCount = _mmap.__len__() is int i ? i : throw new NotImplementedException();
+                }
+
+                public object Object => _mmap;
+
+                public bool IsReadOnly => _mmap.IsReadOnly;
+
+                public int Offset => 0;
+
+                public string? Format => _flags.HasFlag(BufferFlags.Format) ? "B" : null;
+
+                public int ItemCount { get; }
+
+                public int ItemSize => 1;
+
+                public int NumOfDims => 1;
+
+                public IReadOnlyList<int>? Shape => null;
+
+                public IReadOnlyList<int>? Strides => null;
+
+                public IReadOnlyList<int>? SubOffsets => null;
+
+                public unsafe ReadOnlySpan<byte> AsReadOnlySpan() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new ReadOnlySpan<byte>(_pointer, ItemCount);
+                }
+
+                public unsafe Span<byte> AsSpan() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (IsReadOnly) throw new InvalidOperationException("object is not writable");
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new Span<byte>(_pointer, ItemCount);
+                }
+
+                public unsafe MemoryHandle Pin() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new MemoryHandle(_pointer);
+                }
+
+                public void Dispose() {
+                    var handle = Interlocked.Exchange(ref _handle, null);
+                    if (handle is null) return;
+                    if (_pointer is not null) handle.ReleasePointer();
+                    _locker.Dispose();
+                }
+            }
+        }
 
         #region P/Invoke for allocation granularity
 

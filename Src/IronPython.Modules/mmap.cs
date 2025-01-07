@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
@@ -825,12 +825,37 @@ namespace IronPython.Modules {
                         throw PythonOps.TypeError("mmap can't resize a readonly or copy-on-write memory map.");
                     }
 
-                    if (_sourceStream == null) {
-                        if (_handle is not null && !_handle.IsInvalid
-                          && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
-                            // resize on Posix platforms
-                            PythonNT.ftruncateUnix(unchecked((int)_handle.DangerousGetHandle()), newsize);
+                    if (_handle is not null
+                        && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
+                        // resize on Posix platforms
+                        try {
+                            if (_handle.IsInvalid) {
+                                throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
+                            }
+                            _view.Flush();
+                            _view.Dispose();
+                            _file.Dispose();
+
+                            // Resize the underlying file as needed.
+                            int fd = unchecked((int)_handle.DangerousGetHandle());
+                            PythonNT.ftruncateUnix(fd, newsize);
+
+    #if NET8_0_OR_GREATER
+                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
+    #else
+                            _sourceStream?.Dispose();
+                            _sourceStream = new FileStream(new SafeFileHandle((IntPtr)fd, ownsHandle: false), FileAccess.ReadWrite);
+                            _file = CreateFromFile(_sourceStream, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
+    #endif
+                            _view = _file.CreateViewAccessor(_offset, newsize, _fileAccess);
+                            return;
+                        } catch {
+                            close();
+                            throw;
                         }
+                    }
+
+                    if (_sourceStream == null) {
                         // resizing is not supported without an underlying file
                         throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_PARAMETER);
                     }

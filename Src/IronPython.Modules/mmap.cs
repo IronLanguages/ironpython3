@@ -5,7 +5,6 @@
 #if FEATURE_MMAP
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +14,6 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
@@ -190,14 +188,21 @@ namespace IronPython.Modules {
                         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                             // use file descriptor
 #if NET8_0_OR_GREATER
+                            // On .NET 8.0+ we can create a MemoryMappedFile directly from a file descriptor
+                            stream.Flush();
                             CheckFileAccessAndSize(stream);
-                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: false);
+                            fileno = Dup(fileno);
+                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: true);
                             _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, stream.Length, _fileAccess, HandleInheritability.None, leaveOpen: true);
 #else
-                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: false);
+                            // On .NET 6.0 on POSIX we need to create a FileStream from the file descriptor
+                            fileno = Dup(fileno);
+                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: true);
                             FileAccess fa = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
-                            // This may or may not work on Mono, but on Mono streams.ReadStream is FileStream (unless dupped in some cases)
-                            _sourceStream = new FileStream(_handle, fa);
+                            // This FileStream constructor may or may not work on Mono, but on Mono streams.ReadStream is FileStream
+                            // (unless dupped in some cases, which are unsupported anyway)
+                            // so Mono should not be in this else-branch
+                            _sourceStream = new FileStream(new SafeFileHandle((IntPtr)fileno, ownsHandle: false), access: fa);
 #endif
                         }
                         // otherwise leaves _file as null and _sourceStream as null
@@ -234,7 +239,7 @@ namespace IronPython.Modules {
                             _sourceStream.Length,
                             _fileAccess,
                             HandleInheritability.None,
-                            true);
+                            leaveOpen: true);
                     }
                 }
 
@@ -243,6 +248,7 @@ namespace IronPython.Modules {
                 } catch {
                     _file.Dispose();
                     _file = null;
+                    CloseFileHandle();
                     throw;
                 }
                 _position = 0L;
@@ -257,31 +263,52 @@ namespace IronPython.Modules {
                         _ => false
                     };
 
-                    if (!isValid) {
-                        ThrowException(PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode"));
-                    }
-
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        // Unix map does not support increasing size on open
-                        if (length != 0 && _offset + length > stream.Length) {
-                            ThrowException(PythonOps.ValueError("mmap length is greater than file size"));
+                    try {
+                        if (!isValid) {
+                            throw PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode");
                         }
-                    }
-                    if (length == 0 && stream.Length == 0) {
-                        ThrowException(PythonOps.ValueError("cannot mmap an empty file"));
-                    }
-                    if (_offset >= stream.Length) {
-                        ThrowException(PythonOps.ValueError("mmap offset is greater than file size"));
-                    }
 
-                    void ThrowException(Exception ex) {
-                        if (_handle is not null && _sourceStream is not null) {  // .NET 6.0 on POSIX only
-                            _sourceStream.Dispose(); 
+                        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                            // Unix map does not support increasing size on open
+                            if (length != 0 && _offset + length > stream.Length) {
+                                throw PythonOps.ValueError("mmap length is greater than file size");
+                            }
                         }
-                        throw ex;
+                        if (length == 0 && stream.Length == 0) {
+                            throw PythonOps.ValueError("cannot mmap an empty file");
+                        }
+                        if (_offset >= stream.Length) {
+                            throw PythonOps.ValueError("mmap offset is greater than file size");
+                        }
+                    } catch {
+                        CloseFileHandle();
+                        throw;
                     }
                 }
             }  // end of constructor
+
+
+            // TODO: Move to PythonNT - POSIX
+            private static int Dup(int fd) {
+                int fd2 = Mono.Unix.Native.Syscall.dup(fd);
+                if (fd2 == -1) throw PythonNT.GetLastUnixError();
+
+                try {
+                    // set close-on-exec flag
+                    int flags = Mono.Unix.Native.Syscall.fcntl(fd2, Mono.Unix.Native.FcntlCommand.F_GETFD);
+                    if (flags == -1) throw PythonNT.GetLastUnixError();
+    
+                    const int FD_CLOEXEC = 1;  // TODO: Move to module fcntl
+                    flags |= FD_CLOEXEC;
+                    flags = Mono.Unix.Native.Syscall.fcntl(fd2, Mono.Unix.Native.FcntlCommand.F_SETFD, flags);
+                    if (flags == -1) throw PythonNT.GetLastUnixError();
+                } catch {
+                    Mono.Unix.Native.Syscall.close(fd2);
+                    throw;
+                }
+
+                return fd2;
+            }
 
 
             public object __len__() {
@@ -409,14 +436,18 @@ namespace IronPython.Modules {
                     _view.Flush();
                     _view.Dispose();
                     _file.Dispose();
-                    if (_handle is not null) {
-                        // mmap owns _sourceStream too in this case
-                        _sourceStream?.Dispose();
-                        _handle.Dispose();
-                    }
+                    CloseFileHandle();
                     _sourceStream = null;
                     _view = null;
                     _file = null;
+                }
+            }
+
+            private void CloseFileHandle() {
+                if (_handle is not null) {
+                    // mmap owns _sourceStream too (if any) in this case
+                    _sourceStream?.Dispose();
+                    _handle.Dispose();
                 }
             }
 
@@ -646,7 +677,7 @@ namespace IronPython.Modules {
                     }
 
                     if (_sourceStream == null) {
-                        if (_handle is not null && !_handle.IsInvalid 
+                        if (_handle is not null && !_handle.IsInvalid
                           && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
                             // resize on Posix platforms
                             PythonNT.ftruncateUnix(unchecked((int)_handle.DangerousGetHandle()), newsize);

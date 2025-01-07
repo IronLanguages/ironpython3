@@ -2417,7 +2417,7 @@ the 'status' value."),
 
 #if FEATURE_NATIVE
 
-        private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
+        internal static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
             => GetOsError(Mono.Unix.Native.NativeConvert.FromErrno(Mono.Unix.Native.Syscall.GetLastError()), filename, filename2);
 
 #endif

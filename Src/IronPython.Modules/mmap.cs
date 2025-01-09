@@ -234,7 +234,7 @@ namespace IronPython.Modules {
             private static MemoryMappedFileAccess ToMmapFileAccess(int flags, int prot, int access) {
                 if (access == ACCESS_DEFAULT) {
                     if ((flags & (MAP_PRIVATE | MAP_SHARED)) == 0) {
-                        throw PythonOps.OSError(PythonErrorNumber.EINVAL, "Invalid argument");
+                        throw PythonOps.OSError(PythonErrno.EINVAL, "Invalid argument");
                     }
                     if ((prot & PROT_WRITE) != 0) {
                         prot |= PROT_READ;
@@ -830,7 +830,7 @@ namespace IronPython.Modules {
                         // resize on Posix platforms
                         try {
                             if (_handle.IsInvalid) {
-                                throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
+                                throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
                             }
                             _view.Flush();
                             _view.Dispose();

@@ -105,55 +105,66 @@ namespace IronPython.Modules {
                 this.mode = NormalizeMode(mode, out int flags);
 
                 if (opener is null) {
-                    switch (this.mode) {
-                        case "rb":
-                            _streams = new(OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
-                            break;
-                        case "wb":
-                            _streams = new(OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
-                            break;
-                        case "xb":
-                            _streams = new(OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite));
-                            break;
-                        case "ab":
-                            _streams = new(OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite));
-                            _streams.ReadStream.Seek(0L, SeekOrigin.End);
-                            break;
-                        case "rb+":
-                            _streams = new(OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite));
-                            break;
-                        case "wb+":
-                            _streams = new(OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
-                            break;
-                        case "xb+":
-                            _streams = new(OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite));
-                            break;
-                        case "ab+":
-                            // Opening writeStream before readStream will create the file if it does not exist
-                            var writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                            var readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                            readStream.Seek(0L, SeekOrigin.End);
-                            writeStream.Seek(0L, SeekOrigin.End);
-                            _streams = new(readStream, writeStream);
-                            break;
-                        default:
-                            throw new InvalidOperationException();
-                    }
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                        // On POSIX, register the file descriptor with the file manager right after file opening
-                        _context.FileManager.GetOrAssignId(_streams);
-                        // according to [documentation](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.safefilehandle?view=net-9.0#remarks)
-                        // accessing SafeFileHandle sets the current stream position to 0
-                        // in practice it doesn't seem to be the case, but better to be sure
-                        if (this.mode.StartsWith("ab", StringComparison.InvariantCulture)) {
-                            _streams.WriteStream.Seek(0L, SeekOrigin.End);
+                    if ((RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && !ClrModule.IsMono) {
+                        // Use PosixFileStream to operate on fd directly
+                        // On Mono, we must use FileStream due to limitations in MemoryMappedFile
+                        var stream = PosixFileStream.Open(name, flags, 0b_110_110_110, out int fd);  // mode: rw-rw-rw-
+                        if ((flags & O_APPEND) != 0) {
+                            stream.Seek(0L, SeekOrigin.End);
                         }
-                        if (!_streams.IsSingleStream) {
-                            _streams.ReadStream.Seek(_streams.WriteStream.Position, SeekOrigin.Begin);
+                        _streams = new(stream);
+                        _context.FileManager.Add(fd, _streams);
+                    } else {
+                        switch (this.mode) {
+                            case "rb":
+                                _streams = new(OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                                break;
+                            case "wb":
+                                _streams = new(OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
+                                break;
+                            case "xb":
+                                _streams = new(OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite));
+                                break;
+                            case "ab":
+                                _streams = new(OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite));
+                                _streams.WriteStream.Seek(0L, SeekOrigin.End);
+                                break;
+                            case "rb+":
+                                _streams = new(OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite));
+                                break;
+                            case "wb+":
+                                _streams = new(OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
+                                break;
+                            case "xb+":
+                                _streams = new(OpenFile(context, pal, name, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite));
+                                break;
+                            case "ab+":
+                                // Opening writeStream before readStream will create the file if it does not exist
+                                var writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                                var readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                                readStream.Seek(0L, SeekOrigin.End);
+                                writeStream.Seek(0L, SeekOrigin.End);
+                                _streams = new(readStream, writeStream);
+                                break;
+                            default:
+                                throw new InvalidOperationException();
+                        }
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                            // On POSIX, register the file descriptor with the file manager right after file opening
+                            // This branch is needed for Mono, the .NET case is already handled above before `switch`
+                            _context.FileManager.GetOrAssignId(_streams);
+                            // according to [documentation](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.safefilehandle?view=net-9.0#remarks)
+                            // accessing SafeFileHandle sets the current stream position to 0
+                            // in practice it doesn't seem to be the case, but better to be sure
+                            if (this.mode[0] == 'a') {
+                                _streams.WriteStream.Seek(0L, SeekOrigin.End);
+                            }
+                            if (!_streams.IsSingleStream) {
+                                _streams.ReadStream.Seek(_streams.WriteStream.Position, SeekOrigin.Begin);
+                            }
                         }
                     }
-                }
-                else {
+                } else {  // opener is not null
                     object? fdobj = PythonOps.CallWithContext(context, opener, name, flags);
                     if (fdobj is int fd) {
                         if (fd < 0) {
@@ -293,10 +304,10 @@ namespace IronPython.Modules {
 
                 try {
                     flush(context);
-                } catch (IOException) {
-                    // flushing can fail, esp. if the other half of a pipe is closed
-                    // ignore it because we're closing anyway
-                }
+                } catch (IOException) { /* ignore */ } catch (OSException) { /* ignore */ }
+                // flushing can fail, esp. if the other half of a pipe is closed
+                // ignore it because we're closing anyway
+
                 _closed = true;
 
                 if (_closefd) {

@@ -8,6 +8,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -15,9 +16,9 @@ using System.Runtime.Versioning;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Mono.Unix;
 
 using IronPython.Runtime.Operations;
-using System.Diagnostics;
 
 namespace IronPython.Runtime {
 
@@ -152,7 +153,9 @@ namespace IronPython.Runtime {
             count = buffer.NumBytes();
             _writeStream.Write(bytes, 0, count);
 #endif
-            _writeStream.Flush(); // IO at this level is not supposed to buffer so we need to call Flush.
+            if (ClrModule.IsMono && count == 1) {
+                _writeStream.Flush(); // IO at this level is not supposed to buffer so we need to call Flush (only needed on Mono)
+            }
             if (!IsSingleStream) {
                 _readStream.Seek(_writeStream.Position, SeekOrigin.Begin);
             }

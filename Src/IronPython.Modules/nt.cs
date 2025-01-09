@@ -431,21 +431,40 @@ namespace IronPython.Modules {
         }
 
 
+        [SupportedOSPlatform("linux"), SupportedOSPlatform("osx")]
         private static int UnixDup(int fd, int fd2, out Stream? stream) {
             int res = fd2 < 0 ? Mono.Unix.Native.Syscall.dup(fd) : Mono.Unix.Native.Syscall.dup2(fd, fd2);
             if (res < 0) throw GetLastUnixError();
             if (ClrModule.IsMono) {
-                // This does not work on .NET, probably because .NET FileStream is not aware of Mono.Unix.UnixStream
-                stream = new Mono.Unix.UnixStream(res, ownsHandle: true);
+                // Elaborate workaround on Mono to avoid UnixStream as out
+                stream = new Mono.Unix.UnixStream(res, ownsHandle: false);
+                FileAccess fileAccess = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
+                stream.Dispose();
+                try {
+                    // FileStream on Mono created with a file descriptor might not work: https://github.com/mono/mono/issues/12783
+                    // Test if it does, without closing the handle if it doesn't
+                    var sfh = new SafeFileHandle((IntPtr)res, ownsHandle: false);
+                    stream = new FileStream(sfh, fileAccess);
+                    // No exception? Great! We can use FileStream.
+                    stream.Dispose();
+                    sfh.Dispose();
+                    stream = null; // Create outside of try block
+                } catch (IOException) {
+                    // Fall back to UnixStream
+                    stream = new Mono.Unix.UnixStream(res, ownsHandle: true);
+                }
+                if (stream is null) {
+                    // FileStream is safe
+                    var sfh = new SafeFileHandle((IntPtr)res, ownsHandle: true);
+                    stream = new FileStream(sfh, fileAccess);
+                }
             } else {
-                // This does not work 100% correctly on .NET, probably because each FileStream has its own read/write cursor
-                // (it should be shared between dupped descriptors)
-                //stream = new FileStream(new SafeFileHandle((IntPtr)res, ownsHandle: true), FileAccess.ReadWrite);
-                // Accidentaly, this would also not work on Mono: https://github.com/mono/mono/issues/12783
-                stream = null; // Handle stream sharing in PythonFileManager
+                // normal case
+                stream = new PosixFileStream(res);
             }
             return res;
         }
+
 
 #if FEATURE_PROCESS
         /// <summary>
@@ -470,6 +489,9 @@ namespace IronPython.Modules {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
             if (fileManager.TryGetStreams(fd, out StreamBox? streams)) {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    return fstatUnix(fd);
+                }
                 if (streams.IsConsoleStream()) return new stat_result(0x2000);
                 if (streams.IsStandardIOStream()) return new stat_result(0x1000);
                 if (StatStream(streams.ReadStream) is not null and var res) return res;
@@ -483,14 +505,8 @@ namespace IronPython.Modules {
 #endif
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     if (ReferenceEquals(stream, Stream.Null)) return new stat_result(0x2000);
-                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    if (IsUnixStream(stream)) return new stat_result(0x1000);
                 }
                 return null;
-            }
-
-            static bool IsUnixStream(Stream stream) {
-                return stream is Mono.Unix.UnixStream;
             }
         }
 
@@ -867,9 +883,16 @@ namespace IronPython.Modules {
         public static void mkdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => mkdir(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
-        private const int DefaultBufferSize = 4096;
+        [Documentation("""
+            open(path, flags, mode=511, *, dir_fd=None)
 
-        [Documentation("open(path, flags, mode=511, *, dir_fd=None)")]
+            Open a file for low level IO.  Returns a file descriptor (integer).
+
+            If dir_fd is not None, it should be a file descriptor open to a directory,
+            and path should be relative; path will then be relative to that directory.
+            dir_fd may not be implemented on your platform.
+            If it is unavailable, using it will raise a NotImplementedError.
+            """)]
         public static object open(CodeContext/*!*/ context, [NotNone] string path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
@@ -889,12 +912,28 @@ namespace IronPython.Modules {
                 }
             }
 
+            if ((RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && !ClrModule.IsMono) {
+                // Use PosixFileStream to operate on fd directly
+                // On Mono, we must use FileStream due to limitations in MemoryMappedFile
+                Stream s = PosixFileStream.Open(path, flags, unchecked((uint)mode), out int fd);
+                if ((flags & O_APPEND) != 0) {
+                    s.Seek(0L, SeekOrigin.End);
+                }
+                return context.LanguageContext.FileManager.Add(fd, new(s));
+            }
+
             try {
+                // FileStream buffer size must be >= 0 on .NET, and >= 1 on .NET Framework and Mono.
+                // On .NET, buffer size 0 or 1 disables buffering.
+                // On .NET Framework, buffer size 1 disables buffering.
+                // On Mono, buffer size 1 makes writes of length >= 2 bypass the buffer.
+                const int NoBuffering = 1;
+
                 FileMode fileMode = FileModeFromFlags(flags);
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
                 Stream s;            // the stream opened to acces the file
-                FileStream? fs;      // downcast of s if s is FileStream (this is always the case on POSIX)
+                FileStream? fs;      // downcast of s if s is FileStream
                 Stream? rs = null;   // secondary read stream if needed, otherwise same as s
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsNulFile(path)) {
                     fs = null;
@@ -904,15 +943,15 @@ namespace IronPython.Modules {
                     // open it again w/ just read access.
                     fs = new FileStream(path, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, NoBuffering, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
                     // .NET doesn't allow Append w/ access != Write, so open the file w/ Write
                     // and a secondary stream w/ Read, then seek to the end.
-                    s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
-                    rs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, NoBuffering, options);
+                    rs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, NoBuffering, options);
                     rs.Seek(0L, SeekOrigin.End);
                 } else {
-                    s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, NoBuffering, options);
                 }
                 rs ??= s;
 
@@ -1436,6 +1475,13 @@ namespace IronPython.Modules {
             return LightExceptions.Throw(GetLastUnixError(path));
         }
 
+        private static object fstatUnix(int fd) {
+            if (Mono.Unix.Native.Syscall.fstat(fd, out Mono.Unix.Native.Stat buf) == 0) {
+                return new stat_result(buf);
+            }
+            return LightExceptions.Throw(GetLastUnixError());
+        }
+
         private const int OPEN_EXISTING = 3;
         private const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
         private const int FILE_READ_ATTRIBUTES = 0x0080;
@@ -1669,8 +1715,27 @@ namespace IronPython.Modules {
         public static void truncate(CodeContext context, int fd, BigInteger length)
             => ftruncate(context, fd, length);
 
-        public static void ftruncate(CodeContext context, int fd, BigInteger length)
-            => context.LanguageContext.FileManager.GetStreams(fd).Truncate((long)length);
+        public static void ftruncate(CodeContext context, int fd, BigInteger length) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                ftruncateUnix(fd, (long)length);
+            } else {
+                context.LanguageContext.FileManager.GetStreams(fd).Truncate((long)length);
+            }
+        }
+
+
+        [SupportedOSPlatform("linux"), SupportedOSPlatform("osx")]
+        internal static void ftruncateUnix(int fd, long length) {
+            int result;
+            Mono.Unix.Native.Errno errno;
+            do {
+                result = Mono.Unix.Native.Syscall.ftruncate(fd, length);
+            } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall(result, out errno));
+
+            if (errno != 0)
+                throw GetOsError(Mono.Unix.Native.NativeConvert.FromErrno(errno));
+        }
+
 
 #if FEATURE_FILESYSTEM
         public static object times() {
@@ -2351,7 +2416,7 @@ the 'status' value."),
 
 #if FEATURE_NATIVE
 
-        private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
+        internal static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
             => GetOsError(Mono.Unix.Native.NativeConvert.FromErrno(Mono.Unix.Native.Syscall.GetLastError()), filename, filename2);
 
 #endif

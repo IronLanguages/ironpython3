@@ -5,7 +5,6 @@
 #if FEATURE_MMAP
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,6 +14,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
@@ -24,6 +24,156 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Utils;
+using Microsoft.Win32.SafeHandles;
+
+/*
+MemoryMappedFile — Rules of Engagement on .NET
+==============================================
+
+In .NET, there are the following fields of `MemoryMappedFile` related to the lifetime management of
+resources.
+* `private readonly SafeMemoryMappedFileHandle _handle;` created in the constructor; necessary to
+  operate on the mmap, always disposed.
+* `private readonly bool _leaveOpen;` initialized to a constructor parameter value; it pertains to
+  `_fileHandle` not `_handle`
+* `private readonly SafeFileHandle? _fileHandle;` may be provided to the constructor, created by the
+  constructor, or null.
+
+Note that there is no field that captures `FileStream`. If a `FileStream` instance is provided to
+the factory method, it will only be used once to get its file handle, which fate is controlled by
+`_leaveOpen`. The `FileStream` instance itself is not disposed by `MemoryMappedFile`. A bit strange,
+since `FileStream` has a destructor and may be lingering around. However, when its `Dispose` is
+called from within the finalizer, it will not try to dispose the file handle, which is the whole
+point.
+
+`MemoryMappedFile` itself is `IDisposable` and its `Dispose` does:
+* dispose `_handle`, unless `_handle.IsClosed` already.
+* if not `_leaveOpen` and `_fileHandle` is not null, dispose `_fileHandle`.
+
+There are several factory/constructor groups of `MemoryMappedFile`:
+
+## Factory Method Group #1 (Windows only)
+
+Opens an existing named memory mapped file by name. In this case, only `_handle` is initialized;
+there is no underlying `_fileHandle`. It delegates opening to `OpenCore(mapName, inheritability,
+desiredAccessRights, false);` **This group functions only on Windows.**
+
+## Factory Method Group #2
+
+Creates a new memory mapped file where the content is taken from an existing file on disk.
+
+If the factory method is given a file path, it creates its own `FileStream`, stores its handle in
+`_fileHandle`, and ensures that the file handle gets closed on dispose (`_leaveOpen` is false).
+
+If the factory method is given a file handle, it is stored in `_fileHandle` and its lifetime is
+controlled by parameter `leaveOpen` given to the same method. If `leaveOpen` is true, the caller is
+responsible of disposing the file handle.
+
+If the factory method is given a `fileStream`, it is used to get the file length, flush the stream,
+and to extract the file handle into `_fileHandle`. Whether the extracted file handle is disposed
+depend on parameter `leaveOpen`. `FileStream` itself is never disposed.
+
+It delegates the opening to `CreateCore(fileHandle, mapName, HandleInheritability.None, access,
+MemoryMappedFileOptions.None, capacity, fileSize);` (see below for mode details on POSIX).
+
+**On POSIX, mapName must be null.**
+
+## Factory Method Group #3 (not POSIX)
+
+Creates a new empty memory mapped file. It only accepts a map name, and never creates/uses an
+existing file from the file system. It delegates the creation to `CreateCore(fileHandle: null,
+mapName, inheritability, access, options, capacity, -1);`
+
+**On POSIX, mapName must be null so practically this group cannot be used on POSIX.**
+
+## Factory Method Group #4 (Windows only)
+
+Creates a new empty memory mapped file or opens an existing memory mapped file if one exists with
+the same name. In this factory method/constructor, there is no file stream or file handle involved;
+If the map of the requested name exists, it is like opening from group #1, if it doesn't, it is like
+group #3 **This group functions only on Windows.**
+
+## Behaviour on POSIX
+
+Only Group #2 can be used so it means that the factory/constructor must be given one of:
+* file path (`string`)
+* file handle (`SafeFileHandle`), may be null for an anonymous empty map
+* file stream (`FileStream`)
+
+The actual work is done by `CreateCore` (POSIX-specific). If given a null file handle (from factory
+method `CreateNew`), `CreateCore` may create its own file stream if needed. This file stream/handle
+is not saved in a field `_fileHandle` of the map itself, but when the handle is passed to the
+constructor of `SafeMemoryMappedFileHandle`, it is also marked as `ownsFileStream`, so disposing the
+map will dispose the file handle. In all normal cases, i.e. `filehandle` is not null but passed by
+the factory method, the lifetime of the file handle is controlled by `_leaveOpen` of
+`MemoryMappedFile` and `SafeMemoryMappedFileHandle` is created with the argument `ownsFileStream`
+set to false. The constructor to `SafeMemoryMappedFileHandle` does `DangerousAddRef` to the given
+file stream handle (if any), so that when the original file is disposed, the handle is still valid.
+On POSIX, the mmap handle value will be set to the same value as file handle value, which is the
+file descriptor. For mmaps without the underlying file stream, the handle is set originally to
+`IntPtr.MaxValue` so that it is valid but does not collide with any existing file descriptor. When
+the mmap handle is released, it also does `DangerousRelease` of the underlying file stream handle
+(if any), plus `Dispose` of it if it owned the file stream.
+
+`SafeFileHandle` closes the underlying file descriptor on dispose and sets it to invalid. It is OK
+to close the handle several times, or even if it is add-reffed and in use somewhere else. The
+descriptor will be closed as soon as the refcount is released, and in the meantime, it will prevent
+future addrefs.
+
+MmapDefault - Rules of Engagement
+=================================
+
+`MmapDefault` is the workhorse for Python's `mmap`. It contains all the code necessary to run on all
+supported platforms. The two subclasses `MmapWindows` and `MmapPosix` only contain platform specific
+constructors, to adhere to Python API.
+
+The relevant lifetime-sensitive (disposable) fields are:
+* `MemoryMappedFile _file;` created in the constructor, may be recreated on resize
+* `MemoryMappedViewAccessor _view;` created in the constructor, may be recreated on resize
+* `FileStream _sourceStream;` the underlying file object, may be null
+* `SafeFileHandle _handle;` the handle of the underlying file object, only used on some POSIX
+  platforms, null otherwise
+
+## .NET 8.0+/POSIX
+
+When the constructor is given a file descriptor, it is duplicated, saved in `_handle` and used to
+create the memory-mapped `_file`. The duplication of the file descriptor is CPython's behaviour;
+since Python 3.13 the constructor accepts a keyword-only argument `trackfd` prevents the duplication
+but it is not implemented here. `_handle` always owns the (duplicated) file descriptor, so it has to
+be disposed appropriately, if created. `_file` is created instructed to leave the file handle open,
+so it is possible to dispose it and recreate again on `resize`.
+
+## .NET 6.0/POSIX
+
+The factory method to create a memory-mapped file from a file descriptor is not available. The
+descriptor is still duplicated and saved in `_handle` like on .NET 8.0 but it is used to create a
+`FileStream` which is then used to create the memory-mapped file. The created `FileStream` is saved
+in `_fileStream` since it is useful to perform various file operations. However, it does not own the
+file descriptor, so the rules of engagement for `_handle` from .NET 8.0 still apply. Because of
+that, it is not essential to dispose `_sourceStream` in this case, but a good practice since it will
+suppress its finalizer. Also the memory-mapped `_file` is created instructed to leave the file
+handle open to prevent the closure of the file descriptor when the memory-mapped file is re-created.
+
+## Windows, all frameworks
+
+On Windows, the file descriptor is emulated by `PythonFileManager`, the file handle is not
+duplicated and field `_handle` is always null. The associated file stream is retrieved from
+`PythonFileManager` and used to create the memory-mapped file. The file stream is saved in
+`_sourceStream`, but since it comes from somewhere else, it must not be disposed here. Therefore the
+memory-mapped file is created instructed to leave the file handle open and there is no
+`_sourceStream.Dispose` call on disposing `MmapDefault`. The `MemoryMappedFile` constructor will
+addref the actual file handle internally, so it is safe to keep using `mmap` even if the original
+file stream is closed prematurely. Of course, it is still important to dispose the `mmap` object to
+release the reference to the file handle.
+
+## Mono
+
+Mono uses genuine file descriptors, however due to bugs and limitations, it cannot use the
+.NET/POSIX mechanics. Therefore, to prevent regressions, it follows the Windows way (to the extent
+that it is feasible), but more advanced scenarios will not behave correctly.
+
+*/
+
 
 [assembly: PythonModule("mmap", typeof(IronPython.Modules.MmapModule))]
 namespace IronPython.Modules {
@@ -136,6 +286,7 @@ namespace IronPython.Modules {
             private readonly long _offset;
             private readonly string _mapName;
             private readonly MemoryMappedFileAccess _fileAccess;
+            private readonly SafeFileHandle _handle;
 
             private volatile bool _isClosed;
             private int _refCount = 1;
@@ -180,53 +331,65 @@ namespace IronPython.Modules {
 
                     PythonContext pContext = context.LanguageContext;
                     if (pContext.FileManager.TryGetStreams(fileno, out StreamBox streams)) {
-                        if ((_sourceStream = streams.ReadStream as FileStream) == null) {
-                            throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
+                        Stream stream = streams.ReadStream;
+                        if (stream is FileStream fs) {
+                            _sourceStream = fs;
+                        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                            // use file descriptor
+#if NET8_0_OR_GREATER
+                            // On .NET 8.0+ we can create a MemoryMappedFile directly from a file descriptor
+                            stream.Flush();
+                            CheckFileAccessAndSize(stream);
+                            fileno = Dup(fileno);
+                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: true);
+                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, stream.Length, _fileAccess, HandleInheritability.None, leaveOpen: true);
+#else
+                            // On .NET 6.0 on POSIX we need to create a FileStream from the file descriptor
+                            fileno = Dup(fileno);
+                            _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: true);
+                            FileAccess fa = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
+                            // This FileStream constructor may or may not work on Mono, but on Mono streams.ReadStream is FileStream
+                            // (unless dupped in some cases, which are unsupported anyway)
+                            // so Mono should not be in this else-branch
+                            _sourceStream = new FileStream(new SafeFileHandle((IntPtr)fileno, ownsHandle: false), access: fa);
+#endif
                         }
+                        // otherwise leaves _file as null and _sourceStream as null
                     } else {
                         throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
                     }
 
-                    if (_fileAccess is MemoryMappedFileAccess.ReadWrite or MemoryMappedFileAccess.ReadWriteExecute && !_sourceStream.CanWrite) {
-                        throw WindowsError(PythonExceptions._OSError.ERROR_ACCESS_DENIED);
-                    }
+                    if (_file is null) {
+                        // create _file form _sourceStream
+                        if (_sourceStream is null) {
+                            throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
+                        }
 
-                    if (length == 0) {
-                        length = _sourceStream.Length;
                         if (length == 0) {
-                            throw PythonOps.ValueError("cannot mmap an empty file");
+                            length = _sourceStream.Length - _offset;
                         }
-                        if (_offset >= length) {
-                            throw PythonOps.ValueError("mmap offset is greater than file size");
+
+                        CheckFileAccessAndSize(_sourceStream);
+
+                        long capacity = checked(_offset + length);
+
+                        // Enlarge the file as needed.
+                        if (capacity > _sourceStream.Length) {
+                            if (_sourceStream.CanWrite) {
+                                _sourceStream.SetLength(capacity);
+                            } else {
+                                throw WindowsError(PythonExceptions._OSError.ERROR_NOT_ENOUGH_MEMORY);
+                            }
                         }
-                        length -= _offset;
+
+                        _file = CreateFromFile(
+                            _sourceStream,
+                            _mapName,
+                            _sourceStream.Length,
+                            _fileAccess,
+                            HandleInheritability.None,
+                            leaveOpen: true);
                     }
-
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        // Unix map does not support increasing size on open
-                        if (_offset + length > _sourceStream.Length) {
-                            throw PythonOps.ValueError("mmap length is greater than file size");
-                        }
-                    }
-
-                    long capacity = checked(_offset + length);
-
-                    // Enlarge the file as needed.
-                    if (capacity > _sourceStream.Length) {
-                        if (_sourceStream.CanWrite) {
-                            _sourceStream.SetLength(capacity);
-                        } else {
-                            throw WindowsError(PythonExceptions._OSError.ERROR_NOT_ENOUGH_MEMORY);
-                        }
-                    }
-
-                    _file = CreateFromFile(
-                        _sourceStream,
-                        _mapName,
-                        _sourceStream.Length,
-                        _fileAccess,
-                        HandleInheritability.None,
-                        true);
                 }
 
                 try {
@@ -234,10 +397,68 @@ namespace IronPython.Modules {
                 } catch {
                     _file.Dispose();
                     _file = null;
+                    CloseFileHandle();
                     throw;
                 }
                 _position = 0L;
+
+                void CheckFileAccessAndSize(Stream stream) {
+                    bool isValid = _fileAccess switch {
+                        MemoryMappedFileAccess.Read => stream.CanRead,
+                        MemoryMappedFileAccess.ReadWrite => stream.CanRead && stream.CanWrite,
+                        MemoryMappedFileAccess.CopyOnWrite => stream.CanRead,
+                        MemoryMappedFileAccess.ReadExecute => stream.CanRead,
+                        MemoryMappedFileAccess.ReadWriteExecute => stream.CanRead && stream.CanWrite,
+                        _ => false
+                    };
+
+                    try {
+                        if (!isValid) {
+                            throw PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode");
+                        }
+
+                        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                            // Unix map does not support increasing size on open
+                            if (length != 0 && _offset + length > stream.Length) {
+                                throw PythonOps.ValueError("mmap length is greater than file size");
+                            }
+                        }
+                        if (length == 0 && stream.Length == 0) {
+                            throw PythonOps.ValueError("cannot mmap an empty file");
+                        }
+                        if (_offset >= stream.Length) {
+                            throw PythonOps.ValueError("mmap offset is greater than file size");
+                        }
+                    } catch {
+                        CloseFileHandle();
+                        throw;
+                    }
+                }
+            }  // end of constructor
+
+
+            // TODO: Move to PythonNT - POSIX
+            private static int Dup(int fd) {
+                int fd2 = Mono.Unix.Native.Syscall.dup(fd);
+                if (fd2 == -1) throw PythonNT.GetLastUnixError();
+
+                try {
+                    // set close-on-exec flag
+                    int flags = Mono.Unix.Native.Syscall.fcntl(fd2, Mono.Unix.Native.FcntlCommand.F_GETFD);
+                    if (flags == -1) throw PythonNT.GetLastUnixError();
+    
+                    const int FD_CLOEXEC = 1;  // TODO: Move to module fcntl
+                    flags |= FD_CLOEXEC;
+                    flags = Mono.Unix.Native.Syscall.fcntl(fd2, Mono.Unix.Native.FcntlCommand.F_SETFD, flags);
+                    if (flags == -1) throw PythonNT.GetLastUnixError();
+                } catch {
+                    Mono.Unix.Native.Syscall.close(fd2);
+                    throw;
+                }
+
+                return fd2;
             }
+
 
             public object __len__() {
                 using (new MmapLocker(this)) {
@@ -364,9 +585,18 @@ namespace IronPython.Modules {
                     _view.Flush();
                     _view.Dispose();
                     _file.Dispose();
+                    CloseFileHandle();
                     _sourceStream = null;
                     _view = null;
                     _file = null;
+                }
+            }
+
+            private void CloseFileHandle() {
+                if (_handle is not null) {
+                    // mmap owns _sourceStream too (if any) in this case
+                    _sourceStream?.Dispose();
+                    _handle.Dispose();
                 }
             }
 
@@ -595,6 +825,36 @@ namespace IronPython.Modules {
                         throw PythonOps.TypeError("mmap can't resize a readonly or copy-on-write memory map.");
                     }
 
+                    if (_handle is not null
+                        && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
+                        // resize on Posix platforms
+                        try {
+                            if (_handle.IsInvalid) {
+                                throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
+                            }
+                            _view.Flush();
+                            _view.Dispose();
+                            _file.Dispose();
+
+                            // Resize the underlying file as needed.
+                            int fd = unchecked((int)_handle.DangerousGetHandle());
+                            PythonNT.ftruncateUnix(fd, newsize);
+
+    #if NET8_0_OR_GREATER
+                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
+    #else
+                            _sourceStream?.Dispose();
+                            _sourceStream = new FileStream(new SafeFileHandle((IntPtr)fd, ownsHandle: false), FileAccess.ReadWrite);
+                            _file = CreateFromFile(_sourceStream, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
+    #endif
+                            _view = _file.CreateViewAccessor(_offset, newsize, _fileAccess);
+                            return;
+                        } catch {
+                            close();
+                            throw;
+                        }
+                    }
+
                     if (_sourceStream == null) {
                         // resizing is not supported without an underlying file
                         throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_PARAMETER);
@@ -755,6 +1015,9 @@ namespace IronPython.Modules {
 
             public object size() {
                 using (new MmapLocker(this)) {
+                    if (_handle is not null && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
+                        return GetFileSizeUnix(_handle);
+                    }
                     if (_sourceStream == null) return ReturnLong(_view.Capacity);
                     return ReturnLong(new FileInfo(_sourceStream.Name).Length);
                 }
@@ -867,6 +1130,25 @@ namespace IronPython.Modules {
                 using (new MmapLocker(this)) {
                     return this[new Slice(0, null)];
                 }
+            }
+
+            [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+            private static long GetFileSizeUnix(SafeFileHandle handle) {
+                long size;
+                if (handle.IsInvalid) {
+                    throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_HANDLE, "Invalid file handle");
+                }
+
+                if (Mono.Unix.Native.Syscall.fstat((int)handle.DangerousGetHandle(), out Mono.Unix.Native.Stat status) == 0) {
+                    size = status.st_size;
+                } else {
+                    Mono.Unix.Native.Errno errno = Mono.Unix.Native.Stdlib.GetLastError();
+                    string msg = Mono.Unix.UnixMarshal.GetErrorDescription(errno);
+                    int error = Mono.Unix.Native.NativeConvert.FromErrno(errno);
+                    throw PythonOps.OSError(error, msg);
+                }
+
+                return size;
             }
 
             #endregion

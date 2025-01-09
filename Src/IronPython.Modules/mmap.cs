@@ -116,8 +116,8 @@ the mmap handle is released, it also does `DangerousRelease` of the underlying f
 (if any), plus `Dispose` of it if it owned the file stream.
 
 `SafeFileHandle` closes the underlying file descriptor on dispose and sets it to invalid. It is OK
-to close the handle several times, or even if it add-reffed and in use somewhere else. The
-descriptor will be closed ass soon as the refcount is released, and in the meantime, it will prevent
+to close the handle several times, or even if it is add-reffed and in use somewhere else. The
+descriptor will be closed as soon as the refcount is released, and in the meantime, it will prevent
 future addrefs.
 
 MmapDefault - Rules of Engagement

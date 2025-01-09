@@ -438,7 +438,7 @@ namespace IronPython.Modules {
             if (ClrModule.IsMono) {
                 // Elaborate workaround on Mono to avoid UnixStream as out
                 stream = new Mono.Unix.UnixStream(res, ownsHandle: false);
-                FileAccess fileAccess = stream.CanRead ? stream.CanWrite ? FileAccess.ReadWrite : FileAccess.Read : FileAccess.Write;
+                FileAccess fileAccess = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
                 stream.Dispose();
                 try {
                     // FileStream on Mono created with a file descriptor might not work: https://github.com/mono/mono/issues/12783
@@ -916,7 +916,6 @@ namespace IronPython.Modules {
                 // Use PosixFileStream to operate on fd directly
                 // On Mono, we must use FileStream due to limitations in MemoryMappedFile
                 Stream s = PosixFileStream.Open(path, flags, unchecked((uint)mode), out int fd);
-                //Stream s = PythonIOModule.FileIO.OpenFilePosix(path, flags, mode, out int fd);
                 if ((flags & O_APPEND) != 0) {
                     s.Seek(0L, SeekOrigin.End);
                 }

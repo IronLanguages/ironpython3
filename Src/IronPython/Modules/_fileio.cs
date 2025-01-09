@@ -109,7 +109,6 @@ namespace IronPython.Modules {
                         // Use PosixFileStream to operate on fd directly
                         // On Mono, we must use FileStream due to limitations in MemoryMappedFile
                         var stream = PosixFileStream.Open(name, flags, 0b_110_110_110, out int fd);  // mode: rw-rw-rw-
-                        //var stream = OpenFilePosix(name, flags, 0b_110_110_110, out int fd);
                         if ((flags & O_APPEND) != 0) {
                             stream.Seek(0L, SeekOrigin.End);
                         }
@@ -152,7 +151,7 @@ namespace IronPython.Modules {
                         }
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                             // On POSIX, register the file descriptor with the file manager right after file opening
-                            // Because the .NET case is already handled above before `switch`, this branch runs only on Mono
+                            // This branch is needed for Mono, the .NET case is already handled above before `switch`
                             _context.FileManager.GetOrAssignId(_streams);
                             // according to [documentation](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.safefilehandle?view=net-9.0#remarks)
                             // accessing SafeFileHandle sets the current stream position to 0

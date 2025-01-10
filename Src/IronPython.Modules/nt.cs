@@ -397,7 +397,7 @@ namespace IronPython.Modules {
             }
 
             if (!fileManager.ValidateFdRange(fd2)) {
-                throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
+                throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
             }
 
             if (fileManager.TryGetStreams(fd2, out _)) {
@@ -496,7 +496,7 @@ namespace IronPython.Modules {
                 if (streams.IsStandardIOStream()) return new stat_result(0x1000);
                 if (StatStream(streams.ReadStream) is not null and var res) return res;
             }
-            return LightExceptions.Throw(PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor"));
+            return LightExceptions.Throw(PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor"));
 
             static object? StatStream(Stream stream) {
                 if (stream is FileStream fs) return lstat(fs.Name, new Dictionary<string, object>(1));
@@ -516,7 +516,7 @@ namespace IronPython.Modules {
             try {
                 streams.Flush();
             } catch (IOException) {
-                throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
+                throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
             }
         }
 
@@ -1039,13 +1039,13 @@ namespace IronPython.Modules {
 
         public static Bytes read(CodeContext/*!*/ context, int fd, int buffersize) {
             if (buffersize < 0) {
-                throw PythonOps.OSError(PythonErrorNumber.EINVAL, "Invalid argument");
+                throw PythonOps.OSError(PythonErrno.EINVAL, "Invalid argument");
             }
 
             try {
                 PythonContext pythonContext = context.LanguageContext;
                 var streams = pythonContext.FileManager.GetStreams(fd);
-                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
+                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
 
                 return Bytes.Make(streams.Read(buffersize));
             } catch (Exception e) {
@@ -1942,7 +1942,7 @@ namespace IronPython.Modules {
             Process? process;
             lock (_processToIdMapping) {
                 if (!_processToIdMapping.TryGetValue(pid, out process)) {
-                    throw GetOsError(PythonErrorNumber.ECHILD);
+                    throw GetOsError(PythonErrno.ECHILD);
                 }
             }
 
@@ -1964,7 +1964,7 @@ namespace IronPython.Modules {
                 using var buffer = data.GetBuffer();
                 PythonContext pythonContext = context.LanguageContext;
                 var streams = pythonContext.FileManager.GetStreams(fd);
-                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(PythonErrorNumber.EBADF, "Bad file descriptor");
+                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
 
                 return streams.Write(buffer);
             } catch (Exception e) {
@@ -2411,7 +2411,7 @@ the 'status' value."),
                 return GetWin32Error(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, filename);
             }
 #endif
-            return GetOsError(PythonErrorNumber.EEXIST, filename);
+            return GetOsError(PythonErrno.EEXIST, filename);
         }
 
 #if FEATURE_NATIVE

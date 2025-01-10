@@ -2318,8 +2318,13 @@ the 'status' value."),
 
 #if FEATURE_NATIVE || FEATURE_CTYPES
 
+        [SupportedOSPlatform("windows")]
+        internal static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)
+            => GetWin32Error(Marshal.GetLastWin32Error(), filename, filename2);
+
         // Gets an error message for a Win32 error code.
-        internal static string GetMessage(int errorCode) {
+        [SupportedOSPlatform("windows")]
+        private static string GetWin32ErrorMessage(int errorCode) {
             string msg = new Win32Exception(errorCode).Message;
             // error codes: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
             if (errorCode is not (< 0 or >= 8200 or 34 or 106 or 317 or 718)) {
@@ -2332,11 +2337,9 @@ the 'status' value."),
             return msg.TrimEnd('\r', '\n', '.');
         }
 
-        internal static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)
-            => GetWin32Error(Marshal.GetLastWin32Error(), filename, filename2);
-
+        [SupportedOSPlatform("windows")]
         private static Exception GetWin32Error(int error, string? filename = null, string? filename2 = null) {
-            var msg = GetMessage(error);
+            var msg = GetWin32ErrorMessage(error);
             return PythonOps.OSError(0, msg, filename, error, filename2);
         }
 

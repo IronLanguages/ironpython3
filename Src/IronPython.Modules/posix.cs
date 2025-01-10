@@ -6,6 +6,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 
@@ -28,7 +29,8 @@ namespace IronPython.Modules {
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("osx")]
         private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
-            => GetOsError(NativeConvert.FromErrno(Syscall.GetLastError()), filename, filename2);
+            // On POSIX, GetLastWin32Error returns the errno value, same as GetLastPInvokeError
+            => GetOsError(Marshal.GetLastWin32Error(), filename, filename2);
 
 
         [SupportedOSPlatform("linux")]
@@ -41,7 +43,7 @@ namespace IronPython.Modules {
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("osx")]
         private static Tuple<int, Stream, int, Stream> CreatePipeStreamsUnix() {
-            Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
+            UnixPipes pipes = UnixPipes.CreatePipes();
             return Tuple.Create<int, Stream, int, Stream>(pipes.Reading.Handle, pipes.Reading, pipes.Writing.Handle, pipes.Writing);
         }
 #endif
@@ -169,7 +171,7 @@ namespace IronPython.Modules {
             Errno errno;
             do {
                 result = Syscall.ftruncate(fd, length);
-            } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall(result, out errno));
+            } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
 
             if (errno != 0)
                 throw GetOsError(NativeConvert.FromErrno(errno));

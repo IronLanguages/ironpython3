@@ -36,7 +36,7 @@ using System.IO.Pipes;
 
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
-    public static class PythonNT {
+    public static partial class PythonNT {
         public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
         /* TODO: missing functions/classes:
@@ -301,12 +301,6 @@ namespace IronPython.Modules {
         public static void chdir(CodeContext context, object? path)
             => chdir(ConvertToFsString(context, path, nameof(path)));
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-        private static void chmodUnix(string path, int mode) {
-            if (Mono.Unix.Native.Syscall.chmod(path, Mono.Unix.Native.NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
-            throw GetLastUnixError(path);
-        }
-
         [Documentation("chmod(path, mode, *, dir_fd=None, follow_symlinks=True)")]
         public static void chmod([NotNone] string path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
@@ -371,7 +365,7 @@ namespace IronPython.Modules {
 
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                int fd2 = UnixDup(fd, -1, out Stream? dupstream);
+                int fd2 = DuplicateStreamDescriptorUnix(fd, -1, out Stream? dupstream);
                 if (dupstream is not null) {
                     return fileManager.Add(fd2, new(dupstream));
                 } else {
@@ -413,7 +407,7 @@ namespace IronPython.Modules {
                     fd = fs.SafeFileHandle.DangerousGetHandle().ToInt32();
                     fs.Seek(pos, SeekOrigin.Begin);
                 }
-                fd2 = UnixDup(fd, fd2, out Stream? dupstream); // closes fd2 atomically if reopened in the meantime
+                fd2 = DuplicateStreamDescriptorUnix(fd, fd2, out Stream? dupstream); // closes fd2 atomically if reopened in the meantime
                 fileManager.Remove(fd2);
                 if (dupstream is not null) {
                     return fileManager.Add(fd2, new(dupstream));
@@ -428,41 +422,6 @@ namespace IronPython.Modules {
                 fileManager.AddRefStreams(streams);
                 return fileManager.Add(fd2, new(streams));
             }
-        }
-
-
-        [SupportedOSPlatform("linux"), SupportedOSPlatform("osx")]
-        private static int UnixDup(int fd, int fd2, out Stream? stream) {
-            int res = fd2 < 0 ? Mono.Unix.Native.Syscall.dup(fd) : Mono.Unix.Native.Syscall.dup2(fd, fd2);
-            if (res < 0) throw GetLastUnixError();
-            if (ClrModule.IsMono) {
-                // Elaborate workaround on Mono to avoid UnixStream as out
-                stream = new Mono.Unix.UnixStream(res, ownsHandle: false);
-                FileAccess fileAccess = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
-                stream.Dispose();
-                try {
-                    // FileStream on Mono created with a file descriptor might not work: https://github.com/mono/mono/issues/12783
-                    // Test if it does, without closing the handle if it doesn't
-                    var sfh = new SafeFileHandle((IntPtr)res, ownsHandle: false);
-                    stream = new FileStream(sfh, fileAccess);
-                    // No exception? Great! We can use FileStream.
-                    stream.Dispose();
-                    sfh.Dispose();
-                    stream = null; // Create outside of try block
-                } catch (IOException) {
-                    // Fall back to UnixStream
-                    stream = new Mono.Unix.UnixStream(res, ownsHandle: true);
-                }
-                if (stream is null) {
-                    // FileStream is safe
-                    var sfh = new SafeFileHandle((IntPtr)res, ownsHandle: true);
-                    stream = new FileStream(sfh, fileAccess);
-                }
-            } else {
-                // normal case
-                stream = new PosixFileStream(res);
-            }
-            return res;
         }
 
 
@@ -562,11 +521,6 @@ namespace IronPython.Modules {
             static void linkWindows(string src, string dst) {
                 if (!CreateHardLink(dst, src, IntPtr.Zero))
                     throw GetLastWin32Error(src, dst);
-            }
-
-            static void linkUnix(string src, string dst) {
-                if (Mono.Unix.Native.Syscall.link(src, dst) == 0) return;
-                throw GetLastUnixError(src, dst);
             }
         }
 
@@ -778,11 +732,6 @@ namespace IronPython.Modules {
                 symlinkUnix(src, dst);
             } else {
                 throw new NotImplementedException();
-            }
-
-            static void symlinkUnix(string src, string dst) {
-                if (Mono.Unix.Native.Syscall.symlink(src, dst) == 0) return;
-                throw GetLastUnixError(src, dst);
             }
         }
 
@@ -1012,17 +961,14 @@ namespace IronPython.Modules {
                     manager.Add(new(inPipe)),
                     manager.Add(new(outPipe))
                 );
-            } else {
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 var pipeStreams = CreatePipeStreamsUnix();
                 return PythonTuple.MakeTuple(
                     manager.Add(pipeStreams.Item1, new(pipeStreams.Item2)),
                     manager.Add(pipeStreams.Item3, new(pipeStreams.Item4))
                 );
-            }
-
-            static Tuple<int, Stream, int, Stream> CreatePipeStreamsUnix() {
-                Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
-                return Tuple.Create<int, Stream, int, Stream>(pipes.Reading.Handle, pipes.Reading, pipes.Writing.Handle, pipes.Writing);
+            } else {
+                throw new PlatformNotSupportedException();
             }
         }
 #endif
@@ -1093,11 +1039,6 @@ namespace IronPython.Modules {
 
         [DllImport("kernel32.dll", EntryPoint = "MoveFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern bool MoveFileEx(string src, string dst, uint flags);
-
-        private static void renameUnix(string src, string dst) {
-            if (Mono.Unix.Native.Syscall.rename(src, dst) == 0) return;
-            throw GetLastUnixError(src, dst);
-        }
 
         [Documentation("replace(src, dst, *, src_dir_fd=None, dst_dir_fd=None)")]
         public static void replace([NotNone] string src, [NotNone] string dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
@@ -1467,21 +1408,6 @@ namespace IronPython.Modules {
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-        private static object statUnix(string path) {
-            if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
-                return new stat_result(buf);
-            }
-            return LightExceptions.Throw(GetLastUnixError(path));
-        }
-
-        private static object fstatUnix(int fd) {
-            if (Mono.Unix.Native.Syscall.fstat(fd, out Mono.Unix.Native.Stat buf) == 0) {
-                return new stat_result(buf);
-            }
-            return LightExceptions.Throw(GetLastUnixError());
-        }
-
         private const int OPEN_EXISTING = 3;
         private const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
         private const int FILE_READ_ATTRIBUTES = 0x0080;
@@ -1616,9 +1542,12 @@ namespace IronPython.Modules {
             const int bufsize = 0x1FF;
             var buffer = new StringBuilder(bufsize);
 
-            int result = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                Interop.Ucrtbase.strerror(code, buffer) :
-                strerror_r(code, buffer);
+            int result = -1;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                result = Interop.Ucrtbase.strerror(code, buffer);
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                result = strerror_r(code, buffer);
+            }
 
             if (result == 0) {
                 var msg = buffer.ToString();
@@ -1629,12 +1558,6 @@ namespace IronPython.Modules {
 #endif
             return "Unknown error " + code;
         }
-
-#if FEATURE_NATIVE
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-        private static int strerror_r(int code, StringBuilder buffer)
-            => Mono.Unix.Native.Syscall.strerror_r(Mono.Unix.Native.NativeConvert.ToErrno(code), buffer);
-#endif
 
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
@@ -1723,18 +1646,6 @@ namespace IronPython.Modules {
             }
         }
 
-
-        [SupportedOSPlatform("linux"), SupportedOSPlatform("osx")]
-        internal static void ftruncateUnix(int fd, long length) {
-            int result;
-            Mono.Unix.Native.Errno errno;
-            do {
-                result = Mono.Unix.Native.Syscall.ftruncate(fd, length);
-            } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall(result, out errno));
-
-            if (errno != 0)
-                throw GetOsError(Mono.Unix.Native.NativeConvert.FromErrno(errno));
-        }
 
 
 #if FEATURE_FILESYSTEM
@@ -1840,18 +1751,6 @@ namespace IronPython.Modules {
             => umask(context, Converter.ConvertToIndex(mask, throwOverflowError: true));
 
 #if FEATURE_FILESYSTEM
-
-        private static void utimeUnix(string path, long atime_ns, long utime_ns) {
-            var atime = new Mono.Unix.Native.Timespec();
-            atime.tv_sec = atime_ns / 1_000_000_000;
-            atime.tv_nsec = atime_ns % 1_000_000_000;
-            var utime = new Mono.Unix.Native.Timespec();
-            utime.tv_sec = utime_ns / 1_000_000_000;
-            utime.tv_nsec = utime_ns % 1_000_000_000;
-
-            if (Mono.Unix.Native.Syscall.utimensat(Mono.Unix.Native.Syscall.AT_FDCWD, path, new[] { atime, utime }, 0) == 0) return;
-            throw GetLastUnixError(path);
-        }
 
         [Documentation("utime(path, times=None, *[, ns], dir_fd=None, follow_symlinks=True)")]
         public static void utime([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
@@ -1979,8 +1878,7 @@ are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
                 RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                if (Mono.Unix.Native.Syscall.kill(pid, Mono.Unix.Native.NativeConvert.ToSignum(sig)) == 0) return;
-                throw GetLastUnixError();
+                killUnix(pid, sig);
             } else {
                 if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
 
@@ -2414,12 +2312,6 @@ the 'status' value."),
             return GetOsError(PythonErrno.EEXIST, filename);
         }
 
-#if FEATURE_NATIVE
-
-        internal static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
-            => GetOsError(Mono.Unix.Native.NativeConvert.FromErrno(Mono.Unix.Native.Syscall.GetLastError()), filename, filename2);
-
-#endif
 
         private static Exception GetOsError(int error, string? filename = null, string? filename2 = null)
             => PythonOps.OSError(error, strerror(error), filename, null, filename2);

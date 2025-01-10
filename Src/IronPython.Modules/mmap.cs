@@ -339,13 +339,13 @@ namespace IronPython.Modules {
 #if NET8_0_OR_GREATER
                             // On .NET 8.0+ we can create a MemoryMappedFile directly from a file descriptor
                             stream.Flush();
-                            CheckFileAccessAndSize(stream);
-                            fileno = Dup(fileno);
+                            CheckFileAccessAndSize(stream, isWindows: false);
+                            fileno = PythonNT.dupUnix(fileno, closeOnExec: true);
                             _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: true);
                             _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, stream.Length, _fileAccess, HandleInheritability.None, leaveOpen: true);
 #else
                             // On .NET 6.0 on POSIX we need to create a FileStream from the file descriptor
-                            fileno = Dup(fileno);
+                            fileno = PythonNT.dupUnix(fileno, closeOnExec: true);
                             _handle = new SafeFileHandle((IntPtr)fileno, ownsHandle: true);
                             FileAccess fa = stream.CanWrite ? stream.CanRead ? FileAccess.ReadWrite : FileAccess.Write : FileAccess.Read;
                             // This FileStream constructor may or may not work on Mono, but on Mono streams.ReadStream is FileStream
@@ -369,7 +369,7 @@ namespace IronPython.Modules {
                             length = _sourceStream.Length - _offset;
                         }
 
-                        CheckFileAccessAndSize(_sourceStream);
+                        CheckFileAccessAndSize(_sourceStream, RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
 
                         long capacity = checked(_offset + length);
 
@@ -402,7 +402,7 @@ namespace IronPython.Modules {
                 }
                 _position = 0L;
 
-                void CheckFileAccessAndSize(Stream stream) {
+                void CheckFileAccessAndSize(Stream stream, bool isWindows) {
                     bool isValid = _fileAccess switch {
                         MemoryMappedFileAccess.Read => stream.CanRead,
                         MemoryMappedFileAccess.ReadWrite => stream.CanRead && stream.CanWrite,
@@ -417,7 +417,7 @@ namespace IronPython.Modules {
                             throw PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode");
                         }
 
-                        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        if (!isWindows) {
                             // Unix map does not support increasing size on open
                             if (length != 0 && _offset + length > stream.Length) {
                                 throw PythonOps.ValueError("mmap length is greater than file size");
@@ -435,29 +435,6 @@ namespace IronPython.Modules {
                     }
                 }
             }  // end of constructor
-
-
-            // TODO: Move to PythonNT - POSIX
-            private static int Dup(int fd) {
-                int fd2 = Mono.Unix.Native.Syscall.dup(fd);
-                if (fd2 == -1) throw PythonNT.GetLastUnixError();
-
-                try {
-                    // set close-on-exec flag
-                    int flags = Mono.Unix.Native.Syscall.fcntl(fd2, Mono.Unix.Native.FcntlCommand.F_GETFD);
-                    if (flags == -1) throw PythonNT.GetLastUnixError();
-    
-                    const int FD_CLOEXEC = 1;  // TODO: Move to module fcntl
-                    flags |= FD_CLOEXEC;
-                    flags = Mono.Unix.Native.Syscall.fcntl(fd2, Mono.Unix.Native.FcntlCommand.F_SETFD, flags);
-                    if (flags == -1) throw PythonNT.GetLastUnixError();
-                } catch {
-                    Mono.Unix.Native.Syscall.close(fd2);
-                    throw;
-                }
-
-                return fd2;
-            }
 
 
             public object __len__() {

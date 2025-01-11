@@ -27,21 +27,21 @@ namespace IronPython.Modules {
 #if FEATURE_NATIVE
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         internal static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
             // On POSIX, GetLastWin32Error returns the errno value, same as GetLastPInvokeError
             => GetOsError(Marshal.GetLastWin32Error(), filename, filename2);
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static int strerror_r(int code, StringBuilder buffer)
             => Syscall.strerror_r(NativeConvert.ToErrno(code), buffer);
 
 
 #if FEATURE_PIPES
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static Tuple<int, Stream, int, Stream> CreatePipeStreamsUnix() {
             UnixPipes pipes = UnixPipes.CreatePipes();
             return Tuple.Create<int, Stream, int, Stream>(pipes.Reading.Handle, pipes.Reading, pipes.Writing.Handle, pipes.Writing);
@@ -50,7 +50,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static int DuplicateStreamDescriptorUnix(int fd, int targetfd, out Stream? stream) {
             int res = targetfd < 0 ? Syscall.dup(fd) : Syscall.dup2(fd, targetfd);
             if (res < 0) throw GetLastUnixError();
@@ -87,7 +87,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         internal static int dupUnix(int fd, bool closeOnExec) {
             int fd2 = Syscall.dup(fd);
             if (fd2 == -1) throw GetLastUnixError();
@@ -113,7 +113,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static void chmodUnix(string path, int mode) {
             if (Syscall.chmod(path, NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
             throw GetLastUnixError(path);
@@ -121,7 +121,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static void linkUnix(string src, string dst) {
             if (Syscall.link(src, dst) == 0) return;
             throw GetLastUnixError(src, dst);
@@ -129,7 +129,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static void symlinkUnix(string src, string dst) {
             if (Syscall.symlink(src, dst) == 0) return;
             throw GetLastUnixError(src, dst);
@@ -137,7 +137,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static void renameUnix(string src, string dst) {
             if (Syscall.rename(src, dst) == 0) return;
             throw GetLastUnixError(src, dst);
@@ -145,7 +145,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static object statUnix(string path) {
             if (Syscall.stat(path, out Stat buf) == 0) {
                 return new stat_result(buf);
@@ -155,7 +155,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static object fstatUnix(int fd) {
             if (Syscall.fstat(fd, out Stat buf) == 0) {
                 return new stat_result(buf);
@@ -165,7 +165,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         internal static void ftruncateUnix(int fd, long length) {
             int result;
             Errno errno;
@@ -179,7 +179,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static void utimeUnix(string path, long atime_ns, long utime_ns) {
             var atime = new Timespec();
             atime.tv_sec = atime_ns / 1_000_000_000;
@@ -194,7 +194,7 @@ namespace IronPython.Modules {
 
 
         [SupportedOSPlatform("linux")]
-        [SupportedOSPlatform("osx")]
+        [SupportedOSPlatform("macos")]
         private static void killUnix(int pid, int sig) {
             if (Syscall.kill(pid, NativeConvert.ToSignum(sig)) == 0) return;
             throw GetLastUnixError();

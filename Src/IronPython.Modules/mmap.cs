@@ -1228,10 +1228,11 @@ namespace IronPython.Modules {
                 return new MmapBuffer(this, flags);
             }
 
-            private sealed class MmapBuffer : IPythonBuffer {
+            private sealed unsafe class MmapBuffer : IPythonBuffer {
                 private readonly MmapDefault _mmap;
                 private readonly BufferFlags _flags;
                 private SafeMemoryMappedViewHandle? _handle;
+                private byte* _pointer = null;
 
                 public MmapBuffer(MmapDefault mmap, BufferFlags flags) {
                     mmap.EnsureOpen();
@@ -1265,30 +1266,27 @@ namespace IronPython.Modules {
 
                 public unsafe ReadOnlySpan<byte> AsReadOnlySpan() {
                     if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
-                    byte* pointer = null;
-                    _handle.AcquirePointer(ref pointer);
-                    return new ReadOnlySpan<byte>(pointer, ItemCount);
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new ReadOnlySpan<byte>(_pointer, ItemCount);
                 }
 
                 public unsafe Span<byte> AsSpan() {
                     if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
                     if (IsReadOnly) throw new InvalidOperationException("object is not writable");
-                    byte* pointer = null;
-                    _handle.AcquirePointer(ref pointer);
-                    return new Span<byte>(pointer, ItemCount);
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new Span<byte>(_pointer, ItemCount);
                 }
 
                 public unsafe MemoryHandle Pin() {
                     if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
-                    byte* pointer = null;
-                    _handle.AcquirePointer(ref pointer);
-                    return new MemoryHandle(pointer);
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new MemoryHandle(_pointer);
                 }
 
                 public void Dispose() {
                     var handle = Interlocked.Exchange(ref _handle, null);
                     if (handle is null) return;
-                    handle.Dispose();
+                    if (_pointer is not null) handle.ReleasePointer();
                     _mmap.CloseWorker();
                 }
 

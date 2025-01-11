@@ -5,6 +5,8 @@
 #if FEATURE_MMAP
 
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -277,7 +279,7 @@ namespace IronPython.Modules {
         }
 
         [PythonHidden]
-        public class MmapDefault : IWeakReferenceable {
+        public class MmapDefault : IWeakReferenceable, IBufferProtocol {
             private MemoryMappedFile _file;
             private MemoryMappedViewAccessor _view;
             private long _position;
@@ -570,12 +572,20 @@ namespace IronPython.Modules {
             public bool closed => _isClosed;
 
             public void close() {
-                if (!_isClosed) {
-                    lock (this) {
-                        if (!_isClosed) {
-                            _isClosed = true;
-                            CloseWorker();
-                        }
+                if (_isClosed) return;
+
+                if (_refCount > 1) {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    if (_refCount > 1) {
+                        throw PythonOps.BufferError("cannot close exported pointers exist");
+                    }
+                }
+
+                lock (this) {
+                    if (!_isClosed) {
+                        _isClosed = true;
+                        CloseWorker();
                     }
                 }
             }
@@ -820,6 +830,14 @@ namespace IronPython.Modules {
             }
 
             public void resize(long newsize) {
+                if (_refCount > 1) {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    if (_refCount > 1) {
+                        throw PythonOps.BufferError("mmap can't resize with extant buffers exported.");
+                    }
+                }
+
                 using (new MmapLocker(this)) {
                     if (_fileAccess is not MemoryMappedFileAccess.ReadWrite and not MemoryMappedFileAccess.ReadWriteExecute) {
                         throw PythonOps.TypeError("mmap can't resize a readonly or copy-on-write memory map.");
@@ -1076,8 +1094,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            private bool IsReadOnly => _fileAccess is MemoryMappedFileAccess.Read or MemoryMappedFileAccess.ReadExecute;
+
             private void EnsureWritable() {
-                if (_fileAccess is MemoryMappedFileAccess.Read or MemoryMappedFileAccess.ReadExecute) {
+                if (IsReadOnly) {
                     throw PythonOps.TypeError("mmap can't modify a read-only memory map.");
                 }
             }
@@ -1198,6 +1218,82 @@ namespace IronPython.Modules {
             }
 
             #endregion
+
+#nullable enable
+
+            public IPythonBuffer GetBuffer(BufferFlags flags = BufferFlags.Simple) {
+                if (flags.HasFlag(BufferFlags.Writable) && IsReadOnly)
+                    throw PythonOps.BufferError("Object is not writable.");
+
+                return new MmapBuffer(this, flags);
+            }
+
+            private sealed unsafe class MmapBuffer : IPythonBuffer {
+                private readonly MmapDefault _mmap;
+                private readonly BufferFlags _flags;
+                private SafeMemoryMappedViewHandle? _handle;
+                private byte* _pointer = null;
+
+                public MmapBuffer(MmapDefault mmap, BufferFlags flags) {
+                    mmap.EnsureOpen();
+
+                    _mmap = mmap;
+                    _flags = flags;
+                    Interlocked.Increment(ref _mmap._refCount);
+                    _handle = _mmap._view.SafeMemoryMappedViewHandle;
+                    ItemCount = _mmap.__len__() is int i ? i : throw new NotImplementedException();
+                }
+
+                public object Object => _mmap;
+
+                public bool IsReadOnly => _mmap.IsReadOnly;
+
+                public int Offset => 0;
+
+                public string? Format => _flags.HasFlag(BufferFlags.Format) ? "B" : null;
+
+                public int ItemCount { get; }
+
+                public int ItemSize => 1;
+
+                public int NumOfDims => 1;
+
+                public IReadOnlyList<int>? Shape => null;
+
+                public IReadOnlyList<int>? Strides => null;
+
+                public IReadOnlyList<int>? SubOffsets => null;
+
+                public unsafe ReadOnlySpan<byte> AsReadOnlySpan() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new ReadOnlySpan<byte>(_pointer, ItemCount);
+                }
+
+                public unsafe Span<byte> AsSpan() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (IsReadOnly) throw new InvalidOperationException("object is not writable");
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new Span<byte>(_pointer, ItemCount);
+                }
+
+                public unsafe MemoryHandle Pin() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new MemoryHandle(_pointer);
+                }
+
+                public void Dispose() {
+                    var handle = Interlocked.Exchange(ref _handle, null);
+                    if (handle is null) return;
+                    if (_pointer is not null) handle.ReleasePointer();
+                    _mmap.CloseWorker();
+                }
+
+            }
+
+#nullable restore
+
         }
 
         #region P/Invoke for allocation granularity

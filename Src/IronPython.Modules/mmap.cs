@@ -807,7 +807,7 @@ namespace IronPython.Modules {
                         // resize on Posix platforms
                         try {
                             if (_handle.IsInvalid) {
-                                throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
+                                throw PythonNT.GetOsError(PythonErrno.EBADF);
                             }
                             _view.Flush();
                             _view.Dispose();
@@ -1109,20 +1109,18 @@ namespace IronPython.Modules {
                 }
             }
 
-            [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("macos")]
             private static long GetFileSizeUnix(SafeFileHandle handle) {
                 long size;
                 if (handle.IsInvalid) {
-                    throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_HANDLE, "Invalid file handle");
+                    throw PythonNT.GetOsError(PythonErrno.EBADF);
                 }
 
                 if (Mono.Unix.Native.Syscall.fstat((int)handle.DangerousGetHandle(), out Mono.Unix.Native.Stat status) == 0) {
                     size = status.st_size;
                 } else {
-                    Mono.Unix.Native.Errno errno = Mono.Unix.Native.Stdlib.GetLastError();
-                    string msg = Mono.Unix.UnixMarshal.GetErrorDescription(errno);
-                    int error = Mono.Unix.Native.NativeConvert.FromErrno(errno);
-                    throw PythonOps.OSError(error, msg);
+                    throw PythonNT.GetLastUnixError();
                 }
 
                 return size;

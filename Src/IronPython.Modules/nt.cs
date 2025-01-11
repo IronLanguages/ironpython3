@@ -2313,7 +2313,7 @@ the 'status' value."),
         }
 
 
-        private static Exception GetOsError(int error, string? filename = null, string? filename2 = null)
+        internal static Exception GetOsError(int error, string? filename = null, string? filename2 = null)
             => PythonOps.OSError(error, strerror(error), filename, null, filename2);
 
 #if FEATURE_NATIVE || FEATURE_CTYPES

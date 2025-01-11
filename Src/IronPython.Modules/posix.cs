@@ -28,7 +28,7 @@ namespace IronPython.Modules {
 
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("osx")]
-        private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
+        internal static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
             // On POSIX, GetLastWin32Error returns the errno value, same as GetLastPInvokeError
             => GetOsError(Marshal.GetLastWin32Error(), filename, filename2);
 

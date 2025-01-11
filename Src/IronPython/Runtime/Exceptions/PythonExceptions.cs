@@ -167,14 +167,14 @@ namespace IronPython.Runtime.Exceptions {
                     }
                     if (args.Length >= 4) {
                         winerror = args[3] ?? Undefined;
-                        if (winerror is int) {
-                            errno = WinErrorToErrno((int)winerror);
+                        if (winerror is int err) {
+                            errno = WinErrorToErrno(err);
                         }
                     }
                     if (args.Length >= 5) {
                         filename2 = args[4] ?? Undefined;
                     }
-                    args = new object[] { errno, strerror };
+                    args = [errno, strerror];
                 }
                 base.__init__(args);
             }

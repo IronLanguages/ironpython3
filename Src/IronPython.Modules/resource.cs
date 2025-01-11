@@ -329,8 +329,7 @@ public static class PythonResourceModule {
         => LightExceptions.Throw(PythonOps.ValueError("expected a tuple of 2 integers"));
 
     private static object GetPInvokeError() {
-        int errno = Marshal.GetLastWin32Error(); // despite its name, on Posix it retrieves errno set by the last p/Invoke call
-        return LightExceptions.Throw(PythonOps.OSError(errno, PythonNT.strerror(errno)));
+        return LightExceptions.Throw(PythonNT.GetLastUnixError());
     }
 
     private static object ToPythonInt(this ulong value)

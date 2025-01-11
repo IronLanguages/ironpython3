@@ -2132,8 +2132,9 @@ the 'status' value."),
                 message = e.Message;
                 isWindowsError = true;
             } else if (e is UnauthorizedAccessException unauth) {
-                errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
-                return PythonOps.OSError(errorCode, "Access is denied", filename, errorCode);
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                    GetWin32Error(PythonExceptions._OSError.ERROR_ACCESS_DENIED, filename) :
+                    GetOsError(PythonErrno.EACCES, filename);
             } else {
                 var ioe = e as IOException;
                 Exception? pe = IOExceptionToPythonException(ioe, error, filename);
@@ -2155,7 +2156,7 @@ the 'status' value."),
             }
 
             if (isWindowsError) {
-                return PythonOps.OSError(errorCode, message, filename, errorCode);
+                return PythonOps.OSError(PythonExceptions._OSError.WinErrorToErrno(errorCode), message, filename, errorCode);
             }
 
             return PythonOps.OSError(errorCode, message, filename);
@@ -2313,8 +2314,8 @@ the 'status' value."),
         }
 
 
-        internal static Exception GetOsError(int error, string? filename = null, string? filename2 = null)
-            => PythonOps.OSError(error, strerror(error), filename, null, filename2);
+        internal static Exception GetOsError(int errno, string? filename = null, string? filename2 = null)
+            => PythonOps.OSError(errno, strerror(errno), filename, null, filename2);
 
 #if FEATURE_NATIVE || FEATURE_CTYPES
 
@@ -2338,9 +2339,9 @@ the 'status' value."),
         }
 
         [SupportedOSPlatform("windows")]
-        private static Exception GetWin32Error(int error, string? filename = null, string? filename2 = null) {
-            var msg = GetWin32ErrorMessage(error);
-            return PythonOps.OSError(0, msg, filename, error, filename2);
+        internal static Exception GetWin32Error(int winerror, string? filename = null, string? filename2 = null) {
+            var msg = GetWin32ErrorMessage(winerror);
+            return PythonOps.OSError(0, msg, filename, winerror, filename2);
         }
 
 #endif

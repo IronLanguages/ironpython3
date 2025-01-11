@@ -5,7 +5,6 @@
 #if FEATURE_MMAP
 
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -205,12 +204,12 @@ namespace IronPython.Modules {
 
         public static readonly string __doc__ = null;
 
-        private static string FormatError(int errorCode) {
-            return new Win32Exception(errorCode).Message;
-        }
-
-        private static Exception WindowsError(int code) {
-            return PythonExceptions.CreateThrowable(PythonExceptions.OSError, code, FormatError(code));
+        private static Exception WindowsError(int winerror) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return PythonNT.GetWin32Error(winerror);
+            } else {
+                return PythonNT.GetOsError(PythonExceptions._OSError.WinErrorToErrno(winerror));
+            }
         }
 
         public static PythonType error => PythonExceptions.OSError;
@@ -234,7 +233,7 @@ namespace IronPython.Modules {
             private static MemoryMappedFileAccess ToMmapFileAccess(int flags, int prot, int access) {
                 if (access == ACCESS_DEFAULT) {
                     if ((flags & (MAP_PRIVATE | MAP_SHARED)) == 0) {
-                        throw PythonOps.OSError(PythonErrno.EINVAL, "Invalid argument");
+                        throw PythonNT.GetOsError(PythonErrno.EINVAL);
                     }
                     if ((prot & PROT_WRITE) != 0) {
                         prot |= PROT_READ;
@@ -356,7 +355,7 @@ namespace IronPython.Modules {
                         }
                         // otherwise leaves _file as null and _sourceStream as null
                     } else {
-                        throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
+                        throw PythonNT.GetOsError(PythonErrno.EBADF);
                     }
 
                     if (_file is null) {
@@ -414,7 +413,7 @@ namespace IronPython.Modules {
 
                     try {
                         if (!isValid) {
-                            throw PythonOps.OSError(PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Invalid access mode");
+                            throw WindowsError(PythonExceptions._OSError.ERROR_ACCESS_DENIED);
                         }
 
                         if (!isWindows) {
@@ -802,12 +801,20 @@ namespace IronPython.Modules {
                         throw PythonOps.TypeError("mmap can't resize a readonly or copy-on-write memory map.");
                     }
 
+                    if (newsize < 0) {
+                        throw PythonOps.ValueError("new size out of range");
+                    }
+
                     if (_handle is not null
                         && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
                         // resize on Posix platforms
                         try {
                             if (_handle.IsInvalid) {
                                 throw PythonNT.GetOsError(PythonErrno.EBADF);
+                            }
+                            if (newsize == 0) {
+                                // resizing to an empty mapped region is not allowed
+                                throw PythonNT.GetOsError(PythonErrno.EINVAL);
                             }
                             _view.Flush();
                             _view.Dispose();

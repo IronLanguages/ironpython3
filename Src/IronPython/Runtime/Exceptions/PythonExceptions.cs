@@ -125,7 +125,7 @@ namespace IronPython.Runtime.Exceptions {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         if (args.Length >= 4 && args[3] is int winerror) {
                             errno = WinErrorToErrno(winerror);
-                        }
+                        } 
                     }
                     cls = ErrorEnumToPythonType(ErrnoToErrorEnum(errno));
                 }
@@ -439,6 +439,11 @@ for k, v in toError.items():
 
             // See also errmap.h in CPython
             internal static int WinErrorToErrno(int winerror) {
+                // Unwrap FACILITY_WIN32 HRESULT errors
+                if ((winerror & 0xFFFF0000) == 0x80070000) {
+                    winerror &= 0x0000FFFF;
+                }
+
                 int errno = winerror;
                 if (winerror < WSABASEERR) {
                     switch (winerror) {

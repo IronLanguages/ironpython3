@@ -7,6 +7,7 @@
 #endif
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -15,8 +16,8 @@ using Mono.Unix;
 using Mono.Unix.Native;
 
 using IronPython.Runtime.Operations;
-using System.Diagnostics;
 using IronPython.Runtime.Exceptions;
+using PythonErrno = IronPython.Runtime.Exceptions.PythonExceptions._OSError.Errno;
 
 #nullable enable
 
@@ -39,7 +40,7 @@ internal class PosixFileStream : Stream
             throw new PlatformNotSupportedException("This stream only works on POSIX systems");
 
         if (fileDescriptor < 0)
-            throw PythonOps.OSError(PythonFileManager.EBADF, "Bad file descriptor");
+            throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
 
         _fd = fileDescriptor;
 
@@ -97,7 +98,7 @@ internal class PosixFileStream : Stream
             SeekOrigin.Begin => SeekFlags.SEEK_SET,
             SeekOrigin.Current => SeekFlags.SEEK_CUR,
             SeekOrigin.End => SeekFlags.SEEK_END,
-            _ => throw PythonOps.OSError(PythonFileManager.EINVAL, "Invalid argument")
+            _ => throw PythonOps.OSError(PythonErrno.EINVAL, "Invalid argument")
         };
 
         long result = Syscall.lseek(_fd, offset, whence);
@@ -126,7 +127,7 @@ internal class PosixFileStream : Stream
     public int Read(Span<byte> buffer) {
         ThrowIfDisposed();
         if (!CanRead)
-            throw PythonOps.OSError(PythonFileManager.EBADF, "Bad file descriptor");
+            throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
 
 
         if (buffer.Length == 0)
@@ -169,7 +170,7 @@ internal class PosixFileStream : Stream
     public void Write(ReadOnlySpan<byte> buffer) {
         ThrowIfDisposed();
         if (!CanWrite)
-            throw PythonOps.OSError(PythonFileManager.EBADF, "Bad file descriptor");
+            throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
 
         if (buffer.Length == 0)
             return;

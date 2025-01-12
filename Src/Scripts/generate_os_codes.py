@@ -102,7 +102,7 @@ def darwin_code_expr(codes, fmt):
 def linux_code_expr(codes, fmt):
     return fmt(codes[linux_idx])
 
-common_errno_codes = ['ENOENT', 'EBADF', 'EACCES', 'EINVAL', 'EMFILE']
+common_errno_codes = ['ENOENT', 'E2BIG', 'ENOEXEC', 'EBADF', 'ECHILD', 'EAGAIN', 'ENOMEM', 'EACCES', 'EEXIST', 'EXDEV', 'ENOTDIR', 'EMFILE', 'ENOSPC', 'EPIPE', 'ENOTEMPTY', 'EILSEQ', 'EINVAL']
 
 def generate_common_errno_codes(cw):
     for name in common_errno_codes:

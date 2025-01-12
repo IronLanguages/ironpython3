@@ -127,7 +127,7 @@ namespace IronPython.Runtime.Exceptions {
                             errno = WinErrorToErrno(winerror);
                         }
                     }
-                    cls = ErrnoToPythonType(ErrnoToErrorEnum(errno));
+                    cls = ErrorEnumToPythonType(ErrnoToErrorEnum(errno));
                 }
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
@@ -180,6 +180,13 @@ namespace IronPython.Runtime.Exceptions {
                 base.__init__(args);
             }
 
+            // This enum is used solely for the purpose of mapping errno values to Python exception types.
+            // The values are based on errno codes but do not exactly match them;
+            // they are selected such that it is possible to algorithmically map them from true platform-dependent errno values.
+            // The subset of codes is chosen that is sufficient for mapping all relevant Python exceptions.
+            // Because it is an enum, it can be used in switch statements and expressions, simplifying the code
+            // over using actual errno values (which are not always compile-time constants) while keeping it readable.
+            // In a way it is subset-equivalent to Mono.Unix.Native.Errno, but it is not dependent on Mono.Posix assembly.
             private enum Error {
                 UNSPECIFIED = -1,
                 EPERM = 1,
@@ -212,15 +219,17 @@ namespace IronPython.Runtime.Exceptions {
                 WSAECONNREFUSED = 10061,
             }
 
+            // Not all input errno values are mapped to existing constants of Error.
+            // This is suffcient since all values that are not listed as Error constants are mapped to OSError.
             private static Error ErrnoToErrorEnum(int errno) {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     if (errno == 11) return Error.UNSPECIFIED; // EAGAIN on Linux/Windows but EDEADLK on OSX, which is not being remapped
-                    if (errno >= 35) errno += 10000; // add WSABASEERR to map to Windows error range
+                    if (errno >= 35) errno += WSABASEERR; // add WSABASEERR to map to Windows error range
                 }
                 return (Error)errno;
             }
 
-            private static PythonType ErrnoToPythonType(Error errno) {
+            private static PythonType ErrorEnumToPythonType(Error errno) {
                 var res = errno switch {
                     Error.EPERM => PermissionError,
                     Error.ENOENT => FileNotFoundError,
@@ -264,9 +273,12 @@ namespace IronPython.Runtime.Exceptions {
                 return res ?? OSError;
             }
 
-            // Values of the Errno codes below are identical with values defined in PythonErrno in IronPython.Modules.dll.
-            // They provide platform-independent errno codes to be used in this assembly.
-
+            /// <summary>
+            /// Provides a subset of platform-independent errno codes to be used in this assembly.
+            /// </summary>
+            /// <remarks>
+            /// Values of the Errno codes defined here are identical with values defined in PythonErrno in IronPython.Modules.dll.
+            /// </remarks>
             internal static class Errno {
 
                 #region Generated Common Errno Codes
@@ -407,6 +419,7 @@ for k, v in toError.items():
             internal const int ERROR_NESTING_NOT_ALLOWED = 215;
             internal const int ERROR_NO_DATA = 232;
             internal const int ERROR_DIRECTORY = 267;
+            internal const int ERROR_NO_UNICODE_TRANSLATION = 1113;
             internal const int ERROR_NOT_ENOUGH_QUOTA = 1816;
 
             // These map to POSIX errno 22 and are added by hand as needed.
@@ -415,14 +428,20 @@ for k, v in toError.items():
             internal const int ERROR_FILE_INVALID = 1006;
             internal const int ERROR_MAPPED_ALIGNMENT = 1132;
 
+            // Some Winsock error codes are errno values.
+            internal const int WSABASEERR = 10000;
+            internal const int WSAEINTR = WSABASEERR + 4;
+            internal const int WSAEBADF = WSABASEERR + 9;
+            internal const int WSAEACCES = WSABASEERR + 13;
+            internal const int WSAEFAULT = WSABASEERR + 14;
+            internal const int WSAEINVAL = WSABASEERR + 22;
+            internal const int WSAEMFILE = WSABASEERR + 24;
+
+            // See also errmap.h in CPython
             internal static int WinErrorToErrno(int winerror) {
                 int errno = winerror;
-                if (winerror < 10000) {
+                if (winerror < WSABASEERR) {
                     switch (winerror) {
-                        case ERROR_BROKEN_PIPE:
-                        case ERROR_NO_DATA:
-                            errno = 32;
-                            break;
                         case ERROR_FILE_NOT_FOUND:
                         case ERROR_PATH_NOT_FOUND:
                         case ERROR_INVALID_DRIVE:
@@ -431,10 +450,10 @@ for k, v in toError.items():
                         case ERROR_BAD_NET_NAME:
                         case ERROR_BAD_PATHNAME:
                         case ERROR_FILENAME_EXCED_RANGE:
-                            errno = 2;
+                            errno = Errno.ENOENT;
                             break;
                         case ERROR_BAD_ENVIRONMENT:
-                            errno = 7;
+                            errno = Errno.E2BIG;
                             break;
                         case ERROR_BAD_FORMAT:
                         case ERROR_INVALID_STARTING_CODESEG:
@@ -452,27 +471,27 @@ for k, v in toError.items():
                         case ERROR_RING2SEG_MUST_BE_MOVABLE:
                         case ERROR_RELOC_CHAIN_XEEDS_SEGLIM:
                         case ERROR_INFLOOP_IN_RELOC_CHAIN:
-                            errno = 8;
+                            errno = Errno.ENOEXEC;
                             break;
                         case ERROR_INVALID_HANDLE:
                         case ERROR_INVALID_TARGET_HANDLE:
                         case ERROR_DIRECT_ACCESS_HANDLE:
-                            errno = 9;
+                            errno = Errno.EBADF;
                             break;
                         case ERROR_WAIT_NO_CHILDREN:
                         case ERROR_CHILD_NOT_COMPLETE:
-                            errno = 10;
+                            errno = Errno.ECHILD;
                             break;
                         case ERROR_NO_PROC_SLOTS:
                         case ERROR_MAX_THRDS_REACHED:
                         case ERROR_NESTING_NOT_ALLOWED:
-                            errno = 11;
+                            errno = Errno.EAGAIN;
                             break;
                         case ERROR_ARENA_TRASHED:
                         case ERROR_NOT_ENOUGH_MEMORY:
                         case ERROR_INVALID_BLOCK:
                         case ERROR_NOT_ENOUGH_QUOTA:
-                            errno = 12;
+                            errno = Errno.ENOMEM;
                             break;
                         case ERROR_ACCESS_DENIED:
                         case ERROR_CURRENT_DIRECTORY:
@@ -500,29 +519,51 @@ for k, v in toError.items():
                         case ERROR_SEEK_ON_DEVICE:
                         case ERROR_NOT_LOCKED:
                         case ERROR_LOCK_FAILED:
-                            errno = 13;
+                        case 35:  // undefined
+                            errno = Errno.EACCES;
                             break;
                         case ERROR_FILE_EXISTS:
                         case ERROR_ALREADY_EXISTS:
-                            errno = 17;
+                            errno = Errno.EEXIST;
                             break;
                         case ERROR_NOT_SAME_DEVICE:
-                            errno = 18;
+                            errno = Errno.EXDEV;
                             break;
                         case ERROR_DIRECTORY:
-                            errno = 20;
-                            break;
-                        case ERROR_DIR_NOT_EMPTY:
-                            errno = 41;
+                            errno = Errno.ENOTDIR;
                             break;
                         case ERROR_TOO_MANY_OPEN_FILES:
-                            errno = 24;
+                            errno = Errno.EMFILE;
                             break;
                         case ERROR_DISK_FULL:
-                            errno = 28;
+                            errno = Errno.ENOSPC;
+                            break;
+                        case ERROR_BROKEN_PIPE:
+                        case ERROR_NO_DATA:
+                            errno = Errno.EPIPE;
+                            break;
+                        case ERROR_DIR_NOT_EMPTY:  // ENOTEMPTY
+                            errno = Errno.ENOTEMPTY;
+                            break;
+                        case ERROR_NO_UNICODE_TRANSLATION:  // EILSEQ
+                            errno = Errno.EILSEQ;
                             break;
                         default:
-                            errno = 22;
+                            errno = Errno.EINVAL;
+                            break;
+                    }
+                } else if (winerror < 12000) {  // Winsock error codes are 10000-11999
+                    switch (winerror) {
+                        case WSAEINTR:
+                        case WSAEBADF:
+                        case WSAEACCES:
+                        case WSAEFAULT:
+                        case WSAEINVAL:
+                        case WSAEMFILE:
+                            errno = winerror - WSABASEERR;
+                            break;
+                        default:
+                            errno = winerror;
                             break;
                     }
                 }

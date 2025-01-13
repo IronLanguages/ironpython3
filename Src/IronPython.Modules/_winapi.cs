@@ -21,7 +21,6 @@ namespace IronPython.Modules {
     public static class PythonWinApi {
         #region Public API
 
-        [SupportedOSPlatform("windows")]
         public static object? ConnectNamedPipe(BigInteger handle, bool overlapped = false) {
             if (overlapped) throw new NotImplementedException();
 

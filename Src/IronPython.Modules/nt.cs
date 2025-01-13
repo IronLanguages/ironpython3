@@ -774,23 +774,6 @@ namespace IronPython.Modules {
             }
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static uname_result uname() {
-            Mono.Unix.Native.Utsname info;
-            Mono.Unix.Native.Syscall.uname(out info);
-            return new uname_result(info.sysname, info.nodename, info.release, info.version, info.machine);
-        }
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static BigInteger getuid() {
-            return Mono.Unix.Native.Syscall.getuid();
-        }
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static BigInteger geteuid() {
-            return Mono.Unix.Native.Syscall.geteuid();
-        }
-
 #endif
 
 #if FEATURE_FILESYSTEM
@@ -1286,12 +1269,15 @@ namespace IronPython.Modules {
 
             internal stat_result(int mode) : this(new object[10] { mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, null) { }
 
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("macos")]
             internal stat_result(Mono.Unix.Native.Stat stat)
                 : this(new object[16] {Mono.Unix.Native.NativeConvert.FromFilePermissions(stat.st_mode), ToInt(stat.st_ino), ToInt(stat.st_dev), ToInt(stat.st_nlink), ToInt(stat.st_uid), ToInt(stat.st_gid), ToInt(stat.st_size),
                       ToInt(stat.st_atime), ToInt(stat.st_mtime), ToInt(stat.st_ctime),
                       stat.st_atime + stat.st_atime_nsec / (double)nanosecondsPerSeconds, stat.st_mtime + stat.st_mtime_nsec / (double)nanosecondsPerSeconds, stat.st_ctime + stat.st_ctime_nsec / (double)nanosecondsPerSeconds,
                       ToInt(stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec), ToInt(stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec), ToInt(stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec) }, null) { }
 
+            [SupportedOSPlatform("windows")]
             internal stat_result(int mode, ulong fileidx, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns)
                 : this(new object[16] { mode, ToInt(fileidx), 0, 0, 0, 0, ToInt(size),
                       ToInt(st_atime_ns / nanosecondsPerSeconds), ToInt(st_mtime_ns / nanosecondsPerSeconds), ToInt(st_ctime_ns / nanosecondsPerSeconds),

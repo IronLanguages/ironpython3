@@ -6,6 +6,7 @@
 
 using System;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -175,6 +176,31 @@ namespace IronPython.Modules {
 
             if (errno != 0)
                 throw GetOsError(NativeConvert.FromErrno(errno));
+        }
+
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static uname_result uname() {
+            if (Syscall.uname(out Utsname info) == 0) {
+                return new uname_result(info.sysname, info.nodename, info.release, info.version, info.machine);
+            }
+            throw GetLastUnixError();  // rare
+        }
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static BigInteger getuid() {
+            return Syscall.getuid();
+        }
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static BigInteger geteuid() {
+            return Syscall.geteuid();
         }
 
 

@@ -9,6 +9,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 using IronPython.Runtime;
@@ -16,6 +17,7 @@ using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
+    [SupportedOSPlatform("windows")]
     public static class PythonWinApi {
         #region Public API
 

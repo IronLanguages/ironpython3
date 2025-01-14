@@ -846,7 +846,7 @@ namespace IronPython.Modules {
 
                     if (newsize == 0) {
                         // resizing to an empty mapped region is not allowed
-                        throw WindowsError(_offset != 0
+                        throw WindowsError(_offset != 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                             ? PythonExceptions._OSError.ERROR_ACCESS_DENIED
                             : PythonExceptions._OSError.ERROR_FILE_INVALID
                         );

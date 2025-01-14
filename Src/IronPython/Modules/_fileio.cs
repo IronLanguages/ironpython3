@@ -15,9 +15,11 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using PythonErrno = IronPython.Runtime.Exceptions.PythonExceptions._OSError.Errno;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Mono.Unix.Native;
 
 #nullable enable
 
@@ -179,7 +181,7 @@ namespace IronPython.Modules {
                             // In such case:
                             // _streams = new(new UnixStream(fd, ownsHandle: true))
                             // _context.FileManager.Add(fd, _streams);
-                            throw PythonOps.OSError(PythonFileManager.EBADF, "Bad file descriptor");
+                            throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
                         }
                     } else {
                         throw PythonOps.TypeError("expected integer from opener");
@@ -450,7 +452,7 @@ namespace IronPython.Modules {
 
                 var origin = (SeekOrigin)GetInt(whence);
                 if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
-                    throw PythonOps.OSError(PythonFileManager.EINVAL, "Invalid argument");
+                    throw PythonOps.OSError(PythonErrno.EINVAL, "Invalid argument");
 
                 long ofs = checked((long)offset);
 
@@ -584,13 +586,13 @@ namespace IronPython.Modules {
 
 
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
-                if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(PythonFileManager.ENOENT, "No such file or directory", filename: name);
+                if (string.IsNullOrWhiteSpace(name)) throw PythonOps.OSError(PythonErrno.ENOENT, "No such file or directory", filename: name);
                 try {
                     return pal.OpenFileStream(name, fileMode, fileAccess, fileShare, 1); // Use a 1 byte buffer size to disable buffering (if the FileStream implementation supports it).
                 } catch (UnauthorizedAccessException) {
-                    throw PythonOps.OSError(PythonFileManager.EACCES, "Permission denied", name);
+                    throw PythonOps.OSError(PythonErrno.EACCES, "Permission denied", name);
                 } catch (FileNotFoundException) {
-                    throw PythonOps.OSError(PythonFileManager.ENOENT, "No such file or directory", name);
+                    throw PythonOps.OSError(PythonErrno.ENOENT, "No such file or directory", name);
                 } catch (IOException e) {
                     AddFilename(context, name, e);
                     throw;

@@ -2326,6 +2326,10 @@ the 'status' value."),
 
         [SupportedOSPlatform("windows")]
         internal static Exception GetWin32Error(int winerror, string? filename = null, string? filename2 = null) {
+            // Unwrap FACILITY_WIN32 HRESULT errors
+            if ((winerror & 0xFFFF0000) == 0x80070000) {
+                winerror &= 0x0000FFFF;
+            }
             var msg = GetWin32ErrorMessage(winerror);
             return PythonOps.OSError(0, msg, filename, winerror, filename2);
         }

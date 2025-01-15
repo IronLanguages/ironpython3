@@ -262,6 +262,24 @@ def generate_DN_flags(cw):
     generate_codes(cw, codeval, 'public', hex, unix_only=True)
 
 
+# python3 -c 'import fcntl;print(dict(sorted((s, getattr(fcntl, s)) for s in dir(fcntl) if s.startswith("LOCK_"))))'
+# Python 3.6.15 [GCC 12.2.0] on linux 6.10.14
+# Python 3.12.3 [GCC 13.2.0] on linux 6.8.0
+LOCK_flags_linux = {'LOCK_EX': 2, 'LOCK_MAND': 32, 'LOCK_NB': 4, 'LOCK_READ': 64, 'LOCK_RW': 192, 'LOCK_SH': 1, 'LOCK_UN': 8, 'LOCK_WRITE': 128}
+# Python 3.7.0 [Clang 4.0.1 ] on darwin 24.2.0
+# Python 3.12.0 [Clang 14.0.6 ] on darwin 24.2.0
+LOCK_flags_darwin = {'LOCK_EX': 2, 'LOCK_NB': 4, 'LOCK_SH': 1, 'LOCK_UN': 8}
+
+def generate_LOCK_flags(cw):
+    codeval = {}
+    for name in LOCK_flags_linux:
+        set_value(codeval, name, LOCK_flags_linux[name], linux_idx)
+    for name in LOCK_flags_darwin:
+        set_value(codeval, name, LOCK_flags_darwin[name], darwin_idx)
+    codeval = OrderedDict(sorted(codeval.items()))
+    generate_codes(cw, codeval, 'public', hex, unix_only=True)
+
+
 def main():
     return generate(
         ("Errno Codes", generate_errno_codes),
@@ -271,6 +289,7 @@ def main():
         ("Common O_Flags", generate_common_O_flags),
         ("FD Commands", generate_FD_commands),
         ("Directory Notify Flags", generate_DN_flags),
+        ("LOCK Flags", generate_LOCK_flags),
     )
 
 if __name__ == "__main__":

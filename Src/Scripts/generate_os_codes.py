@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import re
 from generate import generate
 from collections import OrderedDict
 
@@ -214,7 +215,12 @@ def generate_codes(cw, codeval, access, fmt, unix_only=False):
                 cw.write(f'[SupportedOSPlatform("{s}")]')
 
         value = windows_code_expr(codes, fmt)
-        cw.write(f"{access} static int {name} => {value};")
+        typ = "int"
+        if (all(c.isdigit() for c in value) or re.match(r'^0x[0-9a-fA-F]+$', value)):
+            n = eval(value)
+            if n > 2**31 - 1 or n < -2**31:
+                typ = "long"
+        cw.write(f"{access} static {typ} {name} => {value};")
 
 
 def generate_all_O_flags(cw):
@@ -243,6 +249,19 @@ def generate_FD_commands(cw):
     generate_codes(cw, codeval, 'public', str, unix_only=True)
 
 
+# python3 -c 'import fcntl;print(dict(sorted((s, getattr(fcntl, s)) for s in dir(fcntl) if s.startswith("DN_"))))'
+# Python 3.6.15 [GCC 12.2.0] on linux 6.10.14
+# Python 3.12.3 [GCC 13.2.0] on linux 6.8.0
+DN_flags_linux = {'DN_ACCESS': 1, 'DN_ATTRIB': 32, 'DN_CREATE': 4, 'DN_DELETE': 8, 'DN_MODIFY': 2, 'DN_MULTISHOT': 2147483648, 'DN_RENAME': 16}
+
+def generate_DN_flags(cw):
+    codeval = {}
+    for name in DN_flags_linux:
+        set_value(codeval, name, DN_flags_linux[name], linux_idx)
+    codeval = OrderedDict(sorted(codeval.items()))
+    generate_codes(cw, codeval, 'public', hex, unix_only=True)
+
+
 def main():
     return generate(
         ("Errno Codes", generate_errno_codes),
@@ -251,6 +270,7 @@ def main():
         ("O_Flags", generate_all_O_flags),
         ("Common O_Flags", generate_common_O_flags),
         ("FD Commands", generate_FD_commands),
+        ("Directory Notify Flags", generate_DN_flags),
     )
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
@@ -44,15 +44,13 @@ public static class PythonFcntl {
 
     public static int F_DUPFD => 0;
 
-    public static int F_DUPFD_CLOEXEC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 67 : 1030;
+    [PythonHidden(PlatformID.MacOSX)]
+    [SupportedOSPlatform("linux")]
+    public static int F_DUPFD_CLOEXEC => 1030;
 
     [PythonHidden(PlatformID.MacOSX)]
     [SupportedOSPlatform("linux")]
     public static int F_EXLCK => 4;
-
-    [PythonHidden(PlatformID.Unix)]
-    [SupportedOSPlatform("macos")]
-    public static int F_FULLFSYNC => 51;
 
     public static int F_GETFD => 1;
 

@@ -812,6 +812,10 @@ namespace IronPython.Modules {
                             if (_handle.IsInvalid) {
                                 throw PythonNT.GetOsError(PythonErrno.EBADF);
                             }
+                            if (_view.Capacity == newsize) {
+                                // resizing to the same size
+                                return;
+                            }
                             if (newsize == 0) {
                                 // resizing to an empty mapped region is not allowed
                                 throw PythonNT.GetOsError(PythonErrno.EINVAL);
@@ -844,14 +848,6 @@ namespace IronPython.Modules {
                         throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_PARAMETER);
                     }
 
-                    if (newsize == 0) {
-                        // resizing to an empty mapped region is not allowed
-                        throw WindowsError(_offset == 0
-                            ? PythonExceptions._OSError.ERROR_ACCESS_DENIED
-                            : PythonExceptions._OSError.ERROR_FILE_INVALID
-                        );
-                    }
-
                     if (_view.Capacity == newsize) {
                         // resizing to the same size
                         return;
@@ -860,6 +856,14 @@ namespace IronPython.Modules {
                     long capacity = checked(_offset + newsize);
 
                     try {
+                        if (newsize == 0) {
+                            // resizing to an empty mapped region is not allowed
+                            throw WindowsError(_offset != 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                                ? PythonExceptions._OSError.ERROR_ACCESS_DENIED
+                                : PythonExceptions._OSError.ERROR_FILE_INVALID
+                            );
+                        }
+
                         _view.Flush();
                         _view.Dispose();
                         _file.Dispose();
@@ -1143,13 +1147,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            private struct MmapLocker : IDisposable {
+            private readonly struct MmapLocker : IDisposable {
                 private readonly MmapDefault _mmap;
 
                 public MmapLocker(MmapDefault mmap) {
                     _mmap = mmap;
-                    Interlocked.Increment(ref _mmap._refCount);
                     _mmap.EnsureOpen();
+                    Interlocked.Increment(ref _mmap._refCount);
                 }
 
                 #region IDisposable Members

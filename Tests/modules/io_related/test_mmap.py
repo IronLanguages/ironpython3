@@ -18,7 +18,7 @@ class MmapTest(IronPythonTestCase):
     def setUp(self):
         super(MmapTest, self).setUp()
 
-        self.temp_file = os.path.join(self.temporary_dir, "temp_%d.dat" % os.getpid())
+        self.temp_file = os.path.join(self.temporary_dir, "temp_mmap_%d.dat" % os.getpid())
 
     def tearDown(self):
         self.delete_files(self.temp_file)
@@ -60,6 +60,8 @@ class MmapTest(IronPythonTestCase):
             else:
                 self.assertEqual(cm.exception.strerror, "Invalid argument")
 
+            self.assertTrue(m.closed)
+
 
     def test_resize_errors_negative(self):
         with open(self.temp_file, "wb+") as f:
@@ -69,8 +71,10 @@ class MmapTest(IronPythonTestCase):
             m = mmap.mmap(f.fileno(), 0, offset=0)
             if is_cli or sys.version_info >= (3, 5):
                 self.assertRaises(ValueError, m.resize, -1)
+                self.assertFalse(m.closed)
             else:
                 self.assertRaises(OSError, m.resize, -1)
+                self.assertTrue(m.closed)
 
             m.close()
 
@@ -93,7 +97,8 @@ class MmapTest(IronPythonTestCase):
                     m.resize(0)
                 self.assertEqual(cm.exception.errno, errno.EINVAL)  # 22
                 self.assertEqual(cm.exception.strerror, "Invalid argument")
-            m.close()
+
+            self.assertTrue(m.closed)
 
 
 run_test(__name__)

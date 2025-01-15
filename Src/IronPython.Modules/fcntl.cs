@@ -46,10 +46,6 @@ public static class PythonFcntl {
 
     [PythonHidden(PlatformID.MacOSX)]
     [SupportedOSPlatform("linux")]
-    public static int F_DUPFD_CLOEXEC => 1030;
-
-    [PythonHidden(PlatformID.MacOSX)]
-    [SupportedOSPlatform("linux")]
     public static int F_EXLCK => 4;
 
     public static int F_GETFD => 1;
@@ -67,10 +63,6 @@ public static class PythonFcntl {
     public static int F_GETLK64 => 5;
 
     public static int F_GETOWN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 5 : 9;
-
-    [PythonHidden(PlatformID.MacOSX)]
-    [SupportedOSPlatform("linux")]
-    public static int F_GETPIPE_SZ => 1032;
 
     [PythonHidden(PlatformID.MacOSX)]
     [SupportedOSPlatform("linux")]
@@ -139,10 +131,6 @@ public static class PythonFcntl {
     public static int F_SETLKW64 => 7;
 
     public static int F_SETOWN => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 6 : 8;
-
-    [PythonHidden(PlatformID.MacOSX)]
-    [SupportedOSPlatform("linux")]
-    public static int F_SETPIPE_SZ => 1031;
 
     [PythonHidden(PlatformID.MacOSX)]
     [SupportedOSPlatform("linux")]

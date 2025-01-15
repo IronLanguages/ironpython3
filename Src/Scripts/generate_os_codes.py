@@ -236,18 +236,21 @@ def generate_common_O_flags(cw):
 # python3 -c 'import fcntl;print(dict(sorted((s, getattr(fcntl, s)) for s in dir(fcntl) if s.startswith("F_"))))'
 # Python 3.6.15 [GCC 12.2.0] on linux 6.10.14
 FD_commands_linux = {'F_ADD_SEALS': 1033, 'F_DUPFD': 0, 'F_DUPFD_CLOEXEC': 1030, 'F_EXLCK': 4, 'F_GETFD': 1, 'F_GETFL': 3, 'F_GETLEASE': 1025, 'F_GETLK': 5, 'F_GETLK64': 5, 'F_GETOWN': 9, 'F_GETPIPE_SZ': 1032, 'F_GETSIG': 11, 'F_GET_SEALS': 1034, 'F_NOTIFY': 1026, 'F_OFD_GETLK': 36, 'F_OFD_SETLK': 37, 'F_OFD_SETLKW': 38, 'F_RDLCK': 0, 'F_SEAL_GROW': 4, 'F_SEAL_SEAL': 1, 'F_SEAL_SHRINK': 2, 'F_SEAL_WRITE': 8, 'F_SETFD': 2, 'F_SETFL': 4, 'F_SETLEASE': 1024, 'F_SETLK': 6, 'F_SETLK64': 6, 'F_SETLKW': 7, 'F_SETLKW64': 7, 'F_SETOWN': 8, 'F_SETPIPE_SZ': 1031, 'F_SETSIG': 10, 'F_SHLCK': 8, 'F_UNLCK': 2, 'F_WRLCK': 1}
+# Unsupported by Mono.Unix 7.1.0-final.1.21458.1 on linux
+FD_commands_linux_unsupported = ['F_DUPFD_CLOEXEC', 'F_GETPIPE_SZ', 'F_SETPIPE_SZ']
 # Python 3.7.0 [Clang 4.0.1 ] on darwin 24.2.0
 FD_commands_darwin = {'F_DUPFD': 0, 'F_DUPFD_CLOEXEC': 67, 'F_FULLFSYNC': 51, 'F_GETFD': 1, 'F_GETFL': 3, 'F_GETLK': 7, 'F_GETOWN': 5, 'F_NOCACHE': 48, 'F_RDLCK': 1, 'F_SETFD': 2, 'F_SETFL': 4, 'F_SETLK': 8, 'F_SETLKW': 9, 'F_SETOWN': 6, 'F_UNLCK': 2, 'F_WRLCK': 3}
 # Unsupported by Mono.Unix 7.1.0-final.1.21458.1 on darwin
-FD_commands_darwin.pop('F_DUPFD_CLOEXEC')
-FD_commands_darwin.pop('F_FULLFSYNC')
+FD_commands_darwin_unsupported = ['F_DUPFD_CLOEXEC', 'F_FULLFSYNC']
 
 def generate_FD_commands(cw):
     codeval = {}
     for name in FD_commands_linux:
-        set_value(codeval, name, FD_commands_linux[name], linux_idx)
+        if name not in FD_commands_linux_unsupported:
+            set_value(codeval, name, FD_commands_linux[name], linux_idx)
     for name in FD_commands_darwin:
-        set_value(codeval, name, FD_commands_darwin[name], darwin_idx)
+        if name not in FD_commands_darwin_unsupported:
+            set_value(codeval, name, FD_commands_darwin[name], darwin_idx)
     codeval = OrderedDict(sorted(codeval.items()))
     generate_codes(cw, codeval, 'public', str, unix_only=True)
 

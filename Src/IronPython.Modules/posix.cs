@@ -99,8 +99,7 @@ namespace IronPython.Modules {
                     int flags = Syscall.fcntl(fd2, FcntlCommand.F_GETFD);
                     if (flags == -1) throw GetLastUnixError();
     
-                    const int FD_CLOEXEC = 1;  // TODO: Move to module fcntl
-                    flags |= FD_CLOEXEC;
+                    flags |= PythonFcntl.FD_CLOEXEC;
                     flags = Syscall.fcntl(fd2, FcntlCommand.F_SETFD, flags);
                     if (flags == -1) throw GetLastUnixError();
                 } catch {

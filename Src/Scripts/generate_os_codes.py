@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import re
 from generate import generate
 from collections import OrderedDict
 
@@ -16,10 +17,12 @@ linux_aliases = {'EOPNOTSUPP' : 'ENOTSUP', 'EDEADLK': 'EDEADLOCK', 'EWOULDBLOCK'
 darwin_aliases = {'EWOULDBLOCK': 'EAGAIN'}
 aliases = {**linux_aliases, **darwin_aliases}
 
+
 def set_value(codeval, name, value, index):
     if name not in codeval:
         codeval[name] = [None] * len(systems)
     codeval[name][index] = value
+
 
 def collect_errornames():
     errorval = {}
@@ -102,6 +105,7 @@ def darwin_code_expr(codes, fmt):
 def linux_code_expr(codes, fmt):
     return fmt(codes[linux_idx])
 
+
 common_errno_codes = ['ENOENT', 'E2BIG', 'ENOEXEC', 'EBADF', 'ECHILD', 'EAGAIN', 'ENOMEM', 'EACCES', 'EEXIST', 'EXDEV', 'ENOTDIR', 'EMFILE', 'ENOSPC', 'EPIPE', 'ENOTEMPTY', 'EILSEQ', 'EINVAL']
 
 def generate_common_errno_codes(cw):
@@ -113,6 +117,7 @@ def generate_common_errno_codes(cw):
             cw.write(f"internal const int {name} = {value};")
         else:
             cw.write(f"internal static int {name} => {value};")
+
 
 def generate_errno_names(cw):
     def is_windows_alias(name):
@@ -178,13 +183,17 @@ def collect_codes():
 
 O_flagvalues = collect_codes()
 
-def generate_O_flags(cw, flagvalues, access):
-    for name in flagvalues.keys():
-        codes = flagvalues[name]
+
+def generate_codes(cw, codeval, access, fmt, unix_only=False):
+    for name in codeval.keys():
+        codes = codeval[name]
+        all_systems = set(systems)
+        if unix_only:
+            all_systems.discard(systems[windows_idx])
         hidden_on = []
-        supported_on = set(systems)
+        supported_on = set(all_systems)
         cw.writeline()
-        if codes[windows_idx] is None:
+        if codes[windows_idx] is None and not unix_only:
             hidden_on = ["PlatformsAttribute.PlatformFamily.Windows"]
             supported_on.discard(systems[windows_idx])
         if codes[linux_idx] is None and codes[darwin_idx] is None:
@@ -201,20 +210,80 @@ def generate_O_flags(cw, flagvalues, access):
                 supported_on.discard(systems[darwin_idx])
         if hidden_on and (access == 'public' or access == 'protected' or access == 'protected internal'):
             cw.write(f"[PythonHidden({', '.join(hidden_on)})]")
-        if len(supported_on) != len(systems):
+        if len(supported_on) != len(all_systems):
             for s in sorted(supported_on):
                 cw.write(f'[SupportedOSPlatform("{s}")]')
 
-        value = windows_code_expr(codes, fmt=hex)
-        cw.write(f"{access} static int {name} => {value};")
+        value = windows_code_expr(codes, fmt)
+        typ = "int"
+        if (all(c.isdigit() for c in value) or re.match(r'^0x[0-9a-fA-F]+$', value)):
+            n = eval(value)
+            if n > 2**31 - 1 or n < -2**31:
+                typ = "long"
+        cw.write(f"{access} static {typ} {name} => {value};")
+
 
 def generate_all_O_flags(cw):
-    generate_O_flags(cw, O_flagvalues, 'public')
+    generate_codes(cw, O_flagvalues, 'public', hex)
+
 
 common_O_flags = ['O_RDONLY', 'O_WRONLY', 'O_RDWR', 'O_APPEND', 'O_CREAT', 'O_TRUNC', 'O_EXCL', 'O_CLOEXEC', 'O_BINARY', 'O_NOINHERIT']
 
 def generate_common_O_flags(cw):
-    generate_O_flags(cw, OrderedDict((f, O_flagvalues[f]) for f in common_O_flags), 'private')
+    generate_codes(cw, OrderedDict((f, O_flagvalues[f]) for f in common_O_flags), 'private', hex)
+
+
+# python3 -c 'import fcntl;print(dict(sorted((s, getattr(fcntl, s)) for s in dir(fcntl) if s.startswith("F_"))))'
+# Python 3.6.15 [GCC 12.2.0] on linux 6.10.14
+FD_commands_linux = {'F_ADD_SEALS': 1033, 'F_DUPFD': 0, 'F_DUPFD_CLOEXEC': 1030, 'F_EXLCK': 4, 'F_GETFD': 1, 'F_GETFL': 3, 'F_GETLEASE': 1025, 'F_GETLK': 5, 'F_GETLK64': 5, 'F_GETOWN': 9, 'F_GETPIPE_SZ': 1032, 'F_GETSIG': 11, 'F_GET_SEALS': 1034, 'F_NOTIFY': 1026, 'F_OFD_GETLK': 36, 'F_OFD_SETLK': 37, 'F_OFD_SETLKW': 38, 'F_RDLCK': 0, 'F_SEAL_GROW': 4, 'F_SEAL_SEAL': 1, 'F_SEAL_SHRINK': 2, 'F_SEAL_WRITE': 8, 'F_SETFD': 2, 'F_SETFL': 4, 'F_SETLEASE': 1024, 'F_SETLK': 6, 'F_SETLK64': 6, 'F_SETLKW': 7, 'F_SETLKW64': 7, 'F_SETOWN': 8, 'F_SETPIPE_SZ': 1031, 'F_SETSIG': 10, 'F_SHLCK': 8, 'F_UNLCK': 2, 'F_WRLCK': 1}
+# Unsupported by Mono.Unix 7.1.0-final.1.21458.1 on linux
+FD_commands_linux_unsupported = ['F_DUPFD_CLOEXEC', 'F_GETPIPE_SZ', 'F_SETPIPE_SZ']
+# Python 3.7.0 [Clang 4.0.1 ] on darwin 24.2.0
+FD_commands_darwin = {'F_DUPFD': 0, 'F_DUPFD_CLOEXEC': 67, 'F_FULLFSYNC': 51, 'F_GETFD': 1, 'F_GETFL': 3, 'F_GETLK': 7, 'F_GETOWN': 5, 'F_NOCACHE': 48, 'F_RDLCK': 1, 'F_SETFD': 2, 'F_SETFL': 4, 'F_SETLK': 8, 'F_SETLKW': 9, 'F_SETOWN': 6, 'F_UNLCK': 2, 'F_WRLCK': 3}
+# Unsupported by Mono.Unix 7.1.0-final.1.21458.1 on darwin
+FD_commands_darwin_unsupported = ['F_DUPFD_CLOEXEC', 'F_FULLFSYNC']
+
+def generate_FD_commands(cw):
+    codeval = {}
+    for name in FD_commands_linux:
+        if name not in FD_commands_linux_unsupported:
+            set_value(codeval, name, FD_commands_linux[name], linux_idx)
+    for name in FD_commands_darwin:
+        if name not in FD_commands_darwin_unsupported:
+            set_value(codeval, name, FD_commands_darwin[name], darwin_idx)
+    codeval = OrderedDict(sorted(codeval.items()))
+    generate_codes(cw, codeval, 'public', str, unix_only=True)
+
+
+# python3 -c 'import fcntl;print(dict(sorted((s, getattr(fcntl, s)) for s in dir(fcntl) if s.startswith("DN_"))))'
+# Python 3.6.15 [GCC 12.2.0] on linux 6.10.14
+# Python 3.12.3 [GCC 13.2.0] on linux 6.8.0
+DN_flags_linux = {'DN_ACCESS': 1, 'DN_ATTRIB': 32, 'DN_CREATE': 4, 'DN_DELETE': 8, 'DN_MODIFY': 2, 'DN_MULTISHOT': 2147483648, 'DN_RENAME': 16}
+
+def generate_DN_flags(cw):
+    codeval = {}
+    for name in DN_flags_linux:
+        set_value(codeval, name, DN_flags_linux[name], linux_idx)
+    codeval = OrderedDict(sorted(codeval.items()))
+    generate_codes(cw, codeval, 'public', hex, unix_only=True)
+
+
+# python3 -c 'import fcntl;print(dict(sorted((s, getattr(fcntl, s)) for s in dir(fcntl) if s.startswith("LOCK_"))))'
+# Python 3.6.15 [GCC 12.2.0] on linux 6.10.14
+# Python 3.12.3 [GCC 13.2.0] on linux 6.8.0
+LOCK_flags_linux = {'LOCK_EX': 2, 'LOCK_MAND': 32, 'LOCK_NB': 4, 'LOCK_READ': 64, 'LOCK_RW': 192, 'LOCK_SH': 1, 'LOCK_UN': 8, 'LOCK_WRITE': 128}
+# Python 3.7.0 [Clang 4.0.1 ] on darwin 24.2.0
+# Python 3.12.0 [Clang 14.0.6 ] on darwin 24.2.0
+LOCK_flags_darwin = {'LOCK_EX': 2, 'LOCK_NB': 4, 'LOCK_SH': 1, 'LOCK_UN': 8}
+
+def generate_LOCK_flags(cw):
+    codeval = {}
+    for name in LOCK_flags_linux:
+        set_value(codeval, name, LOCK_flags_linux[name], linux_idx)
+    for name in LOCK_flags_darwin:
+        set_value(codeval, name, LOCK_flags_darwin[name], darwin_idx)
+    codeval = OrderedDict(sorted(codeval.items()))
+    generate_codes(cw, codeval, 'public', hex, unix_only=True)
 
 
 def main():
@@ -224,6 +293,9 @@ def main():
         ("Errno Names", generate_errno_names),
         ("O_Flags", generate_all_O_flags),
         ("Common O_Flags", generate_common_O_flags),
+        ("FD Commands", generate_FD_commands),
+        ("Directory Notify Flags", generate_DN_flags),
+        ("LOCK Flags", generate_LOCK_flags),
     )
 
 if __name__ == "__main__":

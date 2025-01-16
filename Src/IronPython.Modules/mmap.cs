@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_MMAP
 
 using System;
@@ -202,7 +204,7 @@ namespace IronPython.Modules {
         public static readonly int ALLOCATIONGRANULARITY = GetAllocationGranularity();
         public static readonly int PAGESIZE = System.Environment.SystemPageSize;
 
-        public static readonly string __doc__ = null;
+        public static readonly string? __doc__;
 
         private static Exception WindowsError(int winerror) {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -261,7 +263,7 @@ namespace IronPython.Modules {
 
         [PythonType("mmap"), PythonHidden]
         public class MmapWindows : MmapDefault {
-            public MmapWindows(CodeContext context, int fileno, long length, string tagname = null, int access = ACCESS_DEFAULT, long offset = 0)
+            public MmapWindows(CodeContext context, int fileno, long length, string? tagname = null, int access = ACCESS_DEFAULT, long offset = 0)
                 : base(context, fileno, length, tagname, ToMmapFileAccess(access), offset) { }
 
             private static MemoryMappedFileAccess ToMmapFileAccess(int access) {
@@ -280,17 +282,17 @@ namespace IronPython.Modules {
             private MemoryMappedFile _file;
             private MemoryMappedViewAccessor _view;
             private long _position;
-            private FileStream _sourceStream;
+            private FileStream? _sourceStream;
 
             private readonly long _offset;
-            private readonly string _mapName;
+            private readonly string? _mapName;
             private readonly MemoryMappedFileAccess _fileAccess;
-            private readonly SafeFileHandle _handle;
+            private readonly SafeFileHandle? _handle;
 
             private volatile bool _isClosed;
             private int _refCount = 1;
 
-            public MmapDefault(CodeContext/*!*/ context, int fileno, long length, string tagname, MemoryMappedFileAccess fileAccess, long offset) {
+            public MmapDefault(CodeContext/*!*/ context, int fileno, long length, string? tagname, MemoryMappedFileAccess fileAccess, long offset) {
                 _fileAccess = fileAccess;
 
                 if (length < 0) {
@@ -329,7 +331,7 @@ namespace IronPython.Modules {
                     _offset = offset;
 
                     PythonContext pContext = context.LanguageContext;
-                    if (pContext.FileManager.TryGetStreams(fileno, out StreamBox streams)) {
+                    if (pContext.FileManager.TryGetStreams(fileno, out StreamBox? streams)) {
                         Stream stream = streams.ReadStream;
                         if (stream is FileStream fs) {
                             _sourceStream = fs;
@@ -395,7 +397,6 @@ namespace IronPython.Modules {
                     _view = _file.CreateViewAccessor(_offset, length, _fileAccess);
                 } catch {
                     _file.Dispose();
-                    _file = null;
                     CloseFileHandle();
                     throw;
                 }
@@ -563,8 +564,6 @@ namespace IronPython.Modules {
                     _file.Dispose();
                     CloseFileHandle();
                     _sourceStream = null;
-                    _view = null;
-                    _file = null;
                 }
             }
 
@@ -1086,7 +1085,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            private static long? GetLong(object o) {
+            private static long? GetLong(object? o) {
                 if (o == null) {
                     return null;
                 } else if (o is int) {
@@ -1169,9 +1168,9 @@ namespace IronPython.Modules {
 
             #region IWeakReferenceable Members
 
-            private WeakRefTracker _tracker;
+            private WeakRefTracker? _tracker;
 
-            WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            WeakRefTracker? IWeakReferenceable.GetWeakRef() {
                 return _tracker;
             }
 
@@ -1222,7 +1221,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        private static MemoryMappedFile CreateFromFile(System.IO.FileStream fileStream, string mapName, long capacity, System.IO.MemoryMappedFiles.MemoryMappedFileAccess access, System.IO.HandleInheritability inheritability, bool leaveOpen) {
+        private static MemoryMappedFile CreateFromFile(System.IO.FileStream fileStream, string? mapName, long capacity, System.IO.MemoryMappedFiles.MemoryMappedFileAccess access, System.IO.HandleInheritability inheritability, bool leaveOpen) {
             return MemoryMappedFile.CreateFromFile(fileStream, mapName, capacity, access, inheritability, leaveOpen);
         }
     }

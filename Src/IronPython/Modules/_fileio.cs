@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Dynamic;
 using System.IO;
@@ -19,9 +21,6 @@ using PythonErrno = IronPython.Runtime.Exceptions.PythonExceptions._OSError.Errn
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Mono.Unix.Native;
-
-#nullable enable
 
 
 namespace IronPython.Modules {

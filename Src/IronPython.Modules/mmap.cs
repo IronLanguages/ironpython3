@@ -289,8 +289,22 @@ namespace IronPython.Modules {
             private readonly MemoryMappedFileAccess _fileAccess;
             private readonly SafeFileHandle? _handle;
 
-            private volatile bool _isClosed;
-            private int _refCount = 1;
+            // RefCount | Closed | Meaning
+            // ---------+--------+--------------------------------
+            //       0  |      0 | Not fully initialized
+            //       1  |      0 | Fully initialized, not being used by any threads
+            //      >1  |      0 | Object in use by one or more threads
+            //      >0  |      1 | Close/dispose requested, no more addrefs allowed, some threads may still be using it
+            //       0  |      1 | Fully disposed
+            private volatile int _state; // Combined ref count and closed/disposed flags (so we can atomically modify them).
+
+            private static class StateBits {
+                public const int Closed = 0b_01;                 // close/dispose requested; no more addrefs allowed
+                public const int Exclusive = 0b_10;              // TODO: to manage exclusive access for resize
+                public const int RefCount = unchecked(~0b_11);   // 2 bits reserved for state management; ref count gets 29 bits (sign bit unused)
+                public const int RefCountOne = 1 << 2;           // ref count 1 shifted over 2 state bits
+            }
+
 
             public MmapDefault(CodeContext/*!*/ context, int fileno, long length, string? tagname, MemoryMappedFileAccess fileAccess, long offset) {
                 _fileAccess = fileAccess;
@@ -401,6 +415,7 @@ namespace IronPython.Modules {
                     throw;
                 }
                 _position = 0L;
+                _state = StateBits.RefCountOne;  // Fully initialized: ref count 1 and not closed or disposed.
 
                 void CheckFileAccessAndSize(Stream stream, bool isWindows) {
                     bool isValid = _fileAccess switch {
@@ -544,28 +559,80 @@ namespace IronPython.Modules {
                 close();
             }
 
-            public bool closed => _isClosed;
 
-            public void close() {
-                if (!_isClosed) {
-                    lock (this) {
-                        if (!_isClosed) {
-                            _isClosed = true;
-                            CloseWorker();
-                        }
+            public bool closed => (_state & StateBits.Closed) == StateBits.Closed;  // Dispose already requested, will self-dispose when ref count drops to 0.
+
+
+            private bool AddRef() {
+                int oldState, newState;
+                do {
+                    oldState = _state;
+                    if ((oldState & StateBits.Closed) == StateBits.Closed) {
+                        // mmap closed, dispose already requested, no more addrefs allowed
+                        return false;
                     }
-                }
+                    Debug.Assert((oldState & StateBits.RefCount) > 0, "resurrecting disposed mmap object (disposed without being closed)");
+
+                    newState = oldState + StateBits.RefCountOne;
+                } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
+                return true;
             }
 
-            private void CloseWorker() {
-                if (Interlocked.Decrement(ref _refCount) == 0) {
+
+            private void Release() {
+                bool performDispose;
+                int oldState, newState;
+                do {
+                    oldState = _state;
+                    Debug.Assert((oldState & StateBits.RefCount) > 0, "mmap ref count underflow (too many releases)");
+
+                    performDispose = (oldState & StateBits.RefCount) == StateBits.RefCountOne;
+                    newState = oldState - StateBits.RefCountOne;
+                    if (performDispose) {
+                        newState |= StateBits.Closed;  // most likely already closed
+                    }
+                } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
+
+                if (performDispose) {
                     _view.Flush();
                     _view.Dispose();
                     _file.Dispose();
                     CloseFileHandle();
                     _sourceStream = null;
+                    _view = null!;
+                    _file = null!;
                 }
             }
+
+
+            public void close() {
+                // close is idempotent; it must never block
+#if NET5_0_OR_GREATER
+                if ((Interlocked.Or(ref _state, StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
+                    // freshly closed, release the construction time reference
+                    Release();
+                }
+#else
+                int current = _state;
+                while (true)
+                {
+                    int newState = current | StateBits.Closed;
+                    int oldState = Interlocked.CompareExchange(ref _state, newState, current);
+                    if (oldState == current)
+                    {
+                        // didn't change in the meantime, exchange with newState completed
+                        if ((oldState & StateBits.Closed) != StateBits.Closed) {
+                            // freshly closed, release the construction time reference
+                            Release();
+                        }
+                        return;
+                    }
+                    // try again to set the bit
+                    current = oldState;
+                }
+#endif
+            }
+
 
             private void CloseFileHandle() {
                 if (_handle is not null) {
@@ -1138,33 +1205,30 @@ namespace IronPython.Modules {
 
             #endregion
 
-            #region Synchronization
 
-            private void EnsureOpen() {
-                if (_isClosed) {
-                    throw PythonOps.ValueError("mmap closed or invalid");
-                }
-            }
+            #region Synchronization
 
             private readonly struct MmapLocker : IDisposable {
                 private readonly MmapDefault _mmap;
 
                 public MmapLocker(MmapDefault mmap) {
+                    if (!mmap.AddRef()) {
+                        throw PythonOps.ValueError("mmap closed or invalid");
+                    }
                     _mmap = mmap;
-                    _mmap.EnsureOpen();
-                    Interlocked.Increment(ref _mmap._refCount);
                 }
 
                 #region IDisposable Members
 
-                public void Dispose() {
-                    _mmap.CloseWorker();
+                public readonly void Dispose() {
+                    _mmap.Release();
                 }
 
                 #endregion
             }
 
             #endregion
+
 
             #region IWeakReferenceable Members
 
@@ -1184,6 +1248,7 @@ namespace IronPython.Modules {
 
             #endregion
         }
+
 
         #region P/Invoke for allocation granularity
 

@@ -75,7 +75,7 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
     $doc.AppendChild($dec) | Out-Null
 
     $runSettings = $doc.CreateElement("RunSettings")
-    
+
     $runConfiguration = $doc.CreateElement("RunConfiguration")
     $runSettings.AppendChild($runConfiguration) | Out-Null
     if ($platform) {
@@ -182,7 +182,7 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         $runSettings = GenerateRunSettings $framework $platform $configuration $runIgnored
 
         function createTask($filtername, $filter) {
-            [Object[]] $args = @("$_BASEDIR/tests/ironpython/IronPython.Tests.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-v', 'n', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
+            [Object[]] $args = @("$_BASEDIR/tests/IronPython.Tests/IronPython.Tests.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-v', 'n', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
             Write-Host "Enqueue [$framework $filtername]:"
             Write-Host "dotnet test $args"
             Write-Host

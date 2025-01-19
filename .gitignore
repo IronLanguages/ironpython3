@@ -17,8 +17,8 @@ packages/
 __pycache__/
 
 # Generated files
-tests/ironpython/TestResults/
-tests/ironpython/runsettings.*.xml
+tests/IronPython.Tests/TestResults/
+tests/IronPython.Tests/runsettings.*.xml
 
 # Created by CPython tests
 src/core/IronPython.StdLib/Lib/lib2to3/Grammar*.pickle

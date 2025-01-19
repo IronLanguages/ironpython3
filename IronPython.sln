@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Wpf", "src\exten
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console", "src\platforms\IronPython.Console\IronPython.Console.csproj", "{811AC32C-11F3-4ED8-92A7-A7E39C2BB704}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Tests", "tests\ironpython\IronPython.Tests.csproj", "{B6B42537-07F8-4F6C-A99A-B155CAEB124E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Tests", "tests\IronPython.Tests\IronPython.Tests.csproj", "{B6B42537-07F8-4F6C-A99A-B155CAEB124E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console.Host", "src\platforms\IronPython.Console.Host\IronPython.Console.Host.csproj", "{81DA19C7-4FEC-47E7-981B-D9310D549F95}"
 EndProject

@@ -15,7 +15,6 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_struct.StructTest('test_705836'), # AssertionError: OverflowError not raised by pack
             test.test_struct.StructTest('test_bool'), # struct.error: expected bool value got IronPython.NewTypes.System.Object_1$1
             test.test_struct.StructTest('test_calcsize'), # AssertionError: 4 not greater than or equal to 8
             test.test_struct.StructTest('test_count_overflow'), # AssertionError: error not raised by calcsize

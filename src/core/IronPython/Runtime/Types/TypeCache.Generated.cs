@@ -29,6 +29,7 @@ namespace IronPython.Runtime.Types {
         private static PythonType pythontype;
         private static PythonType str;
         private static PythonType bytes;
+        private static PythonType bytearray;
         private static PythonType pythontuple;
         private static PythonType weakreference;
         private static PythonType pythonlist;
@@ -128,6 +129,13 @@ namespace IronPython.Runtime.Types {
             get {
                 if (bytes == null) bytes = DynamicHelpers.GetPythonTypeFromType(typeof(Bytes));
                 return bytes;
+            }
+        }
+
+        public static PythonType ByteArray {
+            get {
+                if (bytearray == null) bytearray = DynamicHelpers.GetPythonTypeFromType(typeof(ByteArray));
+                return bytearray;
             }
         }
 

@@ -1332,7 +1332,7 @@ namespace IronPython.Runtime {
 
             StringBuilder result = new StringBuilder();
 
-            object pythonEx = PythonExceptions.ToPython(exception);
+            var pythonEx = PythonExceptions.ToPython(exception);
 
             if (exception.InnerException != null) {
                 if (exception.InnerException.GetPythonException() is PythonExceptions.BaseException pythonInnerException) {
@@ -1438,28 +1438,24 @@ namespace IronPython.Runtime {
             return result.ToString();
         }
 
-        internal static string FormatPythonException(object pythonException) {
+        internal static string FormatPythonException(PythonExceptions.BaseException pythonException) {
             string result = "";
 
             // dump the python exception.
             if (pythonException != null) {
-                if (pythonException is string str) {
-                    result += str;
-                } else {
-                    result += GetPythonExceptionClassName(pythonException);
+                result += GetPythonExceptionClassName(pythonException);
 
-                    string excepStr = PythonOps.ToString(pythonException);
+                string excepStr = PythonOps.ToString(pythonException);
 
-                    if (!string.IsNullOrEmpty(excepStr)) {
-                        result += ": " + excepStr;
-                    }
+                if (!string.IsNullOrEmpty(excepStr)) {
+                    result += ": " + excepStr;
                 }
             }
 
             return result;
         }
 
-        private static string GetPythonExceptionClassName(object pythonException) {
+        private static string GetPythonExceptionClassName(PythonExceptions.BaseException pythonException) {
             string className = string.Empty;
             if (PythonOps.TryGetBoundAttr(pythonException, "__class__", out object val)) {
                 if (PythonOps.TryGetBoundAttr(val, "__name__", out val)) {
@@ -1644,9 +1640,8 @@ namespace IronPython.Runtime {
         }
 
         public override void GetExceptionMessage(Exception exception, out string message, out string typeName) {
-            object pythonEx = PythonExceptions.ToPython(exception);
-
-            message = FormatPythonException(PythonExceptions.ToPython(exception));
+            var pythonEx = PythonExceptions.ToPython(exception);
+            message = FormatPythonException(pythonEx);
             typeName = GetPythonExceptionClassName(pythonEx);
         }
 

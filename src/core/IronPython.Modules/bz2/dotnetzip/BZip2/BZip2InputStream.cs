@@ -1105,7 +1105,7 @@ namespace Ionic.BZip2
             /* Check: unzftab entries in range. */
             for (i = 0; i <= 255; i++)
             {
-                if (s.unzftab[i] < 0 || s.unzftab[i] > this.last)
+                if (s.unzftab[i] < 0 || s.unzftab[i] > this.last+1)
                     throw new Exception("BZ_DATA_ERROR");
             }
 

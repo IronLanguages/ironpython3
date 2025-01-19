@@ -8,15 +8,15 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("itertools", typeof(IronPython.Modules.PythonIterTools))]
 namespace IronPython.Modules {
@@ -168,9 +168,23 @@ namespace IronPython.Modules {
             }
 
             public void __setstate__(PythonTuple state) {
-                // TODO: error handling?
-                ie = state[0] as IEnumerator;
-                inner = (state.Count > 1) ? state[1] as IEnumerator : null;
+                IEnumerator iter;
+                IEnumerator innerIter;
+                switch (state.Count) {
+                    case 0: throw PythonOps.TypeError("function takes at least 1 argument (0 given)");
+                    case 1:
+                        iter = state[0] as IEnumerator ?? throw PythonOps.TypeError("Arguments must be iterators.");
+                        innerIter = null;
+                        break;
+                    case 2:
+                        iter = state[0] as IEnumerator ?? throw PythonOps.TypeError("Arguments must be iterators.");
+                        innerIter = state[1] as IEnumerator ?? throw PythonOps.TypeError("Arguments must be iterators.");
+                        break;
+                    default:
+                        throw PythonOps.TypeError("function takes at most 2 argument ({0} given)", state.Count);
+                }
+                ie = iter;
+                inner = innerIter;
                 InnerEnumerator = LazyYielder();
             }
 
@@ -219,7 +233,7 @@ namespace IronPython.Modules {
                 if (iter == null ||
                     !PythonOps.HasAttr(context, iter, "__iter__") &&
                     !PythonOps.HasAttr(context, iter, "__getitem__")) {
-                        throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(iter));
+                    throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(iter));
                 }
             }
 
@@ -262,13 +276,13 @@ namespace IronPython.Modules {
                 InnerEnumerator = BigIntYielder(this, start, 1);
             }
 
-            public count(int start=0, int step=1) {
+            public count(int start = 0, int step = 1) {
                 _curInt = start;
                 _step = step;
                 InnerEnumerator = IntYielder(this, start, step);
             }
 
-            public count([DefaultParameterValue(0)]int start, BigInteger step) {
+            public count([DefaultParameterValue(0)] int start, BigInteger step) {
                 _curInt = start;
                 _step = step;
                 InnerEnumerator = IntYielder(this, start, step);
@@ -286,7 +300,7 @@ namespace IronPython.Modules {
                 InnerEnumerator = BigIntYielder(this, start, step);
             }
 
-            public count(CodeContext/*!*/ context, [DefaultParameterValue(0)]object start, [DefaultParameterValue(1)]object step) {
+            public count(CodeContext/*!*/ context, [DefaultParameterValue(0)] object start, [DefaultParameterValue(1)] object step) {
                 EnsureNumeric(context, start);
                 EnsureNumeric(context, step);
                 _cur = start;
@@ -301,7 +315,7 @@ namespace IronPython.Modules {
                 if (num == null ||
                     !PythonOps.HasAttr(context, num, "__int__") &&
                     !PythonOps.HasAttr(context, num, "__float__")) {
-                        throw PythonOps.TypeError("a number is required");
+                    throw PythonOps.TypeError("a number is required");
                 }
             }
 
@@ -515,11 +529,14 @@ namespace IronPython.Modules {
             private IEnumerator<object> Yielder(IEnumerator iter) {
                 object curKey = _starterKey;
                 if (MoveNextHelper(iter)) {
+                    curKey = GetKey(iter.Current);
+                    yield return PythonTuple.MakeTuple(curKey, Grouper(iter, curKey));
+
                     while (!_fFinished) {
                         while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
-                            if (!MoveNextHelper(iter)) { 
-                                _fFinished = true; 
-                                yield break; 
+                            if (!MoveNextHelper(iter)) {
+                                _fFinished = true;
+                                yield break;
                             }
                         }
                         curKey = GetKey(iter.Current);
@@ -531,9 +548,9 @@ namespace IronPython.Modules {
             private IEnumerator<object> Grouper(IEnumerator iter, object curKey) {
                 while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
                     yield return iter.Current;
-                    if (!MoveNextHelper(iter)) { 
-                        _fFinished = true; 
-                        yield break; 
+                    if (!MoveNextHelper(iter)) {
+                        _fFinished = true;
+                        yield break;
                     }
                 }
             }
@@ -658,7 +675,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public zip_longest([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
+            public zip_longest([ParamDictionary] IDictionary<object, object> paramDict, params object[] iterables) {
                 object fill;
 
                 if (paramDict.TryGetValue("fillvalue", out fill)) {
@@ -743,11 +760,14 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class product : IterBase {
+            private PythonTuple[] tuples;
+
             public product(CodeContext context, params object[] iterables) {
-                InnerEnumerator = Yielder(ArrayUtils.ConvertAll(iterables, x => new PythonList(context, PythonOps.GetEnumerator(x))));
+                tuples = ArrayUtils.ConvertAll(iterables, x => new PythonTuple(PythonOps.GetEnumerator(x)));
+                InnerEnumerator = Yielder(tuples);
             }
 
-            public product(CodeContext context, [ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
+            public product(CodeContext context, [ParamDictionary] IDictionary<object, object> paramDict, params object[] iterables) {
                 object repeat;
                 int iRepeat = 1;
                 if (paramDict.TryGetValue("repeat", out repeat)) {
@@ -765,21 +785,20 @@ namespace IronPython.Modules {
                     throw UnexpectedKeywordArgument(paramDict);
                 }
 
-                PythonList[] finalIterables = new PythonList[iterables.Length * iRepeat];
+                tuples = new PythonTuple[iterables.Length * iRepeat];
                 for (int i = 0; i < iRepeat; i++) {
                     for (int j = 0; j < iterables.Length; j++) {
-                        finalIterables[i * iterables.Length + j] = new PythonList(context, iterables[j]);
+                        tuples[i * iterables.Length + j] = new PythonTuple(iterables[j]);
                     }
                 }
-                InnerEnumerator = Yielder(finalIterables);
+                InnerEnumerator = Yielder(tuples);
             }
 
             public PythonTuple __reduce__() {
-                // TODO
                 return PythonTuple.MakeTuple(
                     DynamicHelpers.GetPythonType(this),
-                    PythonTuple.MakeTuple(), // arguments
-                    null // state
+                    PythonTuple.MakeTuple(tuples), // arguments
+                    null // TODO: state
                 );
             }
 
@@ -787,7 +806,7 @@ namespace IronPython.Modules {
                 // TODO
             }
 
-            private IEnumerator<object> Yielder(PythonList[] iterables) {
+            private IEnumerator<object> Yielder(PythonTuple[] iterables) {
                 if (iterables.Length > 0) {
                     IEnumerator[] enums = new IEnumerator[iterables.Length];
                     enums[0] = iterables[0].GetEnumerator();
@@ -816,6 +835,7 @@ namespace IronPython.Modules {
                 } else {
                     yield return PythonTuple.EMPTY;
                 }
+                tuples = new PythonTuple[1] { PythonTuple.EMPTY };
             }
         }
 
@@ -970,7 +990,7 @@ namespace IronPython.Modules {
 
             public permutations(CodeContext context, object iterable, object r) {
                 _data = new PythonList(context, iterable);
-                
+
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
 
@@ -1061,7 +1081,7 @@ namespace IronPython.Modules {
             public repeat(object @object, int times) {
                 _obj = @object;
                 InnerEnumerator = Yielder();
-                _remaining = times;
+                _remaining = times < 0 ? 0 : times;
             }
 
             private IEnumerator<object> Yielder() {
@@ -1077,10 +1097,9 @@ namespace IronPython.Modules {
             }
 
             public PythonTuple __reduce__() {
-                // TODO
                 return PythonTuple.MakeTuple(
                     DynamicHelpers.GetPythonType(this),
-                    PythonTuple.MakeTuple() // arguments
+                    _fInfinite ? PythonTuple.MakeTuple(_obj) : PythonTuple.MakeTuple(_obj, _remaining) // arguments
                 );
             }
 
@@ -1133,9 +1152,9 @@ namespace IronPython.Modules {
 
             #endregion
         }
-        
+
         [PythonType]
-        public class starmap : IterBase {            
+        public class starmap : IterBase {
             public starmap(CodeContext context, object function, object iterable) {
                 InnerEnumerator = Yielder(context, function, PythonOps.GetEnumerator(iterable));
             }
@@ -1194,7 +1213,7 @@ namespace IronPython.Modules {
 
             private IEnumerator<object> Yielder(object predicate, IEnumerator iter) {
                 while (MoveNextHelper(iter)) {
-                    if(!Converter.ConvertToBoolean(
+                    if (!Converter.ConvertToBoolean(
                         _context.LanguageContext.CallSplat(predicate, iter.Current)
                     )) {
                         break;
@@ -1205,8 +1224,8 @@ namespace IronPython.Modules {
             }
         }
 
-        [PythonHidden]
-        public class TeeIterator : IEnumerator, IWeakReferenceable {
+        [PythonType("_tee")]
+        public sealed class TeeIterator : IEnumerator, IWeakReferenceable {
             internal IEnumerator _iter;
             internal PythonList _data;
             private int _curIndex = -1;

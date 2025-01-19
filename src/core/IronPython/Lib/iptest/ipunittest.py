@@ -206,24 +206,25 @@ def _flatten_suite(suite):
 
 def generate_suite(tests, failing_tests, skip_tests=[]):
     all_tests = _flatten_suite(tests)
+    test_indices = {t: i for i, t in enumerate(all_tests)}
     unknown_tests = []
 
     for t in skip_tests:
         try:
-            all_tests.remove(t)
+            all_tests[test_indices.pop(t)] = None
         except ValueError:
             unknown_tests.append(t)
 
     for t in failing_tests:
         try:
-            all_tests[all_tests.index(t)] = unittest.expectedFailure(t)
-        except:
+            all_tests[test_indices.pop(t)] = unittest.expectedFailure(t)
+        except ValueError:
             unknown_tests.append(t)
 
     if unknown_tests:
         raise ValueError("Unknown tests:\n - {}".format('\n - '.join(str(t) for t in unknown_tests)))
 
-    return unittest.TestSuite(all_tests)
+    return unittest.TestSuite(t for t in all_tests if t is not None)
 
 # class testpath:
 #     # find the ironpython root directory

@@ -13,7 +13,7 @@ import _thread
 import time
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_osx, is_linux, is_windows, is_cpython, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, is_osx, is_linux, is_windows, is_cpython, run_test
 
 AF_DICT = {"AF_APPLETALK" : 5,
            "AF_DECnet" : 12,
@@ -419,8 +419,6 @@ class SocketTest(IronPythonTestCase):
         pass
 
     def test_cp5814(self):
-        global EXIT_CODE
-        global HAS_EXITED
         EXIT_CODE = -1
         HAS_EXITED = False
 
@@ -428,14 +426,12 @@ class SocketTest(IronPythonTestCase):
 
         #Server code
         server = """
-from time import sleep
 import _socket
 import os
 
 HOST = 'localhost'
 PORT = 0
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 s.listen(1)
@@ -454,12 +450,12 @@ try:
     #Verifications
     if not addr[0] in [HOST, '127.0.0.1']:
         raise Exception('The address, %s, was unexpected' % str(addr))
-    if data!=b'stuff':
-        raise Exception('%s!=stuff' % str(data))
-    sleep(10)
+    if data != b'stuff':
+        raise Exception('%s != stuff' % str(data))
 
 finally:
     conn.close()
+    s.close()
     try:
         os.remove(r"{PORTFILE}")
     except:
@@ -467,8 +463,8 @@ finally:
 """.format(PORTFILE=portFile)
         #Spawn off a thread to startup the server
         def server_thread():
-            global EXIT_CODE
-            global HAS_EXITED
+            nonlocal EXIT_CODE
+            nonlocal HAS_EXITED
             serverFile = os.path.join(self.temporary_dir, "cp5814server_%d.py" % os.getpid())
             self.write_to_file(serverFile, server)
             EXIT_CODE = os.system('"%s" %s' %
@@ -484,7 +480,7 @@ finally:
         portex = None
         startTime = time.perf_counter()
         for _ in range(20):
-            time.sleep(1)
+            time.sleep(0.5)
             if EXIT_CODE > 0:
                 self.fail("Server died with exit code %d" % EXIT_CODE)
             try:
@@ -506,13 +502,14 @@ finally:
         s.close()
 
         #Ensure the server didn't die
-        for i in range(100):
-            if not HAS_EXITED:
-                print("*", end="")
-                time.sleep(1)
-            else:
+        for _ in range(100):
+            if HAS_EXITED:
                 self.assertEqual(EXIT_CODE, 0)
                 break
+
+            print("*", end="")
+            time.sleep(0.5)
+
         self.assertTrue(HAS_EXITED)
 
         #Verification
@@ -526,28 +523,41 @@ import socket
 
 class SocketMakefileTest(IronPythonTestCase):
     def test_misc(self):
-        f = socket.socket().makefile()
+        s = socket.socket()
+        f = s.makefile()
         f.bufsize = 4096
         self.assertEqual(4096, f.bufsize)
+        f.close()
+        s.close()
 
     def test_makefile_refcount(self):
         "Ensures that the _socket stays open while there's still a file associated"
 
-        global PORT
+        PORT = None
         def echoer():
-            global PORT
+            nonlocal PORT
             s = socket.socket()
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
             s.settimeout(15) # prevents the server from staying open if the client never connects
             s.bind(('localhost', 0))
-            PORT = s.getsockname()[1]
             s.listen(5)
-            (s2, ignore) = s.accept()
+            PORT = s.getsockname()[1]
+            (s2, _) = s.accept()
             s2.send(s2.recv(10))
+            s2.close()
+            s.close()
 
         _thread.start_new_thread(echoer, ())
-        time.sleep(1)
+        for _ in range(20):
+            time.sleep(0.5)
+            if PORT is not None:
+                break
+
+        if is_mono:
+            # Warm up Mono to connecting sockets
+            dummy = socket.socket()
         s = socket.socket()
+        if is_mono:
+            dummy.close()
         s.connect(('localhost', PORT))
         f1 = s.makefile('r')
         f2 = s.makefile('w')
@@ -558,9 +568,10 @@ class SocketMakefileTest(IronPythonTestCase):
         str = f1.readline()
         self.assertEqual(str, test_msg)
 
+        f2.close()
+        f1.close()
+
     def test_cp7451(self):
-        global EXIT_CODE
-        global HAS_EXITED
         EXIT_CODE = -1
         HAS_EXITED = False
 
@@ -568,14 +579,12 @@ class SocketMakefileTest(IronPythonTestCase):
 
         #Server code
         server = """
-from time import sleep
 import socket as _socket
 import os
 
 HOST = 'localhost'
 PORT = 0
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.settimeout(20) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 s.listen(1)
@@ -593,12 +602,12 @@ try:
     #Verifications
     if not addr[0] in [HOST, '127.0.0.1']:
         raise Exception('The address, %s, was unexpected' % str(addr))
-    if data!=b'stuff2':
-        raise Exception('%s!=stuff2' % str(data))
-    sleep(10)
+    if data != b'stuff2':
+        raise Exception('%s != stuff2' % str(data))
 
 finally:
     conn.close()
+    s.close()
     try:
         os.remove(r"{PORTFILE}")
     except:
@@ -606,8 +615,8 @@ finally:
 """.format(PORTFILE=portFile)
         #Spawn off a thread to startup the server
         def server_thread():
-            global EXIT_CODE
-            global HAS_EXITED
+            nonlocal EXIT_CODE
+            nonlocal HAS_EXITED
             serverFile = os.path.join(self.temporary_dir, "cp7451server_%d.py" % os.getpid())
             self.write_to_file(serverFile, server)
             EXIT_CODE = os.system('"%s" %s' %
@@ -623,7 +632,7 @@ finally:
         portex = None
         startTime = time.perf_counter()
         for _ in range(20):
-            time.sleep(1)
+            time.sleep(0.5)
             if EXIT_CODE > 0:
                 self.fail("Server died with exit code %d" % EXIT_CODE)
             try:
@@ -645,16 +654,19 @@ finally:
         s.close()
 
         #Ensure the server didn't die
-        for i in range(100):
-            if not HAS_EXITED:
-                print("*", end="")
-                time.sleep(1)
-            else:
+        for _ in range(100):
+            if HAS_EXITED:
                 self.assertEqual(EXIT_CODE, 0)
                 break
+
+            print("*", end="")
+            time.sleep(0.5)
+
         self.assertTrue(HAS_EXITED)
 
         #Verification
         self.assertEqual(f.read(6), "stuff2")
+
+        f.close()
 
 run_test(__name__)

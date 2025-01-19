@@ -260,7 +260,7 @@ namespace IronPython.Modules {
                         ((TextWriter)file).Write(text);
                     } // unrecognized file type - warning is lost
                 }
-            } catch (IOException) {
+            } catch (Exception ex) when (ex is IOException or OSException) {
                 // invalid file - warning is lost
             }
         }

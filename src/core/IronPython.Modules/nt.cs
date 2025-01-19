@@ -30,16 +30,13 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
-using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
-
 #if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
 
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
-    public static class PythonNT {
+    public static partial class PythonNT {
         public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
         /* TODO: missing functions/classes:
@@ -101,7 +98,7 @@ namespace IronPython.Modules {
         private static extern int GetFinalPathNameByHandle([In] SafeFileHandle hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static string _getfinalpathname([NotNone] string path) {
+        public static string _getfinalpathname(CodeContext/*!*/ context, [NotNone] string path) {
             var hFile = CreateFile(path, 0, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
             if (hFile.IsInvalid) {
                 throw GetLastWin32Error(path);
@@ -113,6 +110,20 @@ namespace IronPython.Modules {
                 throw GetLastWin32Error(path);
             }
             return sb.ToString();
+        }
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static Bytes _getfinalpathname(CodeContext/*!*/ context, [NotNone] Bytes path)
+            => _getfinalpathname(context, path.ToFsString(context)).ToFsBytes(context);
+
+        [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static object _getfinalpathname(CodeContext/*!*/ context, object? path) {
+            return ToFsPath(context, path, nameof(path)) switch {
+                string s => _getfinalpathname(context, s),
+                Extensible<string> es => _getfinalpathname(context, es.Value),
+                Bytes b => _getfinalpathname(context, b),
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         public static string _getfullpathname(CodeContext/*!*/ context, [NotNone] string/*!*/ path) {
@@ -192,8 +203,14 @@ namespace IronPython.Modules {
         public static Bytes _getfullpathname(CodeContext/*!*/ context, [NotNone] Bytes path)
             => _getfullpathname(context, path.ToFsString(context)).ToFsBytes(context);
 
-        public static Bytes _getfullpathname(CodeContext/*!*/ context, object? path)
-            => _getfullpathname(context, ConvertToFsString(context, path, nameof(path))).ToFsBytes(context);
+        public static object _getfullpathname(CodeContext/*!*/ context, object? path) {
+            return ToFsPath(context, path, nameof(path)) switch {
+                string s => _getfullpathname(context, s),
+                Extensible<string> es => _getfullpathname(context, es.Value),
+                Bytes b => _getfullpathname(context, b),
+                _ => throw new InvalidOperationException(),
+            };
+        }
 
 #if FEATURE_PROCESS
         public static void abort() {
@@ -284,12 +301,6 @@ namespace IronPython.Modules {
         public static void chdir(CodeContext context, object? path)
             => chdir(ConvertToFsString(context, path, nameof(path)));
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-        private static void chmodUnix(string path, int mode) {
-            if (Mono.Unix.Native.Syscall.chmod(path, Mono.Unix.Native.NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
-            throw GetLastUnixError(path);
-        }
-
         [Documentation("chmod(path, mode, *, dir_fd=None, follow_symlinks=True)")]
         public static void chmod([NotNone] string path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
@@ -347,13 +358,27 @@ namespace IronPython.Modules {
             }
         }
 
+        public static object? cpu_count() => null; // TODO: implement me!
+
         public static int dup(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
             StreamBox streams = fileManager.GetStreams(fd); // OSError if fd not valid
-            fileManager.EnsureRefStreams(streams);
-            fileManager.AddRefStreams(streams);
-            return fileManager.Add(new(streams));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                int fd2 = DuplicateStreamDescriptorUnix(fd, -1, out Stream? dupstream);
+                if (dupstream is not null) {
+                    return fileManager.Add(fd2, new(dupstream));
+                } else {
+                    // Share the same set of streams between the original and the dupped descriptor
+                    fileManager.EnsureRefStreams(streams);
+                    fileManager.AddRefStreams(streams);
+                    return fileManager.Add(fd2, new(streams));
+                }
+            } else {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
+                return fileManager.Add(new(streams));
+            }
         }
 
 
@@ -366,19 +391,39 @@ namespace IronPython.Modules {
             }
 
             if (!fileManager.ValidateFdRange(fd2)) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
+                throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
             }
 
             if (fileManager.TryGetStreams(fd2, out _)) {
                 close(context, fd2);
             }
 
-            // TODO: race condition: `open` or `dup` on another thread may occupy fd2 
+            // TODO: race condition: `open` or `dup` on another thread may occupy fd2
 
-            fileManager.EnsureRefStreams(streams);
-            fileManager.AddRefStreams(streams);
-            return fileManager.Add(fd2, new(streams));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                if (!streams.IsSingleStream && fd2 is 0 && streams.ReadStream is FileStream fs) {
+                    // If there is a separate read stream, dupping over stdin uses read stream's file descriptor as source
+                    long pos = fs.Position;
+                    fd = fs.SafeFileHandle.DangerousGetHandle().ToInt32();
+                    fs.Seek(pos, SeekOrigin.Begin);
+                }
+                fd2 = DuplicateStreamDescriptorUnix(fd, fd2, out Stream? dupstream); // closes fd2 atomically if reopened in the meantime
+                fileManager.Remove(fd2);
+                if (dupstream is not null) {
+                    return fileManager.Add(fd2, new(dupstream));
+                } else {
+                    // Share the same set of streams between the original and the dupped descriptor
+                    fileManager.EnsureRefStreams(streams);
+                    fileManager.AddRefStreams(streams);
+                    return fileManager.Add(fd2, new(streams));
+                }
+            } else {
+                fileManager.EnsureRefStreams(streams);
+                fileManager.AddRefStreams(streams);
+                return fileManager.Add(fd2, new(streams));
+            }
         }
+
 
 #if FEATURE_PROCESS
         /// <summary>
@@ -396,18 +441,21 @@ namespace IronPython.Modules {
         }
 
         public static object fspath(CodeContext context, [AllowNull] object path)
-            => PythonOps.FsPath(path);
+            => PythonOps.FsPath(context, path);
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonFileManager fileManager = context.LanguageContext.FileManager;
 
             if (fileManager.TryGetStreams(fd, out StreamBox? streams)) {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    return fstatUnix(fd);
+                }
                 if (streams.IsConsoleStream()) return new stat_result(0x2000);
                 if (streams.IsStandardIOStream()) return new stat_result(0x1000);
                 if (StatStream(streams.ReadStream) is not null and var res) return res;
             }
-            return LightExceptions.Throw(PythonOps.OSError(9, "Bad file descriptor"));
+            return LightExceptions.Throw(PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor"));
 
             static object? StatStream(Stream stream) {
                 if (stream is FileStream fs) return lstat(fs.Name, new Dictionary<string, object>(1));
@@ -416,14 +464,8 @@ namespace IronPython.Modules {
 #endif
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     if (ReferenceEquals(stream, Stream.Null)) return new stat_result(0x2000);
-                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    if (IsUnixStream(stream)) return new stat_result(0x1000);
                 }
                 return null;
-            }
-
-            static bool IsUnixStream(Stream stream) {
-                return stream is Mono.Unix.UnixStream;
             }
         }
 
@@ -433,7 +475,7 @@ namespace IronPython.Modules {
             try {
                 streams.Flush();
             } catch (IOException) {
-                throw PythonOps.OSError(9, "Bad file descriptor");
+                throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
             }
         }
 
@@ -479,11 +521,6 @@ namespace IronPython.Modules {
             static void linkWindows(string src, string dst) {
                 if (!CreateHardLink(dst, src, IntPtr.Zero))
                     throw GetLastWin32Error(src, dst);
-            }
-
-            static void linkUnix(string src, string dst) {
-                if (Mono.Unix.Native.Syscall.link(src, dst) == 0) return;
-                throw GetLastUnixError(src, dst);
             }
         }
 
@@ -540,8 +577,8 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static PythonList listdir(CodeContext context, object? path)
-            => listdir(context, ConvertToFsString(context, path, nameof(path)));
+        public static PythonList listdir(CodeContext context, [NotNone] object path)
+            => listdir(context, ConvertToFsString(context, path, nameof(path), orType: "None"));
 
         public static BigInteger lseek(CodeContext context, int fd, long offset, int whence) {
             var streams = context.LanguageContext.FileManager.GetStreams(fd);
@@ -564,7 +601,6 @@ namespace IronPython.Modules {
         [LightThrowing, Documentation("")]
         public static object lstat(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
             => lstat(path.ToFsString(context), kwargs);
-
 
         [LightThrowing, Documentation("")]
         public static object lstat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
@@ -596,7 +632,7 @@ namespace IronPython.Modules {
 
             public bool is_file(bool follow_symlinks = true) => !is_dir();
 
-            public bool is_symlink() => throw new NotImplementedException();
+            public bool is_symlink() => info.Attributes.HasFlag(FileAttributes.ReparsePoint) ? throw new NotImplementedException() : false;
 
             [LightThrowing]
             public object? stat(bool follow_symlinks = true) => PythonNT.stat(info.FullName, new Dictionary<string, object>());
@@ -639,8 +675,8 @@ namespace IronPython.Modules {
         public static ScandirIterator scandir(CodeContext context, string? path = null)
             => new ScandirIterator(context, ScandirHelper(context, path), asBytes: false);
 
-        public static ScandirIterator scandir(CodeContext context, [NotNone] IBufferProtocol path)
-            => new ScandirIterator(context, ScandirHelper(context, ConvertToFsString(context, path, nameof(path))), asBytes: true);
+        public static ScandirIterator scandir(CodeContext context, [NotNone] object path)
+            => new ScandirIterator(context, ScandirHelper(context, ConvertToFsString(context, path, nameof(path), orType: "None")), asBytes: true);
 
         private static IEnumerable<FileSystemInfo> ScandirHelper(CodeContext context, string? path) {
             if (path == null) {
@@ -697,11 +733,6 @@ namespace IronPython.Modules {
             } else {
                 throw new NotImplementedException();
             }
-
-            static void symlinkUnix(string src, string dst) {
-                if (Mono.Unix.Native.Syscall.symlink(src, dst) == 0) return;
-                throw GetLastUnixError(src, dst);
-            }
         }
 
         [Documentation("")]
@@ -743,23 +774,6 @@ namespace IronPython.Modules {
             }
         }
 
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static uname_result uname() {
-            Mono.Unix.Native.Utsname info;
-            Mono.Unix.Native.Syscall.uname(out info);
-            return new uname_result(info.sysname, info.nodename, info.release, info.version, info.machine);
-        }
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static BigInteger getuid() {
-            return Mono.Unix.Native.Syscall.getuid();
-        }
-
-        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static BigInteger geteuid() {
-            return Mono.Unix.Native.Syscall.geteuid();
-        }
-
 #endif
 
 #if FEATURE_FILESYSTEM
@@ -783,7 +797,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            if (Directory.Exists(path)) throw DirectoryExists();
+            if (Directory.Exists(path)) throw DirectoryExistsError(path);
             // we ignore mode
 
             try {
@@ -801,9 +815,16 @@ namespace IronPython.Modules {
         public static void mkdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => mkdir(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
-        private const int DefaultBufferSize = 4096;
+        [Documentation("""
+            open(path, flags, mode=511, *, dir_fd=None)
 
-        [Documentation("open(path, flags, mode=511, *, dir_fd=None)")]
+            Open a file for low level IO.  Returns a file descriptor (integer).
+
+            If dir_fd is not None, it should be a file descriptor open to a directory,
+            and path should be relative; path will then be relative to that directory.
+            dir_fd may not be implemented on your platform.
+            If it is unavailable, using it will raise a NotImplementedError.
+            """)]
         public static object open(CodeContext/*!*/ context, [NotNone] string path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
@@ -823,26 +844,62 @@ namespace IronPython.Modules {
                 }
             }
 
+            if ((RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && !ClrModule.IsMono) {
+                // Use PosixFileStream to operate on fd directly
+                // On Mono, we must use FileStream due to limitations in MemoryMappedFile
+                Stream s = PosixFileStream.Open(path, flags, unchecked((uint)mode), out int fd);
+                if ((flags & O_APPEND) != 0) {
+                    s.Seek(0L, SeekOrigin.End);
+                }
+                return context.LanguageContext.FileManager.Add(fd, new(s));
+            }
+
             try {
+                // FileStream buffer size must be >= 0 on .NET, and >= 1 on .NET Framework and Mono.
+                // On .NET, buffer size 0 or 1 disables buffering.
+                // On .NET Framework, buffer size 1 disables buffering.
+                // On Mono, buffer size 1 makes writes of length >= 2 bypass the buffer.
+                const int NoBuffering = 1;
+
                 FileMode fileMode = FileModeFromFlags(flags);
                 FileAccess access = FileAccessFromFlags(flags);
                 FileOptions options = FileOptionsFromFlags(flags);
-                Stream fs;
+                Stream s;            // the stream opened to acces the file
+                FileStream? fs;      // downcast of s if s is FileStream
+                Stream? rs = null;   // secondary read stream if needed, otherwise same as s
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IsNulFile(path)) {
-                    fs = Stream.Null;
+                    fs = null;
+                    s = Stream.Null;
                 } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
                     fs = new FileStream(path, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, NoBuffering, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
-                    fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
+                    // .NET doesn't allow Append w/ access != Write, so open the file w/ Write
+                    // and a secondary stream w/ Read, then seek to the end.
+                    s = fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, NoBuffering, options);
+                    rs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, NoBuffering, options);
+                    rs.Seek(0L, SeekOrigin.End);
                 } else {
-                    fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
+                    s = fs = new FileStream(path, fileMode, access, FileShare.ReadWrite, NoBuffering, options);
                 }
+                rs ??= s;
 
-                return context.LanguageContext.FileManager.Add(new(fs));
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    int fd = fs!.SafeFileHandle.DangerousGetHandle().ToInt32();
+                    // accessing SafeFileHandle may reset file position
+                    if (fileMode == FileMode.Append) {
+                        fs.Seek(0L, SeekOrigin.End);
+                    }
+                    if (!ReferenceEquals(fs, rs)) {
+                        rs.Seek(fs.Position, SeekOrigin.Begin);
+                    }
+                    return context.LanguageContext.FileManager.Add(fd, new(rs, s));
+                } else {
+                    return context.LanguageContext.FileManager.Add(new(rs, s));
+                }
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
@@ -877,29 +934,25 @@ namespace IronPython.Modules {
 
 #if FEATURE_PIPES
 
-        private static Tuple<Stream, Stream> CreatePipeStreams() {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                return CreatePipeStreamsUnix();
-            } else {
-                var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
-                var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
-                return Tuple.Create<Stream, Stream>(inPipe, outPipe);
-            }
-
-            static Tuple<Stream, Stream> CreatePipeStreamsUnix() {
-                Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
-                return Tuple.Create<Stream, Stream>(pipes.Reading, pipes.Writing);
-            }
-        }
-
         public static PythonTuple pipe(CodeContext context) {
-            var pipeStreams = CreatePipeStreams();
             var manager = context.LanguageContext.FileManager;
 
-            return PythonTuple.MakeTuple(
-                manager.Add(new(pipeStreams.Item1)),
-                manager.Add(new(pipeStreams.Item2))
-            );
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
+                var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
+                return PythonTuple.MakeTuple(
+                    manager.Add(new(inPipe)),
+                    manager.Add(new(outPipe))
+                );
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                var pipeStreams = CreatePipeStreamsUnix();
+                return PythonTuple.MakeTuple(
+                    manager.Add(pipeStreams.Item1, new(pipeStreams.Item2)),
+                    manager.Add(pipeStreams.Item3, new(pipeStreams.Item4))
+                );
+            } else {
+                throw new PlatformNotSupportedException();
+            }
         }
 #endif
 
@@ -915,13 +968,13 @@ namespace IronPython.Modules {
 
         public static Bytes read(CodeContext/*!*/ context, int fd, int buffersize) {
             if (buffersize < 0) {
-                throw PythonOps.OSError(PythonErrorNumber.EINVAL, "Invalid argument");
+                throw PythonOps.OSError(PythonErrno.EINVAL, "Invalid argument");
             }
 
             try {
                 PythonContext pythonContext = context.LanguageContext;
                 var streams = pythonContext.FileManager.GetStreams(fd);
-                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(9, "Bad file descriptor");
+                if (!streams.ReadStream.CanRead) throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
 
                 return Bytes.Make(streams.Read(buffersize));
             } catch (Exception e) {
@@ -969,11 +1022,6 @@ namespace IronPython.Modules {
 
         [DllImport("kernel32.dll", EntryPoint = "MoveFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         private static extern bool MoveFileEx(string src, string dst, uint flags);
-
-        private static void renameUnix(string src, string dst) {
-            if (Mono.Unix.Native.Syscall.rename(src, dst) == 0) return;
-            throw GetLastUnixError(src, dst);
-        }
 
         [Documentation("replace(src, dst, *, src_dir_fd=None, dst_dir_fd=None)")]
         public static void replace([NotNone] string src, [NotNone] string dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
@@ -1221,12 +1269,15 @@ namespace IronPython.Modules {
 
             internal stat_result(int mode) : this(new object[10] { mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, null) { }
 
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("macos")]
             internal stat_result(Mono.Unix.Native.Stat stat)
                 : this(new object[16] {Mono.Unix.Native.NativeConvert.FromFilePermissions(stat.st_mode), ToInt(stat.st_ino), ToInt(stat.st_dev), ToInt(stat.st_nlink), ToInt(stat.st_uid), ToInt(stat.st_gid), ToInt(stat.st_size),
                       ToInt(stat.st_atime), ToInt(stat.st_mtime), ToInt(stat.st_ctime),
                       stat.st_atime + stat.st_atime_nsec / (double)nanosecondsPerSeconds, stat.st_mtime + stat.st_mtime_nsec / (double)nanosecondsPerSeconds, stat.st_ctime + stat.st_ctime_nsec / (double)nanosecondsPerSeconds,
                       ToInt(stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec), ToInt(stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec), ToInt(stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec) }, null) { }
 
+            [SupportedOSPlatform("windows")]
             internal stat_result(int mode, ulong fileidx, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns)
                 : this(new object[16] { mode, ToInt(fileidx), 0, 0, 0, 0, ToInt(size),
                       ToInt(st_atime_ns / nanosecondsPerSeconds), ToInt(st_mtime_ns / nanosecondsPerSeconds), ToInt(st_ctime_ns / nanosecondsPerSeconds),
@@ -1343,14 +1394,6 @@ namespace IronPython.Modules {
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-        private static object statUnix(string path) {
-            if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
-                return new stat_result(buf);
-            }
-            return LightExceptions.Throw(GetLastUnixError(path));
-        }
-
         private const int OPEN_EXISTING = 3;
         private const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
         private const int FILE_READ_ATTRIBUTES = 0x0080;
@@ -1465,11 +1508,15 @@ namespace IronPython.Modules {
             => stat(path.ToFsString(context), dict);
 
         [LightThrowing, Documentation("")]
-        public static object stat(CodeContext context, [NotNone] IBufferProtocol path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
-            // TODO: accept object? path to get nicer error message?
-            // TODO: Python 3.6: os.PathLike
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(stat)}: {nameof(path)} should be string, bytes or integer, not {PythonOps.GetPythonTypeName(path)}"); // deprecated in 3.6
-            return stat(path.ToFsBytes(context).ToFsString(context), dict);
+        public static object stat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
+            if (PythonOps.TryToIndex(path, out BigInteger bi)) {
+                if (bi.AsInt32(out int i)) {
+                    return stat(context, i);
+                }
+                throw PythonOps.OverflowError("fd is greater than maximum");
+            }
+
+            return stat(ConvertToFsString(context, path, nameof(path), orType: "integer"), dict);
         }
 
         [LightThrowing, Documentation("")]
@@ -1481,9 +1528,12 @@ namespace IronPython.Modules {
             const int bufsize = 0x1FF;
             var buffer = new StringBuilder(bufsize);
 
-            int result = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                Interop.Ucrtbase.strerror(code, buffer) :
-                strerror_r(code, buffer);
+            int result = -1;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                result = Interop.Ucrtbase.strerror(code, buffer);
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                result = strerror_r(code, buffer);
+            }
 
             if (result == 0) {
                 var msg = buffer.ToString();
@@ -1494,12 +1544,6 @@ namespace IronPython.Modules {
 #endif
             return "Unknown error " + code;
         }
-
-#if FEATURE_NATIVE
-        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
-        private static int strerror_r(int code, StringBuilder buffer)
-            => Mono.Unix.Native.Syscall.strerror_r(Mono.Unix.Native.NativeConvert.ToErrno(code), buffer);
-#endif
 
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
@@ -1565,18 +1609,30 @@ namespace IronPython.Modules {
             => truncate(context, path.ToFsString(context), length);
 
         [Documentation("")]
-        public static void truncate(CodeContext context, [NotNone] IBufferProtocol path, BigInteger length) {
-            // TODO: accept object? path to get nicer error message?
-            // TODO: Python 3.6: os.PathLike
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, $"{nameof(truncate)}: {nameof(path)} should be string, bytes or integer, not {PythonOps.GetPythonTypeName(path)}"); // deprecated in 3.6
-            truncate(context, path.ToFsBytes(context).ToFsString(context), length);
+        public static void truncate(CodeContext context, object? path, BigInteger length) {
+            if (PythonOps.TryToIndex(path, out BigInteger bi)) {
+                if (bi.AsInt32(out int i)) {
+                    truncate(context, i, length);
+                    return;
+                }
+                throw PythonOps.OverflowError("fd is greater than maximum");
+            }
+
+            truncate(context, ConvertToFsString(context, path, nameof(path), orType: "integer"), length);
         }
 
         public static void truncate(CodeContext context, int fd, BigInteger length)
             => ftruncate(context, fd, length);
 
-        public static void ftruncate(CodeContext context, int fd, BigInteger length)
-            => context.LanguageContext.FileManager.GetStreams(fd).Truncate((long)length);
+        public static void ftruncate(CodeContext context, int fd, BigInteger length) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                ftruncateUnix(fd, (long)length);
+            } else {
+                context.LanguageContext.FileManager.GetStreams(fd).Truncate((long)length);
+            }
+        }
+
+
 
 #if FEATURE_FILESYSTEM
         public static object times() {
@@ -1682,18 +1738,6 @@ namespace IronPython.Modules {
 
 #if FEATURE_FILESYSTEM
 
-        private static void utimeUnix(string path, long atime_ns, long utime_ns) {
-            var atime = new Mono.Unix.Native.Timespec();
-            atime.tv_sec = atime_ns / 1_000_000_000;
-            atime.tv_nsec = atime_ns % 1_000_000_000;
-            var utime = new Mono.Unix.Native.Timespec();
-            utime.tv_sec = utime_ns / 1_000_000_000;
-            utime.tv_nsec = utime_ns % 1_000_000_000;
-
-            if (Mono.Unix.Native.Syscall.utimensat(Mono.Unix.Native.Syscall.AT_FDCWD, path, new[] { atime, utime }, 0) == 0) return;
-            throw GetLastUnixError(path);
-        }
-
         [Documentation("utime(path, times=None, *[, ns], dir_fd=None, follow_symlinks=True)")]
         public static void utime([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
@@ -1783,7 +1827,7 @@ namespace IronPython.Modules {
             Process? process;
             lock (_processToIdMapping) {
                 if (!_processToIdMapping.TryGetValue(pid, out process)) {
-                    throw GetOsError(PythonErrorNumber.ECHILD);
+                    throw GetOsError(PythonErrno.ECHILD);
                 }
             }
 
@@ -1805,7 +1849,7 @@ namespace IronPython.Modules {
                 using var buffer = data.GetBuffer();
                 PythonContext pythonContext = context.LanguageContext;
                 var streams = pythonContext.FileManager.GetStreams(fd);
-                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(9, "Bad file descriptor");
+                if (!streams.WriteStream.CanWrite) throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
 
                 return streams.Write(buffer);
             } catch (Exception e) {
@@ -1820,8 +1864,7 @@ are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
                 RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                if (Mono.Unix.Native.Syscall.kill(pid, Mono.Unix.Native.NativeConvert.ToSignum(sig)) == 0) return;
-                throw GetLastUnixError();
+                killUnix(pid, sig);
             } else {
                 if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
 
@@ -2075,8 +2118,9 @@ the 'status' value."),
                 message = e.Message;
                 isWindowsError = true;
             } else if (e is UnauthorizedAccessException unauth) {
-                errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
-                return PythonOps.OSError(errorCode, "Access is denied", filename, errorCode);
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                    GetWin32Error(PythonExceptions._OSError.ERROR_ACCESS_DENIED, filename) :
+                    GetOsError(PythonErrno.EACCES, filename);
             } else {
                 var ioe = e as IOException;
                 Exception? pe = IOExceptionToPythonException(ioe, error, filename);
@@ -2098,7 +2142,7 @@ the 'status' value."),
             }
 
             if (isWindowsError) {
-                return PythonOps.OSError(errorCode, message, filename, errorCode);
+                return PythonOps.OSError(PythonExceptions._OSError.WinErrorToErrno(errorCode), message, filename, errorCode);
             }
 
             return PythonOps.OSError(errorCode, message, filename);
@@ -2246,24 +2290,28 @@ the 'status' value."),
 
 #endif
 
-        private static Exception DirectoryExists() {
-            return PythonOps.OSError(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
+        private static Exception DirectoryExistsError(string? filename) {
+#if FEATURE_NATIVE
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return GetWin32Error(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, filename);
+            }
+#endif
+            return GetOsError(PythonErrno.EEXIST, filename);
         }
 
-#if FEATURE_NATIVE
 
-        private static Exception GetLastUnixError(string? filename = null, string? filename2 = null)
-            => GetOsError(Mono.Unix.Native.NativeConvert.FromErrno(Mono.Unix.Native.Syscall.GetLastError()), filename, filename2);
-
-#endif
-
-        private static Exception GetOsError(int error, string? filename = null, string? filename2 = null)
-            => PythonOps.OSError(error, strerror(error), filename, null, filename2);
+        internal static Exception GetOsError(int errno, string? filename = null, string? filename2 = null)
+            => PythonOps.OSError(errno, strerror(errno), filename, null, filename2);
 
 #if FEATURE_NATIVE || FEATURE_CTYPES
 
+        [SupportedOSPlatform("windows")]
+        internal static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)
+            => GetWin32Error(Marshal.GetLastWin32Error(), filename, filename2);
+
         // Gets an error message for a Win32 error code.
-        internal static string GetMessage(int errorCode) {
+        [SupportedOSPlatform("windows")]
+        private static string GetWin32ErrorMessage(int errorCode) {
             string msg = new Win32Exception(errorCode).Message;
             // error codes: https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
             if (errorCode is not (< 0 or >= 8200 or 34 or 106 or 317 or 718)) {
@@ -2276,12 +2324,14 @@ the 'status' value."),
             return msg.TrimEnd('\r', '\n', '.');
         }
 
-        internal static Exception GetLastWin32Error(string? filename = null, string? filename2 = null)
-            => GetWin32Error(Marshal.GetLastWin32Error(), filename, filename2);
-
-        private static Exception GetWin32Error(int error, string? filename = null, string? filename2 = null) {
-            var msg = GetMessage(error);
-            return PythonOps.OSError(0, msg, filename, error, filename2);
+        [SupportedOSPlatform("windows")]
+        internal static Exception GetWin32Error(int winerror, string? filename = null, string? filename2 = null) {
+            // Unwrap FACILITY_WIN32 HRESULT errors
+            if ((winerror & 0xFFFF0000) == 0x80070000) {
+                winerror &= 0x0000FFFF;
+            }
+            var msg = GetWin32ErrorMessage(winerror);
+            return PythonOps.OSError(0, msg, filename, winerror, filename2);
         }
 
 #endif
@@ -2298,21 +2348,26 @@ the 'status' value."),
 
         private static Bytes ToFsBytes(this string s, CodeContext context) => Bytes.Make(_getFileSystemEncoding(context).GetBytes(s));
 
-        private static Bytes ToFsBytes(this IBufferProtocol bp, CodeContext context) {
-            // TODO: Python 3.6: "path should be string, bytes or os.PathLike"
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "path should be string or bytes, not {0}", PythonOps.GetPythonTypeName(bp));
-            return new Bytes(bp); // accepts FULL_RO buffers in CPython
+        private static object ToFsPath(CodeContext context, object? o, string argname, [CallerMemberName] string? methodname = null, string? orType = null) {
+            if (o is not Bytes && o is IBufferProtocol bp) {
+                if (orType is null)
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes or os.PathLike, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o));
+                else
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "{0}: {1} should be string, bytes, os.PathLike or {3}, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o), orType);
+                o = new Bytes(bp); // accepts FULL_RO buffers in CPython
+            }
+
+            if (PythonOps.TryToFsPath(context, o, out var res))
+                return res;
+
+            if (orType is null)
+                throw PythonOps.TypeError("{0}: {1} should be string, bytes or os.PathLike, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o));
+            else
+                throw PythonOps.TypeError("{0}: {1} should be string, bytes, os.PathLike or {3}, not {2}", methodname, argname, PythonOps.GetPythonTypeName(o), orType);
         }
 
-        private static string ConvertToFsString(CodeContext context, [NotNull] object? o, string argname, [CallerMemberName] string? methodname = null)
-            => o switch {
-                string s            => s,
-                ExtensibleString es => es.Value,
-                Bytes b             => b.ToFsString(context),
-                IBufferProtocol bp  => bp.ToFsBytes(context).ToFsString(context),
-                // TODO: Python 3.6: os.PathLike
-                _ => throw PythonOps.TypeError("{0}: {1} should be string or bytes, not '{2}'", methodname, argname, PythonOps.GetPythonTypeName(o))
-            };
+        private static string ConvertToFsString(CodeContext context, object? o, string argname, [CallerMemberName] string? methodname = null, string? orType = null)
+            => PythonOps.DecodeFsPath(context, ToFsPath(context, o, argname, methodname, orType));
 
         private static void CheckOptionalArgsCount(int numRegParms, int numOptPosParms, int numKwParms, int numOptPosArgs, int numKwArgs, [CallerMemberName] string? methodname = null) {
             if (numOptPosArgs > numOptPosParms)

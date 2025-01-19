@@ -23,6 +23,7 @@ namespace IronPython.Modules {
     public static class PythonOperator {
         public const string __doc__ = "Provides programmatic access to various operators (addition, accessing members, etc...)";
 
+        [PythonType]
         public sealed class attrgetter : ICodeFormattable {
             private readonly object[] _names;
 
@@ -40,31 +41,32 @@ namespace IronPython.Modules {
             public PythonTuple __reduce__() => PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.MakeTuple(_names));
 
             [SpecialName]
-            public object Call(CodeContext context, object param) {
+            public object? Call(CodeContext context, object? param) {
                 if (_names.Length == 1) {
                     return GetOneAttr(context, param, _names[0]);
                 }
 
-                object[] res = new object[_names.Length];
+                object?[] res = new object[_names.Length];
                 for (int i = 0; i < _names.Length; i++) {
                     res[i] = GetOneAttr(context, param, _names[i]);
                 }
                 return PythonTuple.MakeTuple(res);
             }
 
-            private static object GetOneAttr(CodeContext context, object param, object val) {
+            private static object? GetOneAttr(CodeContext context, object? param, object val) {
                 if (val is not string s) {
                     throw PythonOps.TypeError("attribute name must be string");
                 }
                 int dotPos = s.IndexOf('.');
                 if (dotPos >= 0) {
-                    object nextParam = GetOneAttr(context, param, s.Substring(0, dotPos));
+                    object? nextParam = GetOneAttr(context, param, s.Substring(0, dotPos));
                     return GetOneAttr(context, nextParam, s.Substring(dotPos + 1));
                 }
                 return PythonOps.GetBoundAttr(context, param, s);
             }
         }
 
+        [PythonType]
         public sealed class itemgetter : ICodeFormattable {
             private readonly object?[] _items;
 
@@ -82,7 +84,7 @@ namespace IronPython.Modules {
             public PythonTuple __reduce__() => PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.MakeTuple(_items));
 
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, object param) {
+            public object? Call(CodeContext/*!*/ context, object? param) {
                 if (_items.Length == 1) {
                     return PythonOps.GetIndex(context, param, _items[0]);
                 }

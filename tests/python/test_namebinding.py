@@ -3,8 +3,9 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
+import unittest
 
-from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, path_modifier, run_test
 
 glb = 0
 res = ''
@@ -312,6 +313,7 @@ class NameBindingTest(IronPythonTestCase):
         self.assertRaises(NameError, DoDelBuiltin)
         self.assertRaises(NameError, DoDelBuiltin)
 
+    @unittest.skipIf(is_mono, "TODO: figure out; the finalizer is called way after WaitForPendingFinalizers")
     def test_SimpleTest(self):
         """simple case"""
         global res

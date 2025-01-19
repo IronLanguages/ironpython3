@@ -87,12 +87,12 @@ namespace IronPython.Runtime {
             return new PythonDictionary(new StringDictionaryStorage(count));
         }
 
-        public void __init__(CodeContext/*!*/ context, object o\u00F8, [ParamDictionary]IDictionary<object, object> kwArgs) {
+        public void __init__(CodeContext/*!*/ context, object o\u00F8, [ParamDictionary] IDictionary<object, object> kwArgs) {
             update(context, o\u00F8);
             update(context, kwArgs);
         }
 
-        public void __init__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs) {
+        public void __init__(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> kwArgs) {
             update(context, kwArgs);
         }
 
@@ -356,7 +356,7 @@ namespace IronPython.Runtime {
         public void update() {
         }
 
-        public void update(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> other\u00F8) {
+        public void update(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> other\u00F8) {
             DictionaryOps.update(context, this, other\u00F8);
         }
 
@@ -364,7 +364,7 @@ namespace IronPython.Runtime {
             DictionaryOps.update(context, this, other\u00F8);
         }
 
-        public void update(CodeContext/*!*/ context, object other\u00F8, [ParamDictionary]IDictionary<object, object> otherArgs\u00F8) {
+        public void update(CodeContext/*!*/ context, object other\u00F8, [ParamDictionary] IDictionary<object, object> otherArgs\u00F8) {
             DictionaryOps.update(context, this, other\u00F8);
             DictionaryOps.update(context, this, otherArgs\u00F8);
         }
@@ -1491,7 +1491,7 @@ namespace IronPython.Runtime {
 
         int ICollection<object>.Count => _dict.Count;
 
-        bool ICollection<object>.IsReadOnly =>  true;
+        bool ICollection<object>.IsReadOnly => true;
 
         bool ICollection<object>.Remove(object item) => throw new NotSupportedException("Collection is read-only");
 

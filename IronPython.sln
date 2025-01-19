@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34714.143
@@ -38,7 +38,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "eng", "eng", "{17737ACB-40C
 		eng\net8.0.props = eng\net8.0.props
 		eng\net9.0-windows.props = eng\net9.0-windows.props
 		eng\net9.0.props = eng\net9.0.props
-		eng\netcoreapp3.1.props = eng\netcoreapp3.1.props
 		eng\netstandard2.0.props = eng\netstandard2.0.props
 		eng\steps.yml = eng\steps.yml
 		eng\Tasks.Targets = eng\Tasks.Targets

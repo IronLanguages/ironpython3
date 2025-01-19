@@ -155,10 +155,10 @@ namespace IronPython.Runtime {
                     case '6':
                     case '7': {
                             val = ch - '0';
-                            if (i < length && HexValue(data[i].ToChar(null), out int onechar) && onechar < 8) {
+                            if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out int onechar)) {
                                 val = val * 8 + onechar;
                                 i++;
-                                if (i < length && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
+                                if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out onechar)) {
                                     val = val * 8 + onechar;
                                     i++;
                                 }
@@ -562,10 +562,10 @@ namespace IronPython.Runtime {
                         case '6':
                         case '7': {
                                 val = ch - '0';
-                                if (i < length && HexValue(data[i].ToChar(null), out int onechar) && onechar < 8) {
+                                if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out int onechar)) {
                                     val = val * 8 + onechar;
                                     i++;
-                                    if (i < length && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
+                                    if (i < length && TryConvertDigit(data[i].ToChar(null), 8, out onechar)) {
                                         val = val * 8 + onechar;
                                         i++;
                                     }
@@ -598,7 +598,7 @@ namespace IronPython.Runtime {
             return buf;
         }
 
-        private static bool HexValue(char ch, out int value) {
+        private static bool TryConvertDigit(char ch, int b, out int value) {
             switch (ch) {
                 case '0':
                 case '\x660': value = 0; break;
@@ -631,50 +631,13 @@ namespace IronPython.Runtime {
                     }
                     break;
             }
-            return true;
-        }
-
-        private static int HexValue(char ch) {
-            int value;
-            if (!HexValue(ch, out value)) {
-                throw new ValueErrorException("bad char for integer value: " + ch);
-            }
-            return value;
-        }
-
-        private static int CharValue(char ch, int b) {
-            int val = HexValue(ch);
-            if (val >= b) {
-                throw new ValueErrorException(String.Format("bad char for the integer value: '{0}' (base {1})", ch, b));
-            }
-            return val;
-        }
-
-        private static bool ParseInt(string text, int b, out int ret) {
-            ret = 0;
-            long m = 1;
-            for (int i = text.Length - 1; i >= 0; i--) {
-                // avoid the exception here.  Not only is throwing it expensive,
-                // but loading the resources for it is also expensive 
-                long lret = ret + m * CharValue(text[i], b);
-                if (Int32.MinValue <= lret && lret <= Int32.MaxValue) {
-                    ret = (int)lret;
-                } else {
-                    return false;
-                }
-
-                m *= b;
-                if (Int32.MinValue > m || m > Int32.MaxValue) {
-                    return false;
-                }
-            }
-            return true;
+            return value < b;
         }
 
         private static bool TryParseInt<T>(in ReadOnlySpan<T> text, int start, int length, int b, out int value, out int consumed) where T : IConvertible {
             value = 0;
             for (int i = start, end = start + length; i < end; i++) {
-                if (i < text.Length && HexValue(text[i].ToChar(null), out int onechar) && onechar < b) {
+                if (i < text.Length && TryConvertDigit(text[i].ToChar(null), b, out int onechar)) {
                     value = value * b + onechar;
                 } else {
                     consumed = i - start;
@@ -686,218 +649,192 @@ namespace IronPython.Runtime {
         }
 
         public static object ParseInteger(string text, int b) {
-            Debug.Assert(b != 0);
-            int iret;
-            if (!ParseInt(text, b, out iret)) {
-                BigInteger ret = ParseBigInteger(text, b);
-                if (!ret.AsInt32(out iret)) {
-                    return ret;
-                }
-            }
-            return ScriptingRuntimeHelpers.Int32ToObject(iret);
-        }
-
-        public static object ParseIntegerSign(string text, int b, int start = 0) {
-            if (TryParseIntegerSign(text, b, start, out object val))
+            if (TryParseInteger(text.AsSpan(), b, false, out object val)) {
                 return val;
-
-            throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
+            }
+            throw new ValueErrorException($"invalid literal with base {b}: {text}");
         }
 
-        internal static bool TryParseIntegerSign(string text, int b, int start, out object val) {
-            int end = text.Length, saveb = b, savestart = start;
-            if (start < 0 || start > end) throw new ArgumentOutOfRangeException(nameof(start));
-            short sign = 1;
-
+        internal static bool TryParseIntegerSign(ReadOnlySpan<char> text, int b, out object val) {
             if (b < 0 || b == 1 || b > 36) {
                 throw new ValueErrorException("int() base must be >= 2 and <= 36, or 0");
             }
 
-            ParseIntegerStart(text, ref b, ref start, end, ref sign);
+            text = text.Trim();
 
-            if (start < end && char.IsWhiteSpace(text, start)) {
+            if (TryParseIntegerStart(text, ref b, out bool isNegative, out int consumed)) {
+                text = text.Slice(consumed);
+            } else {
                 val = default;
                 return false;
             }
 
-            int ret = 0;
-            try {
-                int saveStart = start;
-                for (; ; ) {
-                    int digit;
-                    if (start >= end) {
-                        if (saveStart == start) {
+            Debug.Assert(!text.IsEmpty);
+
+            return TryParseInteger(text, b, isNegative, out val);
+        }
+
+        private static bool TryParseInteger(ReadOnlySpan<char> text, int b, bool isNegative, out object val) {
+            long ret = 0;
+            int underscore = 1;
+
+            for (int i = 0; i < text.Length; i++) {
+                var ch = text[i];
+
+                if (ch == '_') {
+                    underscore++;
+                    if (underscore > 1) {
+                        val = default;
+                        return false;
+                    }
+                    continue;
+                } else {
+                    underscore = 0;
+                }
+
+                if (!TryConvertDigit(ch, b, out int digit)) {
+                    val = default;
+                    return false;
+                }
+
+                ret = ret * b + digit;
+
+                if (ret > int.MaxValue) {
+                    BigInteger retBi = ret;
+
+                    // Repeated integer multiplication is expensive so use a grouping strategy.
+                    // We pick group sizes that ensure our numbers stay in the Int32 range.
+                    int groupMax = 5; // zzzzzz (base 36) = 2_176_782_335 > int.MaxValue
+                    if (b <= 10) groupMax = 9; // 2_147_483_647
+
+                    int buffer = 0;
+                    int cnt = 0;
+                    int smallMult = 1;
+
+                    for (i++; i < text.Length; i++) {
+                        ch = text[i];
+
+                        if (ch == '_') {
+                            underscore++;
+                            if (underscore > 1) {
+                                val = default;
+                                return false;
+                            }
+                            continue;
+                        } else {
+                            underscore = 0;
+                        }
+
+                        if (!TryConvertDigit(ch, b, out digit)) {
                             val = default;
                             return false;
                         }
-                        break;
+
+                        buffer = buffer * b + digit;
+                        cnt++;
+                        smallMult *= b;
+
+                        Debug.Assert(smallMult > 0); // no overflows!
+
+                        if (cnt >= groupMax) {
+                            retBi = retBi * smallMult + buffer;
+                            // reset buffer
+                            buffer = 0;
+                            cnt = 0;
+                            smallMult = 1;
+                        }
                     }
-                    if (!HexValue(text[start], out digit)) break;
-                    if (!(digit < b)) {
+
+                    if (cnt > 0) {
+                        retBi = retBi * smallMult + buffer;
+                    }
+
+                    if (isNegative) {
+                        if (retBi == (BigInteger)int.MaxValue + 1) {
+                            val = ScriptingRuntimeHelpers.Int32ToObject(int.MinValue);
+                            return true;
+                        }
+                        val = -retBi;
+                        return true;
+                    }
+
+                    if (underscore != 0) {
                         val = default;
                         return false;
                     }
 
-                    checked {
-                        // include sign here so that System.Int32.MinValue won't overflow
-                        ret = ret * b + sign * digit;
-                    }
-                    start++;
-                }
-            } catch (OverflowException) {
-                if (TryParseBigIntegerSign(text, saveb, savestart, out var bi)) {
-                    val = bi;
+                    val = retBi;
                     return true;
                 }
+            }
+
+            if (underscore != 0) {
                 val = default;
                 return false;
             }
 
-            ParseIntegerEnd(text, ref start, ref end);
-
-            if (start < end) {
-                val = default;
-                return false;
-            }
-
-            val = ScriptingRuntimeHelpers.Int32ToObject(ret);
+            int res = unchecked((int)ret);
+            res = isNegative ? -res : res;
+            val = ScriptingRuntimeHelpers.Int32ToObject(res);
             return true;
         }
 
-        private static void ParseIntegerStart(string text, ref int b, ref int start, int end, ref short sign) {
-            //  Skip whitespace
-            while (start < end && Char.IsWhiteSpace(text, start)) start++;
-            //  Sign?
-            if (start < end) {
-                switch (text[start]) {
-                    case '-':
-                        sign = -1;
-                        goto case '+';
-                    case '+':
-                        start++;
-                        break;
-                }
+        private static bool TryParseIntegerStart(ReadOnlySpan<char> text, ref int b, out bool isNegative, out int consumed) {
+            // set defaults
+            isNegative = false;
+            consumed = 0;
+
+            if (text.IsEmpty) return false;
+
+            var start = 0;
+            var end = text.Length;
+
+            // assumes a Trim has already been preformed
+            Debug.Assert(!char.IsWhiteSpace(text[start]));
+
+            // sign?
+            switch (text[start]) {
+                case '-':
+                    isNegative = true;
+                    if (++start >= end) return false;
+                    break;
+                case '+':
+                    if (++start >= end) return false;
+                    break;
             }
 
-            //  Determine base
+            // determine base
             if (b == 0) {
-                if (start < end && text[start] == '0') {
-                    // Hex, oct, or bin
-                    if (++start < end) {
-                        switch (text[start]) {
-                            case 'x':
-                            case 'X':
-                                start++;
-                                b = 16;
-                                break;
-                            case 'o':
-                            case 'O':
-                                b = 8;
-                                start++;
-                                break;
-                            case 'b':
-                            case 'B':
-                                start++;
-                                b = 2;
-                                break;
-                        }
+                if (start + 1 < end && text[start] == '0') {
+                    char ch = text[++start];
+                    switch (ch) {
+                        case 'x':
+                        case 'X':
+                            b = 16;
+                            break;
+                        case 'o':
+                        case 'O':
+                            b = 8;
+                            break;
+                        case 'b':
+                        case 'B':
+                            b = 2;
+                            break;
+                        default:
+                            b = 1;
+                            consumed = start - 1;
+                            return true;
                     }
-
-                    if (b == 0) {
-                        // Keep the leading zero
-                        start--;
-                        b = 8;
+                    if (++start >= end) return false;
+                    if (text[start] == '_') {
+                        if (++start >= end) return false;
                     }
                 } else {
                     b = 10;
                 }
             }
-        }
 
-        private static void ParseIntegerEnd(string text, ref int start, ref int end) {
-            //  Skip whitespace
-            while (start < end && char.IsWhiteSpace(text, start)) start++;
-        }
-
-        internal static BigInteger ParseBigInteger(string text, int b) {
-            Debug.Assert(b != 0);
-            BigInteger ret = BigInteger.Zero;
-            BigInteger m = BigInteger.One;
-
-            int i = text.Length - 1;
-
-            int groupMax = 7;
-            if (b <= 10) groupMax = 9;// 2 147 483 647
-
-            while (i >= 0) {
-                // extract digits in a batch
-                int smallMultiplier = 1;
-                uint uval = 0;
-
-                for (int j = 0; j < groupMax && i >= 0; j++) {
-                    uval = (uint)(CharValue(text[i--], b) * smallMultiplier + uval);
-                    smallMultiplier *= b;
-                }
-
-                // this is more generous than needed
-                ret += m * (BigInteger)uval;
-                if (i >= 0) m = m * (smallMultiplier);
-            }
-
-            return ret;
-        }
-
-        internal static BigInteger ParseBigIntegerSign(string text, int b, int start = 0) {
-            if (TryParseBigIntegerSign(text, b, start, out var val))
-                return val;
-
-            throw new ValueErrorException(string.Format("invalid literal for int() with base {0}: {1}", b, StringOps.__repr__(text)));
-        }
-
-        private static bool TryParseBigIntegerSign(string text, int b, int start, out BigInteger val) {
-            int end = text.Length;
-            if (start < 0 || start > end) throw new ArgumentOutOfRangeException(nameof(start));
-            short sign = 1;
-
-            if (b < 0 || b == 1 || b > 36) {
-                throw new ValueErrorException("int() base must be >= 2 and <= 36, or 0");
-            }
-
-            ParseIntegerStart(text, ref b, ref start, end, ref sign);
-
-            if (start < end && char.IsWhiteSpace(text, start)) {
-                val = default;
-                return false;
-            }
-
-            BigInteger ret = BigInteger.Zero;
-            int saveStart = start;
-            for (; ; ) {
-                int digit;
-                if (start >= end) {
-                    if (start == saveStart) {
-                        val = default;
-                        return false;
-                    }
-                    break;
-                }
-                if (!HexValue(text[start], out digit)) break;
-                if (!(digit < b)) {
-                    val = default;
-                    return false;
-                }
-                ret = ret * b + digit;
-                start++;
-            }
-
-            ParseIntegerEnd(text, ref start, ref end);
-
-            if (start < end) {
-                val = default;
-                return false;
-            }
-
-            val = sign < 0 ? -ret : ret;
+            consumed = start;
             return true;
         }
 
@@ -1028,7 +965,7 @@ namespace IronPython.Runtime {
                         imag += "1"; // convert +/- to +1/-1
                     }
 
-                    return new Complex(String.IsNullOrEmpty(real) ? 0 : ParseFloat(real), ParseFloat(imag));
+                    return new Complex(string.IsNullOrEmpty(real) ? 0 : ParseFloat(real), ParseFloat(imag));
                 } else {
                     throw ExnMalformed();
                 }
@@ -1044,7 +981,7 @@ namespace IronPython.Runtime {
                     System.Globalization.CultureInfo.InvariantCulture.NumberFormat
                     ));
             } catch (OverflowException) {
-                return new Complex(0, Double.PositiveInfinity);
+                return new Complex(0, double.PositiveInfinity);
             }
         }
     }

@@ -7,6 +7,14 @@ import os
 from iptest import IronPythonTestCase, is_osx, is_linux, is_windows, run_test
 
 class OsTest(IronPythonTestCase):
+    def setUp(self):
+        super(OsTest, self).setUp()
+        self.temp_file = os.path.join(self.temporary_dir, "temp_OSTest_%d.dat" % os.getpid())
+
+    def tearDown(self):
+        self.delete_files(self.temp_file)
+        return super().tearDown()
+
     def test_strerror(self):
         if is_windows:
             self.assertEqual(os.strerror(0), "No error")
@@ -28,5 +36,23 @@ class OsTest(IronPythonTestCase):
             self.assertEqual(os.strerror(40), "Too many levels of symbolic links")
         elif is_osx:
             self.assertEqual(os.strerror(40), "Message too long")
+
+
+    def test_open_abplus(self):
+        # equivalent to open(self.temp_file, "ab+"), see also test_file.test_open_abplus
+        fd = os.open(self.temp_file, os.O_APPEND | os.O_CREAT | os.O_RDWR)
+        try:
+            f = open(fd, mode="ab+", closefd=False)
+            f.raw.write(b"abcxxxx")
+            f.raw.seek(0)
+            self.assertEqual(f.raw.read(2), b"ab")
+            f.raw.seek(0, 2)
+            f.raw.write(b"def")
+            self.assertEqual(f.raw.read(2), b"")
+            f.raw.seek(0)
+            self.assertEqual(f.raw.read(), b"abcxxxxdef")
+            f.close()
+        finally:
+            os.close(fd)
 
 run_test(__name__)

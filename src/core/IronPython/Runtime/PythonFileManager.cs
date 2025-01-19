@@ -8,14 +8,17 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
-using System.Diagnostics;
+using PythonErrno = IronPython.Runtime.Exceptions.PythonExceptions._OSError.Errno;
 
 namespace IronPython.Runtime {
 
@@ -86,13 +89,16 @@ namespace IronPython.Runtime {
 
             // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Unix assembly on Windows.
             bool isattyUnix() {
-                // TODO: console streams may be dupped to differend FD numbers, do not use hard-coded 0, 1, 2
-                return StreamType switch {
-                    ConsoleStreamType.Input => Mono.Unix.Native.Syscall.isatty(0),
-                    ConsoleStreamType.Output => Mono.Unix.Native.Syscall.isatty(1),
-                    ConsoleStreamType.ErrorOutput => Mono.Unix.Native.Syscall.isatty(2),
-                    _ => false
-                };
+                if (Id >= 0) {
+                    return Mono.Unix.Native.Syscall.isatty(Id);
+                } else {
+                    return StreamType switch {
+                        ConsoleStreamType.Input => Mono.Unix.Native.Syscall.isatty(0),
+                        ConsoleStreamType.Output => Mono.Unix.Native.Syscall.isatty(1),
+                        ConsoleStreamType.ErrorOutput => Mono.Unix.Native.Syscall.isatty(2),
+                        _ => false
+                    };
+                }
             }
         }
 
@@ -147,7 +153,9 @@ namespace IronPython.Runtime {
             count = buffer.NumBytes();
             _writeStream.Write(bytes, 0, count);
 #endif
-            _writeStream.Flush(); // IO at this level is not supposed to buffer so we need to call Flush.
+            if (ClrModule.IsMono && count == 1) {
+                _writeStream.Flush(); // IO at this level is not supposed to buffer so we need to call Flush (only needed on Mono)
+            }
             if (!IsSingleStream) {
                 _readStream.Seek(_writeStream.Position, SeekOrigin.Begin);
             }
@@ -178,7 +186,7 @@ namespace IronPython.Runtime {
     /// </summary>
     /// <remarks>
     /// PythonFileManager emulates a file descriptor table. On Windows, .NET uses Win32 API which uses file handles
-    /// rather than file descriptors. The emulation is necesary to support Python API, which in some places uses file descriptors.
+    /// rather than file descriptors. The emulation is necessary to support Python API, which in some places uses file descriptors.
     ///
     /// The manager maintains a mapping between open files (or system file-like objects) and a "descriptor", being a small non-negative integer.
     /// Unlike in CPython, the descriptors are allocated lazily, meaning they are allocated only when they become exposed (requested)
@@ -193,7 +201,7 @@ namespace IronPython.Runtime {
     /// In such situations, only one of the FileIO may be opened with flag `closefd` (CPython rule).
     ///
     /// The second lever of sharing of open files is below the file descriptor level. A file descriptor can be duplicated using dup/dup2,
-    /// but the duplicated descriptor is still refering to the same open file in the filesystem. In such case, the manager maintains
+    /// but the duplicated descriptor is still referring to the same open file in the filesystem. In such case, the manager maintains
     /// a separate StreamBox for the duplicated descriptor, but the StreamBoxes for both descriptors share the underlying Streams.
     /// Both such descriptors have to be closed independently by the user code (either explicitly by os.close(fd) or through close()
     /// on the FileIO objects), but the underlying shared streams are closed only when all such duplicated descriptors are closed.
@@ -212,13 +220,15 @@ namespace IronPython.Runtime {
         private int _current = _offset; // lowest potentially unused key in _objects at or above _offset
         private readonly ConcurrentDictionary<Stream, int> _refs = new();
 
+        // This version of Add is used with genuine file descriptors (Unix).
+        // Exception: support dup2 on all frameworks/platforms.
         public int Add(int id, StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
             ContractUtils.Requires(streams.Id < 0, nameof(streams));
             ContractUtils.Requires(id >= 0, nameof(id));
             lock (_synchObject) {
                 if (_table.ContainsKey(id)) {
-                    throw PythonOps.OSError(9, "Bad file descriptor", id.ToString());
+                    throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor", id.ToString());
                 }
                 streams.Id = id;
                 _table.Add(id, streams);
@@ -226,6 +236,9 @@ namespace IronPython.Runtime {
             }
         }
 
+        // This version of Add is used for emulated file descriptors.
+        // Must not be used on POSIX.
+        [UnsupportedOSPlatform("linux"), UnsupportedOSPlatform("macos")]
         public int Add(StreamBox streams) {
             ContractUtils.RequiresNotNull(streams, nameof(streams));
             ContractUtils.Requires(streams.Id < 0, nameof(streams));
@@ -233,7 +246,7 @@ namespace IronPython.Runtime {
                 while (_table.ContainsKey(_current)) {
                     _current++;
                     if (_current >= LIMIT_OFILE)
-                        throw PythonOps.OSError(24, "Too many open files");
+                        throw PythonOps.OSError(PythonErrno.EMFILE, "Too many open files");
                 }
                 streams.Id = _current;
                 _table.Add(_current, streams);
@@ -270,14 +283,20 @@ namespace IronPython.Runtime {
             if (TryGetStreams(id, out StreamBox? streams)) {
                return streams;
             }
-            throw PythonOps.OSError(9, "Bad file descriptor");
+            throw PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor");
         }
 
         public int GetOrAssignId(StreamBox streams) {
             lock (_synchObject) {
                 int res = streams.Id;
                 if (res == -1) {
-                    res = Add(streams);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                        res = GetGenuineFileDescriptor(streams.WriteStream);
+                        if (res < 0) throw new InvalidOperationException("stream not associated with a file descriptor");
+                        Add(res, streams);
+                    } else {
+                        res = Add(streams);
+                    }
                 }
                 return res;
             }
@@ -309,6 +328,18 @@ namespace IronPython.Runtime {
 
         public bool ValidateFdRange(int fd) {
             return fd >= 0 && fd < LIMIT_OFILE;
+        }
+
+        [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+        private static int GetGenuineFileDescriptor(Stream stream) {
+            return stream switch {
+                FileStream fs => checked((int)fs.SafeFileHandle.DangerousGetHandle()),
+#if FEATURE_PIPES
+                System.IO.Pipes.PipeStream ps => checked((int)ps.SafePipeHandle.DangerousGetHandle()),
+#endif
+                Mono.Unix.UnixStream us => us.Handle,
+                _ => -1
+            };
         }
     }
 }

@@ -136,14 +136,27 @@ namespace IronPython.Modules {
                     throw MakeException(context, new SocketException((int)SocketError.ProtocolNotSupported));
                 }
 
-                Socket? socket;
+                Socket? socket = null;
                 if (fileno is socket sock) {
                     socket = sock._socket;
                     _hostName = sock._hostName;
                     // we now own the lifetime of the socket
                     GC.SuppressFinalize(sock);
-                } else if (fileno != null && (socket = HandleToSocket((long)fileno)) != null) {
-                    // nothing to do here
+                } else if (fileno != null) {
+                    if (!PythonOps.TryToIndex(fileno, out object? handleObj)) {
+                        throw PythonOps.TypeErrorForUnIndexableObject(fileno);
+                    }
+                    long handle = Converter.ConvertToInt64(handleObj);
+                    // Windows reserves only INVALID_SOCKET (~0) as an invalid handle
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? handle == -1 : handle < 0) {
+                        throw PythonOps.ValueError("negative file descriptor");
+                    }
+                    socket = HandleToSocket(handle);
+                    if (socket is null) {
+                        throw PythonOps.OSError(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            ? PythonErrno.WSAENOTSOCK : PythonErrno.EBADF,
+                            "Bad file descriptor");
+                    }
                 } else {
                     try {
                         socket = new Socket(addressFamily, socketType, protocolType);
@@ -297,7 +310,7 @@ namespace IronPython.Modules {
                 } catch (SocketException ex) {
                     return !ClrModule.IsMono ? ex.NativeErrorCode : MapMonoSocketErrorToErrno(ex.SocketErrorCode);
                 }
-                return PythonErrorNumber.ENOERROR;
+                return PythonErrno.ENOERROR;
             }
 
             public long detach() {
@@ -413,7 +426,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(buffer, bufsize, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -449,7 +462,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.Receive(byteBuffer, nbytes, (SocketFlags)flags);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.NotConnected);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -486,7 +499,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(buffer, bufsize, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     var bytes = new byte[bytesRead];
@@ -519,7 +532,7 @@ namespace IronPython.Modules {
                     try {
                         bytesRead = _socket.ReceiveFrom(byteBuffer, nbytes, (SocketFlags)flags, ref remoteEP);
                     } catch (Exception e) {
-                        throw MakeRecvException(e, SocketError.InvalidArgument);
+                        throw MakeException(_context, e);
                     }
 
                     byteBuffer.AsSpan(0, bytesRead).CopyTo(span);
@@ -548,18 +561,6 @@ namespace IronPython.Modules {
                     int remainder = nbytes % itemSize;
                     return Math.Min(remainder == 0 ? nbytes : nbytes + itemSize - remainder,
                         bufLength * itemSize);
-                }
-            }
-
-            private Exception MakeRecvException(Exception e, SocketError errorCode = SocketError.InvalidArgument) {
-                if (e is ObjectDisposedException) return MakeException(_context, e);
-
-                // on the socket recv throw a special socket error code when SendTimeout is zero
-                if (_socket.SendTimeout == 0) {
-                    var s = new SocketException((int)errorCode);
-                    return PythonExceptions.CreateThrowable(error, s.ErrorCode, s.Message);
-                } else {
-                    return MakeException(_context, e);
                 }
             }
 
@@ -1767,15 +1768,15 @@ namespace IronPython.Modules {
                     // The following SocketErrors have no defined mapping to errno, so a generic errno is used instead
                     case SocketError.ProcessLimit:
                         return PythonExceptions.CreateThrowable(error,
-                            !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PythonErrorNumber.EPROCLIM : PythonErrorNumber.ENOTSUP,
+                            !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PythonErrno.EPROCLIM : PythonErrno.ENOTSUP,
                             "Too many processes");
                     case SocketError.NotInitialized:
                     case SocketError.SystemNotReady:
                     case SocketError.VersionNotSupported:
                     case SocketError.TypeNotFound:
-                        return PythonExceptions.CreateThrowable(error, PythonErrorNumber.ENOTSUP, $"Socket error: {se.SocketErrorCode}");
+                        return PythonExceptions.CreateThrowable(error, PythonErrno.ENOTSUP, $"Socket error: {se.SocketErrorCode}");
                     case SocketError.SocketError:
-                        return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EIO, $"Unknown socket error");
+                        return PythonExceptions.CreateThrowable(error, PythonErrno.EIO, $"Unknown socket error");
 
                     // For the rest, NativeErrorCode provides the errno (except on Mono)
                     default:
@@ -1786,8 +1787,8 @@ namespace IronPython.Modules {
                         return PythonExceptions.CreateThrowable(error, se.NativeErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
-                return PythonExceptions.CreateThrowable(error, PythonErrorNumber.EBADF, "Socket is closed");
-            } else if (exception is InvalidOperationException) {
+                return PythonExceptions.CreateThrowable(error, PythonErrno.EBADF, "Socket is closed");
+            } else if (exception is InvalidOperationException or ArgumentException) {
                 return MakeException(context, new SocketException((int)SocketError.InvalidArgument));
             } else {
                 return exception;
@@ -1855,56 +1856,56 @@ namespace IronPython.Modules {
         private static int MapMonoSocketErrorToErrno(SocketError serror) {
             monoSocketErrorToNativeError ??= new Dictionary<SocketError, int>(45)
             {
-                { SocketError.AccessDenied, PythonErrorNumber.EACCES}, // could also have been EPERM
-                { SocketError.AddressAlreadyInUse, PythonErrorNumber.EADDRINUSE  },
-                { SocketError.AddressNotAvailable, PythonErrorNumber.EADDRNOTAVAIL },
-                { SocketError.AddressFamilyNotSupported, PythonErrorNumber.EAFNOSUPPORT  },
-                { SocketError.AlreadyInProgress, PythonErrorNumber.EALREADY },
-                { SocketError.ConnectionAborted, PythonErrorNumber.ECONNABORTED },
-                { SocketError.ConnectionRefused, PythonErrorNumber.ECONNREFUSED },
-                { SocketError.ConnectionReset, PythonErrorNumber.ECONNRESET },
-                { SocketError.DestinationAddressRequired, PythonErrorNumber.EDESTADDRREQ },
-                { SocketError.Disconnecting, PythonErrorNumber.ESHUTDOWN },
-                { SocketError.Fault, PythonErrorNumber.EFAULT },
-                { SocketError.HostDown, PythonErrorNumber.EHOSTDOWN },
-                { SocketError.HostNotFound, PythonErrorNumber.ENOENT },
-                { SocketError.HostUnreachable, PythonErrorNumber.EHOSTUNREACH },
-                { SocketError.InProgress, PythonErrorNumber.EINPROGRESS },
-                { SocketError.Interrupted, PythonErrorNumber.EINTR },
-                { SocketError.InvalidArgument, PythonErrorNumber.EINVAL },
-                { SocketError.IOPending, PythonErrorNumber.EINPROGRESS },
-                { SocketError.IsConnected, PythonErrorNumber.EISCONN },
-                { SocketError.MessageSize, PythonErrorNumber.EMSGSIZE },
-                { SocketError.NetworkDown, PythonErrorNumber.ENETDOWN },
-                { SocketError.NetworkReset, PythonErrorNumber.ENETRESET },
-                { SocketError.NetworkUnreachable, PythonErrorNumber.ENETUNREACH },
-                { SocketError.NoBufferSpaceAvailable, PythonErrorNumber.ENOBUFS },
-                { SocketError.NoData, PythonErrorNumber.ENODATA },
-                { SocketError.NotConnected, PythonErrorNumber.ENOTCONN },
-                { SocketError.NotInitialized, PythonErrorNumber.ENOTSUP },
-                { SocketError.NotSocket, PythonErrorNumber.ENOTSOCK },
-                { SocketError.OperationAborted, PythonErrorNumber.ECANCELED },
-                { SocketError.OperationNotSupported, PythonErrorNumber.ENOTSUP },
-                { SocketError.ProcessLimit, !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PythonErrorNumber.EPROCLIM : PythonErrorNumber.ENOTSUP },
-                { SocketError.ProtocolFamilyNotSupported, PythonErrorNumber.EPFNOSUPPORT },
-                { SocketError.ProtocolNotSupported, PythonErrorNumber.EPROTONOSUPPORT },
-                { SocketError.ProtocolOption, PythonErrorNumber.ENOPROTOOPT },
-                { SocketError.ProtocolType, PythonErrorNumber.EPROTOTYPE },
-                { SocketError.Shutdown, PythonErrorNumber.EPIPE },
-                { SocketError.SocketNotSupported, PythonErrorNumber.ESOCKTNOSUPPORT },
-                { SocketError.Success, PythonErrorNumber.ENOERROR },
-                { SocketError.SystemNotReady, PythonErrorNumber.ENOTSUP }, // or EAGAIN
-                { SocketError.TimedOut, PythonErrorNumber.ETIMEDOUT },
-                { SocketError.TooManyOpenSockets, PythonErrorNumber.ENFILE }, // could also have been EMFILE
-                { SocketError.TryAgain, PythonErrorNumber.EAGAIN }, // not a perfect mapping, but better than nothing
-                { SocketError.TypeNotFound, PythonErrorNumber.ENOTSOCK },
-                { SocketError.VersionNotSupported, PythonErrorNumber.EPROTONOSUPPORT },
-                { SocketError.WouldBlock, PythonErrorNumber.EWOULDBLOCK }, // on Linux/OSX, same as EAGAIN
+                { SocketError.AccessDenied, PythonErrno.EACCES}, // could also have been EPERM
+                { SocketError.AddressAlreadyInUse, PythonErrno.EADDRINUSE  },
+                { SocketError.AddressNotAvailable, PythonErrno.EADDRNOTAVAIL },
+                { SocketError.AddressFamilyNotSupported, PythonErrno.EAFNOSUPPORT  },
+                { SocketError.AlreadyInProgress, PythonErrno.EALREADY },
+                { SocketError.ConnectionAborted, PythonErrno.ECONNABORTED },
+                { SocketError.ConnectionRefused, PythonErrno.ECONNREFUSED },
+                { SocketError.ConnectionReset, PythonErrno.ECONNRESET },
+                { SocketError.DestinationAddressRequired, PythonErrno.EDESTADDRREQ },
+                { SocketError.Disconnecting, PythonErrno.ESHUTDOWN },
+                { SocketError.Fault, PythonErrno.EFAULT },
+                { SocketError.HostDown, PythonErrno.EHOSTDOWN },
+                { SocketError.HostNotFound, PythonErrno.ENOENT },
+                { SocketError.HostUnreachable, PythonErrno.EHOSTUNREACH },
+                { SocketError.InProgress, PythonErrno.EINPROGRESS },
+                { SocketError.Interrupted, PythonErrno.EINTR },
+                { SocketError.InvalidArgument, PythonErrno.EINVAL },
+                { SocketError.IOPending, PythonErrno.EINPROGRESS },
+                { SocketError.IsConnected, PythonErrno.EISCONN },
+                { SocketError.MessageSize, PythonErrno.EMSGSIZE },
+                { SocketError.NetworkDown, PythonErrno.ENETDOWN },
+                { SocketError.NetworkReset, PythonErrno.ENETRESET },
+                { SocketError.NetworkUnreachable, PythonErrno.ENETUNREACH },
+                { SocketError.NoBufferSpaceAvailable, PythonErrno.ENOBUFS },
+                { SocketError.NoData, PythonErrno.ENODATA },
+                { SocketError.NotConnected, PythonErrno.ENOTCONN },
+                { SocketError.NotInitialized, PythonErrno.ENOTSUP },
+                { SocketError.NotSocket, PythonErrno.ENOTSOCK },
+                { SocketError.OperationAborted, PythonErrno.ECANCELED },
+                { SocketError.OperationNotSupported, PythonErrno.ENOTSUP },
+                { SocketError.ProcessLimit, !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PythonErrno.EPROCLIM : PythonErrno.ENOTSUP },
+                { SocketError.ProtocolFamilyNotSupported, PythonErrno.EPFNOSUPPORT },
+                { SocketError.ProtocolNotSupported, PythonErrno.EPROTONOSUPPORT },
+                { SocketError.ProtocolOption, PythonErrno.ENOPROTOOPT },
+                { SocketError.ProtocolType, PythonErrno.EPROTOTYPE },
+                { SocketError.Shutdown, PythonErrno.EPIPE },
+                { SocketError.SocketNotSupported, PythonErrno.ESOCKTNOSUPPORT },
+                { SocketError.Success, PythonErrno.ENOERROR },
+                { SocketError.SystemNotReady, PythonErrno.ENOTSUP }, // or EAGAIN
+                { SocketError.TimedOut, PythonErrno.ETIMEDOUT },
+                { SocketError.TooManyOpenSockets, PythonErrno.ENFILE }, // could also have been EMFILE
+                { SocketError.TryAgain, PythonErrno.EAGAIN }, // not a perfect mapping, but better than nothing
+                { SocketError.TypeNotFound, PythonErrno.ENOTSOCK },
+                { SocketError.VersionNotSupported, PythonErrno.EPROTONOSUPPORT },
+                { SocketError.WouldBlock, PythonErrno.EWOULDBLOCK }, // on Linux/OSX, same as EAGAIN
             };
             if (monoSocketErrorToNativeError.TryGetValue(serror, out int errno)) {
                 return errno;
             } else {
-                return PythonErrorNumber.EIO;
+                return PythonErrno.EIO;
             }
         }
 

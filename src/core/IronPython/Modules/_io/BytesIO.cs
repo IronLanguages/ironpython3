@@ -192,13 +192,15 @@ namespace IronPython.Modules {
             }
 
             public Bytes readline(object size) {
-                if (size == null) {
+                _checkClosed();
+                if (size is null) {
                     return readline(-1);
                 }
+                if (Converter.TryConvertToIndex(size, out int index, throwOverflowError: true)) {
+                    return readline(index);
+                }
 
-                _checkClosed();
-
-                throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonOps.GetPythonTypeName(size));
+                throw PythonOps.TypeError("argument should be integer or None, not '{0}'", PythonOps.GetPythonTypeName(size));
             }
 
             [Documentation("readlines([size]) -> list of bytes objects, each a line from the file.\n\n"

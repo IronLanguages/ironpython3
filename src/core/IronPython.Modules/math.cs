@@ -30,10 +30,12 @@ namespace IronPython.Modules {
         public const double e = Math.E;
 
         private const double degreesToRadians = Math.PI / 180.0;
+        private const double radiansToDegrees = 180.0 / Math.PI;
+
         private const int Bias = 0x3FE;
 
         public static double degrees(double radians) {
-            return Check(radians, radians / degreesToRadians);
+            return Check(radians, radians * radiansToDegrees);
         }
 
         public static double radians(double degrees) {
@@ -333,16 +335,22 @@ namespace IronPython.Modules {
             return Check(v0, Math.Tanh(v0 / 2.0) * (Math.Exp(v0) + 1.0));
         }
 
-        public static double asinh(double v0) {
-            if (v0 == 0.0 || double.IsInfinity(v0)) {
-                return v0;
+        public static double asinh(double x) {
+            if (x == 0.0 || double.IsInfinity(x)) {
+                return x;
             }
-            // rewrote ln(v0 + sqrt(v0**2 + 1)) for precision
-            if (Math.Abs(v0) > 1.0) {
-                return Math.Sign(v0) * (Math.Log(Math.Abs(v0)) + Math.Log(1.0 + MathUtils.Hypot(1.0, 1.0 / v0)));
+
+#if NETCOREAPP
+            return Math.Asinh(x);
+#else
+            // rewrote ln(x + sqrt(x**2 + 1)) for precision
+            if (Math.Abs(x) > 1.0) {
+                return Math.Sign(x) * (Math.Log(Math.Abs(x)) + Math.Log(1.0 + MathUtils.Hypot(1.0, 1.0 / x)));
             } else {
-                return Math.Log(v0 + MathUtils.Hypot(1.0, v0));
+                var x2 = x * x;
+                return log1p(x + x2 / (Math.Sqrt(x2 + 1) + 1));
             }
+#endif
         }
 
         public static double asinh(object value) {
@@ -356,15 +364,25 @@ namespace IronPython.Modules {
             }
         }
 
-        public static double acosh(double v0) {
-            if (v0 < 1.0) {
+        public static double acosh(double x) {
+            if (x < 1.0) {
                 throw PythonOps.ValueError("math domain error");
-            } else if (double.IsPositiveInfinity(v0)) {
+            } else if (double.IsPositiveInfinity(x)) {
                 return double.PositiveInfinity;
             }
-            // rewrote ln(v0 + sqrt(v0**2 - 1)) for precision
-            double c = Math.Sqrt(v0 + 1.0);
-            return Math.Log(c) + Math.Log(v0 / c + Math.Sqrt(v0 - 1.0));
+
+#if NETCOREAPP
+            return Math.Acosh(x);
+#else
+            if (x < 2) {
+                var c = x - 1;
+                return log1p(c + Math.Sqrt(c * c + 2 * c));
+            } else {
+                // rewrote ln(x + sqrt(x**2 - 1)) for precision
+                double c = Math.Sqrt(x + 1.0);
+                return Math.Log(c) + Math.Log(x / c + Math.Sqrt(x - 1.0));
+            }
+#endif
         }
 
         public static double acosh(object value) {
@@ -378,15 +396,20 @@ namespace IronPython.Modules {
             }
         }
 
-        public static double atanh(double v0) {
-            if (v0 >= 1.0 || v0 <= -1.0) {
+        public static double atanh(double x) {
+            if (x >= 1.0 || x <= -1.0) {
                 throw PythonOps.ValueError("math domain error");
-            } else if (v0 == 0.0) {
+            } else if (x == 0.0) {
                 // preserve +/-0.0
-                return v0;
+                return x;
             }
 
-            return Math.Log((1.0 + v0) / (1.0 - v0)) * 0.5;
+#if NETCOREAPP
+            return Math.Atanh(x);
+#else
+            return (log1p(x) - log1p(-x)) * 0.5;
+#endif
+
         }
 
         public static double atanh(BigInteger value) {

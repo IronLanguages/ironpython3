@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.Build.NoTargets/3.3.0">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>ipy</AssemblyName>
     <UseAppHost>false</UseAppHost>
@@ -40,7 +40,7 @@ This package contains a standalone Python interpreter, invokable from the comman
   <ItemGroup>
     <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
     <!-- must match PackageReferences for the DLR -->
-    <PackageReference Include="System.CodeDom" Version="6.0.0" />
+    <PackageReference Include="System.CodeDom" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -19,30 +19,26 @@ This package contains the IronPython interpreter engine.</description>
     <tags>ironpython python dynamic dlr</tags>
     <dependencies>
       <group targetFramework="net462">
-        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
+        <dependency id="DynamicLanguageRuntime" version="1.3.5" />
         <dependency id="System.Memory" version="4.5.5" />
       </group>
       <group targetFramework="netstandard2.0">
-        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
+        <dependency id="DynamicLanguageRuntime" version="1.3.5" />
         <dependency id="System.Memory" version="4.5.5" />
         <dependency id="System.Text.Encoding.CodePages" version="4.7.0" />
         <dependency id="Microsoft.Win32.Registry" version="4.7.0" />
         <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
       </group>
-      <group targetFramework="net6.0">
-        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
-        <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
-      </group>
       <group targetFramework="net8.0">
-        <dependency id="DynamicLanguageRuntime" version="1.3.4" />
+        <dependency id="DynamicLanguageRuntime" version="1.3.5" />
         <dependency id="Mono.Unix" version="7.1.0-final.1.21458.1" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;netcoreapp3.1\**\*;net9.0*\**\*" />
-    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;netcoreapp3.1\**\*;net9.0*\**\*" />
-    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;netcoreapp3.1\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll;net6.0\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb;net6.0\**\*;net9.0*\**\*" />
+    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml;net6.0\**\*;net9.0*\**\*" />
     <file src="LICENSE" />
     <file src="..\..\..\nuget\README.md" target="" />
     <file src="..\..\..\..\docs\logo.png" target="" />

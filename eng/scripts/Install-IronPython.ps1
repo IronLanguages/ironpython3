@@ -46,7 +46,7 @@ Param(
     [string] $ZipFile,
 
     # The moniker of the .NET platform to install for.
-    [string] $Framework = "net6.0",
+    [string] $Framework = "net8.0",
 
     # If the target path exists, it will be wiped clean beforehand.
     [switch] $Force

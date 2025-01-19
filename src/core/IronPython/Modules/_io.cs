@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
@@ -53,9 +54,20 @@ namespace IronPython.Modules {
 
         private static int O_EXCL => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0x400 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x800 : 0x80;
 
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        private static int O_CLOEXEC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x1000000 : 0x80000;
+
+        [SupportedOSPlatform("windows")]
+        private static int O_BINARY => 0x8000;
+
+        [SupportedOSPlatform("windows")]
+        private static int O_NOINHERIT => 0x80;
+
         // *** END GENERATED CODE ***
 
         #endregion
+
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
@@ -3144,9 +3156,8 @@ namespace IronPython.Modules {
         private static int GetInt(object? i, string? msg = null) {
             if (i == Missing.Value) return 0;
 
-            int res;
-            if (TryGetInt(i, out res)) {
-                return res;
+            if (Converter.TryConvertToIndex(i, out int index, throwOverflowError: true)) {
+                return index;
             }
 
             if (msg == null) {
@@ -3156,12 +3167,12 @@ namespace IronPython.Modules {
             throw PythonOps.TypeError(msg);
         }
 
-        private static int GetInt(object? i, int defaultValue, string? msg = null) {
-            if (i == null) {
+        private static int GetInt(object? i, int defaultValue) {
+            if (i is null) {
                 return defaultValue;
             }
 
-            return GetInt(i, msg);
+            return GetInt(i);
         }
 
         private static bool TryGetInt(object? i, out int value) {

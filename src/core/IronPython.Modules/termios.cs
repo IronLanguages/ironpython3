@@ -17,6 +17,7 @@ using IronPython.Runtime.Operations;
 
 using static IronPython.Modules.PythonIOModule;
 
+
 [assembly: PythonModule("termios", typeof(IronPython.Modules.PythonTermios), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules;
 
@@ -73,6 +74,11 @@ public static class PythonTermios {
     public static int PARENB => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x1000 : 0x0100;  // parity enable
     public static int HUPCL  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x4000 : 0x0400;  // hang up on last close
 
+    [PythonHidden(PlatformID.MacOSX)]
+    public static int CBAUD  => 0x100f;  // mask for baud rate
+    [PythonHidden(PlatformID.MacOSX)]
+    public static int CBAUDEX => 0x1000;  // extra baud speed mask
+
 
     // lflag
     public static uint ECHOKE  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x0001u : 0x0800u;       // visual erase for line kill
@@ -87,7 +93,7 @@ public static class PythonTermios {
     public static uint IEXTEN  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x0400u : 0x8000u;       // enable extended input character processing
     public static uint TOSTOP  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x0040_0000u : 0x0100u;  // stop background jobs from output
     public static uint FLUSHO  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x0080_0000u : 0x1000u;  // output being flushed
-    public static uint PENDIN  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x2000_0000u : 0x2000u;  // XXX retype pending input
+    public static uint PENDIN  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x2000_0000u : 0x4000u;  // retype pending input
     public static uint NOFLSH  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x8000_0000u : 0x0080u;  // don't flush after interrupt
 
 
@@ -97,28 +103,26 @@ public static class PythonTermios {
     public const int TCSAFLUSH = 2;     // discard input, flush output, then change
 
 
-    // control characters                   - enabled by:
-    public const int VEOF = 0;              // ICANON
-    public const int VEOL = 1;              // ICANON
-    public const int VEOL2 = 2;             // ICANON + IEXTEN
-    public const int VERASE = 3;            // ICANON
-    public const int VWERASE = 4;           // ICANON + IEXTEN
-    public const int VKILL = 5;             // ICANON
-    public const int VREPRINT = 6;          // ICANON + IEXTEN
-    // 7: spare 1
-    public const int VINTR = 8;             // ISIG
-    public const int VQUIT = 9;             // ISIG
-    public const int VSUSP = 10;            // ISIG
-    public const int VDSUSP = 11;           // ISIG + IEXTEN
-    public const int VSTART = 12;           // IXON, IXOFF
-    public const int VSTOP = 13;            // IXON, IXOFF
-    public const int VLNEXT = 14;            // IEXTEN
-    public const int VDISCARD = 15;         // IEXTEN
-    public const int VMIN = 16;             // !ICANON
-    public const int VTIME = 17;            // !ICANON
-    public const int VSTATUS = 18;          // ICANON + IEXTEN
-    // 19: spare 2
-    public const int NCCS = 20;             // size of the character array (lowest common value, Linux has more)
+    // control characters
+    public static int VEOF     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  0 : 4;
+    public static int VEOL     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  1 : 11;
+    public static int VEOL2    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  2 : 16;
+    public static int VERASE   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  3 : 2;
+    public static int VWERASE  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  4 : 14;
+    public static int VKILL    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  5 : 3;
+    public static int VREPRINT => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  6 :  12;
+    public static int VINTR    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  8 :  0;
+    public static int VQUIT    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  9 :  1;
+    public static int VSUSP    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 10 : 10;
+    public static int VSTART   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 12 :  8;
+    public static int VSTOP    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 13 :  9;
+    public static int VLNEXT   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 14 : 15;
+    public static int VDISCARD => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 15 : 13;
+    public static int VMIN     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 16 :  6;
+    public static int VTIME    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 17 :  5;
+    [PythonHidden(PlatformID.MacOSX)]
+    public static int VSWTC => 7;
+    public static int NCCS     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 20 : 32;
 
 
     // tcflush() uses these
@@ -149,11 +153,13 @@ public static class PythonTermios {
             throw new NotImplementedException("termios support only for stdin connected to tty");
         }
 
-        var cc = new PythonList(_specialChars.Length);
-        for (int i = 0; i < _specialChars.Length; i++) {
-            cc.Add(Bytes.FromByte(_specialChars[i]));
+        var cc = new PythonList(NCCS);
+        var specialChars = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? macos__specialChars : linux__specialChars;
+        for (int i = 0; i < NCCS; i++) {
+            byte c = i < specialChars.Length ? specialChars[i] : (byte)0;
+            cc.Add(Bytes.FromByte(c));
         }
-        return PythonList.FromArrayNoCopy(new object[] {
+        return PythonList.FromArrayNoCopy([
             _iflag,
             _oflag,
             _cflag,
@@ -161,7 +167,7 @@ public static class PythonTermios {
             _ispeed,
             _ospeed,
             cc
-        });
+        ]);
     }
 
     public static object tcgetattr(CodeContext context, object? file) {
@@ -195,10 +201,11 @@ public static class PythonTermios {
             _ => throw PythonOps.TypeErrorForBadInstance("tcsetattr: an integer is required (got type {0})", attrs[LFlagIdx])
         };
 
-        if (attrs[SpecialCharsIdx] is not IList chars || chars.Count != _specialChars.Length) {
-            throw PythonOps.TypeError("tcsetattr, atributes[{0}] must be {1} element list", SpecialCharsIdx, _specialChars.Length);
+        if (attrs[SpecialCharsIdx] is not IList chars || chars.Count != NCCS) {
+            throw PythonOps.TypeError("tcsetattr, atributes[{0}] must be {1} element list", SpecialCharsIdx, NCCS);
         }
 
+        var specialChars = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? macos__specialChars : linux__specialChars;
         for (int i = 0; i < chars.Count; i++) {
             object? o = chars[i];
             int newVal;
@@ -207,7 +214,8 @@ public static class PythonTermios {
             } else if (!Converter.TryConvertToInt32(o, out newVal)) {
                 throw PythonOps.TypeError("tcsetattr: elements of attributes must be characters or integers");
             }
-            if (newVal != _specialChars[i]) {
+            int expected = i < specialChars.Length ? specialChars[i] : 0;
+            if (newVal != expected) {
                 throw new NotImplementedException("tcsetattr: setting special characters is not supported");
             }
         }
@@ -244,12 +252,16 @@ public static class PythonTermios {
 
     private static int _iflag  => BRKINT | ICRNL | IXON | IXANY | IMAXBEL | IUTF8;
     private static int _oflag  => OPOST | ONLCR;
-    private static int _cflag  => CS8 | CREAD | HUPCL;
-    private static uint _lflag  => ECHOKE | ECHOE | ECHOK | ECHO | ECHOCTL | ISIG | ICANON | IEXTEN | PENDIN;
-    private static int _ispeed = 38400;
-    private static int _ospeed = 38400;
+    private static int _cflag  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
+                                    CS8 | CREAD | HUPCL
+                                  : CS8 | CREAD | HUPCL | (CBAUD & ~CBAUDEX);
+    private static uint _lflag => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
+                                    ECHOKE | ECHOE | ECHOK | ECHO | ECHOCTL | ISIG | ICANON | IEXTEN | PENDIN
+                                  : ECHOKE | ECHOE | ECHOK | ECHO | ECHOCTL | ISIG | ICANON | IEXTEN;
+    private static int _ispeed => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  38400 : /* B38400 */ 15;
+    private static int _ospeed => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  38400 : /* B38400 */ 15;
 
-    private static byte[] _specialChars = new byte[NCCS] {
+    private static readonly byte[] macos__specialChars = [
         (byte)0x04, // VEOF     ^D
         (byte)0xff, // VEOL
         (byte)0xff, // VEOL2
@@ -270,7 +282,29 @@ public static class PythonTermios {
         (byte)0x00, // VTIME
         (byte)0x14, // VSTATUS  ^T
         (byte)0x00, // reserved
-    };
+    ];
+
+    private static readonly byte[] linux__specialChars = [
+        (byte)0x03, // VINTR    ^C
+        (byte)0x1c, // VQUIT    ^\
+        (byte)0x7f, // VERASE   DEL
+        (byte)0x15, // VKILL    ^U
+        (byte)0x04, // VEOF     ^D
+        (byte)0x00, // VTIME
+        (byte)0x01, // VMIN
+        (byte)0x00, // VSWTC
+        (byte)0x11, // VSTART   ^Q
+        (byte)0x13, // VSTOP    ^S
+        (byte)0x1a, // VSUSP    ^Z
+        (byte)0xff, // VEOL
+        (byte)0x12, // VREPRINT ^R
+        (byte)0x0f, // VDISCARD ^O
+        (byte)0x17, // VWERASE  ^W
+        (byte)0x16, // VLNEXT   ^V
+        (byte)0xff, // VEOL2
+        // rest are reserved
+    ];
+
 
     private static object? _savedRawStdin;
 

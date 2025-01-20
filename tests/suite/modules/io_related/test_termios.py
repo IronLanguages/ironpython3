@@ -52,7 +52,8 @@ class TermiosTest(unittest.TestCase):
         if is_osx:
             cflag_values = [0x300, 0x0, 0x100, 0x200, 0x300, 0X800, 0x1000, 0x4000]
         elif is_linux:
-            cflag_values = [0x30, 0x0, 0x10, 0x20, 0x30, 0x80, 0x0100, 0x400]
+            cflags += ["CBAUD", "CBAUDEX"]
+            cflag_values = [0x30, 0x0, 0x10, 0x20, 0x30, 0x80, 0x0100, 0x400, 0x100f, 0x1000]
         self.verify_flags(cflags, cflag_values)
 
 
@@ -61,7 +62,7 @@ class TermiosTest(unittest.TestCase):
         if is_osx:
             lflag_values = [0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80, 0x100, 0x400, 0x400000, 0x800000, 0x20000000, 0x80000000]
         elif is_linux:
-            lflag_values = [0x800, 0x10, 0x20, 0x8, 0x40, 0x400, 0x200, 0x1, 0x2, 0x8000, 0x100, 0x1000, 0x2000, 0x80]
+            lflag_values = [0x800, 0x10, 0x20, 0x8, 0x40, 0x400, 0x200, 0x1, 0x2, 0x8000, 0x100, 0x1000, 0x4000, 0x80]
         self.verify_flags(lflags, lflag_values)
 
 
@@ -94,8 +95,8 @@ class TermiosTest(unittest.TestCase):
             cc = ["VEOF", "VEOL", "VEOL2", "VERASE", "VWERASE", "VKILL", "VREPRINT", "VINTR", "VQUIT", "VSUSP", "VSTART", "VSTOP", "VLNEXT", "VDISCARD", "VMIN", "VTIME", "NCCS"]
             cc_values = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 16, 17, 20]
         elif is_linux:
-            cc = ["VEOF", "VEOL", "VEOL2", "VERASE", "VWERASE", "VKILL", "VREPRINT", "VINTR", "VQUIT", "VSUSP", "VDSUSP", "VSTART", "VSTOP", "VLNEXT", "VDISCARD", "VMIN", "VTIME", "NCCS"]
-            cc_values = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20]
+            cc = ["VEOF", "VEOL", "VEOL2", "VERASE", "VWERASE", "VKILL", "VREPRINT", "VINTR", "VQUIT", "VSUSP", "VSTART", "VSTOP", "VLNEXT", "VDISCARD", "VMIN", "VTIME", "VSWTC", "NCCS"]
+            cc_values = [4, 11, 16, 2, 14, 3, 12, 0, 1, 10, 8, 9, 15, 13, 6, 5, 7, 32]
         self.verify_flags(cc, cc_values)
 
 

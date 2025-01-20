@@ -99,6 +99,14 @@ class TermiosTest(unittest.TestCase):
             cc_values = [4, 11, 16, 2, 14, 3, 12, 0, 1, 10, 8, 9, 15, 13, 6, 5, 7, 32]
         self.verify_flags(cc, cc_values)
 
+    def test_baud_rates(self):
+        rates = ["B0", "B50", "B75", "B110", "B134", "B150", "B200", "B300", "B600", "B1200", "B1800", "B2400", "B4800", "B9600", "B19200", "B38400", "B57600", "B115200", "B230400"]
+        if is_osx:
+            rates_values = [0, 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400]
+        elif is_linux:
+            rates_values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 4097, 4098, 4099]
+        self.verify_flags(rates, rates_values)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

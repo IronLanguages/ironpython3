@@ -30,7 +30,7 @@ public static class PythonTermios {
 
     #region termios IO Control Codes (TIOC*)
 
-    public static int TIOCGWINSZ => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1074295912 : 21523;
+    public static int TIOCGWINSZ => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x40087468 : 0x5413;
 
 
     #endregion
@@ -137,10 +137,27 @@ public static class PythonTermios {
     public static int TCIOFF => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 3 : 2;     // transmit STOP character
     public static int TCION  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 4 : 3;     // transmit START character
 
-    #endregion
-
-
-    #region Public API
+    // baud rates
+    public static int B0      => 0;
+    public static int B50     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 50 : 1;
+    public static int B75     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 75 : 2;
+    public static int B110    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 110 : 3;
+    public static int B134    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 134 : 4;
+    public static int B150    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 150 : 5;
+    public static int B200    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 200 : 6;
+    public static int B300    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 300 : 7;
+    public static int B600    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 600 : 8;
+    public static int B1200   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1200 : 9;
+    public static int B1800   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1800 : 10;
+    public static int B2400   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 2400 : 11;
+    public static int B4800   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 4800 : 12;
+    public static int B9600   => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 9600 : 13;
+    public static int B19200  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 19200 : 14;
+    public static int B38400  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 38400 : 15;
+    public static int B57600  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 57600 : 0x1001;
+    public static int B115200 => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 115200 : 0x1002;
+    public static int B230400 => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 230400 : 0x1003;
+    // higher baud rates are not defined on macOS
 
     public static object tcgetattr(CodeContext context, int fd) {
         if (fd < 0) throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
@@ -258,8 +275,8 @@ public static class PythonTermios {
     private static uint _lflag => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
                                     ECHOKE | ECHOE | ECHOK | ECHO | ECHOCTL | ISIG | ICANON | IEXTEN | PENDIN
                                   : ECHOKE | ECHOE | ECHOK | ECHO | ECHOCTL | ISIG | ICANON | IEXTEN;
-    private static int _ispeed => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  38400 : /* B38400 */ 15;
-    private static int _ospeed => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  38400 : /* B38400 */ 15;
+    private static int _ispeed => B38400;
+    private static int _ospeed => B38400;
 
     private static readonly byte[] macos__specialChars = [
         (byte)0x04, // VEOF     ^D

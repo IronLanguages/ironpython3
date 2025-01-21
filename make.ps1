@@ -222,7 +222,7 @@ function Purge() {
     Get-ChildItem -Name "obj" -Directory -Path "$_BASEDIR" -Recurse | Remove-Item -Force -Recurse
 
     Write-Verbose "Deleting ""bin"" directories..."
-    foreach ($dir in @("", (Join-Path "IronPythonAnalyzer" "IronPythonAnalyzer"))) {
+    foreach ($dir in @("", (Join-Path "src" "roslyn" "IronPython.Analyzer"))) {
         if (Test-Path (Join-Path $_BASEDIR $dir "bin" -OutVariable targetPath)) {
             Remove-Item -Path $targetPath -Force -Recurse
         }

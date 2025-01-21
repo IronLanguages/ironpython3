@@ -128,8 +128,8 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
         self.ensure_directory_present(self._temporary_dir)
 
         self._iron_python_test_dll = _iron_python_test_dll
-        self._test_dir = os.path.join(_root, 'Tests')
-        self._test_inputs_dir = os.path.join(_root, 'Tests', 'Inputs')
+        self._test_dir = os.path.join(_root, 'tests', 'suite')
+        self._test_inputs_dir = os.path.join(_root, 'tests', 'suite', 'Inputs')
 
     def add_reference_to_dlr_core(self):
         _add_reference_to_dlr_core()

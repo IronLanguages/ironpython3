@@ -85,7 +85,7 @@ def retryOnFailure(f, times=MAX_FAILURE_RETRY, *args, **kwargs):
     return t
 
 def _find_root():
-    test_dirs = ['Src', 'Build', 'Package', 'Tests', 'Util']
+    test_dirs = ['src', 'eng', 'tests']
     root = os.getcwd()
     test = all([os.path.exists(os.path.join(root, x)) for x in test_dirs])
     while not test:

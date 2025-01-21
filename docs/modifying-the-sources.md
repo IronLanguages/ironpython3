@@ -1,6 +1,6 @@
 # TDD
 
-Bug fixes should be accompanied by a test that shows that the bug has been fixed. If the bug fix is fixing something that is covered by a test in the C Python test suite (Src\StdLib\Lib\test) and that test is not currently enabled, try enabling the test in Src\IronPythonTest\Cases\*.ini depending on the type of test it is. 
+Bug fixes should be accompanied by a test that shows that the bug has been fixed. If the bug fix is fixing something that is covered by a test in the C Python test suite (`src/core/IronPython.StdLib/lib/test`) and that test is not currently enabled, try enabling the test in `tests\IronPython.Tests\Cases\*.ini` depending on the type of test it is.
 
 Most PR's will not be accepted if there is not a test included.
 

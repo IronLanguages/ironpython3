@@ -19,7 +19,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
     <Media Id="1" Cabinet="IronPy.cab" EmbedCab="yes" CompressionLevel="high" />
 
-    <Icon Id="ipy.ico" SourceFile="..\..\Src\IronPythonConsole\ipy.ico" />
+    <Icon Id="ipy.ico" SourceFile="..\..\..\src\executables\IronPython.Console\ipy.ico" />
 
     <!-- Major upgrade -->
     <MajorUpgrade AllowSameVersionUpgrades="no" DowngradeErrorMessage="A later version of [ProductName] is already installed." />

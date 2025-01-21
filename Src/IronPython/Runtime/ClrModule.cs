@@ -15,6 +15,10 @@ using ComTypeLibInfo = Microsoft.Scripting.ComInterop.ComTypeLibInfo;
 using ComTypeLibDesc = Microsoft.Scripting.ComInterop.ComTypeLibDesc;
 #endif
 
+#if FEATURE_FILESYSTEM && FEATURE_REFEMIT
+using System.Reflection.Emit;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -870,7 +874,7 @@ import Namespace.")]
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
         /// </summary>
-        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
+        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary] IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
             ContractUtils.RequiresNotNull(assemblyName, nameof(assemblyName));
             ContractUtils.RequiresNotNullItems(filenames, nameof(filenames));
 
@@ -941,6 +945,196 @@ import Namespace.")]
             }
 
             SavableScriptCode.SaveToAssembly(assemblyName, kwArgs, code.ToArray());
+        }
+
+        public static AssemblyGen CreateAssemblyGen(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
+            ContractUtils.RequiresNotNull(assemblyName, nameof(assemblyName));
+            ContractUtils.RequiresNotNullItems(filenames, nameof(filenames));
+
+            PythonContext pc = context.LanguageContext;
+
+            for (int i = 0; i < filenames.Length; i++) {
+                filenames[i] = Path.GetFullPath(filenames[i]);
+            }
+
+            Dictionary<string, string> packageMap = BuildPackageMap(filenames);
+
+            List<SavableScriptCode> code = new List<SavableScriptCode>();
+            foreach (string filename in filenames) {
+                if (!pc.DomainManager.Platform.FileExists(filename)) {
+                    throw PythonOps.IOError($"Couldn't find file for compilation: {filename}");
+                }
+
+                ScriptCode sc;
+
+                string modName;
+                string dname = Path.GetDirectoryName(filename);
+                string outFilename = "";
+                if (Path.GetFileName(filename) == "__init__.py") {
+                    // remove __init__.py to get package name
+                    dname = Path.GetDirectoryName(dname);
+                    if (String.IsNullOrEmpty(dname)) {
+                        modName = Path.GetDirectoryName(filename);
+                    } else {
+                        modName = Path.GetFileNameWithoutExtension(Path.GetDirectoryName(filename));
+                    }
+                    outFilename = Path.DirectorySeparatorChar + "__init__.py";
+                } else {
+                    modName = Path.GetFileNameWithoutExtension(filename);
+                }
+
+                // see if we have a parent package, if so incorporate it into
+                // our name
+                if (packageMap.TryGetValue(dname, out string parentPackage)) {
+                    modName = parentPackage + "." + modName;
+                }
+
+                outFilename = modName.Replace('.', Path.DirectorySeparatorChar) + outFilename;
+
+                SourceUnit su = pc.CreateSourceUnit(
+                    new FileStreamContentProvider(
+                        context.LanguageContext.DomainManager.Platform,
+                        filename
+                    ),
+                    outFilename,
+                    pc.DefaultEncoding,
+                    SourceCodeKind.File
+                );
+
+                sc = context.LanguageContext.GetScriptCode(su, modName, ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk);
+
+                code.Add((SavableScriptCode)sc);
+            }
+
+            if (kwArgs != null && kwArgs.TryGetValue("mainModule", out object mainModule)) {
+                if (mainModule is string strModule) {
+                    if (!pc.DomainManager.Platform.FileExists(strModule)) {
+                        throw PythonOps.IOError("Couldn't find main file for compilation: {0}", strModule);
+                    }
+
+                    SourceUnit su = pc.CreateFileUnit(strModule, pc.DefaultEncoding, SourceCodeKind.File);
+                    code.Add((SavableScriptCode)context.LanguageContext.GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
+                }
+            }
+
+            return CreateAssemblyGen(assemblyName, kwArgs, code.ToArray());
+        }
+
+        private class CodeInfo {
+            public readonly MethodBuilder Builder;
+            public readonly ScriptCode Code;
+            public readonly Type DelegateType;
+
+            public CodeInfo(MethodBuilder builder, ScriptCode code, Type delegateType) {
+                Builder = builder;
+                Code = code;
+                DelegateType = delegateType;
+            }
+        }
+
+        private static AssemblyGen CreateAssemblyGen(string assemblyName, IDictionary<string, object> assemblyAttributes, params SavableScriptCode[] codes) {
+            ContractUtils.RequiresNotNull(assemblyName, nameof(assemblyName));
+            ContractUtils.RequiresNotNullItems(codes, nameof(codes));
+
+            // break the assemblyName into it's dir/name/extension
+            string dir = Path.GetDirectoryName(assemblyName);
+            if (string.IsNullOrEmpty(dir)) {
+                dir = Environment.CurrentDirectory;
+            }
+
+            string name = Path.GetFileNameWithoutExtension(assemblyName);
+            string ext = Path.GetExtension(assemblyName);
+
+            // build the assembly & type gen that all the script codes will live in...
+            AssemblyGen ag = new AssemblyGen(new AssemblyName(name), dir, ext, /*emitSymbols*/false, assemblyAttributes);
+            TypeBuilder tb = ag.DefinePublicType("DLRCachedCode", typeof(object), true);
+            TypeGen tg = new TypeGen(ag, tb);
+            // then compile all of the code
+
+            MethodInfo compileForSave =
+                typeof(SavableScriptCode).GetMethod(
+                    "CompileForSave",
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    Type.DefaultBinder,
+                    new[] { typeof(TypeGen) },
+                    null);
+
+            Dictionary<Type, List<CodeInfo>> langCtxBuilders = new Dictionary<Type, List<CodeInfo>>();
+            foreach (SavableScriptCode sc in codes) {
+                if (!langCtxBuilders.TryGetValue(sc.LanguageContext.GetType(), out List<CodeInfo> builders)) {
+                    langCtxBuilders[sc.LanguageContext.GetType()] = builders = new List<CodeInfo>();
+                }
+                KeyValuePair<MethodBuilder, Type> compInfo = (KeyValuePair<MethodBuilder, Type>)compileForSave.Invoke(sc, new[] { tg });
+
+                builders.Add(new CodeInfo(compInfo.Key, sc, compInfo.Value));
+            }
+
+            MethodBuilder mb = tb.DefineMethod(
+                "GetScriptCodeInfo",
+                MethodAttributes.SpecialName | MethodAttributes.Public | MethodAttributes.Static,
+                typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
+                ReflectionUtils.EmptyTypes);
+
+            ILGen ilgen = new ILGen(mb.GetILGenerator());
+
+            var langsWithBuilders = langCtxBuilders.ToArray();
+
+            // lang ctx array
+            ilgen.EmitArray(typeof(Type), langsWithBuilders.Length, (index) => {
+                ilgen.Emit(OpCodes.Ldtoken, langsWithBuilders[index].Key);
+                ilgen.EmitCall(typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) }));
+            });
+
+            // builders array of array
+            ilgen.EmitArray(typeof(Delegate[]), langsWithBuilders.Length, (index) => {
+                List<CodeInfo> builders = langsWithBuilders[index].Value;
+
+                ilgen.EmitArray(typeof(Delegate), builders.Count, (innerIndex) => {
+                    ilgen.EmitNull();
+                    ilgen.Emit(OpCodes.Ldftn, builders[innerIndex].Builder);
+                    ilgen.EmitNew(
+                        builders[innerIndex].DelegateType,
+                        new[] { typeof(object), typeof(IntPtr) }
+                    );
+                });
+            });
+
+            // paths array of array
+            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) => {
+                List<CodeInfo> builders = langsWithBuilders[index].Value;
+
+                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) => {
+                    ilgen.EmitString(builders[innerIndex].Code.SourceUnit.Path);
+                });
+            });
+
+            // 4th element in tuple - custom per-language data
+            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) => {
+                List<CodeInfo> builders = langsWithBuilders[index].Value;
+
+                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) => {
+                    ICustomScriptCodeData data = builders[innerIndex].Code as ICustomScriptCodeData;
+                    if (data != null) {
+                        ilgen.EmitString(data.GetCustomScriptCodeData());
+                    } else {
+                        ilgen.Emit(OpCodes.Ldnull);
+                    }
+                });
+            });
+
+            ilgen.EmitNew(
+                typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
+                new[] { typeof(Type[]), typeof(Delegate[][]), typeof(string[][]), typeof(string[][]) }
+            );
+            ilgen.Emit(OpCodes.Ret);
+
+            mb.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(DlrCachedCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes),
+                ArrayUtils.EmptyObjects
+            ));
+
+            tg.FinishType();
+            return ag;
         }
 #endif
 

@@ -7,6 +7,7 @@
 using System;
 using System.Collections;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -28,12 +29,20 @@ public static class PythonTermios {
     public const string __doc__ = "Stub of termios, just enough to support module tty.";
     // and also prompt_toolkit.terminal.vt100_input
 
+#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
+    [SpecialName]
+    public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
+        => context.EnsureModuleException("termioserror", dict, "error", "termios");
+#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
+
+
     #region termios IO Control Codes (TIOC*)
 
     public static int TIOCGWINSZ => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x40087468 : 0x5413;
 
 
     #endregion
+
 
     #region Other Public Constants
     // Linux: glibc/bits/termios.h (/usr/include/{x86_64,aarch64}-linux-gnu/)

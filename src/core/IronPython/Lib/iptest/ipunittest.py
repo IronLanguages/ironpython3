@@ -241,9 +241,9 @@ def generate_suite(tests, failing_tests, skip_tests=[]):
 #     ip_root             = path_combine(rowan_root, basePyDir)
 #     external_dir        = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/IronPython')
 #     clean_external_dir  = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/CPython/27')
-#     public_testdir      = path_combine(ip_root, 'Tests')
-#     compat_testdir      = path_combine(ip_root, 'Tests/compat')
-#     test_inputs_dir     = path_combine(ip_root, 'Tests/Inputs')
+#     public_testdir      = path_combine(ip_root, 'tests/suite')
+#     compat_testdir      = path_combine(ip_root, 'tests/suite/compat')
+#     test_inputs_dir     = path_combine(ip_root, 'tests/suite/Inputs')
 #     script_testdir      = path_combine(ip_root, 'Scripts')
 
 #     math_testdir        = path_combine(external_dir, 'Math')

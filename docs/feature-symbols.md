@@ -1,6 +1,6 @@
 # Feature Symbols
 
-Feature Symbols (named FEATURE_{feature name}, all caps) are compilation symbols defined for features whose availability vary across platforms that IronPython supports. The symbols are defined in Build/{framework}.props file, which get included by all .csproj files that contribute to IronPython.
+Feature Symbols (named FEATURE_{feature name}, all caps) are compilation symbols defined for features whose availability vary across platforms that IronPython supports. The symbols are defined in eng/{framework}.props file, which get included by all .csproj files that contribute to IronPython.
 
 **The following list needs a major update**
 

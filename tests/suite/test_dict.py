@@ -956,7 +956,7 @@ class DictTest(IronPythonTestCase):
         self.assertEqual(sys.Dict["1"], "b")
         del sys.Dict
 
-        with path_modifier(os.path.join(source_root(), 'Tests')):
+        with path_modifier(os.path.join(source_root(), 'tests', 'suite')):
             import testpkg1
             testpkg1.Dict = {"1": "c"}
             self.assertEqual(testpkg1.Dict["1"], "c")

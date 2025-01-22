@@ -13,9 +13,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" Private="false" />
-    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj" Private="false" />
-    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" Private="false" />
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" Private="false" />
+    <ProjectReference Include="..\..\dlr\Src\Microsoft.Scripting\Microsoft.Scripting.csproj" Private="false" />
+    <ProjectReference Include="..\..\dlr\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" Private="false" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">

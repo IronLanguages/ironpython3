@@ -2,11 +2,11 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Package Include="IronPython">
-      <NuSpecDir>$(RootDir)Package\nuget</NuSpecDir>
+      <NuSpecDir>$(MSBuildThisFileDirectory)</NuSpecDir>
       <NuspecProperties></NuspecProperties>
     </Package>
     <Package Include="IronPython.StdLib">
-      <NuSpecDir>$(RootDir)Package\nuget</NuSpecDir>
+      <NuSpecDir>$(MSBuildThisFileDirectory)</NuSpecDir>
       <NuspecProperties>IncludeSymbols=false</NuspecProperties>
     </Package>
   </ItemGroup>

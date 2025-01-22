@@ -9,10 +9,9 @@
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)IronPython.sln</Solution>
-    <UtilDir>$(RootDir)Util</UtilDir>
-    <ReferenceDir>$(RootDir)Util\References</ReferenceDir>
+    <UtilsDir>$(RootDir)eng\utils</UtilsDir>
     <BinDir>$(RootDir)bin</BinDir>
-    <BuildSysDir>$(RootDir)Build</BuildSysDir>
+    <BuildSysDir>$(RootDir)eng</BuildSysDir>
   </PropertyGroup>
 
   <Import Project="$(BuildSysDir)\Tasks.Targets" />
@@ -40,7 +39,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <NuGet>$(UtilDir)\NuGet\nuget.exe</NuGet>
+    <NuGet>$(UtilsDir)\NuGet\nuget.exe</NuGet>
   </PropertyGroup>
 
   <ItemGroup>
@@ -117,7 +116,7 @@
   </Target>
 
   <Target Name="_CopyStdLib" DependsOnTargets="_MakeStageDir">
-    <MSBuild Projects="$(RootDir)\Src\StdLib\StdLib.pyproj"
+    <MSBuild Projects="$(RootDir)\src\core\IronPython.StdLib\StdLib.pyproj"
              Properties="OutputPath=$(StageDir);StdLibDirName=$(StdLibDirName)"
              Targets="Stage" />
   </Target>
@@ -138,5 +137,5 @@
   <!-- This looks like an empty target, but the targets files use it as an AfterTargets -->
   <Target Name="Package" DependsOnTargets="Stage" />
 
-  <Import Project="$(RootDir)\Package\**\*.Packaging.targets" />
+  <Import Project="$(RootDir)\eng\package\**\*.Packaging.targets" />
 </Project>

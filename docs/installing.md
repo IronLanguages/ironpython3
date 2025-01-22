@@ -87,7 +87,7 @@ Use Powershell's `help` command on the script for information about available op
 The script is also available online, so it can be downloaded and invoked without unzipping the archive first.
 
 ```
-PS> Invoke-WebRequest https://raw.githubusercontent.com/IronLanguages/ironpython3/main/Src/Scripts/Install-IronPython.ps1 -OutFile ./Install-IronPython.ps1
+PS> Invoke-WebRequest https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1 -OutFile ./Install-IronPython.ps1
 PS> ./Install-IronPython ~/ipyenv ~/Downloads/IronPython.3.X.Y.zip
 PS> ~/ipyenv/Enter-IronPythonEnvironment
 «ipyenv» PS> ipy
@@ -158,7 +158,7 @@ Go to the project's [_Actions_ page](https://github.com/IronLanguages/ironpython
 
 # Installing from Sources
 
-To build and install IronPython from sources, first follow instructions in [_Getting the Sources_](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/getting-the-sources.md) and [_Building IronPython3_](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/building.md).
+To build and install IronPython from sources, first follow instructions in [_Getting the Sources_](https://github.com/IronLanguages/ironpython3/blob/main/docs/getting-the-sources.md) and [_Building IronPython3_](https://github.com/IronLanguages/ironpython3/blob/main/docs/building.md).
 
 When the command `./make.ps1 debug` completes successfully, runnable and usable `ipy` executables are available in subdirectories of `./bin/Debug`. To run executables from the release configuration (produced by a successful run of `./make.ps1`), first set environment variable `IRONPYTHONPATH`.
 
@@ -170,10 +170,10 @@ If those executables test out successfully, the binaries can be installed outsid
 
 The artifacts are placed in directory `./Package/Release/Packages/IronPython-3.X.Y`. Pick a package suitable for your installation target and follow instructions above for the officially released packages.
 
-Note: as a convenience, if you run `Install-IronPython.ps1` directly from directory `./Src/Scripts` to install IronPython from the zip file, there is no need to pass the location to the zip file; the script finds it automatically using the relative path.
+Note: as a convenience, if you run `Install-IronPython.ps1` directly from directory `./eng/scripts` to install IronPython from the zip file, there is no need to pass the location to the zip file; the script finds it automatically using the relative path.
 
 Installation example:
 
 ```
-./Src/Scripts/Install-IronPython.ps1 /path/to/install/directory -framework net462
+./eng/scripts/Install-IronPython.ps1 /path/to/install/directory -framework net462
 ```

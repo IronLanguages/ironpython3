@@ -53,16 +53,16 @@ namespace IronPythonTest {
         static Common() {
             RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).Assembly.Location);
             RootDirectory = FindRoot();
-            ScriptTestDirectory = Path.Combine(RootDirectory, "Tests");
+            ScriptTestDirectory = Path.Combine(RootDirectory, "tests", "suite");
             InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");
         }
 
         private static string FindRoot() {
-            // we start at the current directory and look up until we find the "Src" directory
+            // we start at the current directory and look up until we find the "src" directory
             var current = System.Reflection.Assembly.GetExecutingAssembly().Location;
             var found = false;
             while (!found && !string.IsNullOrEmpty(current)) {
-                var test = Path.Combine(current, "Src", "StdLib", "Lib");
+                var test = Path.Combine(current, "src", "core", "IronPython.StdLib", "lib");
                 if (Directory.Exists(test)) {
                     return current;
                 }

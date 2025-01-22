@@ -5,7 +5,7 @@
     <!-- We need to create the directory structure we want to package -->
     <PropertyGroup>
       <TempFolder>temp</TempFolder>
-      <PackageDebFolder>Package/pkg</PackageDebFolder>
+      <PackageDebFolder>eng/package/pkg</PackageDebFolder>
       <PackageTempFolder>$(PackageDebFolder)/$(TempFolder)</PackageTempFolder>
       <PackageLayoutRootDir>$(PackageTempFolder)/Library/Frameworks/IronPython.framework/Versions/$(PackageVersion)</PackageLayoutRootDir>
     </PropertyGroup>

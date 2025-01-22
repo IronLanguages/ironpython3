@@ -30,7 +30,7 @@ class ExceptionsGeneratedTest(unittest.TestCase):
         clr.AddReference("IronPython")
 
 if is_cli:
-    with path_modifier(os.path.join(source_root(), 'Src', 'Scripts')):
+    with path_modifier(os.path.join(source_root(), 'eng', 'scripts')):
         from generate_exceptions import pythonExcs as test_cases
     test_cases = [x.replace('Error', '') + 'Exception' for x in test_cases]
     for exc_name in test_cases:

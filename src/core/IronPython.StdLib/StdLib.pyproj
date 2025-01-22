@@ -9,7 +9,7 @@
     <AssemblyName>PyStdLib</AssemblyName>
     <Name>PyStdLib</Name>
     <RootNamespace>PyStdLib</RootNamespace>
-    <StdLibPath>Lib</StdLibPath>
+    <StdLibPath>lib</StdLibPath>
     <StdLibDirName Condition=" '$(StdLibDirName)' == '' ">lib</StdLibDirName>
   </PropertyGroup>
 

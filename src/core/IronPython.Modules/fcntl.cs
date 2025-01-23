@@ -5,12 +5,19 @@
 #nullable enable
 
 using System;
+using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
+using Mono.Unix;
 using Mono.Unix.Native;
 
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+
 
 [assembly: PythonModule("fcntl", typeof(IronPython.Modules.PythonFcntl), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules;
@@ -25,6 +32,131 @@ public static class PythonFcntl {
         File descriptors can be obtained with the fileno() method of
         a file object.
         """;
+
+
+    [LightThrowing]
+    public static object fcntl(int fd, int cmd, [NotNone] Bytes arg) {
+        CheckFileDescriptor(fd);
+
+        const int maxArgSize = 1024;
+        if (arg.Count > maxArgSize) {
+            throw PythonOps.ValueError("fcntl bytes arg too long");
+        }
+
+        if (!NativeConvert.TryToFcntlCommand(cmd, out FcntlCommand fcntlCommand)) {
+            throw PythonOps.OSError(PythonErrno.EINVAL, "unsupported fcntl command");
+        }
+
+        int argSize = arg.Count;
+        IntPtr ptr = Marshal.AllocHGlobal(argSize);
+        try {
+            Marshal.Copy(arg.UnsafeByteArray, 0, ptr, argSize);
+            int result;
+            Errno errno;
+            do {
+                result = Syscall.fcntl(fd, fcntlCommand, ptr);
+            } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
+
+            if (result == -1) {
+                return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+            }
+            byte[] response = new byte[argSize];
+            Marshal.Copy(ptr, response, 0, argSize);
+            return Bytes.Make(response);
+        } finally {
+            Marshal.FreeHGlobal(ptr);
+        }
+    }
+
+
+    [LightThrowing]
+    public static object fcntl(int fd, int cmd, object? arg = null) {
+        CheckFileDescriptor(fd);
+
+        long data = arg switch {
+            null => 0,
+            int i => i,
+            uint ui => ui,
+            long l => l,
+            ulong ul => (long)ul,
+            BigInteger bi => (long)bi,
+            Extensible<BigInteger> ebi => (long)ebi.Value,
+            _ => throw PythonOps.TypeErrorForBadInstance("integer argument expected, got {0}", arg)
+        };
+
+        if (!NativeConvert.TryToFcntlCommand(cmd, out FcntlCommand fcntlCommand)) {
+            throw PythonOps.OSError(PythonErrno.EINVAL, "unsupported fcntl command");
+        }
+
+        int result;
+        Errno errno;
+        do {
+            result = Syscall.fcntl(fd, fcntlCommand, data);
+        } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
+
+        if (result == -1) {
+            return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+        }
+        return result;
+    }
+
+
+    [LightThrowing]
+    public static object fcntl(CodeContext context, object? fd, int cmd, object? arg = null) {
+        int fileno = GetFileDescriptor(context, fd);
+
+        if (arg is Bytes bytes) {
+            return fcntl(fileno, cmd, bytes);
+        }
+
+        return fcntl(fileno, cmd, arg);
+    }
+
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "flock")]
+    private static extern int _flock(int fd, int op);
+
+    [LightThrowing]
+    public static object? flock(int fd, int operation) {
+        CheckFileDescriptor(fd);
+
+        int result;
+        int errno = 0;
+        do {
+            result = _flock(fd, operation);
+        } while (result == -1 && (errno = Marshal.GetLastWin32Error()) == PythonErrno.EINTR);
+
+        if (result == -1) {
+            return LightExceptions.Throw(PythonNT.GetOsError(errno));
+        }
+        return null;
+    }
+
+
+    [LightThrowing]
+    public static object? flock(CodeContext context, object? fd, int operation)
+        => flock(GetFileDescriptor(context, fd), operation);
+
+
+    private static int GetFileDescriptor(CodeContext context, object? obj) {
+        if (!PythonOps.TryGetBoundAttr(context, obj, "fileno", out object? filenoMeth)) {
+            throw PythonOps.TypeError("argument must be an int, or have a fileno() method.");
+        }
+        return PythonCalls.Call(context, filenoMeth) switch {
+            int i => i,
+            uint ui => (int)ui,
+            BigInteger bi => (int)bi,
+            Extensible<BigInteger> ebi => (int)ebi.Value,
+            _ => throw PythonOps.TypeError("fileno() returned a non-integer")
+        };
+    }
+
+
+    private static void CheckFileDescriptor(int fd) {
+        if (fd < 0) {
+            throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
+        }
+    }
 
 
     // supporting fcntl.ioctl(fileno, termios.TIOCGWINSZ, buf)
@@ -56,7 +188,9 @@ public static class PythonFcntl {
 
     // FD Flags
     public static int FD_CLOEXEC = 1;
-    public static int FASYNC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x0040 : 0x2000;
+
+    // O_* flags under F* name
+    public static int FASYNC => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0x0040 : 0x2000;  // O_ASYNC
 
 
     #region Generated FD Commands

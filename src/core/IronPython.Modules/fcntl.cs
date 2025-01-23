@@ -7,6 +7,7 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -33,6 +34,8 @@ public static class PythonFcntl {
         a file object.
         """;
 
+
+    #region  fcntl
 
     [LightThrowing]
     public static object fcntl(int fd, int cmd, [NotNone] Bytes arg) {
@@ -70,11 +73,11 @@ public static class PythonFcntl {
 
 
     [LightThrowing]
-    public static object fcntl(int fd, int cmd, object? arg = null) {
+    public static object fcntl(int fd, int cmd, [Optional] object? arg) {
         CheckFileDescriptor(fd);
 
         long data = arg switch {
-            null => 0,
+            Missing => 0,
             int i => i,
             uint ui => ui,
             long l => l,
@@ -97,7 +100,7 @@ public static class PythonFcntl {
         if (result == -1) {
             return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
         }
-        return result;
+        return ScriptingRuntimeHelpers.Int32ToObject(result);
     }
 
 
@@ -112,6 +115,10 @@ public static class PythonFcntl {
         return fcntl(fileno, cmd, arg);
     }
 
+    #endregion
+
+
+    #region  flock
 
     [DllImport("libc", SetLastError = true, EntryPoint = "flock")]
     private static extern int _flock(int fd, int op);
@@ -137,6 +144,50 @@ public static class PythonFcntl {
     public static object? flock(CodeContext context, object? fd, int operation)
         => flock(GetFileDescriptor(context, fd), operation);
 
+    #endregion
+
+
+    #region  lockf
+
+    [LightThrowing]
+    public static object? lockf(int fd, int cmd, long len = 0, long start = 0, int whence = 0) {
+        CheckFileDescriptor(fd);
+
+        Flock flock = new() {
+            l_whence = (SeekFlags)whence,
+            l_start = start,
+            l_len = len
+        };
+        if (cmd == LOCK_UN) {
+            flock.l_type = LockType.F_UNLCK;
+        } else if ((cmd & LOCK_SH) != 0) {
+            flock.l_type = LockType.F_RDLCK;
+        } else if ((cmd & LOCK_EX) != 0) {
+            flock.l_type = LockType.F_WRLCK;
+        } else {
+            throw PythonOps.ValueError("unrecognized lockf argument");
+        }
+
+        int result;
+        Errno errno;
+        do {
+            result = Syscall.fcntl(fd, (cmd & LOCK_NB) != 0 ? FcntlCommand.F_SETLK : FcntlCommand.F_SETLKW, ref flock);
+        } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
+
+        if (result == -1) {
+            return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+        }
+        return null;
+    }
+
+
+    [LightThrowing]
+    public static object? lockf(CodeContext context, object? fd, int cmd, long len = 0, long start = 0, int whence = 0)
+        => lockf(GetFileDescriptor(context, fd), cmd, len, start, whence);
+
+    #endregion
+
+    #region Private Methods
 
     private static int GetFileDescriptor(CodeContext context, object? obj) {
         if (!PythonOps.TryGetBoundAttr(context, obj, "fileno", out object? filenoMeth)) {
@@ -157,6 +208,8 @@ public static class PythonFcntl {
             throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
         }
     }
+
+    #endregion
 
 
     // supporting fcntl.ioctl(fileno, termios.TIOCGWINSZ, buf)

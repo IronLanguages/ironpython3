@@ -58,7 +58,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" $(TargetFrameworkIdentifier) != '.NETFramework' ">
-    <ProjectReference Include="..\..\roslyn\IronPython.Analyzer\IronPythonAnalyzer.csproj">
+    <ProjectReference Include="..\..\roslyn\IronPython.Analyzer\IronPython.Analyzer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>

@@ -116,7 +116,7 @@
   </Target>
 
   <Target Name="_CopyStdLib" DependsOnTargets="_MakeStageDir">
-    <MSBuild Projects="$(RootDir)\src\core\IronPython.StdLib\StdLib.pyproj"
+    <MSBuild Projects="$(RootDir)\src\core\IronPython.StdLib\IronPython.StdLib.pyproj"
              Properties="OutputPath=$(StageDir);StdLibDirName=$(StdLibDirName)"
              Targets="Stage" />
   </Target>

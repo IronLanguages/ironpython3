@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace IronPythonAnalyzer {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class IronPythonAnalyzerAnalyzer : DiagnosticAnalyzer {
+    public class IronPythonDiagnosticAnalyzer : DiagnosticAnalyzer {
         public const string DiagnosticId = "IronPythonAnalyzer";
 
 #pragma warning disable RS2008 // Enable analyzer release tracking

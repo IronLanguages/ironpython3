@@ -13,7 +13,7 @@ namespace IronPythonTest.Util {
         private IniParser manifest;
 
         public TestManifest(Type parent) {
-            var file = parent.Assembly.GetManifestResourceStream($"IronPythonTest.Cases.{parent.Name}Manifest.ini");
+            var file = parent.Assembly.GetManifestResourceStream($"IronPython.Tests.Cases.{parent.Name}Manifest.ini");
             this.manifest = new IniParser(file);
         }
 

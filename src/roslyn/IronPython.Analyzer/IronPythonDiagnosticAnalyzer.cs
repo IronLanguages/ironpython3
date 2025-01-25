@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace IronPythonAnalyzer {
+namespace IronPython.Analyzer {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class IronPythonDiagnosticAnalyzer : DiagnosticAnalyzer {
         public const string DiagnosticId = "IronPythonAnalyzer";

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net462;net6.0;net8.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <RootNamespace>IronPythonConsole</RootNamespace>
+    <RootNamespace>IronPython.Console</RootNamespace>
     <AssemblyName>ipy</AssemblyName>
     <ApplicationIcon>ipy.ico</ApplicationIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

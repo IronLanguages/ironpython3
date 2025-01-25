@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>net462</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <RootNamespace>IronPythonCompiler</RootNamespace>
+    <RootNamespace>IronPython.Compiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
-    <StartupObject>IronPythonCompiler.Program</StartupObject>
+    <StartupObject>IronPython.Compiler.Program</StartupObject>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 

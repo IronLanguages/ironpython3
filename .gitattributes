@@ -14,8 +14,8 @@
 *.ps1 text
 
 # Explicitly declare files that should not have line endings modified, ever
-Tests/file_with_BOM.txt -text
-Tests/file_without_BOM.txt -text
+tests/suite/file_with_BOM.txt -text
+tests/suite/file_without_BOM.txt -text
 
 # Declare files that will always have CRLF line endings on checkout.
 *.bat text eol=crlf

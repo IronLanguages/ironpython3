@@ -4,7 +4,7 @@
     <TargetFrameworks>net462</TargetFrameworks>
     <PlatformTarget>x86</PlatformTarget>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>IronPythonWindow</RootNamespace>
+    <RootNamespace>IronPython.Window32</RootNamespace>
     <AssemblyName>ipyw32</AssemblyName>
     <ApplicationIcon>..\IronPython.Window\ipyw.ico</ApplicationIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

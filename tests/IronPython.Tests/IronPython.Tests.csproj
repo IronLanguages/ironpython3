@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net462;net6.0;net8.0</TargetFrameworks>
+    <AssemblyName>IronPythonTest</AssemblyName>
     <PreventStaging>true</PreventStaging>
   </PropertyGroup>
 

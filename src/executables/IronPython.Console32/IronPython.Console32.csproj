@@ -4,7 +4,7 @@
     <TargetFrameworks>net462</TargetFrameworks>
     <PlatformTarget>x86</PlatformTarget>
     <OutputType>Exe</OutputType>
-    <RootNamespace>IronPythonConsole</RootNamespace>
+    <RootNamespace>IronPython.Console32</RootNamespace>
     <AssemblyName>ipy32</AssemblyName>
     <ApplicationIcon>..\IronPython.Console\ipy.ico</ApplicationIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

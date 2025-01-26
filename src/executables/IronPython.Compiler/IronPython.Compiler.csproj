@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>net462</TargetFrameworks>
-    <OutputType>WinExe</OutputType>
-    <RootNamespace>IronPythonWindow</RootNamespace>
-    <AssemblyName>ipyw</AssemblyName>
-    <ApplicationIcon>ipyw.ico</ApplicationIcon>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>IronPython.Compiler</RootNamespace>
+    <AssemblyName>ipyc</AssemblyName>
+    <StartupObject>IronPython.Compiler.Program</StartupObject>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -14,6 +14,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <StageItem Include="$(TargetDir)\IKVM.Reflection.dll" />
+    <StageItem Include="$(UtilsDir)\References\IKVM\IKVM.Reflection.License.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="IKVM.Reflection" CopyLocal="true">
+      <HintPath>$(UtilsDir)\References\IKVM\IKVM.Reflection.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 

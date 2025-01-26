@@ -4,6 +4,7 @@ import unittest
 import os
 import re
 import itertools
+import struct   # IronPython: for platform architecture detection
 import socket
 import sys
 import weakref
@@ -242,10 +243,16 @@ class MmapTests(unittest.TestCase):
             # Try writing with PROT_EXEC and without PROT_WRITE
             prot = mmap.PROT_READ | getattr(mmap, 'PROT_EXEC', 0)
             with open(TESTFN, "r+b") as f:
-                m = mmap.mmap(f.fileno(), mapsize, prot=prot)
-                self.assertRaises(TypeError, m.write, b"abcdef")
-                self.assertRaises(TypeError, m.write_byte, 0)
-                m.close()
+                # try/except backported from Python 3.12
+                try:
+                    m = mmap.mmap(f.fileno(), mapsize, prot=prot)
+                except PermissionError:
+                    # on macOS 14, PROT_READ | PROT_EXEC is not allowed
+                    pass
+                else:
+                    self.assertRaises(TypeError, m.write, b"abcdef")
+                    self.assertRaises(TypeError, m.write_byte, 0)
+                    m.close()
 
     def test_bad_file_desc(self):
         # Try opening a bad file descriptor...
@@ -749,7 +756,6 @@ class MmapTests(unittest.TestCase):
             m * 2
 
 
-@unittest.skipIf(sys.implementation.name == "ironpython", "TODO")
 class LargeMmapTests(unittest.TestCase):
 
     def setUp(self):
@@ -782,7 +788,8 @@ class LargeMmapTests(unittest.TestCase):
 
     def test_large_filesize(self):
         with self._make_test_file(0x17FFFFFFF, b" ") as f:
-            if sys.maxsize < 0x180000000:
+            #if sys.maxsize < 0x180000000: # original CPython test
+            if struct.calcsize('P') * 8 == 32: # IronPython: better detection of 32-bit platform
                 # On 32 bit platforms the file is larger than sys.maxsize so
                 # mapping the whole file should fail -- Issue #16743
                 with self.assertRaises(OverflowError):
@@ -802,11 +809,13 @@ class LargeMmapTests(unittest.TestCase):
             with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as m:
                 self.assertEqual(m[start:end], tail)
 
-    @unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems")
+    #@unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems") # original CPython decorator
+    @unittest.skipUnless(struct.calcsize('P') * 8 > 32, "test cannot run on 32-bit systems") # IronPython: better detection of 32-bit platform
     def test_around_2GB(self):
         self._test_around_boundary(_2G)
 
-    @unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems")
+    #@unittest.skipUnless(sys.maxsize > _4G, "test cannot run on 32-bit systems") # original CPython decorator
+    @unittest.skipUnless(struct.calcsize('P') * 8 > 32, "test cannot run on 32-bit systems") # IronPython: better detection of 32-bit platform
     def test_around_4GB(self):
         self._test_around_boundary(_4G)
 

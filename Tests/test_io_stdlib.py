@@ -6,7 +6,7 @@
 ## Run selected tests from test_io from StdLib
 ##
 
-from iptest import is_ironpython, is_mono, generate_suite, run_test
+from iptest import is_ironpython, is_mono, is_windows, generate_suite, run_test
 
 import test.test_io
 
@@ -74,7 +74,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.CTextIOWrapperTest('test_uninitialized'), # AssertionError: Exception not raised by repr
             test.test_io.CTextIOWrapperTest('test_unseekable'), # OSError: underlying stream is not seekable
             test.test_io.PyTextIOWrapperTest('test_nonnormalized_close_error_on_close'), # AssertionError: None is not an instance of <class 'NameError'>
-            test.test_io.PyTextIOWrapperTest('test_seek_append_bom'), # OSError: [Errno -2146232800] Unable seek backward to overwrite data that previously existed in a file opened in Append mode.
             test.test_io.CMiscIOTest('test_io_after_close'), # AttributeError: 'TextIOWrapper' object has no attribute 'read1'
             test.test_io.CMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
             test.test_io.CMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
@@ -122,6 +121,11 @@ def load_tests(loader, standard_tests, pattern):
         if is_mono:
             failing_tests += [
                 test.test_io.PyMiscIOTest('test_create_fail'),
+            ]
+
+        if is_mono or is_windows:
+            failing_tests += [
+                test.test_io.PyTextIOWrapperTest('test_seek_append_bom'), # OSError: [Errno -2146232800] Unable seek backward to overwrite data that previously existed in a file opened in Append mode.
             ]
 
         skip_tests = [

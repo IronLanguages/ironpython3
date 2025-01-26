@@ -1,6 +1,11 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+#nullable enable
+
+using System;
 using System.Collections.Generic;
-using System.Text;
 
 using IronPython.Runtime.Operations;
 
@@ -15,7 +20,7 @@ namespace IronPython.Runtime {
         private EmptyDictionaryStorage() {
         }
 
-        public override void Add(ref DictionaryStorage storage, object key, object value) {
+        public override void Add(ref DictionaryStorage storage, object? key, object? value) {
             lock (this) {
                 if (storage == this) {
                     CommonDictionaryStorage newStorage = new CommonDictionaryStorage();
@@ -24,12 +29,12 @@ namespace IronPython.Runtime {
                     return;
                 }
             }
-            
+
             // race, try again...
             storage.Add(ref storage, key, value);
         }
 
-        public override bool Remove(ref DictionaryStorage storage, object key) {
+        public override bool Remove(ref DictionaryStorage storage, object? key) {
             return false;
         }
 
@@ -47,7 +52,7 @@ namespace IronPython.Runtime {
         public override void Clear(ref DictionaryStorage storage) {
         }
 
-        public override bool Contains(object key) {
+        public override bool Contains(object? key) {
             // make sure argument is valid, do not calculate hash
             if (PythonContext.IsHashable(key)) {
                 return false;
@@ -55,7 +60,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeErrorForUnhashableObject(key);
         }
 
-        public override bool TryGetValue(object key, out object value) {
+        public override bool TryGetValue(object? key, out object? value) {
             value = null;
             return false;
         }
@@ -64,8 +69,8 @@ namespace IronPython.Runtime {
             get { return 0; }
         }
 
-        public override List<KeyValuePair<object, object>> GetItems() {
-            return new List<KeyValuePair<object, object>>();
+        public override List<KeyValuePair<object?, object?>> GetItems() {
+            return new List<KeyValuePair<object?, object?>>();
         }
 
         public override DictionaryStorage Clone() {

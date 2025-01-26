@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 
 using IronPython.Runtime;
 
-[assembly: PythonModule("errno", typeof(IronPython.Modules.PythonErrorNumber))]
+[assembly: PythonModule("errno", typeof(IronPython.Modules.PythonErrno))]
 namespace IronPython.Modules {
-    public static class PythonErrorNumber {
+    public static class PythonErrno {
         public const string __doc__ = "Provides a list of common error numbers.  These numbers are frequently reported in various exceptions.";
 
         internal const int ENOERROR = 0;

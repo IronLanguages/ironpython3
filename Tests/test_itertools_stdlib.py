@@ -27,8 +27,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_itertools.TestBasicOps('test_permutations'), # pickling
             test.test_itertools.TestBasicOps('test_product_issue_25021'),
             test.test_itertools.TestBasicOps('test_product_pickling'),
-            test.test_itertools.TestBasicOps('test_repeat'), # pickling
-            test.test_itertools.TestBasicOps('test_repeat_with_negative_times'),
             test.test_itertools.TestBasicOps('test_starmap'), # pickling
             test.test_itertools.TestBasicOps('test_takewhile'), # pickling
             test.test_itertools.TestBasicOps('test_tee'),

@@ -5,11 +5,14 @@
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 using IronPython.Runtime;
 
 [assembly: PythonModule("_overlapped", typeof(IronPython.Modules.PythonOverlapped), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
+
+    [SupportedOSPlatform("windows")]
     public static class PythonOverlapped {
         public const int ERROR_NETNAME_DELETED = 64;
         public const int ERROR_SEM_TIMEOUT = 121;

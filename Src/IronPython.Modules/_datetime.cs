@@ -1099,7 +1099,7 @@ namespace IronPython.Modules {
                 if (_tz != null) {
                     sb.AppendFormat(", tzinfo={0}", PythonOps.Repr(context, _tz));
                 }
-                sb.AppendFormat(")");
+                sb.Append(')');
                 return sb.ToString();
             }
             #endregion
@@ -1386,7 +1386,7 @@ namespace IronPython.Modules {
                     sb.AppendFormat(", tzinfo={0}", ltzname.ToLowerInvariant());
                 }
 
-                sb.AppendFormat(")");
+                sb.Append(')');
 
                 return sb.ToString();
             }

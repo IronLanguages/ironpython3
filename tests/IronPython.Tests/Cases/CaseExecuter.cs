@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using System.Threading;
 
 using IronPython;
 using IronPython.Hosting;
@@ -289,18 +289,34 @@ namespace IronPythonTest.Cases {
                 engine.GetSysModule().SetVariable("argv", PythonList.FromArrayNoCopy(new object[] { source.Path }));
                 var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
 
-                var task = Task<int>.Run(() => {
+                int res = 0;
+                int maxStackSize = 2 * 1024 * 1024; // 2 MiB
+                var thread = new Thread(() => {
                     try {
-                        return engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
+                        res = engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
                     } catch (SystemExitException ex) {
-                        return ex.GetExitCode(out _);
+                        res = ex.GetExitCode(out object otherCode);
+                    } catch (ThreadAbortException) {
+                        #pragma warning disable SYSLIB0006 // 'Thread.ResetAbort is not supported and throws PlatformNotSupportedException.' 
+                        Thread.ResetAbort();
+                        #pragma warning restore SYSLIB0006
                     }
-                });
-                if (!task.Wait(testcase.Options.Timeout)) {
+                }, maxStackSize) {
+                    IsBackground = true
+                };
+
+                thread.Start();
+
+                if (!thread.Join(testcase.Options.Timeout)) {
+                    if(!ClrModule.IsNetCoreApp) {
+                        #pragma warning disable SYSLIB0006 // 'Thread.Abort is not supported and throws PlatformNotSupportedException.' 
+                        thread.Abort();
+                        #pragma warning restore SYSLIB0006
+                    }
                     NUnit.Framework.TestContext.Error.WriteLine($"{testcase.Name} timed out after {testcase.Options.Timeout / 1000.0} seconds.");
                     return -1;
                 }
-                return task.Result;
+                return res;
             } finally {
                 Environment.CurrentDirectory = cwd;
             }

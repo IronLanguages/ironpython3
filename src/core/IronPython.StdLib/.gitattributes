@@ -18,15 +18,15 @@
 *.zip binary
 
 # Specific binary files
-Lib/test/sndhdrdata/sndhdr.* binary
+lib/test/sndhdrdata/sndhdr.* binary
 
 # Text files that should not be subject to eol conversion
-Lib/test/cjkencodings/* -text
-Lib/test/decimaltestdata/*.decTest -text
-Lib/test/test_email/data/*.txt -text
-Lib/test/xmltestdata/* -text
-Lib/test/coding20731.py -text
-Lib/test/test_importlib/data01/* -text
+lib/test/cjkencodings/* -text
+lib/test/decimaltestdata/*.decTest -text
+lib/test/test_email/data/*.txt -text
+lib/test/xmltestdata/* -text
+lib/test/coding20731.py -text
+lib/test/test_importlib/data01/* -text
 
 # CRLF files
 *.bat text eol=crlf

@@ -21,15 +21,16 @@ def load_tests(loader, standard_tests, pattern):
             test.test_builtin.BuiltinTest('test_input'),
             test.test_builtin.BuiltinTest('test_len'),
             test.test_builtin.BuiltinTest('test_open_non_inheritable'), # https://github.com/IronLanguages/ironpython3/issues/1225
-            test.test_builtin.PtyTests('test_input_no_stdout_fileno'),
-            test.test_builtin.PtyTests('test_input_tty'),
-            test.test_builtin.PtyTests('test_input_tty_non_ascii'),
-            test.test_builtin.PtyTests('test_input_tty_non_ascii_unicode_errors'),
         ]
 
         skip_tests = []
         if is_netcoreapp:
             skip_tests += [
+                # module `pty` is importable but not functional on .NET Core
+                test.test_builtin.PtyTests('test_input_no_stdout_fileno'),
+                test.test_builtin.PtyTests('test_input_tty'),
+                test.test_builtin.PtyTests('test_input_tty_non_ascii'),
+                test.test_builtin.PtyTests('test_input_tty_non_ascii_unicode_errors'),
                 test.test_builtin.ShutdownTest('test_cleanup'),
             ]
 

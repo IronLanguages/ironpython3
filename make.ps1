@@ -111,6 +111,25 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
     return $fileName
 }
 
+function RunTestTasksInForeground($tasks) {
+    $failedTests = @()
+    foreach ($task in $tasks) {
+        & dotnet test $task.params
+        Write-Host
+        if($LastExitCode -ne 0) {
+            $global:Result = $LastExitCode
+            Write-Host -ForegroundColor Red "$($task.name) failed"
+            $failedTests += $task.name
+        } else {
+            Write-Host "$($task.name) succeeded"
+        }
+        if ($failedTests) {
+            Write-Host -ForegroundColor Red "$($failedTests.Count) test task(s) failed: $($failedTests -Join ", ")"
+        }
+        Write-Host
+    }
+}
+
 function RunTestTasks($tasks) {
     $maxJobs = $jobs
     if ($tasks.Count -lt $maxJobs) {
@@ -211,7 +230,11 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         }
     }
 
-    RunTestTasks $tasks
+    if ($jobs -eq 0) {
+        RunTestTasksInForeground $tasks
+    } else {
+        RunTestTasks $tasks
+    }
 }
 
 function Purge() {

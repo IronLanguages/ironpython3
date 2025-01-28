@@ -167,7 +167,7 @@ function RunTestTasks($tasks) {
             $testName = $tasks[$bgJobs.$finished].name
             Write-Host
             if ($finished.State -eq 'Failed') {
-                Write-Host "$testName failed"
+                Write-Host -ForegroundColor Red  "$testName failed"
                 $global:Result = $finished.ChildJobs[0].JobStateInfo.Reason.ErrorRecord.TargetObject
                 $failedTests += $testName
             } else {
@@ -184,7 +184,7 @@ function RunTestTasks($tasks) {
             Write-Host "$($bgJobs.Count) jobs running: $(($bgJobs.values | ForEach-Object {$tasks[$_].name}) -Join ", ")"
             Write-Host "$($tasks.Count - $nextJob) jobs pending: $(($nextJob..$tasks.Count | ForEach-Object {$tasks[$_].name}) -Join ", ")"
             if ($failedTests) {
-                Write-Host "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
+                Write-Host -ForegroundColor Red  "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
             }
             Write-Host
         }

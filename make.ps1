@@ -111,6 +111,25 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
     return $fileName
 }
 
+function RunTestTasksInForeground($tasks) {
+    $failedTests = @()
+    foreach ($task in $tasks) {
+        & dotnet test $task.params
+        Write-Host
+        if($LastExitCode -ne 0) {
+            $global:Result = $LastExitCode
+            Write-Host -ForegroundColor Red "$($task.name) failed"
+            $failedTests += $task.name
+        } else {
+            Write-Host "$($task.name) succeeded"
+        }
+        if ($failedTests) {
+            Write-Host -ForegroundColor Red "$($failedTests.Count) test task(s) failed: $($failedTests -Join ", ")"
+        }
+        Write-Host
+    }
+}
+
 function RunTestTasks($tasks) {
     $maxJobs = $jobs
     if ($tasks.Count -lt $maxJobs) {
@@ -148,7 +167,7 @@ function RunTestTasks($tasks) {
             $testName = $tasks[$bgJobs.$finished].name
             Write-Host
             if ($finished.State -eq 'Failed') {
-                Write-Host "$testName failed"
+                Write-Host -ForegroundColor Red  "$testName failed"
                 $global:Result = $finished.ChildJobs[0].JobStateInfo.Reason.ErrorRecord.TargetObject
                 $failedTests += $testName
             } else {
@@ -165,7 +184,7 @@ function RunTestTasks($tasks) {
             Write-Host "$($bgJobs.Count) jobs running: $(($bgJobs.values | ForEach-Object {$tasks[$_].name}) -Join ", ")"
             Write-Host "$($tasks.Count - $nextJob) jobs pending: $(($nextJob..$tasks.Count | ForEach-Object {$tasks[$_].name}) -Join ", ")"
             if ($failedTests) {
-                Write-Host "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
+                Write-Host -ForegroundColor Red  "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
             }
             Write-Host
         }
@@ -211,7 +230,11 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         }
     }
 
-    RunTestTasks $tasks
+    if ($jobs -eq 0) {
+        RunTestTasksInForeground $tasks
+    } else {
+        RunTestTasks $tasks
+    }
 }
 
 function Purge() {

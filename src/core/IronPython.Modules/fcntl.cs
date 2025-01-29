@@ -118,6 +118,37 @@ public static class PythonFcntl {
     #endregion
 
 
+    #region ioctl
+
+    // supporting fcntl.ioctl(fileno, termios.TIOCGWINSZ, buf)
+    // where buf = array.array('h', [0, 0, 0, 0])
+    public static object ioctl(CodeContext context, int fd, int cmd, [NotNone] IBufferProtocol arg, int mutate_flag = 1) {
+        if (cmd == PythonTermios.TIOCGWINSZ) {
+            using IPythonBuffer buf = arg.GetBuffer();
+
+            Span<short> winsize = stackalloc short[4];
+            winsize[0] = (short)Console.WindowHeight;
+            winsize[1] = (short)Console.WindowWidth;
+            winsize[2] = (short)Console.BufferHeight;  // buffer height and width are not accurate on macOS
+            winsize[3] = (short)Console.BufferWidth;
+            Span<byte> payload = MemoryMarshal.Cast<short, byte>(winsize);
+
+            if (buf.IsReadOnly || mutate_flag == 0) {
+                byte[] res = buf.ToArray();
+                payload.Slice(0, Math.Min(payload.Length, res.Length)).CopyTo(res);
+                return Bytes.Make(res);
+            } else {
+                var res = buf.AsSpan();
+                payload.Slice(0, Math.Min(payload.Length, res.Length)).CopyTo(res);
+                return 0;
+            }
+        }
+        throw new NotImplementedException($"ioctl: unsupported command {cmd}");
+    }
+
+    #endregion
+
+
     #region  flock
 
     [DllImport("libc", SetLastError = true, EntryPoint = "flock")]
@@ -187,7 +218,8 @@ public static class PythonFcntl {
 
     #endregion
 
-    #region Private Methods
+
+    #region Helper Methods
 
     private static int GetFileDescriptor(CodeContext context, object? obj) {
         if (!PythonOps.TryGetBoundAttr(context, obj, "fileno", out object? filenoMeth)) {
@@ -210,33 +242,6 @@ public static class PythonFcntl {
     }
 
     #endregion
-
-
-    // supporting fcntl.ioctl(fileno, termios.TIOCGWINSZ, buf)
-    // where buf = array.array('h', [0, 0, 0, 0])
-    public static object ioctl(CodeContext context, int fd, int cmd, [NotNone] IBufferProtocol arg, int mutate_flag = 1) {
-        if (cmd == PythonTermios.TIOCGWINSZ) {
-            using IPythonBuffer buf = arg.GetBuffer();
-
-            Span<short> winsize = stackalloc short[4];
-            winsize[0] = (short)Console.WindowHeight;
-            winsize[1] = (short)Console.WindowWidth;
-            winsize[2] = (short)Console.BufferHeight;  // buffer height and width are not accurate on macOS
-            winsize[3] = (short)Console.BufferWidth;
-            Span<byte> payload = MemoryMarshal.Cast<short, byte>(winsize);
-
-            if (buf.IsReadOnly || mutate_flag == 0) {
-                byte[] res = buf.ToArray();
-                payload.Slice(0, Math.Min(payload.Length, res.Length)).CopyTo(res);
-                return Bytes.Make(res);
-            } else {
-                var res = buf.AsSpan();
-                payload.Slice(0, Math.Min(payload.Length, res.Length)).CopyTo(res);
-                return 0;
-            }
-        }
-        throw new NotImplementedException($"ioctl: unsupported command {cmd}");
-    }
 
 
     // FD Flags

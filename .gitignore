@@ -13,9 +13,6 @@ bin/
 Package/Release/
 *.binlog
 
-# NuGet Packages
-packages/
-
 # Python cache files
 __pycache__/
 

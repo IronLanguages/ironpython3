@@ -51,5 +51,6 @@ tests/suite/file_without_BOM.txt -text
 
 *.bat linguist-detectable=false
 *.cmd linguist-detectable=false
+*.ps1 linguist-detectable=false
 
 *.html linguist-documentation=true

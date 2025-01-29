@@ -49,4 +49,7 @@ tests/suite/file_without_BOM.txt -text
 *.pck linguist-detectable=false
 *.c linguist-detectable=false
 
+*.bat linguist-detectable=false
+*.cmd linguist-detectable=false
+
 *.html linguist-documentation=true

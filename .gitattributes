@@ -45,5 +45,8 @@ tests/suite/file_without_BOM.txt -text
 # Do not normalize on commit.
 *.pdf -text
 
+# Hide certain languages from GitHub Linguist
 *.pck linguist-detectable=false
+*.c linguist-detectable=false
+
 *.html linguist-documentation=true

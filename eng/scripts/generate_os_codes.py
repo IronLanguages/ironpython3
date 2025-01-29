@@ -216,10 +216,11 @@ def generate_codes(cw, codeval, access, fmt, unix_only=False):
 
         value = windows_code_expr(codes, fmt)
         typ = "int"
-        if (all(c.isdigit() for c in value) or re.match(r'^0x[0-9a-fA-F]+$', value)):
-            n = eval(value)
+        for match in re.findall(r'0x[0-9a-fA-F]+', value):
+            n = eval(match)
             if n > 2**31 - 1 or n < -2**31:
                 typ = "long"
+                break
         cw.write(f"{access} static {typ} {name} => {value};")
 
 
@@ -286,6 +287,23 @@ def generate_LOCK_flags(cw):
     generate_codes(cw, codeval, 'public', hex, unix_only=True)
 
 
+# python3 -c 'import termios;print(dict(sorted((s, getattr(termios, s)) for s in dir(termios) if s.startswith("TIOC"))))'
+# Python 3.6.15 [GCC 12.2.0] on linux 6.10.14
+# Python 3.12.3 [GCC 13.2.0] on linux 6.8.0
+TIOC_cmd_linux = {'TIOCCONS': 21533, 'TIOCEXCL': 21516, 'TIOCGETD': 21540, 'TIOCGICOUNT': 21597, 'TIOCGLCKTRMIOS': 21590, 'TIOCGPGRP': 21519, 'TIOCGSERIAL': 21534, 'TIOCGSOFTCAR': 21529, 'TIOCGWINSZ': 21523, 'TIOCINQ': 21531, 'TIOCLINUX': 21532, 'TIOCMBIC': 21527, 'TIOCMBIS': 21526, 'TIOCMGET': 21525, 'TIOCMIWAIT': 21596, 'TIOCMSET': 21528, 'TIOCM_CAR': 64, 'TIOCM_CD': 64, 'TIOCM_CTS': 32, 'TIOCM_DSR': 256, 'TIOCM_DTR': 2, 'TIOCM_LE': 1, 'TIOCM_RI': 128, 'TIOCM_RNG': 128, 'TIOCM_RTS': 4, 'TIOCM_SR': 16, 'TIOCM_ST': 8, 'TIOCNOTTY': 21538, 'TIOCNXCL': 21517, 'TIOCOUTQ': 21521, 'TIOCPKT': 21536, 'TIOCPKT_DATA': 0, 'TIOCPKT_DOSTOP': 32, 'TIOCPKT_FLUSHREAD': 1, 'TIOCPKT_FLUSHWRITE': 2, 'TIOCPKT_NOSTOP': 16, 'TIOCPKT_START': 8, 'TIOCPKT_STOP': 4, 'TIOCSCTTY': 21518, 'TIOCSERCONFIG': 21587, 'TIOCSERGETLSR': 21593, 'TIOCSERGETMULTI': 21594, 'TIOCSERGSTRUCT': 21592, 'TIOCSERGWILD': 21588, 'TIOCSERSETMULTI': 21595, 'TIOCSERSWILD': 21589, 'TIOCSER_TEMT': 1, 'TIOCSETD': 21539, 'TIOCSLCKTRMIOS': 21591, 'TIOCSPGRP': 21520, 'TIOCSSERIAL': 21535, 'TIOCSSOFTCAR': 21530, 'TIOCSTI': 21522, 'TIOCSWINSZ': 21524}
+# Python 3.12.0 [Clang 14.0.6 ] on darwin 24.2.0
+TIOC_cmd_darwin = {'TIOCCONS': 2147775586, 'TIOCEXCL': 536900621, 'TIOCGETD': 1074033690, 'TIOCGPGRP': 1074033783, 'TIOCGSIZE': 1074295912, 'TIOCGWINSZ': 1074295912, 'TIOCMBIC': 2147775595, 'TIOCMBIS': 2147775596, 'TIOCMGET': 1074033770, 'TIOCMSET': 2147775597, 'TIOCM_CAR': 64, 'TIOCM_CD': 64, 'TIOCM_CTS': 32, 'TIOCM_DSR': 256, 'TIOCM_DTR': 2, 'TIOCM_LE': 1, 'TIOCM_RI': 128, 'TIOCM_RNG': 128, 'TIOCM_RTS': 4, 'TIOCM_SR': 16, 'TIOCM_ST': 8, 'TIOCNOTTY': 536900721, 'TIOCNXCL': 536900622, 'TIOCOUTQ': 1074033779, 'TIOCPKT': 2147775600, 'TIOCPKT_DATA': 0, 'TIOCPKT_DOSTOP': 32, 'TIOCPKT_FLUSHREAD': 1, 'TIOCPKT_FLUSHWRITE': 2, 'TIOCPKT_NOSTOP': 16, 'TIOCPKT_START': 8, 'TIOCPKT_STOP': 4, 'TIOCSCTTY': 536900705, 'TIOCSETD': 2147775515, 'TIOCSPGRP': 2147775606, 'TIOCSSIZE': 2148037735, 'TIOCSTI': 2147578994, 'TIOCSWINSZ': 2148037735}
+
+def generate_TIOC_commands(cw):
+    codeval = {}
+    for name in TIOC_cmd_linux:
+        set_value(codeval, name, TIOC_cmd_linux[name], linux_idx)
+    for name in TIOC_cmd_darwin:
+        set_value(codeval, name, TIOC_cmd_darwin[name], darwin_idx)
+    codeval = OrderedDict(sorted(codeval.items()))
+    generate_codes(cw, codeval, 'public', hex, unix_only=True)
+
+
 def main():
     return generate(
         ("Errno Codes", generate_errno_codes),
@@ -296,6 +314,7 @@ def main():
         ("FD Commands", generate_FD_commands),
         ("Directory Notify Flags", generate_DN_flags),
         ("LOCK Flags", generate_LOCK_flags),
+        ("TIOC Commands", generate_TIOC_commands),
     )
 
 if __name__ == "__main__":

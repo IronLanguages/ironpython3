@@ -17,6 +17,7 @@ using IronPython;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
@@ -300,6 +301,13 @@ namespace IronPythonTest.Cases {
                         #pragma warning disable SYSLIB0006 // 'Thread.ResetAbort is not supported and throws PlatformNotSupportedException.' 
                         Thread.ResetAbort();
                         #pragma warning restore SYSLIB0006
+                    } catch (Exception ex) when (ex.GetPythonException() is not null and var pex) {
+                        if (DynamicHelpers.GetPythonType(pex).Name == "SkipTest") {
+                            NUnit.Framework.TestContext.Progress.WriteLine($"Test {testcase.Name} skipped: {pex}");
+                            res = 0;
+                        } else {
+                            throw;
+                        }
                     }
                 }, maxStackSize) {
                     IsBackground = true

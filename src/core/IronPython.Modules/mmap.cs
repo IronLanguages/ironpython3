@@ -653,30 +653,25 @@ namespace IronPython.Modules {
                 }
             }
 
-#if !NET5_0_OR_GREATER
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int InterlockedOr(ref int location1, int value) {
-                int current = location1;
+            private int InterlockedOrState(int value) {
+#if NET5_0_OR_GREATER
+                return Interlocked.Or(ref _state, value);
+#else
+                int current = _state;
                 while (true) {
                     int newValue = current | value;
-                    int oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+                    int oldValue = Interlocked.CompareExchange(ref _state, newValue, current);
                     if (oldValue == current) {
                         return oldValue;
                     }
                     current = oldValue;
                 }
-            }
 #endif
+            }
 
             public void close() {
                 // close is idempotent; it must never block
-#if NET5_0_OR_GREATER
-                if ((Interlocked.Or(ref _state, StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
-#else
-#pragma warning disable CS0420 // A reference to a volatile field will not be treated as volatile
-                if ((InterlockedOr(ref _state, StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
-#pragma warning restore CS0420 // A reference to a volatile field will not be treated as volatile
-#endif
+                if ((InterlockedOrState(StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
                     // freshly closed, release the construction time reference
                     Release(exclusive: false);
                 }
@@ -1332,13 +1327,7 @@ namespace IronPython.Modules {
                     _mmap = mmap;
                     _flags = flags;
                     _locker = new MmapLocker(mmap);
-#if NET5_0_OR_GREATER
-                    Interlocked.Or(ref mmap._state, StateBits.Exporting);
-#else
-#pragma warning disable CS0420 // A reference to a volatile field will not be treated as volatile
-                    InterlockedOr(ref mmap._state, StateBits.Exporting);
-#pragma warning restore CS0420 // A reference to a volatile field will not be treated as volatile
-#endif
+                    mmap.InterlockedOrState(StateBits.Exporting);
                     _handle = _mmap._view.SafeMemoryMappedViewHandle;
                     ItemCount = _mmap.__len__() is int i ? i : throw new NotImplementedException();
                 }

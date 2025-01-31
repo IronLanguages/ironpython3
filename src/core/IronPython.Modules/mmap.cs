@@ -601,6 +601,11 @@ namespace IronPython.Modules {
                         reason = StateBits.Exporting;
                         return false;
                     }
+                    if (exclusive && ((oldState & StateBits.RefCount) > StateBits.RefCountOne)) {
+                        // mmap in non-exclusive use, temporarily no exclusive use allowed
+                        reason = StateBits.Exclusive;
+                        return false;
+                    }
                     Debug.Assert((oldState & StateBits.RefCount) > 0, "resurrecting disposed mmap object (disposed without being closed)");
 
                     newState = oldState + StateBits.RefCountOne;

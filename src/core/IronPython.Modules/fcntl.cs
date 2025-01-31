@@ -41,8 +41,9 @@ public static class PythonFcntl {
     public static object fcntl(int fd, int cmd, [NotNone] Bytes arg) {
         CheckFileDescriptor(fd);
 
-        const int maxArgSize = 1024;
-        if (arg.Count > maxArgSize) {
+        const int maxArgSize = 1024;  // 1 KiB
+        int argSize = arg.Count;
+        if (argSize > maxArgSize) {
             throw PythonOps.ValueError("fcntl bytes arg too long");
         }
 
@@ -50,25 +51,25 @@ public static class PythonFcntl {
             throw PythonOps.OSError(PythonErrno.EINVAL, "unsupported fcntl command");
         }
 
-        int argSize = arg.Count;
-        IntPtr ptr = Marshal.AllocHGlobal(argSize);
-        try {
-            Marshal.Copy(arg.UnsafeByteArray, 0, ptr, argSize);
-            int result;
-            Errno errno;
-            do {
-                result = Syscall.fcntl(fd, fcntlCommand, ptr);
-            } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
+        var buf = new byte[maxArgSize];
+        Array.Copy(arg.UnsafeByteArray, buf, argSize);
 
-            if (result == -1) {
-                return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+        int result;
+        Errno errno;
+        unsafe {
+            fixed (byte* ptr = buf) {
+                do {
+                    result = Syscall.fcntl(fd, fcntlCommand, (IntPtr)ptr);
+                } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
             }
-            byte[] response = new byte[argSize];
-            Marshal.Copy(ptr, response, 0, argSize);
-            return Bytes.Make(response);
-        } finally {
-            Marshal.FreeHGlobal(ptr);
         }
+
+        if (result == -1) {
+            return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+        }
+        byte[] response = new byte[argSize];
+        Array.Copy(buf, response, argSize);
+        return Bytes.Make(response);
     }
 
 

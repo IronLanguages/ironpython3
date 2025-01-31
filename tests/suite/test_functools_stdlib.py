@@ -43,10 +43,8 @@ def load_tests(loader, standard_tests, pattern):
         ]
 
         skip_tests = [
-            test.test_functools.TestLRUC('test_kwargs_order'), # intermittent failures - https://github.com/IronLanguages/ironpython3/issues/1460
             test.test_functools.TestLRUC('test_lru_cache_threaded2'), # intermittent failures
             test.test_functools.TestLRUC('test_lru_cache_threaded3'), # intermittent failures
-            test.test_functools.TestLRUPy('test_kwargs_order'), # intermittent failures - https://github.com/IronLanguages/ironpython3/issues/1460
             test.test_functools.TestLRUPy('test_lru_cache_threaded2'), # intermittent failures
             test.test_functools.TestLRUPy('test_lru_cache_threaded3'), # intermittent failures
             test.test_functools.TestPartialC('test_recursive_pickle'), # StackOverflowException

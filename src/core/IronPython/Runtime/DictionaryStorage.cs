@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
@@ -117,8 +116,7 @@ namespace IronPython.Runtime {
             return storage;
         }
 
-        public virtual void EnsureCapacityNoLock(int size) {
-        }
+        public virtual void EnsureCapacityNoLock(int size) { }
 
         public virtual IEnumerator<KeyValuePair<object?, object?>> GetEnumerator() {
             return GetItems().GetEnumerator();

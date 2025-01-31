@@ -3,24 +3,24 @@
   <PropertyGroup>
     <TargetFrameworks>net462</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <RootNamespace>IronPythonCompiler</RootNamespace>
+    <RootNamespace>IronPython.Compiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
-    <StartupObject>IronPythonCompiler.Program</StartupObject>
+    <StartupObject>IronPython.Compiler.Program</StartupObject>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <StageItem Include="$(TargetDir)\IKVM.Reflection.dll" />
-    <StageItem Include="$(RootDir)Util\References\IKVM\IKVM.Reflection.License.txt" />
+    <StageItem Include="$(UtilsDir)\References\IKVM\IKVM.Reflection.License.txt" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="IKVM.Reflection" CopyLocal="true">
-      <HintPath>..\..\Util\References\IKVM\IKVM.Reflection.dll</HintPath>
+      <HintPath>$(UtilsDir)\References\IKVM\IKVM.Reflection.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>

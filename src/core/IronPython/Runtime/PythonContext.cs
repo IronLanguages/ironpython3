@@ -230,8 +230,8 @@ namespace IronPython.Runtime {
                     path.append(Path.Combine(entry, "DLLs"));
 
 #if DEBUG
-                    // For developer use, add Src/StdLib/Lib
-                    string devStdLib = Path.Combine(entry, @"../../../Src/StdLib/Lib");
+                    // For developer use, add src/core/IronPython.StdLib/lib
+                    string devStdLib = Path.Combine(entry, @"../../../src/core/IronPython.StdLib/lib");
                     if (Directory.Exists(devStdLib))
                         path.append(devStdLib);
 #else

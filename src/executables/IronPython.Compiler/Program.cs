@@ -19,7 +19,7 @@ using Microsoft.Scripting.Runtime;
 
 using Type = IKVM.Reflection.Type;
 
-namespace IronPythonCompiler {
+namespace IronPython.Compiler {
 
     public class Program {
 

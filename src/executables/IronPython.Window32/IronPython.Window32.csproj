@@ -4,14 +4,14 @@
     <TargetFrameworks>net462</TargetFrameworks>
     <PlatformTarget>x86</PlatformTarget>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>IronPythonWindow</RootNamespace>
+    <RootNamespace>IronPython.Window32</RootNamespace>
     <AssemblyName>ipyw32</AssemblyName>
-    <ApplicationIcon>..\IronPythonWindow\ipyw.ico</ApplicationIcon>
+    <ApplicationIcon>..\IronPython.Window\ipyw.ico</ApplicationIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\IronPythonWindow\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
-    <Compile Include="..\IronPythonWindow\IronPythonWindow.cs" Link="IronPythonWindow.cs" />
+    <Compile Include="..\IronPython.Window\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
+    <Compile Include="..\IronPython.Window\IronPythonWindow.cs" Link="IronPythonWindow.cs" />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

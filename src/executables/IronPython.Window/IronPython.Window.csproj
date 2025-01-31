@@ -3,14 +3,14 @@
   <PropertyGroup>
     <TargetFrameworks>net462</TargetFrameworks>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>IronPythonWindow</RootNamespace>
+    <RootNamespace>IronPython.Window</RootNamespace>
     <AssemblyName>ipyw</AssemblyName>
     <ApplicationIcon>ipyw.ico</ApplicationIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
   </ItemGroup>
 
   <ItemGroup>

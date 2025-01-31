@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net462;net6.0;net8.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <RootNamespace>IronPythonConsole</RootNamespace>
+    <RootNamespace>IronPython.Console</RootNamespace>
     <AssemblyName>ipy</AssemblyName>
     <ApplicationIcon>ipy.ico</ApplicationIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -12,8 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IronPython\IronPython.csproj" />
-    <ProjectReference Include="..\IronPython.Modules\IronPython.Modules.csproj">
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\core\IronPython.Modules\IronPython.Modules.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

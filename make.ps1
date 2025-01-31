@@ -43,7 +43,7 @@ function EnsureMSBuild() {
 
 function Main([String] $target, [String] $configuration) {
     # verify that the DLR submodule has been initialized
-    if(![System.Linq.Enumerable]::Any([System.IO.Directory]::EnumerateFileSystemEntries([System.IO.Path]::Combine($_BASEDIR, "Src/DLR")))) {
+    if(![System.Linq.Enumerable]::Any([System.IO.Directory]::EnumerateFileSystemEntries([System.IO.Path]::Combine($_BASEDIR, "src/dlr")))) {
         if(Get-Command git -ErrorAction SilentlyContinue) {
             & git submodule update --init
         } else {
@@ -106,9 +106,28 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
 
     $doc.AppendChild($runSettings) | Out-Null
 
-    $fileName = [System.IO.Path]::Combine($_BASEDIR, "Src", "IronPythonTest", "runsettings.$framework.xml")
+    $fileName = [System.IO.Path]::Combine($_BASEDIR, "tests", "IronPython.Tests", "runsettings.$framework.xml")
     $doc.Save($fileName)
     return $fileName
+}
+
+function RunTestTasksInForeground($tasks) {
+    $failedTests = @()
+    foreach ($task in $tasks) {
+        & dotnet test $task.params
+        Write-Host
+        if($LastExitCode -ne 0) {
+            $global:Result = $LastExitCode
+            Write-Host -ForegroundColor Red "$($task.name) failed"
+            $failedTests += $task.name
+        } else {
+            Write-Host "$($task.name) succeeded"
+        }
+        if ($failedTests) {
+            Write-Host -ForegroundColor Red "$($failedTests.Count) test task(s) failed: $($failedTests -Join ", ")"
+        }
+        Write-Host
+    }
 }
 
 function RunTestTasks($tasks) {
@@ -148,7 +167,7 @@ function RunTestTasks($tasks) {
             $testName = $tasks[$bgJobs.$finished].name
             Write-Host
             if ($finished.State -eq 'Failed') {
-                Write-Host "$testName failed"
+                Write-Host -ForegroundColor Red  "$testName failed"
                 $global:Result = $finished.ChildJobs[0].JobStateInfo.Reason.ErrorRecord.TargetObject
                 $failedTests += $testName
             } else {
@@ -165,7 +184,7 @@ function RunTestTasks($tasks) {
             Write-Host "$($bgJobs.Count) jobs running: $(($bgJobs.values | ForEach-Object {$tasks[$_].name}) -Join ", ")"
             Write-Host "$($tasks.Count - $nextJob) jobs pending: $(($nextJob..$tasks.Count | ForEach-Object {$tasks[$_].name}) -Join ", ")"
             if ($failedTests) {
-                Write-Host "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
+                Write-Host -ForegroundColor Red  "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
             }
             Write-Host
         }
@@ -182,7 +201,7 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         $runSettings = GenerateRunSettings $framework $platform $configuration $runIgnored
 
         function createTask($filtername, $filter) {
-            [Object[]] $args = @("$_BASEDIR/Src/IronPythonTest/IronPythonTest.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-v', 'n', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
+            [Object[]] $args = @("$_BASEDIR/tests/IronPython.Tests/IronPython.Tests.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-v', 'n', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
             Write-Host "Enqueue [$framework $filtername]:"
             Write-Host "dotnet test $args"
             Write-Host
@@ -211,7 +230,11 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         }
     }
 
-    RunTestTasks $tasks
+    if ($jobs -eq 0) {
+        RunTestTasksInForeground $tasks
+    } else {
+        RunTestTasks $tasks
+    }
 }
 
 function Purge() {
@@ -222,7 +245,7 @@ function Purge() {
     Get-ChildItem -Name "obj" -Directory -Path "$_BASEDIR" -Recurse | Remove-Item -Force -Recurse
 
     Write-Verbose "Deleting ""bin"" directories..."
-    foreach ($dir in @("", (Join-Path "IronPythonAnalyzer" "IronPythonAnalyzer"))) {
+    foreach ($dir in @("", (Join-Path "src" "roslyn" "IronPython.Analyzer"))) {
         if (Test-Path (Join-Path $_BASEDIR $dir "bin" -OutVariable targetPath)) {
             Remove-Item -Path $targetPath -Force -Recurse
         }
@@ -239,7 +262,7 @@ function Purge() {
     }
 
     Write-Verbose "Deleting test run settings..."
-    Remove-Item -Path (Join-Path $_BASEDIR "Src" "IronPythonTest" "runsettings.*.xml")
+    Remove-Item -Path (Join-Path $_BASEDIR "tests" "IronPython.Tests" "runsettings.*.xml")
 
     Write-Information "Done. Consider restoring dependencies." -InformationAction Continue
 }

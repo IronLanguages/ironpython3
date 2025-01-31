@@ -85,7 +85,7 @@ def retryOnFailure(f, times=MAX_FAILURE_RETRY, *args, **kwargs):
     return t
 
 def _find_root():
-    test_dirs = ['Src', 'Build', 'Package', 'Tests', 'Util']
+    test_dirs = ['src', 'eng', 'tests']
     root = os.getcwd()
     test = all([os.path.exists(os.path.join(root, x)) for x in test_dirs])
     while not test:
@@ -128,8 +128,8 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
         self.ensure_directory_present(self._temporary_dir)
 
         self._iron_python_test_dll = _iron_python_test_dll
-        self._test_dir = os.path.join(_root, 'Tests')
-        self._test_inputs_dir = os.path.join(_root, 'Tests', 'Inputs')
+        self._test_dir = os.path.join(_root, 'tests', 'suite')
+        self._test_inputs_dir = os.path.join(_root, 'tests', 'suite', 'Inputs')
 
     def add_reference_to_dlr_core(self):
         _add_reference_to_dlr_core()
@@ -241,9 +241,9 @@ def generate_suite(tests, failing_tests, skip_tests=[]):
 #     ip_root             = path_combine(rowan_root, basePyDir)
 #     external_dir        = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/IronPython')
 #     clean_external_dir  = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/CPython/27')
-#     public_testdir      = path_combine(ip_root, 'Tests')
-#     compat_testdir      = path_combine(ip_root, 'Tests/compat')
-#     test_inputs_dir     = path_combine(ip_root, 'Tests/Inputs')
+#     public_testdir      = path_combine(ip_root, 'tests/suite')
+#     compat_testdir      = path_combine(ip_root, 'tests/suite/compat')
+#     test_inputs_dir     = path_combine(ip_root, 'tests/suite/Inputs')
 #     script_testdir      = path_combine(ip_root, 'Scripts')
 
 #     math_testdir        = path_combine(external_dir, 'Math')

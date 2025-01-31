@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
 
-namespace IronPythonCompiler {
+using System;
+
+namespace IronPython.Compiler {
     public static class ConsoleOps {
 
         public static void Error(string format, params object[] args) {

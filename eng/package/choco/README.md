@@ -9,7 +9,7 @@ The current target is Python 3.4, although features and behaviors from later ver
 
 
 ## Differences with CPython
-While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/differences-from-c-python.md) for details.
+While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/blob/main/docs/differences-from-c-python.md) for details.
 
 ## Package compatibility
-See the [Package compatibility](https://github.com/IronLanguages/ironpython3/blob/main/Documentation/package-compatibility.md) document for information on compatibility with popular Python packages.
+See the [Package compatibility](https://github.com/IronLanguages/ironpython3/blob/main/docs/package-compatibility.md) document for information on compatibility with popular Python packages.

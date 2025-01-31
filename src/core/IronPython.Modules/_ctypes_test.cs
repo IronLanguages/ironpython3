@@ -14,11 +14,11 @@ namespace IronPython.Modules {
     public static class CTypesTest {
 
         private static string FindRoot() {
-            // we start at the current directory and look up until we find the "Src" directory
+            // we start at the current directory and look up until we find the "src" directory
             var current = System.Reflection.Assembly.GetExecutingAssembly().Location;
             var found = false;
             while (!found && !string.IsNullOrEmpty(current)) {
-                var test = Path.Combine(current, "Src", "StdLib", "Lib");
+                var test = Path.Combine(current, "src", "core", "IronPython.StdLib", "lib");
                 if (Directory.Exists(test)) {
                     return current;
                 }
@@ -28,7 +28,7 @@ namespace IronPython.Modules {
             return string.Empty;
         }
 
-        public static string __file__ = Path.Combine(FindRoot(), "Tests", string.Format("_ctypes_test_{0}{1}.pyd", Environment.OSVersion.Platform == PlatformID.Win32NT ? "win" : Environment.OSVersion.Platform == PlatformID.MacOSX ? "macOS" : "linux", Environment.Is64BitProcess ? 64 : 32));
+        public static string __file__ = Path.Combine(FindRoot(), "tests", "suite", string.Format("_ctypes_test_{0}{1}.pyd", Environment.OSVersion.Platform == PlatformID.Win32NT ? "win" : Environment.OSVersion.Platform == PlatformID.MacOSX ? "macOS" : "linux", Environment.Is64BitProcess ? 64 : 32));
     }
 }
 

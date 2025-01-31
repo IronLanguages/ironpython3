@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using System.Threading;
 
 using IronPython;
 using IronPython.Hosting;
@@ -65,11 +65,11 @@ namespace IronPythonTest.Cases {
         }
 
         internal static string FindRoot() {
-            // we start at the current directory and look up until we find the "Src" directory
+            // we start at the current directory and look up until we find the "src" directory
             var current = System.Reflection.Assembly.GetExecutingAssembly().Location;
             var found = false;
             while (!found && !string.IsNullOrEmpty(current)) {
-                var test = Path.Combine(current, "Src", "StdLib", "Lib");
+                var test = Path.Combine(current, "src", "core", "IronPython.StdLib", "lib");
                 if (Directory.Exists(test)) {
                     return current;
                 }
@@ -84,7 +84,7 @@ namespace IronPythonTest.Cases {
             if (!paths.Any(x => x.Contains("stdlib", StringComparison.OrdinalIgnoreCase))) {
                 var root = FindRoot();
                 if (!string.IsNullOrEmpty(root)) {
-                    paths.Insert(0, Path.Combine(root, "Src", "StdLib", "Lib"));
+                    paths.Insert(0, Path.Combine(root, "src", "core", "IronPython.StdLib", "lib"));
                 }
             }
             engine.SetSearchPaths(paths);
@@ -140,7 +140,7 @@ namespace IronPythonTest.Cases {
         }
 
         private static string GetIronPythonPath() {
-            var path = Path.Combine(FindRoot(), "Src", "StdLib", "Lib");
+            var path = Path.Combine(FindRoot(), "src", "core", "IronPython.StdLib", "lib");
             if (Directory.Exists(path)) {
                 return path;
             }
@@ -289,18 +289,34 @@ namespace IronPythonTest.Cases {
                 engine.GetSysModule().SetVariable("argv", PythonList.FromArrayNoCopy(new object[] { source.Path }));
                 var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
 
-                var task = Task<int>.Run(() => {
+                int res = 0;
+                int maxStackSize = 2 * 1024 * 1024; // 2 MiB
+                var thread = new Thread(() => {
                     try {
-                        return engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
+                        res = engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
                     } catch (SystemExitException ex) {
-                        return ex.GetExitCode(out _);
+                        res = ex.GetExitCode(out object otherCode);
+                    } catch (ThreadAbortException) {
+                        #pragma warning disable SYSLIB0006 // 'Thread.ResetAbort is not supported and throws PlatformNotSupportedException.' 
+                        Thread.ResetAbort();
+                        #pragma warning restore SYSLIB0006
                     }
-                });
-                if (!task.Wait(testcase.Options.Timeout)) {
+                }, maxStackSize) {
+                    IsBackground = true
+                };
+
+                thread.Start();
+
+                if (!thread.Join(testcase.Options.Timeout)) {
+                    if(!ClrModule.IsNetCoreApp) {
+                        #pragma warning disable SYSLIB0006 // 'Thread.Abort is not supported and throws PlatformNotSupportedException.' 
+                        thread.Abort();
+                        #pragma warning restore SYSLIB0006
+                    }
                     NUnit.Framework.TestContext.Error.WriteLine($"{testcase.Name} timed out after {testcase.Options.Timeout / 1000.0} seconds.");
                     return -1;
                 }
-                return task.Result;
+                return res;
             } finally {
                 Environment.CurrentDirectory = cwd;
             }

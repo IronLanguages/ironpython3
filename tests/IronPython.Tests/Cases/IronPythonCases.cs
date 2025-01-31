@@ -19,8 +19,8 @@ namespace IronPythonTest.Cases {
     internal class IronPythonCaseGenerator : CommonCaseGenerator<IronPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
             return GetFilenames(new[] {
-                System.Tuple.Create(category, "Tests"),
-                System.Tuple.Create($"{category}.scripts", Path.Combine("Src", "Scripts")),
+                System.Tuple.Create(category, Path.Combine("tests", "suite")),
+                System.Tuple.Create($"{category}.scripts", Path.Combine("eng", "scripts")),
             })
             .OrderBy(testcase => testcase.Name);
 

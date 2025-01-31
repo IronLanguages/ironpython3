@@ -13,16 +13,13 @@ bin/
 Package/Release/
 *.binlog
 
-# NuGet Packages
-packages/
-
 # Python cache files
 __pycache__/
 
 # Generated files
-Src/IronPythonTest/TestResults/
-Src/IronPythonTest/runsettings.*.xml
+tests/IronPython.Tests/TestResults/
+tests/IronPython.Tests/runsettings.*.xml
 
 # created by CPython tests
-Src/StdLib/Lib/lib2to3/Grammar*.pickle
-Src/StdLib/Lib/lib2to3/PatternGrammar*.pickle
+src/core/IronPython.StdLib/lib/lib2to3/Grammar*.pickle
+src/core/IronPython.StdLib/lib/lib2to3/PatternGrammar*.pickle

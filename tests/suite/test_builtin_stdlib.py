@@ -6,7 +6,7 @@
 ## Run selected tests from test_builtin from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_netcoreapp
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_builtin
 
@@ -21,6 +21,10 @@ def load_tests(loader, standard_tests, pattern):
             test.test_builtin.BuiltinTest('test_input'),
             test.test_builtin.BuiltinTest('test_len'),
             test.test_builtin.BuiltinTest('test_open_non_inheritable'), # https://github.com/IronLanguages/ironpython3/issues/1225
+        ]
+
+        skip_tests = [
+            # module `pty` is importable but not functional on .NET Core
             test.test_builtin.PtyTests('test_input_no_stdout_fileno'),
             test.test_builtin.PtyTests('test_input_tty'),
             test.test_builtin.PtyTests('test_input_tty_non_ascii'),
@@ -34,13 +38,8 @@ def load_tests(loader, standard_tests, pattern):
             test.test_builtin.TestType('test_type_name'), # AssertionError: ValueError not raised
             test.test_builtin.TestType('test_type_nokwargs'), # AssertionError: TypeError not raised
             test.test_builtin.TestType('test_type_qualname'), # https://github.com/IronLanguages/ironpython3/issues/30
+            test.test_builtin.ShutdownTest('test_cleanup'),
         ]
-
-        skip_tests = []
-        if is_netcoreapp:
-            skip_tests += [
-                test.test_builtin.ShutdownTest('test_cleanup'),
-            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

@@ -289,20 +289,23 @@ namespace IronPython.Modules {
             private readonly MemoryMappedFileAccess _fileAccess;
             private readonly SafeFileHandle? _handle;
 
-            // RefCount | Closed | Meaning
-            // ---------+--------+--------------------------------
-            //       0  |      0 | Not fully initialized
-            //       1  |      0 | Fully initialized, not being used by any threads
-            //      >1  |      0 | Object in use by one or more threads
-            //      >0  |      1 | Close/dispose requested, no more addrefs allowed, some threads may still be using it
-            //       0  |      1 | Fully disposed
-            private volatile int _state; // Combined ref count and closed/disposed flags (so we can atomically modify them).
+            // RefCount | Closed | Exclusive |Meaning
+            // ---------+--------+-----------+---------------------
+            //       0  |      0 |         0 | Not fully initialized
+            //       1  |      0 |         0 | Fully initialized, not being used by any threads
+            //      >1  |      0 |         0 | Object in regular use by one or more threads
+            //       2  |      0 |         1 | Object in exclusive use (`resize` in progress)
+            //      >0  |      1 |         - | Close/dispose requested, no more addrefs allowed, some threads may still be using it
+            //       0  |      1 |         0 | Fully disposed
+            // Other combinations are invalid state
+            private volatile int _state; // Combined ref count and state flags (so we can atomically modify them).
 
             private static class StateBits {
-                public const int Closed = 0b_01;                 // close/dispose requested; no more addrefs allowed
-                public const int Exclusive = 0b_10;              // TODO: to manage exclusive access for resize
-                public const int RefCount = unchecked(~0b_11);   // 2 bits reserved for state management; ref count gets 29 bits (sign bit unused)
-                public const int RefCountOne = 1 << 2;           // ref count 1 shifted over 2 state bits
+                public const int Closed = 0b_001;                 // close/dispose requested; no more addrefs allowed
+                public const int Exclusive = 0b_010;              // exclusive access for resize requested/in progress
+                public const int Exporting = 0b_100;              // TODO: buffer exports extant; exclusive addrefs temporarily not allowed
+                public const int RefCount = unchecked(~0b_111);   // 3 bits reserved for state management; ref count gets 29 bits (sign bit unused)
+                public const int RefCountOne = 1 << 3;            // ref count 1 shifted over 3 state bits
             }
 
 
@@ -563,33 +566,74 @@ namespace IronPython.Modules {
             public bool closed => (_state & StateBits.Closed) == StateBits.Closed;  // Dispose already requested, will self-dispose when ref count drops to 0.
 
 
-            private bool AddRef() {
+            /// <summary>
+            /// Try to add a reference to the mmap object. Return <c>true</c> on success.
+            /// </summary>
+            /// <remarks>
+            /// The reference count is incremented atomically and kept in the mmap state variable.
+            /// The reference count is not incremented if the state variable indicates that the mmap
+            /// in in the process of closing or currently in exclusive use.
+            /// </remarks>
+            /// <param name="exclusive">
+            /// If true, requests an exclusive reference.
+            /// </param>
+            /// <param name="reason">
+            /// If the reference could not be added, this parameter will contain the bit that was set preventing the addref.
+            /// </param>
+            private bool TryAddRef(bool exclusive, out int reason) {
                 int oldState, newState;
                 do {
                     oldState = _state;
                     if ((oldState & StateBits.Closed) == StateBits.Closed) {
                         // mmap closed, dispose already requested, no more addrefs allowed
+                        reason = StateBits.Closed;
+                        return false;
+                    }
+                    if ((oldState & StateBits.Exclusive) == StateBits.Exclusive) {
+                        // mmap in exclusive use, temporarily no more addrefs allowed
+                        reason = StateBits.Exclusive;
+                        return false;
+                    }
+                    if (exclusive && (oldState & StateBits.Exporting) == StateBits.Exporting) {
+                        // mmap exporting, exclusive addrefs temporarily not allowed
+                        reason = StateBits.Exporting;
                         return false;
                     }
                     Debug.Assert((oldState & StateBits.RefCount) > 0, "resurrecting disposed mmap object (disposed without being closed)");
 
                     newState = oldState + StateBits.RefCountOne;
+                    if (exclusive) {
+                        newState |= StateBits.Exclusive;
+                    }
                 } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
+                reason = 0;
                 return true;
             }
 
 
-            private void Release() {
+            /// <summary>
+            /// Atomically release a reference to the mmap object, and optionally reset the exclusive state flag.
+            /// </summary>
+            /// <remarks>
+            /// If the reference count drops to 0, the mmap object is disposed.
+            /// </remarks>
+            /// <param name="exclusive">
+            /// If true, the exclusive reference is released.
+            /// </param>
+            private void Release(bool exclusive) {
                 bool performDispose;
                 int oldState, newState;
                 do {
                     oldState = _state;
+                    Debug.Assert(!exclusive || (oldState & StateBits.Exclusive) == StateBits.Exclusive, "releasing exclusive reference without being exclusive");
                     Debug.Assert((oldState & StateBits.RefCount) > 0, "mmap ref count underflow (too many releases)");
 
                     performDispose = (oldState & StateBits.RefCount) == StateBits.RefCountOne;
+                    Debug.Assert(!performDispose || (oldState & StateBits.Closed) == StateBits.Closed, "disposing mmap object without being closed");
+
                     newState = oldState - StateBits.RefCountOne;
-                    if (performDispose) {
-                        newState |= StateBits.Closed;  // most likely already closed
+                    if (exclusive) {
+                        newState &= ~StateBits.Exclusive;
                     }
                 } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
 
@@ -610,25 +654,17 @@ namespace IronPython.Modules {
 #if NET5_0_OR_GREATER
                 if ((Interlocked.Or(ref _state, StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
                     // freshly closed, release the construction time reference
-                    Release();
+                    Release(exclusive: false);
                 }
 #else
-                int current = _state;
-                while (true)
-                {
-                    int newState = current | StateBits.Closed;
-                    int oldState = Interlocked.CompareExchange(ref _state, newState, current);
-                    if (oldState == current)
-                    {
-                        // didn't change in the meantime, exchange with newState completed
-                        if ((oldState & StateBits.Closed) != StateBits.Closed) {
-                            // freshly closed, release the construction time reference
-                            Release();
-                        }
-                        return;
-                    }
-                    // try again to set the bit
-                    current = oldState;
+                int oldState, newState;
+                do {
+                    oldState = _state;
+                    newState = oldState | StateBits.Closed;
+                } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
+                if ((oldState & StateBits.Closed) != StateBits.Closed) {
+                    // freshly closed, release the construction time reference
+                    Release(exclusive: false);
                 }
 #endif
             }
@@ -861,8 +897,9 @@ namespace IronPython.Modules {
                 }
             }
 
+
             public void resize(long newsize) {
-                using (new MmapLocker(this)) {
+                using (new MmapLocker(this, exclusive: true)) {
                     if (_fileAccess is not MemoryMappedFileAccess.ReadWrite and not MemoryMappedFileAccess.ReadWriteExecute) {
                         throw PythonOps.TypeError("mmap can't resize a readonly or copy-on-write memory map.");
                     }
@@ -960,6 +997,7 @@ namespace IronPython.Modules {
                     }
                 }
             }
+
 
             public object rfind([NotNone] IBufferProtocol s) {
                 using (new MmapLocker(this)) {
@@ -1210,18 +1248,32 @@ namespace IronPython.Modules {
 
             private readonly struct MmapLocker : IDisposable {
                 private readonly MmapDefault _mmap;
+                private readonly bool _exclusive;
 
-                public MmapLocker(MmapDefault mmap) {
-                    if (!mmap.AddRef()) {
-                        throw PythonOps.ValueError("mmap closed or invalid");
+                public MmapLocker(MmapDefault mmap, bool exclusive = false) {
+                    if (!mmap.TryAddRef(exclusive, out int reason)) {
+                        if (reason == StateBits.Closed) {
+                            // mmap is permanently closed
+                            throw PythonOps.ValueError("mmap closed or invalid");
+                        } else if (reason == StateBits.Exporting) {
+                            // map is temporarily exporting buffers obtained through the buffer protocol
+                            throw PythonOps.BufferError("mmap can't perform the operation with extant buffers exported");
+                        } else if (reason == StateBits.Exclusive) {
+                            // mmap is temporarily in exclusive use
+                            throw PythonNT.GetOsError(PythonErrno.EAGAIN);
+                        } else {
+                            // should not happen
+                            throw new InvalidOperationException("mmap state error");
+                        }
                     }
                     _mmap = mmap;
+                    _exclusive = exclusive;
                 }
 
                 #region IDisposable Members
 
                 public readonly void Dispose() {
-                    _mmap.Release();
+                    _mmap.Release(_exclusive);
                 }
 
                 #endregion

@@ -920,6 +920,8 @@ namespace IronPython.Modules {
                         throw PythonOps.ValueError("new size out of range");
                     }
 
+                    long capacity = checked(_offset + newsize);
+
                     if (_handle is not null
                         && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
                         // resize on Posix platforms
@@ -941,14 +943,14 @@ namespace IronPython.Modules {
 
                             // Resize the underlying file as needed.
                             int fd = unchecked((int)_handle.DangerousGetHandle());
-                            PythonNT.ftruncateUnix(fd, newsize);
+                            PythonNT.ftruncateUnix(fd, capacity);
 
 #if NET8_0_OR_GREATER
-                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
+                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, capacity, _fileAccess, HandleInheritability.None, leaveOpen: true);
 #else
                             _sourceStream?.Dispose();
                             _sourceStream = new FileStream(new SafeFileHandle((IntPtr)fd, ownsHandle: false), FileAccess.ReadWrite);
-                            _file = CreateFromFile(_sourceStream, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
+                            _file = CreateFromFile(_sourceStream, _mapName, capacity, _fileAccess, HandleInheritability.None, leaveOpen: true);
 #endif
                             _view = _file.CreateViewAccessor(_offset, newsize, _fileAccess);
                             return;
@@ -967,8 +969,6 @@ namespace IronPython.Modules {
                         // resizing to the same size
                         return;
                     }
-
-                    long capacity = checked(_offset + newsize);
 
                     try {
                         if (newsize == 0) {

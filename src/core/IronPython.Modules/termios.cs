@@ -14,7 +14,9 @@ using System.Runtime.Versioning;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 using static IronPython.Modules.PythonIOModule;
 
@@ -323,8 +325,81 @@ public static class PythonTermios {
     public static int B230400 => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 230400 : 0x1003;
     // higher baud rates are not defined on macOS
 
+    #endregion
+
+
+    #region Public Functions
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcsendbreak")]
+    private static extern int _tcsendbreak(int fd, int duration);
+
+    [LightThrowing]
+    public static object? tcsendbreak(CodeContext context, int fd, int duration) {
+        CheckFileDescriptor(fd);
+        if (_tcsendbreak(fd, duration) == -1) {
+            return LightExceptions.Throw(GetLastTermiosError(context));
+        }
+        return null;
+    }
+
+    [LightThrowing]
+    public static object? tcsendbreak(CodeContext context, object? fd, int duration)
+        => tcsendbreak(context, PythonFcntl.GetFileDescriptor(context, fd), duration);
+
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcdrain")]
+    private static extern int _tcdrain(int fd);
+
+    [LightThrowing]
+    public static object? tcdrain(CodeContext context, int fd) {
+        CheckFileDescriptor(fd);
+        if (_tcdrain(fd) == -1) {
+            return LightExceptions.Throw(GetLastTermiosError(context));
+        }
+        return null;
+    }
+
+    [LightThrowing]
+    public static object? tcdrain(CodeContext context, object? fd)
+        => tcdrain(context, PythonFcntl.GetFileDescriptor(context, fd));
+
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcflush")]
+    private static extern int _tcflush(int fd, int queue);
+
+    [LightThrowing]
+    public static object? tcflush(CodeContext context, int fd, int queue) {
+        CheckFileDescriptor(fd);
+        if (_tcflush(fd, queue) == -1) {
+            return LightExceptions.Throw(GetLastTermiosError(context));
+        }
+        return null;
+    }
+
+    [LightThrowing]
+    public static object? tcflush(CodeContext context, object? fd, int queue)
+        => tcflush(context, PythonFcntl.GetFileDescriptor(context, fd), queue);
+
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcflow")]
+    private static extern int _tcflow(int fd, int action);
+
+    [LightThrowing]
+    public static object? tcflow(CodeContext context, int fd, int action) {
+        CheckFileDescriptor(fd);
+        if (_tcflow(fd, action) == -1) {
+            return LightExceptions.Throw(GetLastTermiosError(context));
+        }
+        return null;
+    }
+
+    [LightThrowing]
+    public static object? tcflow(CodeContext context, object? fd, int action)
+        => tcflow(context, PythonFcntl.GetFileDescriptor(context, fd), action);
+
+
     public static object tcgetattr(CodeContext context, int fd) {
-        if (fd < 0) throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
+        CheckFileDescriptor(fd);
         if (fd > 0) throw new NotImplementedException("termios support only for stdin");
 
         if (context.LanguageContext.SystemStandardIn is not TextIOWrapper stdin) {
@@ -360,6 +435,7 @@ public static class PythonTermios {
 
 
     public static void tcsetattr(CodeContext context, int fd, int when, object? attributes) {
+        CheckFileDescriptor(fd);
         if (fd != 0) throw new NotImplementedException();
 
         if (context.LanguageContext.SystemStandardIn is not TextIOWrapper stdin) {
@@ -528,11 +604,20 @@ public static class PythonTermios {
         public override bool isatty(CodeContext context) => true;
     }
 
-    private static int ToInt(this object? o)
-        => o switch {
-            int i => i,
-            BigInteger bi => (int)bi,
-            Extensible<BigInteger> ebi => (int)ebi.Value,
-            _ => throw PythonOps.TypeErrorForBadInstance("an integer is required (got type {0})", o)
-        };
+
+    private static void CheckFileDescriptor(int fd) {
+        if (fd < 0) {
+            throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
+        }
+    }
+
+
+    private static Exception GetLastTermiosError(CodeContext context) {
+        int errno = Marshal.GetLastWin32Error();
+        return PythonExceptions.CreateThrowable(termioserror(context), errno, PythonNT.strerror(errno));
+    }
+
+
+    private static PythonType termioserror(CodeContext context)
+        => (PythonType)context.LanguageContext.GetModuleState("termioserror");
 }

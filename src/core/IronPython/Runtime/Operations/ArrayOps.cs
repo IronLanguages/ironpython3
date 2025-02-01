@@ -21,24 +21,6 @@ namespace IronPython.Runtime.Operations {
     public static class ArrayOps {
         #region Python APIs
 
-        [SpecialName]
-        public static Array Add(Array data1, Array data2) {
-            if (data1 == null) throw PythonOps.TypeError("expected array for 1st argument, got None");
-            if (data2 == null) throw PythonOps.TypeError("expected array for 2nd argument, got None");
-
-            if (data1.Rank > 1 || data2.Rank > 1) throw new NotImplementedException("can't add multidimensional arrays");
-            if (data1.GetLowerBound(0) != 0 || data2.GetLowerBound(0) != 0) throw new NotImplementedException("can't add non-0-based arrays");
-
-            Type type1 = data1.GetType();
-            Type type2 = data2.GetType();
-            Type type = (type1 == type2) ? type1.GetElementType()! : typeof(object);
-
-            Array ret = Array.CreateInstance(type, data1.Length + data2.Length);
-            Array.Copy(data1, 0, ret, 0, data1.Length);
-            Array.Copy(data2, 0, ret, data1.Length, data2.Length);
-            return ret;
-        }
-
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType pythonType, int length) {
             Type type = pythonType.UnderlyingSystemType.GetElementType()!;
@@ -143,6 +125,24 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         [return: MaybeNotImplemented]
         public static object __ne__(CodeContext context, object self, object? other) => NotImplementedType.Value;
+
+        [SpecialName]
+        public static Array Add(Array data1, Array data2) {
+            if (data1 == null) throw PythonOps.TypeError("expected array for 1st argument, got None");
+            if (data2 == null) throw PythonOps.TypeError("expected array for 2nd argument, got None");
+
+            if (data1.Rank > 1 || data2.Rank > 1) throw new NotImplementedException("can't add multidimensional arrays");
+            if (data1.GetLowerBound(0) != 0 || data2.GetLowerBound(0) != 0) throw new NotImplementedException("can't add non-0-based arrays");
+
+            Type type1 = data1.GetType();
+            Type type2 = data2.GetType();
+            Type type = (type1 == type2) ? type1.GetElementType()! : typeof(object);
+
+            Array ret = Array.CreateInstance(type, data1.Length + data2.Length);
+            Array.Copy(data1, 0, ret, 0, data1.Length);
+            Array.Copy(data2, 0, ret, data1.Length, data2.Length);
+            return ret;
+        }
 
         /// <summary>
         /// Multiply two object[] arrays - slow version, we need to get the type, etc...

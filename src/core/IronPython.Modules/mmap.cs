@@ -1401,17 +1401,18 @@ namespace IronPython.Modules {
             internal short wProcessorRevision;
         }
 
+        [SupportedOSPlatform("windows")]
         [DllImport("kernel32", SetLastError = true)]
         private static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
 
         private static int GetAllocationGranularity() {
-            try {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 return GetAllocationGranularityWorker();
-            } catch {
-                return System.Environment.SystemPageSize;
             }
+            return System.Environment.SystemPageSize;
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int GetAllocationGranularityWorker() {
             SYSTEM_INFO info = new SYSTEM_INFO();

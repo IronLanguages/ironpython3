@@ -516,11 +516,6 @@ namespace IronPython.Modules {
                         case IList<byte> b:
                             str = b.MakeString();
                             break;
-#if FEATURE_MMAP
-                        case MmapModule.MmapDefault mmapFile:
-                            str = mmapFile.GetSearchString().MakeString();
-                            break;
-#endif
                         case string _:
                         case ExtensibleString _:
                             throw PythonOps.TypeError("cannot use a bytes pattern on a string-like object");
@@ -537,9 +532,6 @@ namespace IronPython.Modules {
                             break;
                         case IBufferProtocol _:
                         case IList<byte> _:
-#if FEATURE_MMAP
-                        case MmapModule.MmapDefault _:
-#endif
                             throw PythonOps.TypeError("cannot use a string pattern on a bytes-like object");
                         default:
                             throw PythonOps.TypeError("expected string or bytes-like object");

@@ -229,22 +229,22 @@ namespace IronPython.Modules {
             return null;
         }
 
-        public static object ParserCreate(CodeContext context, [ParamDictionary]IDictionary<object, object> kwArgs\u00F8, params object[] args\u00F8) {
-            var numArgs = argsø.Length + kwArgsø.Count;
+        public static object ParserCreate(CodeContext context, [ParamDictionary] IDictionary<object, object> kwArgs, params object[] args) {
+            var numArgs = args.Length + kwArgs.Count;
             if (numArgs > 3) throw PythonOps.TypeError($"ParserCreate() takes at most 3 arguments ({numArgs} given)");
 
-            object encoding = argsø.Length > 0 ? argsø[0] : null;
-            object namespace_separator = argsø.Length > 1 ? argsø[1] : null;
-            object intern = argsø.Length > 2 ? argsø[0] : new PythonDictionary();
+            object encoding = args.Length > 0 ? args[0] : null;
+            object namespace_separator = args.Length > 1 ? args[1] : null;
+            object intern = args.Length > 2 ? args[0] : new PythonDictionary();
 
-            foreach (var pair in kwArgsø) {
+            foreach (var pair in kwArgs) {
                 switch (pair.Key) {
                     case nameof(encoding):
-                        if (argsø.Length > 0) throw PythonOps.TypeError($"Argument given by name('{nameof(encoding)}') and position(1)");
+                        if (args.Length > 0) throw PythonOps.TypeError($"Argument given by name('{nameof(encoding)}') and position(1)");
                         encoding = pair.Value;
                         break;
                     case nameof(namespace_separator):
-                        if (argsø.Length > 1) throw PythonOps.TypeError($"Argument given by name('{nameof(namespace_separator)}') and position(2)");
+                        if (args.Length > 1) throw PythonOps.TypeError($"Argument given by name('{nameof(namespace_separator)}') and position(2)");
                         namespace_separator = pair.Value;
                         break;
                     case nameof(intern):

@@ -62,7 +62,7 @@ Register a function to be executed upon normal program termination\n\
     kwargs - optional keyword arguments to pass to func
 
     func is returned to facilitate usage as a decorator.")]
-        public static object register(CodeContext context, object? func, [ParamDictionary, NotNone] IDictionary<object, object> kwargs, [NotNone] params object[] args) {
+        public static object register(CodeContext context, object? func, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
             if (!PythonOps.IsCallable(context, func)) {
                 throw PythonOps.TypeError("the first argument must be callable");
             }

@@ -40,7 +40,7 @@ namespace IronPython.Modules {
                 _data = new byte[DEFAULT_BUF_SIZE];
             }
 
-            public BytesIO(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs\u00F8, params object[] args)
+            public BytesIO(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> kwArgs, params object[] args)
                 : this(context) { }
 
             public void __init__(IBufferProtocol initial_bytes = null) {

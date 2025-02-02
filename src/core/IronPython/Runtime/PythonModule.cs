@@ -55,7 +55,7 @@ namespace IronPython.Runtime {
             _dict = dict;
         }
 
-        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, params object[]/*!*/ args\u00F8) {
+        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, params object[] args) {
             PythonModule res;
             if (cls == TypeCache.Module) {
                 res = new PythonModule();
@@ -69,8 +69,8 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwDict0, params object[]/*!*/ args\u00F8) {
-            return __new__(context, cls, args\u00F8);
+        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary] IDictionary<object, object> kwDict0, params object[] args) {
+            return __new__(context, cls, args);
         }
 
         public void __init__(string name) {
@@ -255,7 +255,7 @@ namespace IronPython.Runtime {
 
             private DynamicMetaObject GetMemberWorker(DynamicMetaObjectBinder binder, DynamicMetaObject codeContext) {
                 string name = GetGetMemberName(binder);
-                var tmp = Expression.Variable(typeof(object), "res");                
+                var tmp = Expression.Variable(typeof(object), "res");
 
                 return new DynamicMetaObject(
                     Expression.Block(
@@ -360,7 +360,7 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-        
+
         internal class DebugProxy {
             private readonly PythonModule _module;
 
@@ -379,7 +379,5 @@ namespace IronPython.Runtime {
                 }
             }
         }
-
-        
     }
 }

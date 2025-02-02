@@ -467,7 +467,7 @@ namespace IronPython.Modules {
             }
 
             // instance methods
-            public virtual date replace(CodeContext/*!*/ context, [NotNone, ParamDictionary] IDictionary<object, object> dict) {
+            public virtual date replace(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict) {
                 int year2 = _dateTime.Year;
                 int month2 = _dateTime.Month;
                 int day2 = _dateTime.Day;
@@ -679,7 +679,7 @@ namespace IronPython.Modules {
             }
 
             // just present to match CPython's error messages...
-            public datetime([NotNone] params object[] args) {
+            public datetime(params object[] args) {
                 if (args.Length < 3) {
                     throw PythonOps.TypeError("function takes at least 3 arguments ({0} given)", args.Length);
                 } else if (args.Length > 8) {
@@ -862,7 +862,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("gets a new datetime object with the fields provided as keyword arguments replaced.")]
-            public override date replace(CodeContext/*!*/ context, [NotNone, ParamDictionary] IDictionary<object, object> dict) {
+            public override date replace(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict) {
                 int lyear = year;
                 int lmonth = month;
                 int lday = day;
@@ -1037,8 +1037,7 @@ namespace IronPython.Modules {
             public double timestamp() {
                 if (tzinfo is null) {
                     return PythonTime.TicksToTimestamp(_dateTime.ToUniversalTime().Ticks);
-                }
-                else {
+                } else {
                     return (this - new datetime(new DateTime(1970, 1, 1), timezone.utc)).total_seconds();
                 }
             }
@@ -1233,7 +1232,7 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            public object replace([ParamDictionary, NotNone] IDictionary<object, object> dict) {
+            public object replace([ParamDictionary] IDictionary<object, object> dict) {
                 int lhour = hour;
                 int lminute = minute;
                 int lsecond = second;
@@ -1448,10 +1447,10 @@ namespace IronPython.Modules {
             public tzinfo() {
             }
 
-            public tzinfo([NotNone] params object?[] args) {
+            public tzinfo(params object?[] args) {
             }
 
-            public tzinfo([ParamDictionary, NotNone] PythonDictionary dict, [NotNone] params object?[] args) {
+            public tzinfo([ParamDictionary] PythonDictionary dict, params object?[] args) {
             }
 
             public virtual object fromutc([NotNone] datetime dt) {

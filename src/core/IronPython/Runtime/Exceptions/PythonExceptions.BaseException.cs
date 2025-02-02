@@ -83,26 +83,25 @@ namespace IronPython.Runtime.Exceptions {
                 _args = PythonTuple.EMPTY;
             }
 
-            public static object __new__([NotNone] PythonType/*!*/ cls, [NotNone] params object?[] args\u00F8) {
+            public static object __new__([NotNone] PythonType/*!*/ cls, params object?[] args) {
                 BaseException res;
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
                     res = new BaseException(cls);
-                }
-                else {
+                } else {
                     res = (BaseException)Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
                 }
-                res._args = new PythonTuple(args\u00F8);
+                res._args = new PythonTuple(args);
                 return res;
             }
 
-            public static object __new__([NotNone] PythonType/*!*/ cls, [ParamDictionary, NotNone] IDictionary<string, object?> kwArgs\u00F8, [NotNone] params object?[] args\u00F8)
-                => __new__(cls, args\u00F8);
+            public static object __new__([NotNone] PythonType/*!*/ cls, [ParamDictionary] IDictionary<string, object?> kwArgs, params object?[] args)
+                => __new__(cls, args);
 
             /// <summary>
             /// Initializes the Exception object with an unlimited number of arguments
             /// </summary>
-            public virtual void __init__([NotNone] params object?[] args\u00F8) {
-                _args = PythonTuple.MakeTuple(args\u00F8 ?? new object?[] { null });
+            public virtual void __init__(params object?[] args) {
+                _args = PythonTuple.MakeTuple(args ?? new object?[] { null });
             }
 
             /// <summary>
@@ -180,8 +179,7 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             public override string/*!*/ ToString() {
-                return (_args.__len__()) switch
-                {
+                return (_args.__len__()) switch {
                     0 => string.Empty,
                     1 => PythonOps.ToString(_args[0]),
                     _ => _args.ToString(),

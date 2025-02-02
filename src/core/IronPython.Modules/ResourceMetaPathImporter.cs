@@ -1,11 +1,17 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Zlib;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
@@ -131,8 +137,7 @@ module, or raises ResourceImportError if it wasn't found."
             modules.Add(fullname, mod);
             try {
                 script.Run(mod.Scope);
-            }
-            catch (Exception) {
+            } catch (Exception) {
                 modules.Remove(fullname);
                 throw;
             }
@@ -175,8 +180,7 @@ module, or raises ResourceImportError if it wasn't found."
             if (data != null) {
                 if (isbytecode) {
                     // would put in code to unmarshal the bytecode here...                                     
-                }
-                else {
+                } else {
                     code = data;
                 }
             }
@@ -221,8 +225,8 @@ module, or raises ResourceImportError if it wasn't found."
 #if DEBUG
             public override string ToString() {
                 var sizeDesc = String.Format("{0} bytes", _fileSize);
-                if (Convert.ToDouble(_fileSize)/1024.0 > 1.0)
-                    sizeDesc = String.Format("{0} KB", Math.Round(Convert.ToDouble(_fileSize)/1024.0, 1));
+                if (Convert.ToDouble(_fileSize) / 1024.0 > 1.0)
+                    sizeDesc = String.Format("{0} KB", Math.Round(Convert.ToDouble(_fileSize) / 1024.0, 1));
                 return String.Format("{0} ({1})", FullName, sizeDesc);
             }
 #endif
@@ -259,26 +263,25 @@ module, or raises ResourceImportError if it wasn't found."
                         let path = lineage.Take(lineage.Length - 1).ToArray()
                         orderby fileName
                         select new {
-                                       name = fileName,
-                                       path,
-                                       dottedPath = String.Join(".", path),
-                                       entry
-                                   };
+                            name = fileName,
+                            path,
+                            dottedPath = String.Join(".", path),
+                            entry
+                        };
                     var moduleContents =
                         from source in parsedSources
                         orderby source.dottedPath
                         group source by source.dottedPath
                         into moduleGroup
                         select new {
-                                       moduleGroup.Key,
-                                       Items = moduleGroup.Select(item => item.entry).ToArray()
-                                   };
+                            moduleGroup.Key,
+                            Items = moduleGroup.Select(item => item.entry).ToArray()
+                        };
                     modules = moduleContents.ToDictionary(
                         moduleGroup => moduleGroup.Key,
                         moduleGroup => moduleGroup.Items);
                     return true;
-                }
-                catch (Exception exception) {
+                } catch (Exception exception) {
                     files = null;
                     modules = null;
                     unpackingError = String.Format("{0}: {1}", exception.GetType().Name, exception.Message);
@@ -310,7 +313,7 @@ module, or raises ResourceImportError if it wasn't found."
                         var endofCentralDir = new byte[22];
 
                         reader.BaseStream.Seek(-22, SeekOrigin.End);
-                        var headerPosition = (int) reader.BaseStream.Position;
+                        var headerPosition = (int)reader.BaseStream.Position;
                         if (reader.Read(endofCentralDir, 0, 22) != 22) {
                             unpackingError = "Can't read ZIP resource: Invalid ZIP Directory.";
                             return false;
@@ -332,8 +335,7 @@ module, or raises ResourceImportError if it wasn't found."
                             .ToDictionary(entry => entry.FullName);
                         return true;
                     }
-                }
-                catch (Exception exception) {
+                } catch (Exception exception) {
                     unpackingError = String.Format("{0}: {1}", exception.GetType().Name, exception.Message);
                     return false;
                 }
@@ -410,26 +412,23 @@ module, or raises ResourceImportError if it wasn't found."
                         byte[] rawData;
                         try {
                             rawData = reader.ReadBytes(compress == 0 ? dataSize : dataSize + 1);
-                        }
-                        catch {
+                        } catch {
                             unpackingError = "Can't read data";
                             return false;
                         }
 
                         if (compress != 0) {
-                            rawData[dataSize] = (byte) 'Z';
+                            rawData[dataSize] = (byte)'Z';
                         }
 
                         result = compress == 0 ? rawData : ZlibModule.Decompress(rawData, -15);
                         return true;
                     }
-                }
-                catch (Exception exception) {
+                } catch (Exception exception) {
                     unpackingError = String.Format("{0}: {1}", exception.GetType().Name, exception.Message);
                     return false;
                 }
             }
         }
-
     }
 }

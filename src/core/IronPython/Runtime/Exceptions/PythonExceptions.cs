@@ -125,7 +125,7 @@ namespace IronPython.Runtime.Exceptions {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         if (args.Length >= 4 && args[3] is int winerror) {
                             errno = WinErrorToErrno(winerror);
-                        } 
+                        }
                     }
                     cls = ErrorEnumToPythonType(ErrnoToErrorEnum(errno));
                 }
@@ -716,7 +716,7 @@ for k, v in toError.items():
         }
 
         public partial class _SystemExit : BaseException {
-            public override void __init__([NotNone] params object[] args) {
+            public override void __init__(params object[] args) {
                 base.__init__(args);
 
                 if (args?.Length > 0) {

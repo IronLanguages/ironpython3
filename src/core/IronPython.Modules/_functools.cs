@@ -89,14 +89,14 @@ namespace IronPython.Modules {
             /// <summary>
             /// Creates a new partial object with the provided positional arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object? func, [NotNone] params object[]/*!*/ args)
+            public partial(CodeContext/*!*/ context, object? func, params object[] args)
                 : this(context, func, new PythonDictionary(), args) {
             }
 
             /// <summary>
             /// Creates a new partial object with the provided positional and keyword arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object? func, [NotNone, ParamDictionary] IDictionary<object, object> keywords, [NotNone] params object[]/*!*/ args) {
+            public partial(CodeContext/*!*/ context, object? func, [ParamDictionary] IDictionary<object, object> keywords, params object[] args) {
                 if (!PythonOps.IsCallable(context, func)) {
                     throw PythonOps.TypeError("the first argument must be callable");
                 }
@@ -148,7 +148,7 @@ namespace IronPython.Modules {
                 get {
                     return EnsureDict();
                 }
-                [param: NotNone] 
+                [param: NotNone]
                 set {
                     _dict = value;
                 }
@@ -230,7 +230,7 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments.
             /// </summary>
             [SpecialName]
-            public object? Call(CodeContext/*!*/ context, [NotNone] params object?[] args) {
+            public object? Call(CodeContext/*!*/ context, params object?[] args) {
                 if (_keywordArgs == null) {
                     EnsureSplatSite();
                     return _splatSite!.Target(_splatSite, context, func, ArrayUtils.AppendRange(_args, args));
@@ -244,7 +244,7 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments and keyword arguments.
             /// </summary>
             [SpecialName]
-            public object? Call(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<object, object?> dict, [NotNone] params object?[] args) {
+            public object? Call(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object?> dict, params object?[] args) {
 
                 IDictionary<object, object?> finalDict;
                 if (_keywordArgs != null) {

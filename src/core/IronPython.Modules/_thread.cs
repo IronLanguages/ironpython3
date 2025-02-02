@@ -148,7 +148,7 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            public void __exit__(CodeContext/*!*/ context, params object[] args) {
+            public void __exit__(CodeContext/*!*/ context, [NotNone] params object[] args) {
                 release(context);
             }
 
@@ -173,7 +173,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void release(CodeContext/*!*/ context, params object[] param) {
+            public void release(CodeContext/*!*/ context, [NotNone] params object[] param) {
                 release(context);
             }
 

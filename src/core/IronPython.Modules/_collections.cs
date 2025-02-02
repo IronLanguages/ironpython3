@@ -41,7 +41,7 @@ namespace IronPython.Modules {
                 _data = _maxLen < 0 ? new object[8] : new object[Math.Min(_maxLen, 8)];
             }
 
-            public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+            public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) {
                 if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(deque))) return new deque();
                 return cls.CreateInstance(context);
             }
@@ -1148,7 +1148,7 @@ namespace IronPython.Modules {
                 this.default_factory = default_factory;
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, params object[] args) {
+            public void __init__(CodeContext/*!*/ context, object default_factory, [NotNone] params object[] args) {
                 __init__(context, default_factory);
 
                 foreach (object o in args) {
@@ -1156,7 +1156,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) {
                 __init__(context, default_factory, args);
 
                 foreach (KeyValuePair<object, object> kvp in dict) {

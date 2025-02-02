@@ -83,7 +83,7 @@ namespace IronPython.Runtime.Exceptions {
                 _args = PythonTuple.EMPTY;
             }
 
-            public static object __new__([NotNone] PythonType/*!*/ cls, params object?[] args) {
+            public static object __new__([NotNone] PythonType/*!*/ cls, [NotNone] params object?[] args) {
                 BaseException res;
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
                     res = new BaseException(cls);
@@ -94,13 +94,13 @@ namespace IronPython.Runtime.Exceptions {
                 return res;
             }
 
-            public static object __new__([NotNone] PythonType/*!*/ cls, [ParamDictionary] IDictionary<string, object?> kwArgs, params object?[] args)
+            public static object __new__([NotNone] PythonType/*!*/ cls, [ParamDictionary] IDictionary<string, object?> kwArgs, [NotNone] params object?[] args)
                 => __new__(cls, args);
 
             /// <summary>
             /// Initializes the Exception object with an unlimited number of arguments
             /// </summary>
-            public virtual void __init__(params object?[] args) {
+            public virtual void __init__([NotNone] params object?[] args) {
                 _args = PythonTuple.MakeTuple(args ?? new object?[] { null });
             }
 

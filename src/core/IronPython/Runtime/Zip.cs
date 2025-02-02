@@ -25,7 +25,7 @@ is exhausted and then it raises StopIteration.")]
         private readonly IEnumerator[] enumerators;
         private object? current;
 
-        public Zip(CodeContext context, params object[] iters) {
+        public Zip(CodeContext context, [NotNone] params object[] iters) {
             if (iters == null) throw PythonOps.TypeError("zip argument #{0} must support iteration", 1);
 
             enumerators = new IEnumerator[iters.Length];

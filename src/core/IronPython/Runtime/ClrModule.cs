@@ -113,7 +113,7 @@ namespace IronPython.Runtime {
 Assembly object, a full assembly name, or a partial assembly name. After the
 load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
-        public static void AddReference(CodeContext/*!*/ context, params object[] references) {
+        public static void AddReference(CodeContext/*!*/ context, [NotNone] params object[] references) {
             if (references == null) throw new TypeErrorException("Expected string or Assembly, got NoneType");
             if (references.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
             ContractUtils.RequiresNotNull(context, nameof(context));
@@ -129,7 +129,7 @@ sys.path and dependencies will be loaded from sys.path as well.  The assembly
 name should be the filename on disk without a directory specifier and 
 optionally including the .EXE or .DLL extension. After the load the assemblies 
 namespaces and top-level types will be available via import Namespace.")]
-        public static void AddReferenceToFile(CodeContext/*!*/ context, params string[] files) {
+        public static void AddReferenceToFile(CodeContext/*!*/ context, [NotNone] params string[] files) {
             if (files == null) throw new TypeErrorException("Expected string, got NoneType");
             if (files.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
             ContractUtils.RequiresNotNull(context, nameof(context));
@@ -142,7 +142,7 @@ namespaces and top-level types will be available via import Namespace.")]
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are an assembly name. 
 After the load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
-        public static void AddReferenceByName(CodeContext/*!*/ context, params string[] names) {
+        public static void AddReferenceByName(CodeContext/*!*/ context, [NotNone] params string[] names) {
             if (names == null) throw new TypeErrorException("Expected string, got NoneType");
             if (names.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
             ContractUtils.RequiresNotNull(context, nameof(context));
@@ -155,7 +155,7 @@ import Namespace.")]
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a partial assembly name. 
 After the load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
-        public static void AddReferenceByPartialName(CodeContext/*!*/ context, params string[] names) {
+        public static void AddReferenceByPartialName(CodeContext/*!*/ context, [NotNone] params string[] names) {
             if (names == null) throw new TypeErrorException("Expected string, got NoneType");
             if (names.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
             ContractUtils.RequiresNotNull(context, nameof(context));
@@ -516,7 +516,7 @@ be provided which are fully qualified names to the file on disk.  The
 directory is added to sys.path and AddReferenceToFile is then called. After the 
 load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
-        public static void AddReferenceToFileAndPath(CodeContext/*!*/ context, params string[] files) {
+        public static void AddReferenceToFileAndPath(CodeContext/*!*/ context, [NotNone] params string[] files) {
             if (files == null) throw new TypeErrorException("Expected string, got NoneType");
             ContractUtils.RequiresNotNull(context, nameof(context));
 
@@ -593,7 +593,7 @@ import Namespace.")]
         /// </summary>
         /// <param name="types"></param>
         /// <returns></returns>
-        public static object accepts(params object[] types) {
+        public static object accepts([NotNone] params object[] types) {
             return new ArgChecker(types);
         }
 
@@ -870,7 +870,7 @@ import Namespace.")]
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
         /// </summary>
-        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary] IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
+        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary] IDictionary<string, object> kwArgs, [NotNone] params string/*!*/[]/*!*/ filenames) {
             ContractUtils.RequiresNotNull(assemblyName, nameof(assemblyName));
             ContractUtils.RequiresNotNullItems(filenames, nameof(filenames));
 
@@ -966,7 +966,7 @@ import Namespace.")]
         ///     object and an object which implements IComparable.
         /// 
         /// </summary>
-        public static void CompileSubclassTypes(string/*!*/ assemblyName, params object[] newTypes) {
+        public static void CompileSubclassTypes(string/*!*/ assemblyName, [NotNone] params object[] newTypes) {
             if (assemblyName == null) {
                 throw PythonOps.TypeError("CompileTypes expected str for assemblyName, got NoneType");
             }

@@ -245,7 +245,7 @@ namespace IronPython.Runtime {
             return DictionaryOps.get(this, key, defaultValue);
         }
 
-        public virtual object this[params object[] key] {
+        public virtual object this[[NotNone] params object[] key] {
             get {
                 if (key == null) {
                     return GetItem(null);
@@ -300,7 +300,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void __delitem__(params object[] key) {
+        public virtual void __delitem__([NotNone] params object[] key) {
             if (key == null) {
                 __delitem__((object)null);
             } else if (key.Length > 0) {

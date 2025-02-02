@@ -27,7 +27,7 @@ namespace IronPython.Modules {
         public sealed class attrgetter : ICodeFormattable {
             private readonly object[] _names;
 
-            public attrgetter(params object[] attrs) {
+            public attrgetter([NotNone] params object[] attrs) {
                 if (attrs == null || !attrs.All(x => x is string)) throw PythonOps.TypeError("attribute name must be a string");
                 if (attrs.Length == 0) throw PythonOps.TypeError("attrgetter expected 1 arguments, got 0");
 
@@ -70,7 +70,7 @@ namespace IronPython.Modules {
         public sealed class itemgetter : ICodeFormattable {
             private readonly object?[] _items;
 
-            public itemgetter(params object?[] items) {
+            public itemgetter([NotNone] params object?[] items) {
                 if (items.Length == 0) {
                     throw PythonOps.TypeError("itemgetter needs at least one argument");
                 }
@@ -104,7 +104,7 @@ namespace IronPython.Modules {
             private readonly object?[] _args;
             private readonly IDictionary<object, object>? _dict;
 
-            public methodcaller(params object?[] args) {
+            public methodcaller([NotNone] params object?[] args) {
                 if (args == null) throw PythonOps.TypeError("TypeError: method name must be a string");
                 if (args.Length == 0) throw PythonOps.TypeError("methodcaller needs at least one argument, the method name");
                 if (args[0] is not string name) throw PythonOps.TypeError("TypeError: method name must be a string");
@@ -112,7 +112,7 @@ namespace IronPython.Modules {
                 _args = args.Skip(1).ToArray();
             }
 
-            public methodcaller([ParamDictionary] IDictionary<object, object> kwargs, params object?[] args) : this(args) {
+            public methodcaller([ParamDictionary] IDictionary<object, object> kwargs, [NotNone] params object?[] args) : this(args) {
                 _dict = kwargs;
             }
 

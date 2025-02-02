@@ -1300,7 +1300,7 @@ namespace IronPython.Runtime.Operations {
         ///
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
-        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string, params object[] args) {
+        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string, [NotNone] params object[] args) {
             return NewStringFormatter.FormatString(
                 context.LanguageContext,
                 format_string,

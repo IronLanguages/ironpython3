@@ -37,7 +37,7 @@ Returns: the child process's PID.
 
 Raises: Only on an error in the parent process.
 ")]
-        public static object fork_exec(CodeContext/*!*/ context, params object[] args) {
+        public static object fork_exec(CodeContext/*!*/ context, [NotNone] params object[] args) {
             throw PythonOps.NotImplementedError("fork_exec is currently not implemented");
         }
     }

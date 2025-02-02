@@ -64,7 +64,7 @@ namespace IronPython.Modules {
             throw PythonOps.NotImplementedError("gc.get_objects isn't implemented");
         }
 
-        public static void set_threshold(CodeContext/*!*/ context, params object[] args) {
+        public static void set_threshold(CodeContext/*!*/ context, [NotNone] params object[] args) {
             if (args.Length == 0) {
                 throw PythonOps.TypeError("set_threshold() takes at least 1 argument (0 given)");
             }
@@ -92,11 +92,11 @@ namespace IronPython.Modules {
             return GetThresholds(context);
         }
 
-        public static object[] get_referrers(params object[] objs) {
+        public static object[] get_referrers([NotNone] params object[] objs) {
             throw PythonOps.NotImplementedError("gc.get_referrers isn't implemented");
         }
 
-        public static object[] get_referents(params object[] objs) {
+        public static object[] get_referents([NotNone] params object[] objs) {
             throw PythonOps.NotImplementedError("gc.get_referents isn't implemented");
         }
 

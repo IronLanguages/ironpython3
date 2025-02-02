@@ -74,7 +74,7 @@ instance itself if the module was found, or None if it wasn't.
 The optional 'path' argument is ignored -- it's there for compatibility
 with the importer protocol."
             )]
-        public object find_module(CodeContext /*!*/ context, string fullname, params object[] args) {
+        public object find_module(CodeContext /*!*/ context, string fullname, [NotNone] params object[] args) {
             var packedName = MakeFilename(fullname);
 
             foreach (var entry in SearchOrder) {

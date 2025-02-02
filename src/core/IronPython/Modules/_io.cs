@@ -102,7 +102,7 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            public void __exit__(CodeContext/*!*/ context, params object[] excinfo) {
+            public void __exit__(CodeContext/*!*/ context, [NotNone] params object[] excinfo) {
                 close(context);
             }
 
@@ -635,7 +635,7 @@ namespace IronPython.Modules {
 
             public BufferedReader(
                 CodeContext/*!*/ context,
-                params object[] args
+                [NotNone] params object[] args
             ) : base(context) {
             }
 

@@ -679,7 +679,7 @@ namespace IronPython.Modules {
             }
 
             // just present to match CPython's error messages...
-            public datetime(params object[] args) {
+            public datetime([NotNone] params object[] args) {
                 if (args.Length < 3) {
                     throw PythonOps.TypeError("function takes at least 3 arguments ({0} given)", args.Length);
                 } else if (args.Length > 8) {
@@ -1447,10 +1447,10 @@ namespace IronPython.Modules {
             public tzinfo() {
             }
 
-            public tzinfo(params object?[] args) {
+            public tzinfo([NotNone] params object?[] args) {
             }
 
-            public tzinfo([ParamDictionary] PythonDictionary dict, params object?[] args) {
+            public tzinfo([ParamDictionary] PythonDictionary dict, [NotNone] params object?[] args) {
             }
 
             public virtual object fromutc([NotNone] datetime dt) {

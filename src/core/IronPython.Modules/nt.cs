@@ -707,7 +707,7 @@ namespace IronPython.Modules {
 #if FEATURE_NATIVE
 
         [Documentation("symlink(src, dst, target_is_directory=False, *, dir_fd=None)")]
-        public static void symlink([NotNone] string src, [NotNone] string dst, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args) {
+        public static void symlink([NotNone] string src, [NotNone] string dst, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
@@ -737,11 +737,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void symlink(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static void symlink(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => symlink(src.ToFsString(context), dst.ToFsString(context), kwargs, args);
 
         [Documentation("")]
-        public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => symlink(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs, args);
 
         [PythonType]
@@ -779,7 +779,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_FILESYSTEM
         [Documentation("mkdir(path, mode=511, *, dir_fd=None)")]
-        public static void mkdir([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args) {
+        public static void mkdir([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 1, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
@@ -809,11 +809,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void mkdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static void mkdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => mkdir(path.ToFsString(context), kwargs, args);
 
         [Documentation("")]
-        public static void mkdir(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static void mkdir(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => mkdir(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
         [Documentation("""
@@ -826,7 +826,7 @@ namespace IronPython.Modules {
             dir_fd may not be implemented on your platform.
             If it is unavailable, using it will raise a NotImplementedError.
             """)]
-        public static object open(CodeContext/*!*/ context, [NotNone] string path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args) {
+        public static object open(CodeContext/*!*/ context, [NotNone] string path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
@@ -907,11 +907,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static object open(CodeContext context, [NotNone] Bytes path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static object open(CodeContext context, [NotNone] Bytes path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => open(context, path.ToFsString(context), flags, kwargs, args);
 
         [Documentation("")]
-        public static object open(CodeContext context, object? path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static object open(CodeContext context, object? path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => open(context, ConvertToFsString(context, path, nameof(path)), flags, kwargs, args);
 
         private static FileOptions FileOptionsFromFlags(int flag) {
@@ -1740,7 +1740,7 @@ namespace IronPython.Modules {
 #if FEATURE_FILESYSTEM
 
         [Documentation("utime(path, times=None, *[, ns], dir_fd=None, follow_symlinks=True)")]
-        public static void utime([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args) {
+        public static void utime([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 1, numOptPosParms: 1, numKwParms: 3, numArgs, kwargs.Count);
 
@@ -1814,11 +1814,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void utime(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static void utime(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => utime(path.ToFsString(context), kwargs, args);
 
         [Documentation("")]
-        public static void utime(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs, params object[] args)
+        public static void utime(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => utime(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
 #endif

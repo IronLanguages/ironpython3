@@ -25,7 +25,7 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
         private readonly object? _func;
         private readonly IEnumerator[] _enumerators;
 
-        public Map(CodeContext context, object? func, params object[] iterables) {
+        public Map(CodeContext context, object? func, [NotNone] params object[] iterables) {
             if (iterables.Length == 0) {
                 throw PythonOps.TypeError("map() must have at least two arguments.");
             }

@@ -783,7 +783,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.GreaterThan(x, y) ? x : y;
         }
 
-        public static object? max(CodeContext/*!*/ context, params object?[] args) {
+        public static object? max(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             if (args.Length > 0) {
                 object? ret = args[0];
                 if (args.Length == 1) {
@@ -842,7 +842,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? max(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, params object?[] args) {
+        public static object? max(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -897,7 +897,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.LessThan(x, y) ? x : y;
         }
 
-        public static object? min(CodeContext/*!*/ context, params object?[] args) {
+        public static object? min(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             if (args.Length > 0) {
                 object? ret = args[0];
                 if (args.Length == 1) {
@@ -950,7 +950,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? min(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, params object?[] args) {
+        public static object? min(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -1168,11 +1168,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static void print(CodeContext/*!*/ context, params object?[] args) {
+        public static void print(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             PrintHelper(context, " ", "\n", null, args, false);
         }
 
-        public static void print(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> kwargs, params object?[] args) {
+        public static void print(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> kwargs, [NotNone] params object?[] args) {
             object? sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
                 throw PythonOps.TypeError("sep must be None or str, not {0}", PythonOps.GetPythonTypeName(sep));

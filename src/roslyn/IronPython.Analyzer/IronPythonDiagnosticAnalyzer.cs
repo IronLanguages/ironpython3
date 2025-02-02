@@ -21,10 +21,11 @@ namespace IronPython.Analyzer {
         private static readonly DiagnosticDescriptor Rule3 = new DiagnosticDescriptor("IPY03", title: "BytesLikeAttribute used on a not supported type", messageFormat: "Parameter '{0}' declared bytes-like on unsupported type '{1}'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "BytesLikeAttribute is only allowed on parameters of type IReadOnlyList<byte>, or IList<byte>.");
         private static readonly DiagnosticDescriptor Rule4 = new DiagnosticDescriptor("IPY04", title: "Call to PythonTypeOps.GetName", messageFormat: "Direct call to PythonTypeOps.GetName", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "To obtain a name of a python type of a given object to display to a user, use PythonOps.GetPythonTypeName.");
         private static readonly DiagnosticDescriptor Rule5 = new DiagnosticDescriptor("IPY05", title: "DLR NotNullAttribute accessed without an alias", messageFormat: "Microsoft.Scripting.Runtime.NotNullAttribute should be accessed though alias 'NotNone'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "NotNullAttribute is ambiguous between 'System.Diagnostics.CodeAnalysis.NotNullAttribute' and 'Microsoft.Scripting.Runtime.NotNullAttribute'. The latter should be accesses as 'NotNoneAttribute'.");
-        private static readonly DiagnosticDescriptor Rule6 = new DiagnosticDescriptor("IPY06", title: "Unnecessary NotNoneAttribute", messageFormat: "Parameter '{0}' has an unnecessary NotNoneAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "ParamDictionary and params do not require a NotNoneAttribute.");
+        private static readonly DiagnosticDescriptor Rule6 = new DiagnosticDescriptor("IPY06", title: "Unnecessary NotNoneAttribute", messageFormat: "Parameter '{0}' has an unnecessary NotNoneAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "ParamDictionary do not require a NotNoneAttribute.");
+        private static readonly DiagnosticDescriptor Rule7 = new DiagnosticDescriptor("IPY07", title: "Parameters with params does not have the NotNoneAttribute", messageFormat: "Parameter '{0}' does not have the NotNoneAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Parameters with params should use the NotNoneAttribute to prevent binding to null.");
 #pragma warning restore RS2008 // Enable analyzer release tracking
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5, Rule6); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7); } }
 
         public override void Initialize(AnalysisContext context) {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
@@ -77,7 +78,12 @@ namespace IronPython.Analyzer {
                         continue;
                     }
 
-                    if (parameterSymbol.IsParams || attributes.Any(x => x.AttributeClass.Equals(paramDictionaryAttributeSymbol, SymbolEqualityComparer.Default))) {
+                    if (parameterSymbol.IsParams && attributes.All(x => !x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))) {
+                        var diagnostic = Diagnostic.Create(Rule7, parameterSymbol.Locations[0], parameterSymbol.Name);
+                        context.ReportDiagnostic(diagnostic);
+                    }
+
+                    if (attributes.Any(x => x.AttributeClass.Equals(paramDictionaryAttributeSymbol, SymbolEqualityComparer.Default))) {
                         if (attributes.Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))) {
                             var diagnostic = Diagnostic.Create(Rule6, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);

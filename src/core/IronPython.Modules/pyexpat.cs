@@ -229,7 +229,7 @@ namespace IronPython.Modules {
             return null;
         }
 
-        public static object ParserCreate(CodeContext context, [ParamDictionary] IDictionary<object, object> kwArgs, params object[] args) {
+        public static object ParserCreate(CodeContext context, [ParamDictionary] IDictionary<object, object> kwArgs, [NotNone] params object[] args) {
             var numArgs = args.Length + kwArgs.Count;
             if (numArgs > 3) throw PythonOps.TypeError($"ParserCreate() takes at most 3 arguments ({numArgs} given)");
 

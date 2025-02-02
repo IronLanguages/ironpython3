@@ -40,7 +40,7 @@ namespace IronPython.Modules {
                 _data = new char[DEFAULT_BUF_SIZE];
             }
 
-            public StringIO(CodeContext context, [ParamDictionary] IDictionary<object, object> kwArgs, params object[] args)
+            public StringIO(CodeContext context, [ParamDictionary] IDictionary<object, object> kwArgs, [NotNone] params object[] args)
                 : this(context) { }
 
             public void __init__(CodeContext context, string? initial_value = "", string? newline = "\n") {

@@ -653,7 +653,7 @@ namespace IronPython.Modules {
                 return g.Success ? g.Index + g.Length : -1;
             }
 
-            public object? group(object? index, params object?[] additional) {
+            public object? group(object? index, [NotNone] params object?[] additional) {
                 if (additional.Length == 0) {
                     return group(index);
                 }

@@ -55,7 +55,7 @@ namespace IronPython.Runtime {
             _dict = dict;
         }
 
-        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, params object[] args) {
+        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [NotNone] params object[] args) {
             PythonModule res;
             if (cls == TypeCache.Module) {
                 res = new PythonModule();
@@ -69,7 +69,7 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary] IDictionary<object, object> kwDict0, params object[] args) {
+        public static PythonModule/*!*/ __new__(CodeContext/*!*/ context, PythonType/*!*/ cls, [ParamDictionary] IDictionary<object, object> kwDict0, [NotNone] params object[] args) {
             return __new__(context, cls, args);
         }
 

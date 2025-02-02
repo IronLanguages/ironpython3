@@ -121,10 +121,10 @@ namespace IronPython.Runtime {
         public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, object? arg)
             => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, params object[] args)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] params object[] args)
             => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary] IDictionary<object, object> kwArgs, params object[] args)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary] IDictionary<object, object> kwArgs, [NotNone] params object[] args)
             => __new__(context, cls);
 
         #endregion

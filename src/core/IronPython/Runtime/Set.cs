@@ -60,11 +60,11 @@ namespace IronPython.Runtime {
             return __new__(context, cls);
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, params object?[] args) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] params object?[] args) {
             return __new__(context, cls);
         }
 
-        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary] IDictionary<object, object> kwArgs, params object?[] args) {
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary] IDictionary<object, object> kwArgs, [NotNone] params object?[] args) {
             return __new__(context, cls);
         }
 
@@ -248,7 +248,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void update(params object[] sets) {
+        public void update([NotNone] params object[] sets) {
             if (sets.Length == 0) {
                 return;
             }
@@ -291,7 +291,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void intersection_update(params object[] sets) {
+        public void intersection_update([NotNone] params object[] sets) {
             if (sets.Length == 0) {
                 return;
             }
@@ -336,7 +336,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void difference_update(params object[] sets) {
+        public void difference_update([NotNone] params object[] sets) {
             if (sets.Length == 0) {
                 return;
             }
@@ -447,7 +447,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public SetCollection union(params object[] sets) {
+        public SetCollection union([NotNone] params object[] sets) {
             SetStorage res = _items.Clone();
             foreach (object set in sets) {
                 res.UnionUpdate(SetStorage.GetItems(set));
@@ -478,7 +478,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public SetCollection intersection(params object[] sets) {
+        public SetCollection intersection([NotNone] params object[] sets) {
             if (sets.Length == 0) {
                 return copy();
             }
@@ -535,7 +535,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        public SetCollection difference(params object[] sets) {
+        public SetCollection difference([NotNone] params object[] sets) {
             if (sets.Length == 0) {
                 return copy();
             }
@@ -865,7 +865,7 @@ namespace IronPython.Runtime {
         #region Set Construction
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
-        public void __init__(params object?[] o) {
+        public void __init__([NotNone] params object?[] o) {
             // nop
         }
 
@@ -1069,7 +1069,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public FrozenSetCollection union(params object[] sets) {
+        public FrozenSetCollection union([NotNone] params object[] sets) {
             SetStorage res = _items.Clone();
             foreach (object set in sets) {
                 res.UnionUpdate(SetStorage.GetItems(set));
@@ -1100,7 +1100,7 @@ namespace IronPython.Runtime {
             return Make(items);
         }
 
-        public FrozenSetCollection intersection(params object[] sets) {
+        public FrozenSetCollection intersection([NotNone] params object[] sets) {
             if (sets.Length == 0) {
                 return Make(_items);
             }
@@ -1157,7 +1157,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        public FrozenSetCollection difference(params object[] sets) {
+        public FrozenSetCollection difference([NotNone] params object[] sets) {
             if (sets.Length == 0) {
                 return Make(_items);
             }

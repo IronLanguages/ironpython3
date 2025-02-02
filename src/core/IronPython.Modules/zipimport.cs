@@ -198,7 +198,7 @@ instance itself if the module was found, or None if it wasn't.
 The optional 'path' argument is ignored -- it's there for compatibility
 with the importer protocol.")]
             public object find_module(CodeContext/*!*/ context, string fullname,
-                params object[] args) {
+                [NotNone] params object[] args) {
                 // there could be a path item in the args, but it is not used
                 ModuleStatus info = GetModuleInfo(context, fullname);
 

@@ -2024,17 +2024,17 @@ namespace IronPython.Runtime.Operations {
                 // set up well-known/often-used mappings
                 d["iso_8859_1"] = d["iso8859_1"] = d["8859"] = d["iso8859"]
                     = d["cp28591"] = d["28591"] = d["cp819"] = d["819"]
-                    = d["latin_1"] = d["latin1"] = d["latin"] = d["l1"] = makeEncodingProxy(() => Latin1Encoding);
+                    = d["latin_1"] = d["latin1"] = d["latin"] = d["l1"]        = makeEncodingProxy(() => Latin1Encoding);
                 d["cp20127"] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => Encoding.ASCII);
-                d["cp65000"] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"] = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
-                d["cp65001"] = d["utf_8"] = d["utf8"] = d["u8"] = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-                d["utf_8_sig"] = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-                d["utf_16le"] = d["utf_16_le"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
-                d["cp1200"] = d["utf_16"] = d["utf16"] = d["u16"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
-                d["cp1201"] = d["utf_16be"] = d["utf_16_be"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
-                d["utf_32le"] = d["utf_32_le"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
-                d["cp12000"] = d["utf_32"] = d["utf32"] = d["u32"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
-                d["cp12001"] = d["utf_32be"] = d["utf_32_be"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
+                d["cp65000"] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"]   = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
+                d["cp65001"] = d["utf_8"] = d["utf8"] = d["u8"]                = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                d["utf_8_sig"]                                                 = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                d["utf_16le"] = d["utf_16_le"]                                 = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
+                d["cp1200"] = d["utf_16"] = d["utf16"] = d["u16"]              = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
+                d["cp1201"] = d["utf_16be"] = d["utf_16_be"]                   = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
+                d["utf_32le"] = d["utf_32_le"]                                 = makeEncodingProxy(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
+                d["cp12000"] = d["utf_32"] = d["utf32"] = d["u32"]             = makeEncodingProxy(() => new UTF32Encoding(bigEndian: !BitConverter.IsLittleEndian, byteOrderMark: true));
+                d["cp12001"] = d["utf_32be"] = d["utf_32_be"]                  = makeEncodingProxy(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
 
                 // set up internal codecs
                 d["raw_unicode_escape"] = makeEncodingProxy(() => RawUnicodeEscapeEncoding);

@@ -9,6 +9,7 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Reflection;
@@ -19,7 +20,6 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using System.Diagnostics.CodeAnalysis;
 
 
 #if FEATURE_PIPES

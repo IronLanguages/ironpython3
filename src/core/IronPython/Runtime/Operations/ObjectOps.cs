@@ -65,14 +65,14 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(CodeContext/*!*/ context, object self, params object[] args) {
+        public static void __init__(CodeContext/*!*/ context, object self, [NotNone] params object[] args) {
             InstanceOps.CheckInitArgs(context, null, args, self);
         }
 
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(CodeContext/*!*/ context, object self, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
+        public static void __init__(CodeContext/*!*/ context, object self, [ParamDictionary] IDictionary<object, object> kwargs, [NotNone] params object[] args) {
             InstanceOps.CheckInitArgs(context, kwargs, args, self);
         }
 
@@ -92,7 +92,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, params object[] args) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNone] params object[] args) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }
@@ -106,7 +106,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary] IDictionary<object, object> kwargs, [NotNone] params object[] args) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }

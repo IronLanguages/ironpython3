@@ -1319,7 +1319,7 @@ namespace IronPython.Runtime.Operations {
         ///
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
-        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string\u00F8, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
+        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string\u00F8, [ParamDictionary] IDictionary<object, object> kwargs, [NotNone] params object[] args) {
             return NewStringFormatter.FormatString(
                 context.LanguageContext,
                 format_string\u00F8,

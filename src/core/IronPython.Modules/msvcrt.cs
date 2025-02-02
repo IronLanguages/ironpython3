@@ -21,7 +21,6 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-
 #if FEATURE_PIPES
 using System.IO.Pipes;
 #endif

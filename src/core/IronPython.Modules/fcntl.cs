@@ -222,7 +222,7 @@ public static class PythonFcntl {
 
     #region Helper Methods
 
-    private static int GetFileDescriptor(CodeContext context, object? obj) {
+    internal static int GetFileDescriptor(CodeContext context, object? obj) {
         if (!PythonOps.TryGetBoundAttr(context, obj, "fileno", out object? filenoMeth)) {
             throw PythonOps.TypeError("argument must be an int, or have a fileno() method.");
         }

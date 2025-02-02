@@ -1,14 +1,19 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+#nullable enable
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting;
-
 using IronPython.Runtime;
-using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Operations;
 using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("atexit", typeof(IronPython.Modules.PythonAtExit))]
 namespace IronPython.Modules {
@@ -28,15 +33,15 @@ Two public functions, register and unregister, are defined.
             }
 
             public object Func {
-                get; 
+                get;
             }
 
             public IDictionary<object, object> KeywordArgs {
-                get; 
+                get;
             }
 
             public object[] Args {
-                get; 
+                get;
             }
         }
 
@@ -57,7 +62,7 @@ Register a function to be executed upon normal program termination\n\
     kwargs - optional keyword arguments to pass to func
 
     func is returned to facilitate usage as a decorator.")]
-        public static object register(CodeContext context, object func, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
+        public static object register(CodeContext context, object? func, [ParamDictionary, NotNone] IDictionary<object, object> kwargs, [NotNone] params object[] args) {
             if (!PythonOps.IsCallable(context, func)) {
                 throw PythonOps.TypeError("the first argument must be callable");
             }
@@ -77,7 +82,7 @@ Unregister an exit function which was previously registered using
 atexit.register
 
     func - function to be unregistered")]
-        public static void unregister(CodeContext context, object func) {
+        public static void unregister(CodeContext context, object? func) {
             var functions = context.LanguageContext.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
                 lock (functions) {
@@ -105,7 +110,7 @@ Run all registered exit functions.")]
             var pc = context.LanguageContext;
             var functions = pc.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
-                Exception lastException = null;
+                Exception? lastException = null;
                 lock (functions) {
                     for (int i = functions.Count - 1; i >= 0; i--) {
                         var func = functions[i];

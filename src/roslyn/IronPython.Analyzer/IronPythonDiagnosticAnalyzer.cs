@@ -62,6 +62,9 @@ namespace IronPython.Analyzer {
                 var ireadOnlyListOfByteType = ireadOnlyListType.Construct(byteType);
                 var ilistOfByteType = ilistType.Construct(byteType);
 
+                // PerformModuleReload is special and we don't need NotNone annotations
+                if (methodSymbol.Name == "PerformModuleReload") return;
+
                 foreach (IParameterSymbol parameterSymbol in methodSymbol.Parameters) {
                     if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol, SymbolEqualityComparer.Default))
                             && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType, SymbolEqualityComparer.Default)

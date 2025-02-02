@@ -74,7 +74,7 @@ namespace IronPython.Modules {
         }
 
         [SpecialName]
-        public static void PerformModuleReload([NotNone] PythonContext context, [NotNone] PythonDictionary dict) {
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
             var have_functions = new PythonList();
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 have_functions.Add("MS_WINDOWS");

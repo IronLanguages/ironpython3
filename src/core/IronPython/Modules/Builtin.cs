@@ -1693,11 +1693,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return localContext;
         }
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
             dict["__debug__"] = ScriptingRuntimeHelpers.BooleanToObject(!context.PythonOptions.Optimize);
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
     }
 }

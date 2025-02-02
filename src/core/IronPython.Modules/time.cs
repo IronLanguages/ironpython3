@@ -52,13 +52,11 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "This module provides various functions to manipulate time values.";
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             // we depend on locale, it needs to be initialized
             PythonLocale.EnsureLocaleInitialized(context);
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
 
         static PythonTime() {
             // altzone, timezone are offsets from UTC in seconds, so they always fit in the

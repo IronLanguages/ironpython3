@@ -31,11 +31,9 @@ public static class PythonTermios {
     public const string __doc__ = "Stub of termios, just enough to support module tty.";
     // and also prompt_toolkit.terminal.vt100_input
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
     [SpecialName]
     public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
         => context.EnsureModuleException("termioserror", dict, "error", "termios");
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
 
 
     #region Generated TIOC Commands

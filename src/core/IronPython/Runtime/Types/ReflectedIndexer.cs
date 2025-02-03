@@ -80,7 +80,7 @@ namespace IronPython.Runtime.Types {
             return val;
         }
 
-        public object this[SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage, params object[] key] {
+        public object this[SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage, [NotNone] params object[] key] {
             get {
                 return GetValue(DefaultContext.Default, storage, key);
             }

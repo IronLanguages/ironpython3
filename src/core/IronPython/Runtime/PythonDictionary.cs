@@ -245,7 +245,7 @@ namespace IronPython.Runtime {
             return DictionaryOps.get(this, key, defaultValue);
         }
 
-        public virtual object this[params object[] key] {
+        public virtual object this[[NotNone] params object[] key] {
             get {
                 if (key == null) {
                     return GetItem(null);
@@ -300,7 +300,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void __delitem__(params object[] key) {
+        public virtual void __delitem__([NotNone] params object[] key) {
             if (key == null) {
                 __delitem__((object)null);
             } else if (key.Length > 0) {
@@ -356,17 +356,17 @@ namespace IronPython.Runtime {
         public void update() {
         }
 
-        public void update(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> other\u00F8) {
-            DictionaryOps.update(context, this, other\u00F8);
+        public void update(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> other) {
+            DictionaryOps.update(context, this, other);
         }
 
         public void update(CodeContext/*!*/ context, object other\u00F8) {
             DictionaryOps.update(context, this, other\u00F8);
         }
 
-        public void update(CodeContext/*!*/ context, object other\u00F8, [ParamDictionary] IDictionary<object, object> otherArgs\u00F8) {
+        public void update(CodeContext/*!*/ context, object other\u00F8, [ParamDictionary] IDictionary<object, object> otherArgs) {
             DictionaryOps.update(context, this, other\u00F8);
-            DictionaryOps.update(context, this, otherArgs\u00F8);
+            DictionaryOps.update(context, this, otherArgs);
         }
 
         private static object fromkeysAny(CodeContext/*!*/ context, PythonType cls, object o, object value) {

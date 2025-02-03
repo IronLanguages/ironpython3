@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_heapq", typeof(IronPython.Modules.PythonHeapq))]
 namespace IronPython.Modules {
@@ -21,14 +22,14 @@ namespace IronPython.Modules {
         #region public API
 
         [Documentation("Transform list into a heap, in-place, in O(len(heap)) time.")]
-        public static void heapify(CodeContext/*!*/ context, PythonList list) {
+        public static void heapify(CodeContext/*!*/ context, [NotNone] PythonList list) {
             lock (list) {
                 DoHeapify(context, list);
             }
         }
 
         [Documentation("Pop the smallest item off the heap, maintaining the heap invariant.")]
-        public static object heappop(CodeContext/*!*/ context, PythonList list) {
+        public static object? heappop(CodeContext/*!*/ context, [NotNone] PythonList list) {
             lock (list) {
                 int last = list._size - 1;
                 if (last < 0) {
@@ -42,7 +43,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("Push item onto heap, maintaining the heap invariant.")]
-        public static void heappush(CodeContext/*!*/ context, PythonList list, object item) {
+        public static void heappush(CodeContext/*!*/ context, [NotNone] PythonList list, object? item) {
             lock (list) {
                 list.AddNoLock(item);
                 SiftUp(context, list, list._size - 1);
@@ -53,7 +54,7 @@ namespace IronPython.Modules {
             + "from the heap. The combined action runs more efficiently than\n"
             + "heappush() followed by a separate call to heappop()."
             )]
-        public static object heappushpop(CodeContext/*!*/ context, PythonList list, object item) {
+        public static object? heappushpop(CodeContext/*!*/ context, [NotNone] PythonList list, object? item) {
             lock (list) {
                 return DoPushPop(context, list, item);
             }
@@ -67,9 +68,9 @@ namespace IronPython.Modules {
             + "        if item > heap[0]:\n"
             + "            item = heapreplace(heap, item)\n"
             )]
-        public static object heapreplace(CodeContext/*!*/ context, PythonList list, object item) {
+        public static object? heapreplace(CodeContext/*!*/ context, [NotNone] PythonList list, object? item) {
             lock (list) {
-                object ret = list._data[0];
+                object? ret = list._data[0];
                 list._data[0] = item;
                 SiftDown(context, list, 0, list._size - 1);
                 return ret;
@@ -80,7 +81,7 @@ namespace IronPython.Modules {
         [Documentation("Find the n largest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable, reverse=True)[:n]\n"
             )]
-        public static PythonList nlargest(CodeContext/*!*/ context, int n, object iterable) {
+        public static PythonList nlargest(CodeContext/*!*/ context, int n, object? iterable) {
             if (n <= 0) {
                 return new PythonList();
             }
@@ -113,7 +114,7 @@ namespace IronPython.Modules {
         [Documentation("Find the n smallest elements in a dataset.\n\n"
             + "Equivalent to:  sorted(iterable)[:n]\n"
             )]
-        public static PythonList nsmallest(CodeContext/*!*/ context, int n, object iterable) {
+        public static PythonList nsmallest(CodeContext/*!*/ context, int n, object? iterable) {
             if (n <= 0) {
                 return new PythonList();
             }
@@ -146,7 +147,7 @@ namespace IronPython.Modules {
 
         #region private implementation details (NOTE: thread-unsafe)
 
-        private static bool IsLessThan(CodeContext/*!*/ context, object x, object y) {
+        private static bool IsLessThan(CodeContext/*!*/ context, object? x, object? y) {
             object ret;
             if (PythonTypeOps.TryInvokeBinaryOperator(context, x, y, "__lt__", out ret) &&
                 !Object.ReferenceEquals(ret, NotImplementedType.Value)) {
@@ -206,8 +207,8 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object DoPushPop(CodeContext/*!*/ context, PythonList heap, object item) {
-            object first;
+        private static object? DoPushPop(CodeContext/*!*/ context, PythonList heap, object? item) {
+            object? first;
             if (heap._size == 0 || !IsLessThan(context, first = heap._data[0], item)) {
                 return item;
             }
@@ -216,8 +217,8 @@ namespace IronPython.Modules {
             return first;
         }
 
-        private static object DoPushPopMax(CodeContext/*!*/ context, PythonList heap, object item) {
-            object first;
+        private static object? DoPushPopMax(CodeContext/*!*/ context, PythonList heap, object? item) {
+            object? first;
             if (heap._size == 0 || !IsLessThan(context, item, first = heap._data[0])) {
                 return item;
             }

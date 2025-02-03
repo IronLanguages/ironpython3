@@ -464,7 +464,7 @@ namespace IronPython.Runtime.Types {
 
                 DynamicMetaObject dict = args[index];
 
-                if (!(dict.Value is IDictionary) && dict.Value != null) {
+                if (dict.Value is not IDictionary) {
                     // The DefaultBinder only handles types that implement IDictionary.  Here we have an
                     // arbitrary user-defined mapping type.  We'll convert it into a PythonDictionary
                     // and then have an embedded dynamic site pass that dictionary through to the default
@@ -697,7 +697,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public object __call__(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary] IDictionary<object, object> dictArgs, params object[] args) {
+        public object __call__(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary] IDictionary<object, object> dictArgs, [NotNone] params object[] args) {
             return Call(context, storage, null, args, dictArgs);
         }
 

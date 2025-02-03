@@ -112,7 +112,7 @@ namespace IronPython.Modules {
                 _args = args.Skip(1).ToArray();
             }
 
-            public methodcaller([ParamDictionary, NotNone] IDictionary<object, object> kwargs, [NotNone] params object?[] args) : this(args) {
+            public methodcaller([ParamDictionary] IDictionary<object, object> kwargs, [NotNone] params object?[] args) : this(args) {
                 _dict = kwargs;
             }
 

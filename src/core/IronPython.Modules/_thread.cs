@@ -139,7 +139,7 @@ namespace IronPython.Modules {
         #endregion
 
         [PythonType, PythonHidden]
-        public class @lock {
+        public sealed class @lock {
             private AutoResetEvent blockEvent;
             private Thread curHolder;
 
@@ -148,7 +148,7 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            public void __exit__(CodeContext/*!*/ context, params object[] args) {
+            public void __exit__(CodeContext/*!*/ context, [NotNone] params object[] args) {
                 release(context);
             }
 
@@ -171,10 +171,6 @@ namespace IronPython.Modules {
                     }
                     GC.KeepAlive(this);
                 }
-            }
-
-            public void release(CodeContext/*!*/ context, params object[] param) {
-                release(context);
             }
 
             public void release(CodeContext/*!*/ context) {

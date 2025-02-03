@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
-using System.Threading;
+
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -24,9 +21,11 @@ namespace IronPython.Analyzer {
         private static readonly DiagnosticDescriptor Rule3 = new DiagnosticDescriptor("IPY03", title: "BytesLikeAttribute used on a not supported type", messageFormat: "Parameter '{0}' declared bytes-like on unsupported type '{1}'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "BytesLikeAttribute is only allowed on parameters of type IReadOnlyList<byte>, or IList<byte>.");
         private static readonly DiagnosticDescriptor Rule4 = new DiagnosticDescriptor("IPY04", title: "Call to PythonTypeOps.GetName", messageFormat: "Direct call to PythonTypeOps.GetName", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "To obtain a name of a python type of a given object to display to a user, use PythonOps.GetPythonTypeName.");
         private static readonly DiagnosticDescriptor Rule5 = new DiagnosticDescriptor("IPY05", title: "DLR NotNullAttribute accessed without an alias", messageFormat: "Microsoft.Scripting.Runtime.NotNullAttribute should be accessed though alias 'NotNone'", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "NotNullAttribute is ambiguous between 'System.Diagnostics.CodeAnalysis.NotNullAttribute' and 'Microsoft.Scripting.Runtime.NotNullAttribute'. The latter should be accesses as 'NotNoneAttribute'.");
+        private static readonly DiagnosticDescriptor Rule6 = new DiagnosticDescriptor("IPY06", title: "Unnecessary NotNoneAttribute", messageFormat: "Parameter '{0}' has an unnecessary NotNoneAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "ParamDictionary do not require a NotNoneAttribute.");
+        private static readonly DiagnosticDescriptor Rule7 = new DiagnosticDescriptor("IPY07", title: "Parameters with params does not have the NotNoneAttribute", messageFormat: "Parameter '{0}' does not have the NotNoneAttribute", category: "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true, description: "Parameters with params should use the NotNoneAttribute to prevent binding to null.");
 #pragma warning restore RS2008 // Enable analyzer release tracking
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7); } }
 
         public override void Initialize(AnalysisContext context) {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
@@ -62,15 +61,37 @@ namespace IronPython.Analyzer {
                 var ireadOnlyListOfByteType = ireadOnlyListType.Construct(byteType);
                 var ilistOfByteType = ilistType.Construct(byteType);
 
+                var paramDictionaryAttributeSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.Scripting.ParamDictionaryAttribute");
+                var paramArrayAttributeSymbol = context.Compilation.GetTypeByMetadataName("System.ParamArrayAttribute");
+
+                // PerformModuleReload is special and we don't need NotNone annotations
+                if (methodSymbol.Name == "PerformModuleReload") return;
+
                 foreach (IParameterSymbol parameterSymbol in methodSymbol.Parameters) {
-                    if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol, SymbolEqualityComparer.Default))
+                    var attributes = parameterSymbol.GetAttributes();
+
+                    if (attributes.Any(x => x.AttributeClass.Equals(bytesLikeAttributeSymbol, SymbolEqualityComparer.Default))
                             && !parameterSymbol.Type.Equals(ireadOnlyListOfByteType, SymbolEqualityComparer.Default)
                             && !parameterSymbol.Type.Equals(ilistOfByteType, SymbolEqualityComparer.Default)) {
                         var diagnostic = Diagnostic.Create(Rule3, parameterSymbol.Locations[0], parameterSymbol.Name, parameterSymbol.Type.MetadataName);
                         context.ReportDiagnostic(diagnostic);
                         continue;
                     }
-                    if (parameterSymbol.GetAttributes().FirstOrDefault(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default)) is AttributeData attr) {
+
+                    if (parameterSymbol.IsParams && attributes.All(x => !x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))) {
+                        var diagnostic = Diagnostic.Create(Rule7, parameterSymbol.Locations[0], parameterSymbol.Name);
+                        context.ReportDiagnostic(diagnostic);
+                    }
+
+                    if (attributes.Any(x => x.AttributeClass.Equals(paramDictionaryAttributeSymbol, SymbolEqualityComparer.Default))) {
+                        if (attributes.Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))) {
+                            var diagnostic = Diagnostic.Create(Rule6, parameterSymbol.Locations[0], parameterSymbol.Name);
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                        continue;
+                    }
+
+                    if (attributes.FirstOrDefault(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default)) is AttributeData attr) {
                         SyntaxNode node = attr.ApplicationSyntaxReference.GetSyntax(); // Async?
                         if (node.GetLastToken().Text != "NotNone") {
                             var diagnostic = Diagnostic.Create(Rule5, node.GetLocation());
@@ -81,14 +102,14 @@ namespace IronPython.Analyzer {
                     if (parameterSymbol.Type.Equals(codeContextSymbol, SymbolEqualityComparer.Default)) continue;
                     if (SymbolEqualityComparer.Default.Equals(parameterSymbol.Type.BaseType, siteLocalStorageSymbol)) continue;
                     if (parameterSymbol.NullableAnnotation == NullableAnnotation.NotAnnotated) {
-                        if (!parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))
-                            && !parameterSymbol.GetAttributes().Any(x => IsAllowNull(x.AttributeClass))) {
+                        if (!attributes.Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))
+                            && !attributes.Any(x => IsAllowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule1, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
                         }
                     } else if (parameterSymbol.NullableAnnotation == NullableAnnotation.Annotated) {
-                        if (parameterSymbol.GetAttributes().Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))
-                            && !parameterSymbol.GetAttributes().Any(x => IsDisallowNull(x.AttributeClass))) {
+                        if (attributes.Any(x => x.AttributeClass.Equals(notNoneAttributeSymbol, SymbolEqualityComparer.Default))
+                            && !attributes.Any(x => IsDisallowNull(x.AttributeClass))) {
                             var diagnostic = Diagnostic.Create(Rule2, parameterSymbol.Locations[0], parameterSymbol.Name);
                             context.ReportDiagnostic(diagnostic);
                         }

@@ -635,12 +635,12 @@ namespace IronPython.Modules {
             #endregion
 
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, params object[] args) {
+            public object Call(CodeContext/*!*/ context, [NotNone] params object[] args) {
                 return context.LanguageContext.CallSplat(GetObject(), args);
             }
                         
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, [NotNone] params object[] args) {
                 return PythonCalls.CallWithKeywordArgs(context, GetObject(), args, dict);
             }
 
@@ -804,13 +804,13 @@ namespace IronPython.Modules {
         }
 
         [SpecialName]
-        public object Call(CodeContext context, params object[] args) {
+        public object Call(CodeContext context, [NotNone] params object[] args) {
             return PythonOps.Invoke(context, target.Target, name, args);
         }
 
 
         [SpecialName]
-        public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+        public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, [NotNone] params object[] args) {
             object targetMethod;
             if (!DynamicHelpers.GetPythonType(target.Target).TryGetBoundMember(context, target.Target, name, out targetMethod))
                 throw PythonOps.AttributeError("type {0} has no attribute {1}",

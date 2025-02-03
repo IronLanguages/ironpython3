@@ -297,7 +297,7 @@ namespace IronPython.Runtime {
             return this;
         }
 
-        public void __exit__(CodeContext/*!*/ context, params object?[]? excinfo) {
+        public void __exit__(CodeContext/*!*/ context, [NotNone] params object?[] excinfo) {
             release(context);
         }
 

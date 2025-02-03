@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,12 +11,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("math", typeof(IronPython.Modules.PythonMath))]
 namespace IronPython.Modules {
@@ -78,7 +78,7 @@ namespace IronPython.Modules {
             return hi;
         }
 
-        public static double fsum(IEnumerable e) {
+        public static double fsum([NotNone] IEnumerable e) {
             // msum from https://code.activestate.com/recipes/393090/
             var partials = new List<double>();
             foreach (var v in e.Cast<object>().Select(o => Converter.ConvertToDouble(o))) {
@@ -205,7 +205,7 @@ namespace IronPython.Modules {
             return value.Log();
         }
 
-        public static double log(object value) {
+        public static double log(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -227,7 +227,7 @@ namespace IronPython.Modules {
             return Check(value.Log(newBase));
         }
 
-        public static double log(object value, double newBase) {
+        public static double log(object? value, double newBase) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -287,7 +287,7 @@ namespace IronPython.Modules {
             return value.Log10();
         }
 
-        public static double log10(object value) {
+        public static double log10(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -320,7 +320,7 @@ namespace IronPython.Modules {
             return log(value + BigInteger.One);
         }
 
-        public static double log1p(object value) {
+        public static double log1p(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -353,7 +353,7 @@ namespace IronPython.Modules {
 #endif
         }
 
-        public static double asinh(object value) {
+        public static double asinh(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -385,7 +385,7 @@ namespace IronPython.Modules {
 #endif
         }
 
-        public static double acosh(object value) {
+        public static double acosh(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -420,7 +420,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static double atanh(object value) {
+        public static double atanh(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -448,7 +448,7 @@ namespace IronPython.Modules {
             return Math.Atan2(v0, v1);
         }
 
-        public static object ceil(CodeContext context, object x) {
+        public static object ceil(CodeContext context, object? x) {
             object val;
             if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__ceil__", out val)) {
                 return val;
@@ -508,7 +508,7 @@ namespace IronPython.Modules {
             return (int)val;
         }
 
-        public static object factorial(object value) {
+        public static object factorial(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -519,7 +519,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object floor(CodeContext context, object x) {
+        public static object floor(CodeContext context, object? x) {
             object val;
             if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__floor__", out val)) {
                 return val;
@@ -553,8 +553,8 @@ namespace IronPython.Modules {
             return Check(v0, MathUtils.LogGamma(v0));
         }
 
-        public static object trunc(CodeContext/*!*/ context, object value) {
-            object func;
+        public static object? trunc(CodeContext/*!*/ context, object? value) {
+            object? func;
             if (PythonOps.TryGetBoundAttr(value, "__trunc__", out func)) {
                 return PythonOps.CallWithContext(context, func);
             } else {
@@ -574,7 +574,7 @@ namespace IronPython.Modules {
             return false;
         }
 
-        public static bool isinf(object value) {
+        public static bool isinf(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -592,7 +592,7 @@ namespace IronPython.Modules {
             return false;
         }
 
-        public static bool isnan(object value) {
+        public static bool isnan(object? value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
             double val;
@@ -606,7 +606,7 @@ namespace IronPython.Modules {
             return DoubleOps.CopySign(x, y);
         }
 
-        public static double copysign(object x, object y) {
+        public static double copysign(object? x, object? y) {
             double val, sign;
             if (!Converter.TryConvertToDouble(x, out val) ||
                 !Converter.TryConvertToDouble(y, out sign)) {
@@ -623,10 +623,10 @@ namespace IronPython.Modules {
             return res;
         }
 
-        public static object gcd(object x, object y) {
+        public static object gcd(object? x, object? y) {
             return gcd(ObjectToBigInteger(x), ObjectToBigInteger(y));
 
-            static BigInteger ObjectToBigInteger(object x) {
+            static BigInteger ObjectToBigInteger(object? x) {
                 BigInteger a;
                 switch (PythonOps.Index(x)) {
                     case int i:

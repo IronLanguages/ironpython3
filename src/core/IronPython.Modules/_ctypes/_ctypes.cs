@@ -770,7 +770,7 @@ namespace IronPython.Modules {
 
             public _COMError(PythonType cls) : base(cls) { }
 
-            public override void __init__(params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 base.__init__(args);
                 if (args.Length < 3) {
                     throw PythonOps.TypeError($"COMError() takes exactly 4 arguments({args.Length} given)");

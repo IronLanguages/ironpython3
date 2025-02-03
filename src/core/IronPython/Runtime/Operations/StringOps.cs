@@ -16,18 +16,18 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Text;
+using System.Threading;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Types;
-
-using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 namespace IronPython.Runtime.Operations {
     /// <summary>
@@ -1319,12 +1319,12 @@ namespace IronPython.Runtime.Operations {
         ///
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
-        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
+        public static string/*!*/ format(CodeContext/*!*/ context, [NotNone] string format_string\u00F8, [ParamDictionary] IDictionary<object, object> kwargs, [NotNone] params object[] args) {
             return NewStringFormatter.FormatString(
                 context.LanguageContext,
                 format_string\u00F8,
-                PythonTuple.MakeTuple(args\u00F8),
-                kwargs\u00F8
+                PythonTuple.MakeTuple(args),
+                kwargs
             );
         }
 
@@ -1730,7 +1730,7 @@ namespace IronPython.Runtime.Operations {
             return b?.ToString() ?? s.Substring(start, count);
         }
 
-        private static void StringBuilderInit([NotNull]ref StringBuilder? sb, string s, int start, int end) {
+        private static void StringBuilderInit([NotNull] ref StringBuilder? sb, string s, int start, int end) {
             if (sb != null) return;
 
             sb = new StringBuilder(s.Length);
@@ -1913,7 +1913,7 @@ namespace IronPython.Runtime.Operations {
         internal static Bytes DoEncodeAscii(string s)
             => DoEncode(DefaultContext.Default, s, "strict", "ascii", Encoding.ASCII, includePreamble: false);
 
-        internal static bool TryEncodeAscii(string s, [NotNullWhen(true)]out Bytes? b) {
+        internal static bool TryEncodeAscii(string s, [NotNullWhen(true)] out Bytes? b) {
             try {
                 b = DoEncodeAscii(s);
                 return true;
@@ -2092,9 +2092,9 @@ namespace IronPython.Runtime.Operations {
 #if DEBUG
                 foreach (KeyValuePair<string, Lazy<Encoding?>> kvp in d) {
                     // all codecs should be stored in lowercase because we only look up from lowercase strings
-                    #pragma warning disable CA1862 // disable warning about comparing with ToLower()
+#pragma warning disable CA1862 // disable warning about comparing with ToLower()
                     Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
-                    #pragma warning restore
+#pragma warning restore
                     // all codec names should use underscores instead of dashes to match lookup values
                     Debug.Assert(kvp.Key.IndexOf('-') < 0);
                 }
@@ -2186,7 +2186,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static void AssertStringOrTuple([NotNull]object? prefix) {
+        private static void AssertStringOrTuple([NotNull] object? prefix) {
             if (prefix == null) {
                 throw PythonOps.TypeError("expected string or tuple, got NoneType");
             }
@@ -2751,7 +2751,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private delegate string? DecodeErrorHandler(IList<byte> bytes, int start, ref int end);
-        private delegate Bytes?  EncodeErrorHandler(string text, int start, ref int end);
+        private delegate Bytes? EncodeErrorHandler(string text, int start, ref int end);
 
         private static object SurrogateEscapeErrors(object unicodeError) {
             return SurrogateErrorsImpl(unicodeError, surrogateEscapeDecode, surrogateEscapeEncode);
@@ -2910,7 +2910,7 @@ namespace IronPython.Runtime.Operations {
                         int end = dfe.BytesUnknown.Length;
                         string? res = decodeFallback(dfe.BytesUnknown, 0, ref end);
                         if (res == null) throw dfe;
-                        return PythonTuple.MakeTuple(res,  dfe.Index + end);
+                        return PythonTuple.MakeTuple(res, dfe.Index + end);
                     }
 
                 case EncoderFallbackException efe: {

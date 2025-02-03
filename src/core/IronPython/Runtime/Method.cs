@@ -45,11 +45,11 @@ namespace IronPython.Runtime {
         internal PythonType im_class { get; } // TODO: get rid of this property?
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, params object[] args)
+        public object Call(CodeContext/*!*/ context, [NotNone] params object[] args)
             => context.LanguageContext.CallSplat(this, args);
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args)
+        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, [NotNone] params object[] args)
             => context.LanguageContext.CallWithKeywords(this, args, kwArgs);
 
         #region Object Overrides

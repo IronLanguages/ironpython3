@@ -17,8 +17,8 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Runtime {
     [PythonHidden, PythonType("types.SimpleNamespace")]
     public class SimpleNamespace {
-        public SimpleNamespace([ParamDictionary, NotNone] Dictionary<string, object?> kwargs\u00F8) {
-            __dict__ = new PythonDictionary(kwargsø);
+        public SimpleNamespace([ParamDictionary] Dictionary<string, object?> kwargs) {
+            __dict__ = new PythonDictionary(kwargs);
         }
 
         public PythonDictionary __dict__ { get; }

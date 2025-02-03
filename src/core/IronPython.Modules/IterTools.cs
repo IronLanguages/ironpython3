@@ -142,7 +142,7 @@ namespace IronPython.Modules {
 
             private chain() { }
 
-            public chain(params object[] iterables) {
+            public chain([NotNone] params object[] iterables) {
                 SetInnerEnumerator(PythonTuple.MakeTuple(iterables));
             }
 
@@ -667,7 +667,7 @@ namespace IronPython.Modules {
             private readonly object _fill;
             private PythonTuple _current;
 
-            public zip_longest(params object[] iterables) {
+            public zip_longest([NotNone] params object[] iterables) {
                 _iters = new IEnumerator[iterables.Length];
 
                 for (int i = 0; i < iterables.Length; i++) {
@@ -675,7 +675,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public zip_longest([ParamDictionary] IDictionary<object, object> paramDict, params object[] iterables) {
+            public zip_longest([ParamDictionary] IDictionary<object, object> paramDict, [NotNone] params object[] iterables) {
                 object fill;
 
                 if (paramDict.TryGetValue("fillvalue", out fill)) {
@@ -762,12 +762,12 @@ namespace IronPython.Modules {
         public class product : IterBase {
             private PythonTuple[] tuples;
 
-            public product(CodeContext context, params object[] iterables) {
+            public product(CodeContext context, [NotNone] params object[] iterables) {
                 tuples = ArrayUtils.ConvertAll(iterables, x => new PythonTuple(PythonOps.GetEnumerator(x)));
                 InnerEnumerator = Yielder(tuples);
             }
 
-            public product(CodeContext context, [ParamDictionary] IDictionary<object, object> paramDict, params object[] iterables) {
+            public product(CodeContext context, [ParamDictionary] IDictionary<object, object> paramDict, [NotNone] params object[] iterables) {
                 object repeat;
                 int iRepeat = 1;
                 if (paramDict.TryGetValue("repeat", out repeat)) {

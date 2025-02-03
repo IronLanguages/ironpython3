@@ -57,7 +57,7 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> dict, [NotNone] params object[] args) {
+        public static object __new__(CodeContext context, [NotNone] PythonType cls, [ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) {
             if (cls == TypeCache.ByteArray) return new ByteArray();
             return cls.CreateInstance(context);
         }

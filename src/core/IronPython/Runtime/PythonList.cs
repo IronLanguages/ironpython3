@@ -121,10 +121,10 @@ namespace IronPython.Runtime {
         public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, object? arg)
             => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] params object[] args\u00F8)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] params object[] args)
             => __new__(context, cls);
 
-        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> kwArgs\u00F8, [NotNone] params object[] args\u00F8)
+        public static object __new__(CodeContext/*!*/ context, [NotNone] PythonType cls, [ParamDictionary] IDictionary<object, object> kwArgs, [NotNone] params object[] args)
             => __new__(context, cls);
 
         #endregion
@@ -898,7 +898,7 @@ namespace IronPython.Runtime {
         }
 
         public void sort(CodeContext/*!*/ context,
-            [ParamDictionary, NotNone] IDictionary<string, object> kwArgs) {
+            [ParamDictionary] IDictionary<string, object> kwArgs) {
 
             object? key = null;
             bool reverse = false;

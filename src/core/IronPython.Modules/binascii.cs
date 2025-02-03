@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.IO;
 using System.Numerics;
@@ -318,16 +320,16 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
 
         #region hqx
 
-        public static object a2b_hqx(object data) {
+        public static object a2b_hqx(object? data) {
             throw new NotImplementedException();
         }
-        public static object rledecode_hqx(object data) {
+        public static object rledecode_hqx(object? data) {
             throw new NotImplementedException();
         }
-        public static object rlecode_hqx(object data) {
+        public static object rlecode_hqx(object? data) {
             throw new NotImplementedException();
         }
-        public static object b2a_hqx(object data) {
+        public static object b2a_hqx(object? data) {
             throw new NotImplementedException();
         }
 
@@ -649,7 +651,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         }
 
         private static Bytes ToBytes(this string s) {
-            if (StringOps.TryEncodeAscii(s, out Bytes ascii))
+            if (StringOps.TryEncodeAscii(s, out Bytes? ascii))
                 return ascii;
             throw PythonOps.ValueError("string argument should contain only ASCII characters");
         }

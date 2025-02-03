@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-
-using Microsoft.Win32.SafeHandles;
 
 using IronPython.Runtime;
 
@@ -16,13 +16,13 @@ namespace IronPython.Modules {
     public static class MultiProcessing {
         // TODO: implement SemLock and sem_unlink
 
-        public static object flags { get; set; } = new PythonDictionary();
+        public static object? flags { get; set; } = new PythonDictionary();
 
         [DllImport("ws2_32.dll", ExactSpelling = true, SetLastError = true)]
         private static extern SocketError closesocket([In] IntPtr socketHandle);
 
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static object closesocket(int handle) {
+        public static object? closesocket(int handle) {
             var error = closesocket(new IntPtr(handle));
             // TODO: raise error
             return null;

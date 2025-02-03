@@ -57,11 +57,11 @@ namespace IronPython.Modules {
             #region Python construction
 
             [Documentation("creates a new uninitialized struct object - all arguments are ignored")]
-            public Struct(params object[] args) {
+            public Struct([NotNone] params object[] args) {
             }
 
             [Documentation("creates a new uninitialized struct object - all arguments are ignored")]
-            public Struct([ParamDictionary] IDictionary<object, object> kwArgs, params object[] args) {
+            public Struct([ParamDictionary] IDictionary<object, object> kwArgs, [NotNone] params object[] args) {
             }
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]
@@ -84,7 +84,7 @@ namespace IronPython.Modules {
             public string format { get; private set; }
 
             [Documentation("returns a string consisting of the values serialized according to the format of the struct object")]
-            public Bytes/*!*/ pack(CodeContext/*!*/ context, params object[] values) {
+            public Bytes/*!*/ pack(CodeContext/*!*/ context, [NotNone] params object[] values) {
                 if (values.Length != _encodingCount) {
                     throw Error(context, $"pack requires exactly {_encodingCount} arguments");
                 }
@@ -221,7 +221,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("Stores the deserialized data into the provided array")]
-            public void pack_into(CodeContext/*!*/ context, [NotNone] ByteArray/*!*/ buffer, int offset, params object[] args) {
+            public void pack_into(CodeContext/*!*/ context, [NotNone] ByteArray/*!*/ buffer, int offset, [NotNone] params object[] args) {
                 var existing = buffer.UnsafeByteList;
 
                 if (offset + size > existing.Count) {
@@ -235,7 +235,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void pack_into(CodeContext/*!*/ context, [NotNone] IBufferProtocol/*!*/ buffer, int offset, params object[] args) {
+            public void pack_into(CodeContext/*!*/ context, [NotNone] IBufferProtocol/*!*/ buffer, int offset, [NotNone] params object[] args) {
                 using var existing = buffer.GetBufferNoThrow(BufferFlags.Writable)
                     ?? throw PythonOps.TypeError("argument must be read-write bytes-like object, not {0}", PythonOps.GetPythonTypeName(buffer));
 
@@ -840,16 +840,16 @@ namespace IronPython.Modules {
         }
 
         [Documentation("Return string containing values v1, v2, ... packed according to fmt.")]
-        public static Bytes/*!*/ pack(CodeContext/*!*/ context, object fmt/*!*/, params object[] values) {
+        public static Bytes/*!*/ pack(CodeContext/*!*/ context, object fmt/*!*/, [NotNone] params object[] values) {
             return GetStructFromCache(context, fmt).pack(context, values);
         }
 
         [Documentation("Pack the values v1, v2, ... according to fmt.\nWrite the packed bytes into the writable buffer buf starting at offset.")]
-        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] ByteArray/*!*/ buffer, int offset, params object[] args) {
+        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] ByteArray/*!*/ buffer, int offset, [NotNone] params object[] args) {
             GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 
-        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] IBufferProtocol/*!*/ buffer, int offset, params object[] args) {
+        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNone] IBufferProtocol/*!*/ buffer, int offset, [NotNone] params object[] args) {
             GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 

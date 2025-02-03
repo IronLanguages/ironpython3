@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
@@ -119,32 +120,180 @@ public static class PythonFcntl {
     #endregion
 
 
-    #region ioctl
+    #region  ioctl
 
-    // supporting fcntl.ioctl(fileno, termios.TIOCGWINSZ, buf)
-    // where buf = array.array('h', [0, 0, 0, 0])
-    public static object ioctl(CodeContext context, int fd, int cmd, [NotNone] IBufferProtocol arg, int mutate_flag = 1) {
-        if (cmd == PythonTermios.TIOCGWINSZ) {
-            using IPythonBuffer buf = arg.GetBuffer();
+    // The actual signature of ioctl is
+    //
+    //      int ioctl(int, unsigned long, ...)
+    //
+    // but .NET, as of Jan 2025, still does not support varargs in P/Invoke [1]
+    // so as a workaround, nonvararg prototypes are defined for each architecture.
+    // [1]: https://github.com/dotnet/runtime/issues/48796
 
-            Span<short> winsize = stackalloc short[4];
-            winsize[0] = (short)Console.WindowHeight;
-            winsize[1] = (short)Console.WindowWidth;
-            winsize[2] = (short)Console.BufferHeight;  // buffer height and width are not accurate on macOS
-            winsize[3] = (short)Console.BufferWidth;
-            Span<byte> payload = MemoryMarshal.Cast<short, byte>(winsize);
+#if NET10_0_OR_GREATER
+#error Check if this version of .NET supports P/Invoke of variadic functions; if not, change the condition to recheck at next major .NET version
+#endif
 
-            if (buf.IsReadOnly || mutate_flag == 0) {
-                byte[] res = buf.ToArray();
-                payload.Slice(0, Math.Min(payload.Length, res.Length)).CopyTo(res);
-                return Bytes.Make(res);
-            } else {
-                var res = buf.AsSpan();
-                payload.Slice(0, Math.Min(payload.Length, res.Length)).CopyTo(res);
-                return 0;
-            }
+    [DllImport("libc", SetLastError = true, EntryPoint = "ioctl")]
+    private static extern unsafe int _ioctl(int fd, ulong request, void* arg);
+    [DllImport("libc", SetLastError = true, EntryPoint = "ioctl")]
+    private static extern int _ioctl(int fd, ulong request, long arg);
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "ioctl")]
+    private static extern unsafe int _ioctl_arm64(int fd, ulong request,
+        // pad register arguments (first 8) to force vararg on stack
+        // ARM: https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst#appendix-variable-argument-lists
+        // Apple: https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms
+        nint r2, nint r3, nint r4, nint r5, nint r6, nint r7,
+        void* arg);
+    [DllImport("libc", SetLastError = true, EntryPoint = "ioctl")]
+    private static extern int _ioctl_arm64(int fd, ulong request,
+        nint r2, nint r3, nint r4, nint r5, nint r6, nint r7,
+        long arg);
+
+
+    // request will be int, uint or BigInteger, and in Python is limited to values that can fit in 32 bits (unchecked)
+    // long should capture all allowed values
+    // return value is int, bytes, or LightException
+    [LightThrowing]
+    public static object ioctl(int fd, long request, [NotNone] IBufferProtocol arg, bool mutate_flag = true) {
+        CheckFileDescriptor(fd);
+
+        ulong cmd = unchecked((ulong)request);
+
+        const int defaultBufSize = 1024;
+        int bufSize;
+        IPythonBuffer? buf = null;
+
+        if (mutate_flag) {
+            buf = arg.GetBufferNoThrow(BufferFlags.Writable);
         }
-        throw new NotImplementedException($"ioctl: unsupported command {cmd}");
+        if (buf is not null) {
+            bufSize = buf.AsReadOnlySpan().Length;
+        } else {
+            buf = arg.GetBuffer(BufferFlags.Simple);
+            bufSize = buf.AsReadOnlySpan().Length;
+            if (bufSize > defaultBufSize) {
+                buf.Dispose();
+                throw PythonOps.ValueError("ioctl bytes arg too long");
+            }
+            mutate_flag = false;  // return a buffer, not integer
+        }
+        bool in_place = bufSize > defaultBufSize;  // only large buffers are mutated in place
+        Debug.Assert(!in_place || mutate_flag);    // in_place implies mutate_flag
+
+#if !NETCOREAPP
+        throw new PlatformNotSupportedException("ioctl is not supported on Mono");
+#else
+        try {
+            unsafe {
+                MemoryHandle hmem = default;
+                void* ptr = null;
+                if (in_place) {
+                    hmem = buf.Pin();
+                } else {
+                    ptr = NativeMemory.AllocZeroed(defaultBufSize + 1); // +1 for extra nul byte
+                }
+                try {
+                    if (in_place) {
+                        ptr = hmem.Pointer;
+                    } else {
+                        Debug.Assert(bufSize <= defaultBufSize);
+                        var dest = new Span<byte>((byte*)ptr, bufSize);
+                        buf.AsReadOnlySpan().CopyTo(dest);
+                    }
+                    Debug.Assert(ptr != null);
+
+                    int result;
+                    Errno errno;
+                    do {
+                        if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64) {
+                            // workaround for Arm64 vararg calling convention (but not for ARM64EC on Windows)
+                            result = _ioctl_arm64(fd, cmd, 0, 0, 0, 0, 0, 0, ptr);
+                        } else {
+                            result = _ioctl(fd, cmd, ptr);
+                        }
+                    } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
+
+                    if (result == -1) {
+                        return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+                    }
+                    if (mutate_flag) {
+                        if (!in_place) {
+                            var src = new Span<byte>((byte*)ptr, bufSize);
+                            src.CopyTo(buf.AsSpan());
+                        }
+                        return ScriptingRuntimeHelpers.Int32ToObject(result);
+                    } else {
+                        Debug.Assert(!in_place);
+                        byte[] response = new byte[bufSize];
+                        var src = new Span<byte>((byte*)ptr, bufSize);
+                        src.CopyTo(response);
+                        return Bytes.Make(response);
+                    }
+                } finally {
+                    if (in_place) {
+                        hmem.Dispose();
+                    } else {
+                        NativeMemory.Free(ptr);
+                    }
+                }
+            }
+        } finally {
+            buf.Dispose();
+        }
+#endif
+    }
+
+
+    [LightThrowing]
+    public static object ioctl(int fd, long request, [Optional] object? arg, bool mutate_flag = true) {
+        CheckFileDescriptor(fd);
+
+        ulong cmd = unchecked((ulong)request);
+
+        long data = arg switch {
+            Missing => 0,
+            int i => i,
+            uint ui => ui,
+            long l => l,
+            ulong ul => (long)ul,
+            BigInteger bi => (long)bi,
+            Extensible<BigInteger> ebi => (long)ebi.Value,
+            _ => throw PythonOps.TypeErrorForBadInstance("integer argument expected, got {0}", arg)
+        };
+
+#if !NETCOREAPP
+        throw new PlatformNotSupportedException("ioctl is not supported on Mono");
+#else
+        int result;
+        Errno errno;
+        do {
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64) {
+                // workaround for Arm64 vararg calling convention (but not for ARM64EC on Windows)
+                result = _ioctl_arm64(fd, cmd, 0, 0, 0, 0, 0, 0, data);
+            } else {
+                result = _ioctl(fd, cmd, data);
+            }
+        } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
+
+        if (result == -1) {
+            return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+        }
+        return ScriptingRuntimeHelpers.Int32ToObject(result);
+#endif
+    }
+
+
+    [LightThrowing]
+    public static object ioctl(CodeContext context, object? fd, long request, [Optional] object? arg, bool mutate_flag = true) {
+        int fileno = GetFileDescriptor(context, fd);
+
+        if (arg is IBufferProtocol bp) {
+            return ioctl(fileno, request, bp, mutate_flag);
+        }
+
+        return ioctl(fileno, request, arg, mutate_flag);
     }
 
     #endregion

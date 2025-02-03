@@ -1314,10 +1314,13 @@ namespace IronPython.Modules {
 
             #endregion
 
-            public IPythonBuffer GetBuffer(BufferFlags flags = BufferFlags.Simple) {
-                if (flags.HasFlag(BufferFlags.Writable) && IsReadOnly)
-                    throw PythonOps.BufferError("Object is not writable.");
-
+            public IPythonBuffer? GetBuffer(BufferFlags flags, bool throwOnError) {
+                if (flags.HasFlag(BufferFlags.Writable) && IsReadOnly) {
+                    if (throwOnError) {
+                        throw PythonOps.BufferError("Object is not writable.");
+                    }
+                    return null;
+                }
                 return new MmapBuffer(this, flags);
             }
 

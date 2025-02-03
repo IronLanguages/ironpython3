@@ -17,7 +17,7 @@ namespace IronPython.Runtime {
     /// Equivalent functionality of CPython's <a href="https://docs.python.org/3/c-api/buffer.html">Buffer Protocol</a>.
     /// </summary>
     public interface IBufferProtocol {
-        IPythonBuffer GetBuffer(BufferFlags flags = BufferFlags.Simple);
+        IPythonBuffer? GetBuffer(BufferFlags flags, bool throwOnError);
     }
 
     /// <summary>
@@ -120,9 +120,12 @@ namespace IronPython.Runtime {
     }
 
     internal static class BufferProtocolExtensions {
+        internal static IPythonBuffer GetBuffer(this IBufferProtocol bufferProtocol, BufferFlags flags = BufferFlags.Simple)
+            => bufferProtocol.GetBuffer(flags, throwOnError: true) ?? throw new BufferException("Buffer type not supported");
+
         internal static IPythonBuffer? GetBufferNoThrow(this IBufferProtocol bufferProtocol, BufferFlags flags = BufferFlags.Simple) {
             try {
-                return bufferProtocol.GetBuffer(flags);
+                return bufferProtocol.GetBuffer(flags, throwOnError: false);
             } catch (BufferException) {
                 return null;
             }

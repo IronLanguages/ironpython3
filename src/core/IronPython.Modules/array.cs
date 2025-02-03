@@ -1037,7 +1037,7 @@ namespace IronPython.Modules {
 
             #region IBufferProtocol Members
 
-            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError) {
                 return _data.GetBuffer(this, _typeCode.ToString(), flags);
             }
 

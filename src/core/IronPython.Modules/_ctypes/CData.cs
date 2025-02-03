@@ -125,7 +125,7 @@ namespace IronPython.Modules {
 
             private int _numExports;
 
-            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError) {
                 if (_disposed) throw new ObjectDisposedException(GetType().Name);
                 _ = MemHolder; // check if fully initialized
                 Interlocked.Increment(ref _numExports);

@@ -1584,7 +1584,7 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
 
-        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError) {
             return _bytes.GetBuffer(this, "B", flags);
         }
 

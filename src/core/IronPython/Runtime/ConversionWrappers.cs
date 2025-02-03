@@ -436,13 +436,16 @@ namespace IronPython.Runtime {
             _memory = memory;
         }
 
-        public IPythonBuffer GetBuffer(BufferFlags flags) {
+        public IPythonBuffer? GetBuffer(BufferFlags flags, bool throwOnError) {
             if (_memory.HasValue) {
                 return new MemoryBufferWrapper(_memory.Value, flags);
             }
 
             if (flags.HasFlag(BufferFlags.Writable)) {
-                throw Operations.PythonOps.BufferError("ReadOnlyMemory is not writable.");
+                if (throwOnError) {
+                    throw Operations.PythonOps.BufferError("ReadOnlyMemory is not writable.");
+                }
+                return null;
             }
 
             return new MemoryBufferWrapper(_rom, flags);

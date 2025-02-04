@@ -11,6 +11,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Text;
 
 using Mono.Unix;
 using Mono.Unix.Native;
@@ -78,15 +79,13 @@ public static class PythonFcntl {
     public static object fcntl(int fd, int cmd, [Optional] object? arg) {
         CheckFileDescriptor(fd);
 
-        long data = arg switch {
-            Missing => 0,
-            int i => i,
-            uint ui => ui,
-            long l => l,
-            ulong ul => (long)ul,
-            BigInteger bi => (long)bi,
-            Extensible<BigInteger> ebi => (long)ebi.Value,
-            _ => throw PythonOps.TypeErrorForBadInstance("integer argument expected, got {0}", arg)
+        if (!TryGetInt64(arg, out long data)) {
+            return arg switch {
+                Bytes bytes           => fcntl(fd, cmd, bytes),
+                string s              => fcntl(fd, cmd, Bytes.Make(Encoding.UTF8.GetBytes(s))),
+                Extensible<string> es => fcntl(fd, cmd, Bytes.Make(Encoding.UTF8.GetBytes(es.Value))),
+                _                     => throw PythonOps.TypeErrorForBadInstance("integer or bytes argument expected, got {0}", arg)
+            };
         };
 
         if (!NativeConvert.TryToFcntlCommand(cmd, out FcntlCommand fcntlCommand)) {
@@ -107,15 +106,8 @@ public static class PythonFcntl {
 
 
     [LightThrowing]
-    public static object fcntl(CodeContext context, object? fd, int cmd, object? arg = null) {
-        int fileno = GetFileDescriptor(context, fd);
-
-        if (arg is Bytes bytes) {
-            return fcntl(fileno, cmd, bytes);
-        }
-
-        return fcntl(fileno, cmd, arg);
-    }
+    public static object fcntl(CodeContext context, object? fd, int cmd, [Optional] object? arg)
+        => fcntl(GetFileDescriptor(context, fd), cmd, arg);
 
     #endregion
 
@@ -235,18 +227,16 @@ public static class PythonFcntl {
     public static object ioctl(int fd, long request, [Optional] object? arg, bool mutate_flag = true) {
         CheckFileDescriptor(fd);
 
-        ulong cmd = unchecked((ulong)request);
-
-        long data = arg switch {
-            Missing => 0,
-            int i => i,
-            uint ui => ui,
-            long l => l,
-            ulong ul => (long)ul,
-            BigInteger bi => (long)bi,
-            Extensible<BigInteger> ebi => (long)ebi.Value,
-            _ => throw PythonOps.TypeErrorForBadInstance("integer argument expected, got {0}", arg)
+        if (!TryGetInt64(arg, out long data)) {
+            return arg switch {
+                IBufferProtocol bp    => ioctl(fd, request, bp),
+                string s              => ioctl(fd, request, Bytes.Make(Encoding.UTF8.GetBytes(s))),
+                Extensible<string> es => ioctl(fd, request, Bytes.Make(Encoding.UTF8.GetBytes(es.Value))),
+                _                     => throw PythonOps.TypeErrorForBadInstance("integer or a bytes-like argument expected, got {0}", arg)
+            };
         };
+
+        ulong cmd = unchecked((ulong)request);
 
 #if !NETCOREAPP
         throw new PlatformNotSupportedException("ioctl is not supported on Mono");
@@ -271,15 +261,8 @@ public static class PythonFcntl {
 
 
     [LightThrowing]
-    public static object ioctl(CodeContext context, object? fd, long request, [Optional] object? arg, bool mutate_flag = true) {
-        int fileno = GetFileDescriptor(context, fd);
-
-        if (arg is IBufferProtocol bp) {
-            return ioctl(fileno, request, bp, mutate_flag);
-        }
-
-        return ioctl(fileno, request, arg, mutate_flag);
-    }
+    public static object ioctl(CodeContext context, object? fd, long request, [Optional] object? arg, bool mutate_flag = true)
+        => ioctl(GetFileDescriptor(context, fd), request, arg, mutate_flag);
 
     #endregion
 
@@ -374,6 +357,26 @@ public static class PythonFcntl {
         if (fd < 0) {
             throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
         }
+    }
+
+
+    private static bool TryGetInt64(object? obj, out long value) {
+        int success = 1;
+        value = obj switch {
+            Missing => 0,
+            int i => i,
+            uint ui => ui,
+            long l => l,
+            ulong ul => (long)ul,
+            BigInteger bi => (long)bi,
+            Extensible<BigInteger> ebi => (long)ebi.Value,
+            byte b => b,
+            sbyte sb => sb,
+            short s => s,
+            ushort us => us,
+            _ => success = 0
+        };
+        return success != 0;
     }
 
     #endregion

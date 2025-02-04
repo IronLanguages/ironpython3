@@ -153,7 +153,7 @@ public static class PythonFcntl {
 
 
     // request will be int, uint or BigInteger, and in Python is limited to values that can fit in 32 bits (unchecked)
-    // long should capture all allowed values
+    // long should capture all allowed request values
     // return value is int, bytes, or LightException
     [LightThrowing]
     public static object ioctl(int fd, long request, [NotNone] IBufferProtocol arg, bool mutate_flag = true) {
@@ -169,7 +169,7 @@ public static class PythonFcntl {
             buf = arg.GetBufferNoThrow(BufferFlags.Writable);
         }
         if (buf is not null) {
-            bufSize = buf.AsReadOnlySpan().Length;
+            bufSize = buf.AsSpan().Length;  // check early if buf is indeed writable
         } else {
             buf = arg.GetBuffer(BufferFlags.Simple);
             bufSize = buf.AsReadOnlySpan().Length;
@@ -180,32 +180,25 @@ public static class PythonFcntl {
             mutate_flag = false;  // return a buffer, not integer
         }
         bool in_place = bufSize > defaultBufSize;  // only large buffers are mutated in place
-        Debug.Assert(!in_place || mutate_flag);    // in_place implies mutate_flag
 
 #if !NETCOREAPP
         throw new PlatformNotSupportedException("ioctl is not supported on Mono");
 #else
         try {
-            unsafe {
-                MemoryHandle hmem = default;
-                void* ptr = null;
-                if (in_place) {
-                    hmem = buf.Pin();
-                } else {
-                    ptr = NativeMemory.AllocZeroed(defaultBufSize + 1); // +1 for extra nul byte
-                }
-                try {
-                    if (in_place) {
-                        ptr = hmem.Pointer;
-                    } else {
-                        Debug.Assert(bufSize <= defaultBufSize);
-                        var dest = new Span<byte>((byte*)ptr, bufSize);
-                        buf.AsReadOnlySpan().CopyTo(dest);
-                    }
-                    Debug.Assert(ptr != null);
+            Debug.Assert(!in_place || mutate_flag);    // in_place implies mutate_flag
 
-                    int result;
-                    Errno errno;
+            Span<byte> workSpan;
+            if (in_place) {
+                workSpan = buf.AsSpan();
+            } else {
+                workSpan = new byte[defaultBufSize + 1];  // +1 for extra NUL byte
+                Debug.Assert(bufSize <= defaultBufSize);
+                buf.AsReadOnlySpan().CopyTo(workSpan);
+            }
+            int result;
+            Errno errno;
+            unsafe {
+                fixed (byte* ptr = workSpan) {
                     do {
                         if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64) {
                             // workaround for Arm64 vararg calling convention (but not for ARM64EC on Windows)
@@ -214,30 +207,22 @@ public static class PythonFcntl {
                             result = _ioctl(fd, cmd, ptr);
                         }
                     } while (UnixMarshal.ShouldRetrySyscall(result, out errno));
-
-                    if (result == -1) {
-                        return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
-                    }
-                    if (mutate_flag) {
-                        if (!in_place) {
-                            var src = new Span<byte>((byte*)ptr, bufSize);
-                            src.CopyTo(buf.AsSpan());
-                        }
-                        return ScriptingRuntimeHelpers.Int32ToObject(result);
-                    } else {
-                        Debug.Assert(!in_place);
-                        byte[] response = new byte[bufSize];
-                        var src = new Span<byte>((byte*)ptr, bufSize);
-                        src.CopyTo(response);
-                        return Bytes.Make(response);
-                    }
-                } finally {
-                    if (in_place) {
-                        hmem.Dispose();
-                    } else {
-                        NativeMemory.Free(ptr);
-                    }
                 }
+            }
+
+            if (result == -1) {
+                return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
+            }
+            if (mutate_flag) {
+                if (!in_place) {
+                    workSpan.Slice(0, bufSize).CopyTo(buf.AsSpan());
+                }
+                return ScriptingRuntimeHelpers.Int32ToObject(result);
+            } else {
+                Debug.Assert(!in_place);
+                byte[] response = new byte[bufSize];
+                workSpan.Slice(0, bufSize).CopyTo(response);
+                return Bytes.Make(response);
             }
         } finally {
             buf.Dispose();

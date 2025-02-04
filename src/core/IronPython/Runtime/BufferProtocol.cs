@@ -8,6 +8,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Exceptions;
@@ -17,6 +18,19 @@ namespace IronPython.Runtime {
     /// Equivalent functionality of CPython's <a href="https://docs.python.org/3/c-api/buffer.html">Buffer Protocol</a>.
     /// </summary>
     public interface IBufferProtocol {
+        /// <summary>
+        /// Exports the object's data as a buffer.
+        /// </summary>
+        /// <param name="flags">
+        /// Flags specifying the type of buffer the consumer is prepared to deal with.
+        /// </param>
+        /// <param name="throwOnError">
+        /// This parameter is advisory: if true, the method may throw <c>BufferError</c> instead of returning null if the buffer type is not supported,
+        /// with the exception's message providing more information.
+        /// </param>
+        /// <returns>
+        /// An instance of <see cref="IPythonBuffer"/> if the requested buffer type is supported, or null if not.
+        /// </returns>
         IPythonBuffer? GetBuffer(BufferFlags flags, bool throwOnError);
     }
 
@@ -119,8 +133,9 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    internal static class BufferProtocolExtensions {
-        internal static IPythonBuffer GetBuffer(this IBufferProtocol bufferProtocol, BufferFlags flags = BufferFlags.Simple)
+
+    public static class BufferProtocolExtensions {
+        public static IPythonBuffer GetBuffer(this IBufferProtocol bufferProtocol, BufferFlags flags = BufferFlags.Simple)
             => bufferProtocol.GetBuffer(flags, throwOnError: true) ?? throw new BufferException("Buffer type not supported");
 
         internal static IPythonBuffer? GetBufferNoThrow(this IBufferProtocol bufferProtocol, BufferFlags flags = BufferFlags.Simple) {
@@ -130,7 +145,18 @@ namespace IronPython.Runtime {
                 return null;
             }
         }
+
+        internal static bool TryGetBuffer(this IBufferProtocol bufferProtocol, BufferFlags flags, [NotNullWhen(true)] out IPythonBuffer? buffer) {
+            try {
+                buffer = bufferProtocol.GetBuffer(flags, throwOnError: false);
+                return buffer is not null;
+            } catch (BufferException) {
+                buffer = null;
+                return false;
+            }
+        }
     }
+
 
     /// <summary>
     /// Provides low-level read-write access to byte data of the underlying object.

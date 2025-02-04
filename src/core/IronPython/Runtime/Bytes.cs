@@ -1244,7 +1244,7 @@ namespace IronPython.Runtime {
         IPythonBuffer? IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError) {
             if (flags.HasFlag(BufferFlags.Writable)) {
                 if (throwOnError) {
-                    throw PythonOps.TypeError("bytes object is not writable");
+                    throw PythonOps.BufferError("bytes object is not writable");
                 }
                 return null;
             }

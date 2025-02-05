@@ -526,8 +526,12 @@ namespace IronPython.Modules {
         }
 
         public static bool isatty(CodeContext context, int fd) {
-            if (context.LanguageContext.FileManager.TryGetStreams(fd, out var streams))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                return isattyUnix(fd);
+            }
+            if (context.LanguageContext.FileManager.TryGetStreams(fd, out var streams)) {
                 return streams.IsConsoleStream();
+            }
             return false;
         }
 

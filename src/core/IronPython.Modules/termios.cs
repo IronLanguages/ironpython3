@@ -28,8 +28,16 @@ namespace IronPython.Modules;
 [SupportedOSPlatform("macos")]
 public static class PythonTermios {
 
-    public const string __doc__ = "Stub of termios, just enough to support module tty.";
-    // and also prompt_toolkit.terminal.vt100_input
+    public const string __doc__ = """
+        This module provides an interface to the Posix calls for tty I/O control.
+        For a complete description of these calls, see the Posix or Unix manual
+        pages. It is only available for those Unix versions that support Posix
+        termios style tty I/O control.
+
+        All functions in this module take a file descriptor fd as their first
+        argument. This can be an integer file descriptor, such as returned by
+        sys.stdin.fileno(), or a file object, such as sys.stdin itself.
+        """;
 
     [SpecialName]
     public static void PerformModuleReload(PythonContext context, PythonDictionary dict)
@@ -328,6 +336,156 @@ public static class PythonTermios {
 
     #region Public Functions
 
+    [SupportedOSPlatform("macos")]
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcgetattr")]
+    private static extern int _tcgetattr_darwin(int fd, out darwin__termios termios);
+
+    [SupportedOSPlatform("linux")]
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcgetattr")]
+    private static extern int _tcgetattr_linux(int fd, out linux__termios termios);
+
+    [LightThrowing]
+    public static object tcgetattr(CodeContext context, int fd) {
+        CheckFileDescriptor(fd);
+
+        var cc = new PythonList(NCCS);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+            var termios = new darwin__termios();
+            if (_tcgetattr_darwin(fd, out termios) == -1) {
+                return LightExceptions.Throw(PythonNT.GetLastUnixError());
+            }
+            for (int i = 0; i < NCCS; i++) {
+                unsafe { cc.Add(Bytes.FromByte(termios.c_cc[i])); }
+            }
+            return PythonList.FromArrayNoCopy([
+                ToPythonInt(termios.c_iflag),
+                ToPythonInt(termios.c_oflag),
+                ToPythonInt(termios.c_cflag),
+                ToPythonInt(termios.c_lflag),
+                ToPythonInt(termios.c_ispeed),
+                ToPythonInt(termios.c_ospeed),
+                cc
+            ]);
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            unsafe { Console.WriteLine($"termios_size: {sizeof(linux__termios)}"); }
+            var termios = new linux__termios();
+            if (_tcgetattr_linux(fd, out termios) == -1) {
+                return LightExceptions.Throw(PythonNT.GetLastUnixError());
+            }
+            for (int i = 0; i < NCCS; i++) {
+                unsafe { cc.Add(Bytes.FromByte(termios.c_cc[i])); }
+            }
+            return PythonList.FromArrayNoCopy([
+                ToPythonInt(termios.c_iflag),
+                ToPythonInt(termios.c_oflag),
+                ToPythonInt(termios.c_cflag),
+                ToPythonInt(termios.c_lflag),
+                ToPythonInt(termios.c_ispeed),
+                ToPythonInt(termios.c_ospeed),
+                cc
+            ]);
+        } else {
+            throw new PlatformNotSupportedException();
+        }
+    }
+
+    public static object tcgetattr(CodeContext context, object? file)
+        => tcgetattr(context, PythonFcntl.GetFileDescriptor(context, file));
+
+
+    [SupportedOSPlatform("macos")]
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcsetattr")]
+    private static extern int _tcsetattr_darwin(int fd, int when, in darwin__termios termios);
+
+    [SupportedOSPlatform("linux")]
+    [DllImport("libc", SetLastError = true, EntryPoint = "tcsetattr")]
+    private static extern int _tcsetattr_linux(int fd, int when, in linux__termios termios);
+
+    [LightThrowing]
+    public static object? tcsetattr(CodeContext context, int fd, int when, object? attributes) {
+        CheckFileDescriptor(fd);
+
+        if (attributes is not IList attrs || attrs.Count != 7) {
+            throw PythonOps.TypeError("tcsetattr, arg 3: must be 7 element list");
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+            var termios = new darwin__termios {
+                c_iflag  = ToUInt64(attrs[InputFlagIdx]),
+                c_oflag  = ToUInt64(attrs[OutputFlagIdx]),
+                c_cflag  = ToUInt64(attrs[ControlFlagIdx]),
+                c_lflag  = ToUInt64(attrs[LocalFlagIdx]),
+                c_ispeed = ToUInt64(attrs[InputSpeedIdx]),
+                c_ospeed = ToUInt64(attrs[OutputSpeedIdx])
+            };
+
+            IList chars = GetControlCharList(attrs);
+            for (int i = 0; i < NCCS; i++) {
+                unsafe { termios.c_cc[i] = GetControlChar(chars[i]); }
+            }
+
+            if (_tcsetattr_darwin(fd, when, in termios) == -1) {
+                return LightExceptions.Throw(GetLastTermiosError(context));
+            }
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            var termios = new linux__termios {
+                c_iflag  = (uint)ToUInt64(attrs[InputFlagIdx]),
+                c_oflag  = (uint)ToUInt64(attrs[OutputFlagIdx]),
+                c_cflag  = (uint)ToUInt64(attrs[ControlFlagIdx]),
+                c_lflag  = (uint)ToUInt64(attrs[LocalFlagIdx]),
+                c_ispeed = (uint)ToUInt64(attrs[InputSpeedIdx]),
+                c_ospeed = (uint)ToUInt64(attrs[OutputSpeedIdx])
+            };
+
+            IList chars = GetControlCharList(attrs);
+            for (int i = 0; i < NCCS; i++) {
+                unsafe { termios.c_cc[i] = GetControlChar(chars[i]); }
+            }
+
+            if (_tcsetattr_linux(fd, when, in termios) == -1) {
+                return LightExceptions.Throw(GetLastTermiosError(context));
+            }
+        } else {
+            throw new PlatformNotSupportedException();
+        }
+
+        return null;
+
+        // Local functions ------------------------------------------------
+
+        static IList GetControlCharList(IList attrs) {
+            if (attrs[ControlCharsIdx] is not IList chars || chars.Count != NCCS) {
+                throw PythonOps.TypeError("tcsetattr, atributes[{0}] must be {1} element list", ControlCharsIdx, NCCS);
+            }
+            return chars;
+        }
+
+        static byte GetControlChar(object? o) {
+            if (o is Bytes b && b.Count == 1) {
+                return (byte)b[0];
+            }
+            if (Converter.TryConvertToInt32(o, out int i)) {
+                return (byte)i;
+            }
+            throw PythonOps.TypeError("tcsetattr: elements of attributes must be characters or integers");
+        }
+
+        static ulong ToUInt64(object? o)
+            => o switch {
+                int i => (ulong)i,
+                uint ui => ui,
+                long l => (ulong)l,
+                BigInteger bi => (ulong)bi,
+                Extensible<BigInteger> ebi => (ulong)ebi.Value,
+                _ => throw PythonOps.TypeErrorForBadInstance("tcsetattr: an integer is required (got type {0})", o)
+            };
+    }
+
+    [LightThrowing]
+    public static object? tcsetattr(CodeContext context, object? file, int when, [NotNone] object attributes)
+        => tcsetattr(context, PythonFcntl.GetFileDescriptor(context, file), when, attributes);
+
+
     [DllImport("libc", SetLastError = true, EntryPoint = "tcsendbreak")]
     private static extern int _tcsendbreak(int fd, int duration);
 
@@ -453,171 +611,88 @@ public static class PythonTermios {
     public static object? tcsetwinsize(CodeContext context, object? fd, object? winsize)
         => tcsetwinsize(context, PythonFcntl.GetFileDescriptor(context, fd), winsize);
 
-
-    public static object tcgetattr(CodeContext context, int fd) {
-        CheckFileDescriptor(fd);
-        if (fd > 0) throw new NotImplementedException("termios support only for stdin");
-
-        if (context.LanguageContext.SystemStandardIn is not TextIOWrapper stdin) {
-            throw new NotImplementedException("termios support only for stdin");
-        }
-        if (stdin.closed || !stdin.isatty(context) || stdin.fileno(context) != 0 || Console.IsInputRedirected) {
-            throw new NotImplementedException("termios support only for stdin connected to tty");
-        }
-
-        var cc = new PythonList(NCCS);
-        var specialChars = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? macos__specialChars : linux__specialChars;
-        for (int i = 0; i < NCCS; i++) {
-            byte c = i < specialChars.Length ? specialChars[i] : (byte)0;
-            cc.Add(Bytes.FromByte(c));
-        }
-        return PythonList.FromArrayNoCopy([
-            _iflag,
-            _oflag,
-            _cflag,
-            _lflag,
-            _ispeed,
-            _ospeed,
-            cc
-        ]);
-    }
-
-    public static object tcgetattr(CodeContext context, object? file) {
-        if (!ReferenceEquals(file, context.LanguageContext.SystemStandardIn)) {
-            throw new NotImplementedException("termios support only for stdin");
-        }
-        return tcgetattr(context, 0);
-    }
+    #endregion
 
 
-    public static void tcsetattr(CodeContext context, int fd, int when, object? attributes) {
-        CheckFileDescriptor(fd);
-        if (fd != 0) throw new NotImplementedException();
+    #region Termios struct
+/*
+Linux: termios-struct.h
 
-        if (context.LanguageContext.SystemStandardIn is not TextIOWrapper stdin) {
-            throw new NotImplementedException("termios support only for stdin");
-        }
-        if (stdin.closed || !stdin.isatty(context) || stdin.fileno(context) != 0 || Console.IsInputRedirected) {
-            throw new NotImplementedException("termios support only for stdin connected to tty");
-        }
+typedef unsigned char	cc_t;
+typedef unsigned int	speed_t;
+typedef unsigned int	tcflag_t;
 
-        if (attributes is not IList attrs || attrs.Count != 7) {
-            throw PythonOps.TypeError("tcsetattr, arg 3: must be 7 element list");
-        }
+#define NCCS 32
+struct termios
+  {
+    tcflag_t c_iflag;
+    tcflag_t c_oflag;
+    tcflag_t c_cflag;
+    tcflag_t c_lflag;
+    cc_t c_line;
+    cc_t c_cc[NCCS];
+    speed_t c_ispeed;
+    speed_t c_ospeed;
+  };
+*/
 
-        uint newLflag = attrs[LFlagIdx] switch {
-            int i => (uint)i,
-            uint ui => ui,
-            long l => (uint)l,
-            BigInteger bi => (uint)bi,
-            Extensible<BigInteger> ebi => (uint)ebi.Value,
-            _ => throw PythonOps.TypeErrorForBadInstance("tcsetattr: an integer is required (got type {0})", attrs[LFlagIdx])
-        };
-
-        if (attrs[SpecialCharsIdx] is not IList chars || chars.Count != NCCS) {
-            throw PythonOps.TypeError("tcsetattr, atributes[{0}] must be {1} element list", SpecialCharsIdx, NCCS);
-        }
-
-        var specialChars = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? macos__specialChars : linux__specialChars;
-        for (int i = 0; i < chars.Count; i++) {
-            object? o = chars[i];
-            int newVal;
-            if (o is Bytes b && b.Count == 1) {
-                newVal = b[0];
-            } else if (!Converter.TryConvertToInt32(o, out newVal)) {
-                throw PythonOps.TypeError("tcsetattr: elements of attributes must be characters or integers");
-            }
-            int expected = i < specialChars.Length ? specialChars[i] : 0;
-            if (newVal != expected) {
-                throw new NotImplementedException("tcsetattr: setting special characters is not supported");
-            }
-        }
-
-        if (when != TCSANOW) {
-            stdin.flush(context);
-        }
-
-        if ((newLflag & (ECHO | ICANON | IEXTEN | ISIG)) == 0) {
-            setraw(context, stdin);
-        } else {
-            setcbreak(context, stdin);
-        }
+    [SupportedOSPlatform("linux")]
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct linux__termios {
+        public uint c_iflag;
+        public uint c_oflag;
+        public uint c_cflag;
+        public uint c_lflag;
+        public byte c_line;
+        public fixed byte c_cc[32];
+        public uint c_ispeed;
+        public uint c_ospeed;
     }
 
 
-    public static void tcsetattr(CodeContext context, object? file, int when, [NotNone] object attributes) {
-        if (!ReferenceEquals(file, context.LanguageContext.SystemStandardIn)) {
-            throw new NotImplementedException("termios support only for stdin");
-        }
-        tcsetattr(context, 0, when, attributes);
+/*
+Darwin: termios.h
+typedef unsigned long   tcflag_t;
+typedef unsigned char   cc_t;
+typedef unsigned long   speed_t;
+
+#define NCCS            20
+struct termios {
+	tcflag_t        c_iflag;
+	tcflag_t        c_oflag;
+	tcflag_t        c_cflag;
+	tcflag_t        c_lflag;
+	cc_t            c_cc[NCCS];
+	speed_t         c_ispeed;
+	speed_t         c_ospeed;
+};
+*/
+
+    [SupportedOSPlatform("macos")]
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct darwin__termios {
+        public ulong c_iflag;
+        public ulong c_oflag;
+        public ulong c_cflag;
+        public ulong c_lflag;
+        public fixed byte c_cc[20];
+        public ulong c_ispeed;
+        public ulong c_ospeed;
     }
+
+    // Python termios attributes
+    private const int InputFlagIdx    = 0;
+    private const int OutputFlagIdx   = 1;
+    private const int ControlFlagIdx  = 2;
+    private const int LocalFlagIdx    = 3;
+    private const int InputSpeedIdx   = 4;
+    private const int OutputSpeedIdx  = 5;
+    private const int ControlCharsIdx = 6;
 
     #endregion
 
 
-    private const int IFlagIdx = 0;
-    private const int OFlagIdx = 1;
-    private const int CFlagIdx = 2;
-    private const int LFlagIdx = 3;
-    private const int ISpeedIdx = 4;
-    private const int OSpeedIdx = 5;
-    private const int SpecialCharsIdx = 6;
-
-    private static int _iflag  => BRKINT | ICRNL | IXON | IXANY | IMAXBEL | IUTF8;
-    private static int _oflag  => OPOST | ONLCR;
-    private static int _cflag  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
-                                    CS8 | CREAD | HUPCL
-                                  : CS8 | CREAD | HUPCL | (CBAUD & ~CBAUDEX);
-    private static uint _lflag => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
-                                    ECHOKE | ECHOE | ECHOK | ECHO | ECHOCTL | ISIG | ICANON | IEXTEN | PENDIN
-                                  : ECHOKE | ECHOE | ECHOK | ECHO | ECHOCTL | ISIG | ICANON | IEXTEN;
-    private static int _ispeed => B38400;
-    private static int _ospeed => B38400;
-
-    private static readonly byte[] macos__specialChars = [
-        (byte)0x04, // VEOF     ^D
-        (byte)0xff, // VEOL
-        (byte)0xff, // VEOL2
-        (byte)0x7f, // VERASE   DEL
-        (byte)0x17, // VWERASE  ^W
-        (byte)0x15, // VKILL    ^U
-        (byte)0x12, // VREPRINT ^R
-        (byte)0x00, // reserved
-        (byte)0x03, // VINTR    ^C
-        (byte)0x1c, // VQUIT    ^\
-        (byte)0x1a, // VSUSP    ^Z
-        (byte)0x19, // VDSUSP   ^Y
-        (byte)0x11, // VSTART   ^Q
-        (byte)0x13, // VSTOP    ^S
-        (byte)0x16, // VLNEXT   ^V
-        (byte)0x0f, // VDISCARD ^O
-        (byte)0x01, // VMIN
-        (byte)0x00, // VTIME
-        (byte)0x14, // VSTATUS  ^T
-        (byte)0x00, // reserved
-    ];
-
-    private static readonly byte[] linux__specialChars = [
-        (byte)0x03, // VINTR    ^C
-        (byte)0x1c, // VQUIT    ^\
-        (byte)0x7f, // VERASE   DEL
-        (byte)0x15, // VKILL    ^U
-        (byte)0x04, // VEOF     ^D
-        (byte)0x00, // VTIME
-        (byte)0x01, // VMIN
-        (byte)0x00, // VSWTC
-        (byte)0x11, // VSTART   ^Q
-        (byte)0x13, // VSTOP    ^S
-        (byte)0x1a, // VSUSP    ^Z
-        (byte)0xff, // VEOL
-        (byte)0x12, // VREPRINT ^R
-        (byte)0x0f, // VDISCARD ^O
-        (byte)0x17, // VWERASE  ^W
-        (byte)0x16, // VLNEXT   ^V
-        (byte)0xff, // VEOL2
-        // rest are reserved
-    ];
-
+    #region Private Helpers
 
     private static object? _savedRawStdin;
 
@@ -667,6 +742,10 @@ public static class PythonTermios {
         }
     }
 
+
+    private static object ToPythonInt(this ulong value)
+        => value is <= int.MaxValue ? (int)value : (BigInteger)value;
+
     private static object? ToTermiosError(CodeContext context, object? error) {
         if (LightExceptions.GetLightException(error) is Exception ex) {
             var pex = ex.GetPythonException();
@@ -691,4 +770,6 @@ public static class PythonTermios {
 
     private static PythonType termioserror(CodeContext context)
         => (PythonType)context.LanguageContext.GetModuleState("termioserror");
+
+    #endregion
 }

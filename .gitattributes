@@ -45,5 +45,8 @@ tests/suite/file_without_BOM.txt -text
 # Do not normalize on commit.
 *.pdf -text
 
-*.pck linguist-detectable=false
-*.html linguist-documentation=true
+# Hide certain languages from GitHub Linguist
+* linguist-detectable=false
+*.cs linguist-detectable
+*.py linguist-detectable
+src/core/IronPython.StdLib/lib/** linguist-vendored

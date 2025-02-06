@@ -380,26 +380,22 @@ namespace IronPython.Runtime {
     public sealed class MemoryBufferProtocolWrapper<T> : IBufferProtocol where T : unmanaged {
         private readonly ReadOnlyMemory<T> _rom;
         private readonly Memory<T>? _memory;
-        private readonly string? _format;
+        private readonly char _format;
 
-        public MemoryBufferProtocolWrapper(ReadOnlyMemory<T> memory, string? format = null) {
+        public MemoryBufferProtocolWrapper(ReadOnlyMemory<T> memory) {
             _rom = memory;
             _memory = null;
-            _format = format;
+            _format = GetFormatChar();
         }
 
-        public MemoryBufferProtocolWrapper(Memory<T> memory, string? format = null) {
+        public MemoryBufferProtocolWrapper(Memory<T> memory) {
             _rom = memory;
             _memory = memory;
-            _format = format;
+            _format = GetFormatChar();
         }
 
         public IPythonBuffer? GetBuffer(BufferFlags flags, bool throwOnError) {
-            if (_memory.HasValue) {
-                return new MemoryBufferWrapper(this, flags);
-            }
-
-            if (flags.HasFlag(BufferFlags.Writable)) {
+            if (flags.HasFlag(BufferFlags.Writable) && !_memory.HasValue) {
                 if (throwOnError) {
                     throw Operations.PythonOps.BufferError("ReadOnlyMemory is not writable.");
                 }
@@ -408,6 +404,23 @@ namespace IronPython.Runtime {
 
             return new MemoryBufferWrapper(this, flags);
         }
+
+        private static char GetFormatChar()
+            => Type.GetTypeCode(typeof(T)) switch {
+                TypeCode.SByte   => 'b',
+                TypeCode.Byte    => 'B',
+                TypeCode.Char    => 'u',
+                TypeCode.Int16   => 'h',
+                TypeCode.UInt16  => 'H',
+                TypeCode.Int32   => 'i',
+                TypeCode.UInt32  => 'I',
+                TypeCode.Int64   => 'q',
+                TypeCode.UInt64  => 'Q',
+                TypeCode.Single  => 'f',
+                TypeCode.Double  => 'd',
+                _ => throw new ArgumentException("Unsupported type"),
+            };
+
 
         private sealed unsafe class MemoryBufferWrapper : IPythonBuffer {
             private readonly MemoryBufferProtocolWrapper<T> _wrapper;
@@ -435,7 +448,7 @@ namespace IronPython.Runtime {
 
             public int Offset => 0;
 
-            public string? Format => _flags.HasFlag(BufferFlags.Format) ? _wrapper._format : null;
+            public string? Format => _flags.HasFlag(BufferFlags.Format) ? _wrapper._format.ToString() : null;
 
             public int ItemCount => _wrapper._rom.Length;
 

@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
 
@@ -376,69 +377,26 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    public sealed class MemoryBufferWrapper : IPythonBuffer {
-        private readonly ReadOnlyMemory<byte> _rom;
-        private readonly Memory<byte>? _memory;
-        private readonly BufferFlags _flags;
+    public sealed class MemoryBufferProtocolWrapper<T> : IBufferProtocol where T : unmanaged {
+        private readonly ReadOnlyMemory<T> _rom;
+        private readonly Memory<T>? _memory;
+        private readonly string? _format;
 
-        public MemoryBufferWrapper(ReadOnlyMemory<byte> memory, BufferFlags flags) {
+        public MemoryBufferProtocolWrapper(ReadOnlyMemory<T> memory, string? format = null) {
             _rom = memory;
             _memory = null;
-            _flags = flags;
+            _format = format;
         }
 
-        public MemoryBufferWrapper(Memory<byte> memory, BufferFlags flags) {
+        public MemoryBufferProtocolWrapper(Memory<T> memory, string? format = null) {
             _rom = memory;
             _memory = memory;
-            _flags = flags;
-        }
-
-        public void Dispose() { }
-
-        public object Object => _memory ?? _rom;
-
-        public bool IsReadOnly => !_memory.HasValue;
-
-        public ReadOnlySpan<byte> AsReadOnlySpan() => _rom.Span;
-
-        public Span<byte> AsSpan() => _memory.HasValue ? _memory.Value.Span : throw new InvalidOperationException("ReadOnlyMemory is not writable");
-
-        public MemoryHandle Pin() => _rom.Pin();
-
-        public int Offset => 0;
-
-        public string? Format => _flags.HasFlag(BufferFlags.Format) ? "B" : null;
-
-        public int ItemCount => _rom.Length;
-
-        public int ItemSize => 1;
-
-        public int NumOfDims => 1;
-
-        public IReadOnlyList<int>? Shape => null;
-
-        public IReadOnlyList<int>? Strides => null;
-
-        public IReadOnlyList<int>? SubOffsets => null;
-    }
-
-    public class MemoryBufferProtocolWrapper : IBufferProtocol {
-        private readonly ReadOnlyMemory<byte> _rom;
-        private readonly Memory<byte>? _memory;
-
-        public MemoryBufferProtocolWrapper(ReadOnlyMemory<byte> memory) {
-            _rom = memory;
-            _memory = null;
-        }
-
-        public MemoryBufferProtocolWrapper(Memory<byte> memory) {
-            _rom = memory;
-            _memory = memory;
+            _format = format;
         }
 
         public IPythonBuffer? GetBuffer(BufferFlags flags, bool throwOnError) {
             if (_memory.HasValue) {
-                return new MemoryBufferWrapper(_memory.Value, flags);
+                return new MemoryBufferWrapper(this, flags);
             }
 
             if (flags.HasFlag(BufferFlags.Writable)) {
@@ -448,7 +406,48 @@ namespace IronPython.Runtime {
                 return null;
             }
 
-            return new MemoryBufferWrapper(_rom, flags);
+            return new MemoryBufferWrapper(this, flags);
+        }
+
+        private sealed unsafe class MemoryBufferWrapper : IPythonBuffer {
+            private readonly MemoryBufferProtocolWrapper<T> _wrapper;
+            private readonly BufferFlags _flags;
+
+            public MemoryBufferWrapper(MemoryBufferProtocolWrapper<T> wrapper, BufferFlags flags) {
+                _wrapper = wrapper;
+                _flags = flags;
+            }
+
+            public void Dispose() { }
+
+            public object Object => _wrapper._memory ?? _wrapper._rom;
+
+            public bool IsReadOnly => !_wrapper._memory.HasValue;
+
+            public ReadOnlySpan<byte> AsReadOnlySpan() => MemoryMarshal.Cast<T, byte>(_wrapper._rom.Span);
+
+            public Span<byte> AsSpan() 
+                => _wrapper._memory.HasValue
+                    ? MemoryMarshal.Cast<T, byte>(_wrapper._memory.Value.Span)
+                    : throw new InvalidOperationException("ReadOnlyMemory is not writable");
+
+            public MemoryHandle Pin() => _wrapper._rom.Pin();
+
+            public int Offset => 0;
+
+            public string? Format => _flags.HasFlag(BufferFlags.Format) ? _wrapper._format : null;
+
+            public int ItemCount => _wrapper._rom.Length;
+
+            public int ItemSize => sizeof(T);
+
+            public int NumOfDims => 1;
+
+            public IReadOnlyList<int>? Shape => null;
+
+            public IReadOnlyList<int>? Strides => null;
+
+            public IReadOnlyList<int>? SubOffsets => null;
         }
     }
 }

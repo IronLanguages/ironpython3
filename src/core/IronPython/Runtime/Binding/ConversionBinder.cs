@@ -734,8 +734,9 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 AstUtils.Convert(
                     Ast.New(
-                        typeof(MemoryBufferProtocolWrapper).GetConstructor(new Type[] { fromType }),
-                        AstUtils.Convert(self.Expression, fromType)
+                        typeof(MemoryBufferProtocolWrapper<byte>).GetConstructor([fromType, typeof(string)]),
+                        AstUtils.Convert(self.Expression, fromType),
+                        AstUtils.Constant(null, typeof(string))
                     ),
                     typeof(IBufferProtocol)
                 ),

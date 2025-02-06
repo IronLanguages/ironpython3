@@ -5,7 +5,6 @@
 #nullable enable
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
@@ -173,9 +172,6 @@ public static class PythonFcntl {
         }
         bool in_place = bufSize > defaultBufSize;  // only large buffers are mutated in place
 
-#if !NETCOREAPP
-        throw new PlatformNotSupportedException("ioctl is not supported on Mono");
-#else
         try {
             Debug.Assert(!in_place || mutate_flag);    // in_place implies mutate_flag
 
@@ -192,7 +188,7 @@ public static class PythonFcntl {
             unsafe {
                 fixed (byte* ptr = workSpan) {
                     do {
-                        if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64) {
+                        if (IsArchitecutreArm64()) {
                             // workaround for Arm64 vararg calling convention (but not for ARM64EC on Windows)
                             result = _ioctl_arm64(fd, cmd, 0, 0, 0, 0, 0, 0, ptr);
                         } else {
@@ -219,7 +215,6 @@ public static class PythonFcntl {
         } finally {
             buf.Dispose();
         }
-#endif
     }
 
 
@@ -238,13 +233,10 @@ public static class PythonFcntl {
 
         ulong cmd = unchecked((ulong)request);
 
-#if !NETCOREAPP
-        throw new PlatformNotSupportedException("ioctl is not supported on Mono");
-#else
         int result;
         Errno errno;
         do {
-            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64) {
+            if (IsArchitecutreArm64()) {
                 // workaround for Arm64 vararg calling convention (but not for ARM64EC on Windows)
                 result = _ioctl_arm64(fd, cmd, 0, 0, 0, 0, 0, 0, data);
             } else {
@@ -256,7 +248,6 @@ public static class PythonFcntl {
             return LightExceptions.Throw(PythonNT.GetOsError(NativeConvert.FromErrno(errno)));
         }
         return ScriptingRuntimeHelpers.Int32ToObject(result);
-#endif
     }
 
 
@@ -359,24 +350,27 @@ public static class PythonFcntl {
         }
     }
 
+    private static bool IsArchitecutreArm64() {
+#if NETCOREAPP
+        return RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+#else
+        if (Syscall.uname(out Utsname info) == 0) {
+            return info.machine is "arm64" or "aarch64";
+        }
+        return false;
+#endif
+    }
 
     private static bool TryGetInt64(object? obj, out long value) {
-        int success = 1;
-        value = obj switch {
-            Missing => 0,
-            int i => i,
-            uint ui => ui,
-            long l => l,
-            ulong ul => (long)ul,
-            BigInteger bi => (long)bi,
-            Extensible<BigInteger> ebi => (long)ebi.Value,
-            byte b => b,
-            sbyte sb => sb,
-            short s => s,
-            ushort us => us,
-            _ => success = 0
-        };
-        return success != 0;
+        value = default;
+        if (obj is Missing) {
+            return true;
+        }
+        if (PythonOps.TryToIndex(obj, out BigInteger bi)) {
+            value = (long)bi;
+            return true;
+        }
+        return false;
     }
 
     #endregion

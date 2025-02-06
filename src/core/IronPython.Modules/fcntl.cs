@@ -362,22 +362,15 @@ public static class PythonFcntl {
     }
 
     private static bool TryGetInt64(object? obj, out long value) {
-        int success = 1;
-        value = obj switch {
-            Missing => default,
-            int i => i,
-            uint ui => ui,
-            long l => l,
-            ulong ul => (long)ul,
-            BigInteger bi => (long)bi,
-            Extensible<BigInteger> ebi => (long)ebi.Value,
-            byte b => b,
-            sbyte sb => sb,
-            short s => s,
-            ushort us => us,
-            _ => success = 0
-        };
-        return success != 0;
+        value = default;
+        if (obj is Missing) {
+            return true;
+        }
+        if (PythonOps.TryToIndex(obj, out BigInteger bi)) {
+            value = (long)bi;
+            return true;
+        }
+        return false;
     }
 
     #endregion

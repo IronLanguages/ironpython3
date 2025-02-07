@@ -403,7 +403,7 @@ public static class PythonTermios {
         var ws = new ushort[4];
         var buf = new MemoryBufferProtocolWrapper<ushort>(ws.AsMemory());
 
-        object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf);
+        object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf, mutate_flag: true);
 
         if (ToTermiosError(context, result) is not null and var ex) {
             return ex;
@@ -430,7 +430,7 @@ public static class PythonTermios {
         var ws = new ushort[4];
         var buf = new MemoryBufferProtocolWrapper<ushort>(ws.AsMemory());
 
-        object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf);
+        object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf, mutate_flag: true);
         if (ToTermiosError(context, result) is not null and var ex) {
             return ex;
         }

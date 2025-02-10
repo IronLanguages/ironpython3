@@ -821,6 +821,11 @@ namespace IronPython.Runtime.Operations {
             throw TypeErrorForUnIndexableObject(o);
         }
 
+        internal static BigInteger ToIndex(object? o) {
+            if (TryToIndex(o, out BigInteger index)) return index;
+            throw TypeErrorForUnIndexableObject(o);
+        }
+
         internal static bool TryToIndex(object? o, [NotNullWhen(true)] out object? index) {
             var context = DefaultContext.Default;
 

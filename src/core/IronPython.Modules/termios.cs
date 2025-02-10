@@ -396,6 +396,64 @@ public static class PythonTermios {
         => tcflow(context, PythonFcntl.GetFileDescriptor(context, fd), action);
 
 
+    // Python 3.11: tcgetwinsize, tcsetwinsize
+
+    [LightThrowing]
+    public static object tcgetwinsize(CodeContext context, int fd) {
+        var ws = new ushort[4];
+        var buf = new MemoryBufferProtocolWrapper<ushort>(ws.AsMemory());
+
+        object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf, mutate_flag: true);
+
+        if (ToTermiosError(context, result) is not null and var ex) {
+            return ex;
+        }
+        return PythonTuple.MakeTuple((int)ws[0], (int)ws[1]);
+    }
+
+    [LightThrowing]
+    public static object? tcgetwinsize(CodeContext context, object? fd)
+        => tcgetwinsize(context, PythonFcntl.GetFileDescriptor(context, fd));
+
+
+    [LightThrowing]
+    public static object? tcsetwinsize(CodeContext context, int fd, object? winsize) {
+        CheckFileDescriptor(fd);
+
+        if (winsize is not IList wsList || wsList.Count != 2) {
+            throw PythonOps.TypeError("tcsetwinsize, arg 2: must be a two-item sequence");
+        }
+
+        long winsize_0 = (long)PythonOps.ToIndex(wsList[0]);
+        long winsize_1 = (long)PythonOps.ToIndex(wsList[1]);
+
+        var ws = new ushort[4];
+        var buf = new MemoryBufferProtocolWrapper<ushort>(ws.AsMemory());
+
+        object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf, mutate_flag: true);
+        if (ToTermiosError(context, result) is not null and var ex) {
+            return ex;
+        }
+
+        ws[0] = unchecked((ushort)winsize_0);
+        ws[1] = unchecked((ushort)winsize_1);
+        if (ws[0] != winsize_0 || ws[1] != winsize_1) {
+            throw PythonOps.OverflowError("winsize value(s) out of range");
+        }
+
+        result = PythonFcntl.ioctl(fd, TIOCSWINSZ, buf);
+        if (ToTermiosError(context, result) is not null and var ex2) {
+            return ex2;
+        }
+
+        return null;
+    }
+
+    [LightThrowing]
+    public static object? tcsetwinsize(CodeContext context, object? fd, object? winsize)
+        => tcsetwinsize(context, PythonFcntl.GetFileDescriptor(context, fd), winsize);
+
+
     public static object tcgetattr(CodeContext context, int fd) {
         CheckFileDescriptor(fd);
         if (fd > 0) throw new NotImplementedException("termios support only for stdin");
@@ -609,11 +667,26 @@ public static class PythonTermios {
         }
     }
 
+    private static object? ToTermiosError(CodeContext context, object? error) {
+        if (LightExceptions.GetLightException(error) is Exception ex) {
+            var pex = ex.GetPythonException();
+            if (pex is PythonExceptions._OSError oserr) {
+                return LightExceptions.Throw(GetTermiosError(context, oserr.errno, oserr.strerror));
+            } else {
+                return error;
+            }
+        }
+        return null;
+    }
 
     private static Exception GetLastTermiosError(CodeContext context) {
         int errno = Marshal.GetLastWin32Error();
-        return PythonExceptions.CreateThrowable(termioserror(context), errno, PythonNT.strerror(errno));
+        return GetTermiosError(context, errno, PythonNT.strerror(errno));
     }
+
+
+    private static Exception GetTermiosError(CodeContext context, object errno, object message)
+        => PythonExceptions.CreateThrowable(termioserror(context), errno, message);
 
 
     private static PythonType termioserror(CodeContext context)

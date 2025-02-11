@@ -449,6 +449,28 @@ public static class PythonTermios {
             throw new PlatformNotSupportedException();
         }
 
+#if NETCOREAPP
+        // TODO: remove .NET workaround
+        if (fd == 0
+            && context.LanguageContext.SystemStandardIn is TextIOWrapper stdin
+            && !stdin.closed
+            && stdin.isatty(context)
+            && stdin.fileno(context) == 0
+            && !Console.IsInputRedirected) {
+
+            if (when != TCSANOW) {
+                stdin.flush(context);
+            }
+
+            ulong newLflag = ToUInt64(attrs[LocalFlagIdx]);
+            if ((newLflag & (ECHO | ICANON | IEXTEN | ISIG)) == 0) {
+                setraw(context, stdin);
+            } else {
+                setcbreak(context, stdin);
+            }
+        }
+#endif
+
         return null;
 
         // Local functions ------------------------------------------------
@@ -694,6 +716,8 @@ struct termios {
 
     #region Private Helpers
 
+#if NETCOREAPP
+    // .NET workaround for stdin raw mode
     private static object? _savedRawStdin;
 
     private static void setraw(CodeContext context, TextIOWrapper stdin) {
@@ -704,7 +728,7 @@ struct termios {
     }
 
     private static void setcbreak(CodeContext context, TextIOWrapper stdin) {
-        if (_savedRawStdin is not null 
+        if (_savedRawStdin is not null
             && stdin.buffer is BufferedReader reader
             && reader.raw is RawConsole) {
 
@@ -718,13 +742,7 @@ struct termios {
         }
 
         public override object? read(CodeContext context, object? size=null) {
-            int intSize = size switch {
-                null => -1,
-                int i => i,
-                BigInteger bi => (int)bi,
-                Extensible<BigInteger> ebi => (int)ebi.Value,
-                _ => throw PythonOps.TypeErrorForBadInstance("integer argument expected, got '{0}'", size)
-            };
+            BigInteger intSize = PythonOps.ToIndex(size);
             if (intSize == 0) return null;
 
             ConsoleKeyInfo info = Console.ReadKey(intercept: true);
@@ -734,6 +752,7 @@ struct termios {
         public override int fileno(CodeContext context) => 0;
         public override bool isatty(CodeContext context) => true;
     }
+#endif
 
 
     private static void CheckFileDescriptor(int fd) {

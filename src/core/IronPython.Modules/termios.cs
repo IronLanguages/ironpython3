@@ -19,6 +19,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using static IronPython.Modules.PythonIOModule;
+using IronPython.Hosting;
 
 
 [assembly: PythonModule("termios", typeof(IronPython.Modules.PythonTermios), PlatformsAttribute.PlatformFamily.Unix)]
@@ -493,14 +494,9 @@ public static class PythonTermios {
         }
 
         static ulong ToUInt64(object? o)
-            => o switch {
-                int i => (ulong)i,
-                uint ui => ui,
-                long l => (ulong)l,
-                BigInteger bi => (ulong)bi,
-                Extensible<BigInteger> ebi => (ulong)ebi.Value,
-                _ => throw PythonOps.TypeErrorForBadInstance("tcsetattr: an integer is required (got type {0})", o)
-            };
+            => PythonOps.TryToIndex(o, out BigInteger index)
+                ? (ulong)index
+                : throw PythonOps.TypeErrorForBadInstance("tcsetattr: an integer is required (got type {0})", o);
     }
 
     [LightThrowing]
@@ -759,7 +755,7 @@ struct termios {
         if (fd < 0) {
             throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
         }
-    }
+    }  
 
 
     private static object ToPythonInt(this ulong value)

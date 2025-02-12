@@ -301,7 +301,7 @@ namespace IronPythonTest.Cases {
                         #pragma warning disable SYSLIB0006 // 'Thread.ResetAbort is not supported and throws PlatformNotSupportedException.' 
                         Thread.ResetAbort();
                         #pragma warning restore SYSLIB0006
-                    } catch (Exception ex) when (ex.GetPythonException() is not null and var pex) {
+                    } catch (Exception ex) when (ex.GetPythonException() is object pex) {
                         if (DynamicHelpers.GetPythonType(pex).Name == "SkipTest") {
                             NUnit.Framework.TestContext.Progress.WriteLine($"Test {testcase.Name} skipped: {pex}");
                             res = 0;

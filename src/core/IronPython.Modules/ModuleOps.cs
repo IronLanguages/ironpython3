@@ -297,9 +297,6 @@ namespace IronPython.Modules {
             }
 
             if (value is int iVal) {
-                if(iVal > int.MaxValue) {
-                    iVal = -1;
-                }
                 return new IntPtr(iVal);
             }
 
@@ -356,13 +353,8 @@ namespace IronPython.Modules {
         }
 
         public static long GetSignedLongLong(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                return res.Value;
-            }
-
-            if (value is BigInteger) {
-                return (long)(BigInteger)value;
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return (long)bi;
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -373,13 +365,8 @@ namespace IronPython.Modules {
         }
 
         public static long GetUnsignedLongLong(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null && res.Value >= 0) {
-                return res.Value;
-            }
-
-            if (value is BigInteger) {
-                return (long)(ulong)(BigInteger)value;
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return unchecked((long)(ulong)bi);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -462,17 +449,13 @@ namespace IronPython.Modules {
         }
 
         public static int GetSignedLong(object value, object type) {
-            if (value is int) {
-                return (int)value;
-            }
-
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                return res.Value;
-            }
-
-            if (value is BigInteger && ((BigInteger)value).AsUInt32(out uint unsigned)) {
-                return (int)unsigned;
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                // This strange conversion to UInt32 was introduced in ipy2 on 20011-06-18, commit 9bf42cbf: Fix issue with marshalling int value
+                if (bi.AsUInt32(out uint unsigned)) {
+                    return unchecked((int)unsigned);
+                } else {
+                    return (int)bi;
+                }
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -483,14 +466,11 @@ namespace IronPython.Modules {
         }
 
         public static int GetUnsignedLong(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                return res.Value;
-            }
-
-            if (value is BigInteger) {
-                if (((BigInteger)value).AsUInt32(out uint ures)) {
-                    return (int)ures;
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                if (bi.AsInt32(out int signed)) {
+                    return signed;
+                } else {
+                    return unchecked((int)(uint)bi);
                 }
             }
 
@@ -502,23 +482,22 @@ namespace IronPython.Modules {
         }
 
         public static int GetUnsignedInt(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null && res.Value >= 0) {
-                return res.Value;
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return unchecked((int)(uint)bi);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetUnsignedInt(type, asParam);
+                return GetUnsignedInt(asParam, type);
             }
 
             throw PythonOps.TypeErrorForTypeMismatch("unsigned int", value);
         }
 
         public static int GetSignedInt(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                return res.Value;
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return (int)bi;
             }
+
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
                 return GetSignedInt(asParam, type);
             }
@@ -527,13 +506,10 @@ namespace IronPython.Modules {
         }
 
         public static short GetUnsignedShort(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                int iVal = res.Value;
-                if (iVal >= ushort.MinValue && iVal <= ushort.MaxValue) {
-                    return (short)(ushort)iVal;
-                }
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return unchecked((short)(ushort)bi);
             }
+
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
                 return GetUnsignedShort(asParam, type);
             }
@@ -542,12 +518,8 @@ namespace IronPython.Modules {
         }
 
         public static short GetSignedShort(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                int iVal = res.Value;
-                return (short)iVal;
-            } else if (value is BigInteger bigInt) {
-                return (short)(int)(bigInt & 0xffff);
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return (short)bi;
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -562,9 +534,8 @@ namespace IronPython.Modules {
         }
 
         public static byte GetUnsignedByte(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                return (byte)res.Value;
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return (byte)bi;
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -575,12 +546,8 @@ namespace IronPython.Modules {
         }
 
         public static byte GetSignedByte(object value, object type) {
-            int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null) {
-                int iVal = res.Value;
-                if (iVal >= sbyte.MinValue && iVal <= sbyte.MaxValue) {
-                    return (byte)(sbyte)iVal;
-                }
+            if (PythonOps.TryToInt(value, out BigInteger bi)) {
+                return unchecked((byte)(sbyte)bi);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {

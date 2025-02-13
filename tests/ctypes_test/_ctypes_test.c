@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <inttypes.h>
+#include <wchar.h>
 
 
 /* some functions handy for testing */
@@ -389,9 +390,12 @@ EXPORT(void) GetString(BSTR *pbstr)
 }
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 EXPORT(void) _py_func_si(char *s, int32_t i)
 {
 }
+#pragma GCC diagnostic pop
 
 EXPORT(void) _py_func(void)
 {
@@ -486,6 +490,8 @@ EXPORT(long double) __stdcall s_tf_D(long double c) { S; return c / 3; }
 #endif
 /*******/
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 EXPORT(int8_t) tf_bb(int8_t x, int8_t c) { S; return c / 3; }
 EXPORT(uint8_t) tf_bB(int8_t x, uint8_t c) { U; return c / 3; }
 EXPORT(short) tf_bh(int8_t x, short c) { S; return c / 3; }
@@ -500,6 +506,7 @@ EXPORT(float) tf_bf(int8_t x, float c) { S; return c / 3; }
 EXPORT(double) tf_bd(int8_t x, double c) { S; return c / 3; }
 EXPORT(long double) tf_bD(int8_t x, long double c) { S; return c / 3; }
 EXPORT(void) tv_i(int32_t c) { S; return; }
+#pragma GCC diagnostic pop
 
 #ifdef MS_WIN32
 EXPORT(int8_t) __stdcall s_tf_bb(int8_t x, int8_t c) { S; return c / 3; }

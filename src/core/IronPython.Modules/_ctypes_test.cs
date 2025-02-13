@@ -8,12 +8,18 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
+
+using Mono.Unix.Native;
 
 using IronPython.Runtime;
+using System.Runtime.Versioning;
 
 [assembly: PythonModule("_ctypes_test", typeof(IronPython.Modules.CTypesTest))]
 namespace IronPython.Modules {
     public static class CTypesTest {
+
+        public static string __file__ = Path.Combine(FindRoot(), "tests", "suite", GetPydName());
 
         private static string FindRoot() {
             // we start at the current directory and look up until we find the "src" directory
@@ -30,7 +36,33 @@ namespace IronPython.Modules {
             return string.Empty;
         }
 
-        public static string __file__ = Path.Combine(FindRoot(), "tests", "suite", string.Format("_ctypes_test_{0}{1}.pyd", Environment.OSVersion.Platform == PlatformID.Win32NT ? "win" : Environment.OSVersion.Platform == PlatformID.MacOSX ? "macOS" : "linux", Environment.Is64BitProcess ? 64 : 32));
+        private static string GetPydName() {
+            string OS  = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win"
+                : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "darwin"
+                : "linux";
+
+            string arch;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                arch = IsArchitecutreArm64() ? "_arm64" : "_x86_64";
+            } else {
+                arch = Environment.Is64BitProcess ? "64" : "32";
+            }
+
+            return string.Format("_ctypes_test_{0}{1}.pyd", OS, arch);
+        }
+
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        private static bool IsArchitecutreArm64() {
+#if NETCOREAPP
+            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+#else
+            if (Syscall.uname(out Utsname info) == 0) {
+                return info.machine is "arm64" or "aarch64";
+            }
+            return false;
+#endif
+        }
     }
 }
 

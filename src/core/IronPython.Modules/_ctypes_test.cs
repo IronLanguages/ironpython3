@@ -9,11 +9,11 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 using Mono.Unix.Native;
 
 using IronPython.Runtime;
-using System.Runtime.Versioning;
 
 [assembly: PythonModule("_ctypes_test", typeof(IronPython.Modules.CTypesTest))]
 namespace IronPython.Modules {

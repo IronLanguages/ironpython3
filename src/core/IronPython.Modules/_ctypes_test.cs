@@ -44,6 +44,8 @@ namespace IronPython.Modules {
             string arch;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 arch = IsArchitecutreArm64() ? "_arm64" : "_x86_64";
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                arch = IsArchitecutreArm64() ? "_aarch64" : Environment.Is64BitProcess ? "_x86_64" : "_i686";
             } else {
                 arch = Environment.Is64BitProcess ? "64" : "32";
             }

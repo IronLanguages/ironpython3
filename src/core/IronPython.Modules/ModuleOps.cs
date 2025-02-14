@@ -17,6 +17,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Runtime.CompilerServices;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -526,12 +527,12 @@ namespace IronPython.Modules {
             throw PythonOps.TypeErrorForTypeMismatch("signed int", value);
         }
 
-        public static short GetUnsignedShort(object value, object type) {
+        public static ushort GetUnsignedShort(object value, object type) {
             int? res = Converter.ImplicitConvertToInt32(value);
             if (res != null) {
                 int iVal = res.Value;
                 if (iVal >= ushort.MinValue && iVal <= ushort.MaxValue) {
-                    return (short)(ushort)iVal;
+                    return (ushort)iVal;
                 }
             }
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -574,12 +575,12 @@ namespace IronPython.Modules {
             throw PythonOps.TypeErrorForTypeMismatch("unsigned byte", value);
         }
 
-        public static byte GetSignedByte(object value, object type) {
+        public static sbyte GetSignedByte(object value, object type) {
             int? res = Converter.ImplicitConvertToInt32(value);
             if (res != null) {
                 int iVal = res.Value;
                 if (iVal >= sbyte.MinValue && iVal <= sbyte.MaxValue) {
-                    return (byte)(sbyte)iVal;
+                    return (sbyte)iVal;
                 }
             }
 

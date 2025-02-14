@@ -1,9 +1,28 @@
+OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+MACHINE ?= $(shell uname -m)
 BITS ?= 64
 CC = gcc
-CFLAGS = -m$(BITS) -fPIC -Wall -Wextra -O2 -g 
-LDFLAGS = -m$(BITS) -shared 
-RM = rm -f  
-TARGET_LIB = _ctypes_test_linux$(BITS).pyd
+CFLAGS = -fPIC -Wall -Wextra -O2 -g
+LDFLAGS = -shared
+RM = rm -f
+PLATFORM = $(OS)_$(MACHINE)
+
+ifeq ($(OS), darwin)
+	TARGET = $(MACHINE)-none-$(OS)
+	CFLAGS += --target=$(TARGET)
+	LDFLAGS += --target=$(TARGET)
+else
+	ifeq ($(MACHINE), aarch64)
+		ARCH = armv8-a
+		CFLAGS += -march=$(ARCH)
+		LDFLAGS += -march=$(ARCH)
+	else
+		CFLAGS += -m$(BITS)
+		LDFLAGS += -m$(BITS)
+	endif
+endif
+
+TARGET_LIB = _ctypes_test_$(PLATFORM).pyd
 
 SRCS = _ctypes_test.c
 OBJS = $(SRCS:.c=.o)

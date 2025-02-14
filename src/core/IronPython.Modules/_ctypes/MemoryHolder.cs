@@ -45,7 +45,7 @@ namespace IronPython.Modules {
             try {
             } finally {
                 _size = size;
-                _data = NativeFunctions.Calloc(new IntPtr(size));
+                _data = NativeFunctions.Calloc(checked((nuint)size));
                 if (_data == IntPtr.Zero) {
                     GC.SuppressFinalize(this);
                     throw new OutOfMemoryException();
@@ -289,8 +289,8 @@ namespace IronPython.Modules {
         /// <summary>
         /// Copies the data in data into this MemoryHolder.
         /// </summary>
-        public void CopyFrom(IntPtr source, IntPtr size) {
-            NativeFunctions.MemCopy(_data, source, size);
+        public void CopyFrom(IntPtr source, nint size) {
+            NativeFunctions.MemCopy(_data, source, checked((nuint)size));
             GC.KeepAlive(this);
         }
 
@@ -319,7 +319,7 @@ namespace IronPython.Modules {
         /// operation.
         /// </summary>
         public void CopyTo(MemoryHolder/*!*/ destAddress, int writeOffset, int size) {
-            NativeFunctions.MemCopy(destAddress._data.Add(writeOffset), _data, new IntPtr(size));
+            NativeFunctions.MemCopy(destAddress._data.Add(writeOffset), _data, checked((nuint)size));
             GC.KeepAlive(destAddress);
             GC.KeepAlive(this);
         }

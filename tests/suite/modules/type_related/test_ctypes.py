@@ -13,7 +13,7 @@ import gc
 import unittest
 from decimal import Decimal
 
-from iptest import IronPythonTestCase, is_posix, is_cli, is_mono, big, myint, run_test
+from iptest import IronPythonTestCase, is_posix, is_cli, is_mono, is_netcoreapp, big, myint, run_test
 
 class MyInt:
     def __init__(self, value):
@@ -322,7 +322,7 @@ class CTypesTest(IronPythonTestCase):
                 c_int_value.value = System.Single(42.6)
 
         # System.Half not supported
-        if is_cli:
+        if is_netcoreapp:
             import System, clr
             half = clr.Convert(42.6, System.Half)
             self.assertRaises(TypeError, c_int, half)
@@ -418,8 +418,6 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual(c_byte_value.value, -128)
         c_byte_value.value = 129
         self.assertEqual(c_byte_value.value, -127)
-
-
 
 
 run_test(__name__)

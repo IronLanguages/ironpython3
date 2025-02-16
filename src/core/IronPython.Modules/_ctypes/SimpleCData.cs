@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -41,12 +42,8 @@ namespace IronPython.Modules {
                         {
                             if (value is IList<byte> t && t.Count == 1) {
                                 value = Bytes.FromByte(t[0]);
-                            } else if (value is int i) {
-                                try {
-                                    value = Bytes.FromByte(checked((byte)i));
-                                } catch (OverflowException) {
-                                    throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
-                                }
+                            } else if (Converter.TryConvertToByte(value, out byte b) && !ModuleOps.IsFloatingPoint(value)) {
+                                value = Bytes.FromByte(b);
                             } else {
                                 throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
                             }
@@ -60,25 +57,20 @@ namespace IronPython.Modules {
                             }
                         }
                         break;
+                    case SimpleTypeKind.SignedByte:
                     case SimpleTypeKind.SignedInt:
                     case SimpleTypeKind.SignedLong:
                     case SimpleTypeKind.SignedLongLong:
                     case SimpleTypeKind.SignedShort:
+                    case SimpleTypeKind.UnsignedByte:
                     case SimpleTypeKind.UnsignedInt:
                     case SimpleTypeKind.UnsignedLong:
                     case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.UnsignedShort: {
-                            object __int__ = null;
-                            if (value is float || value is double) {
-                                throw PythonOps.TypeError("int expected instead of float");
-                            }
-
-                            if (!(value is int || value is BigInteger || PythonOps.TryGetBoundAttr(value, "__int__", out __int__))) {
-                                throw PythonOps.TypeError("an integer is required");
-                            }
-
-                            if (__int__ != null) {
-                                value = PythonOps.CallWithContext(context, __int__);
+                            if (ModuleOps.TryToIntStrict(value, out BigInteger bi)) {
+                                value = bi;
+                            } else {
+                                throw PythonOps.TypeErrorForBadInstance("an integer is required (got type {0})", value);
                             }
                         }
                         break;
@@ -92,7 +84,7 @@ namespace IronPython.Modules {
 
                             if (value is BigInteger x) {
                                 if (x > (BigInteger)double.MaxValue) {
-                                    throw PythonOps.OverflowError("long int too large to convert to float");
+                                    throw PythonOps.OverflowError("Python int too large to convert to float");
                                 }
                             }
 

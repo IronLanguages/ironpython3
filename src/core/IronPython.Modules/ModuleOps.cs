@@ -21,7 +21,7 @@ using System.Runtime.CompilerServices;
 
 namespace IronPython.Modules {
     /// <summary>
-    /// Provides helper functions which need to be called from generated code to implement various 
+    /// Provides helper functions which need to be called from generated code to implement various
     /// portions of modules.
     /// </summary>
     public static partial class ModuleOps {
@@ -110,7 +110,7 @@ namespace IronPython.Modules {
             if (res == null && PythonOps.TryGetBoundAttr(o, "_as_parameter_", out object asParam)) {
                 res = asParam as CTypes._CFuncPtr;
             }
-            
+
             if (res == null || res.NativeType != type) {
                 throw ArgumentError(type, ((PythonType)type).Name, o);
             }
@@ -355,7 +355,7 @@ namespace IronPython.Modules {
 
         public static long GetSignedLongLong(object value, object type) {
             if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (long)bi;
+                return unchecked((long)(ulong)(bi & ulong.MaxValue));
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -365,9 +365,9 @@ namespace IronPython.Modules {
             throw PythonOps.TypeErrorForTypeMismatch("signed long long ", value);
         }
 
-        public static long GetUnsignedLongLong(object value, object type) {
+        public static ulong GetUnsignedLongLong(object value, object type) {
             if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return unchecked((long)(ulong)bi);
+                return (ulong)(bi & ulong.MaxValue);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -450,13 +450,8 @@ namespace IronPython.Modules {
         }
 
         public static int GetSignedLong(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                // This strange conversion to UInt32 was introduced in ipy2 on 20011-06-18, commit 9bf42cbf: Fix issue with marshalling int value
-                if (bi.AsUInt32(out uint unsigned)) {
-                    return unchecked((int)unsigned);
-                } else {
-                    return (int)bi;
-                }
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return unchecked((int)(uint)(bi & uint.MaxValue));
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -466,13 +461,9 @@ namespace IronPython.Modules {
             throw PythonOps.TypeErrorForTypeMismatch("signed long", value);
         }
 
-        public static int GetUnsignedLong(object value, object type) {
+        public static uint GetUnsignedLong(object value, object type) {
             if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                if (bi.AsInt32(out int signed)) {
-                    return signed;
-                } else {
-                    return unchecked((int)(uint)bi);
-                }
+                return (uint)(bi & uint.MaxValue);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -482,9 +473,9 @@ namespace IronPython.Modules {
             throw PythonOps.TypeErrorForTypeMismatch("unsigned long", value);
         }
 
-        public static int GetUnsignedInt(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return unchecked((int)(uint)bi);
+        public static uint GetUnsignedInt(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return (uint)(bi & uint.MaxValue);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -495,8 +486,8 @@ namespace IronPython.Modules {
         }
 
         public static int GetSignedInt(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (int)bi;
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return unchecked((int)(bi & uint.MaxValue));
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -508,7 +499,7 @@ namespace IronPython.Modules {
 
         public static ushort GetUnsignedShort(object value, object type) {
             if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (ushort)bi;
+                return (ushort)(bi & ushort.MaxValue);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -520,7 +511,7 @@ namespace IronPython.Modules {
 
         public static short GetSignedShort(object value, object type) {
             if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (short)bi;
+                return unchecked((short)(ushort)(bi & ushort.MaxValue));
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -536,7 +527,7 @@ namespace IronPython.Modules {
 
         public static byte GetUnsignedByte(object value, object type) {
             if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (byte)bi;
+                return (byte)(bi & byte.MaxValue);
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -548,7 +539,7 @@ namespace IronPython.Modules {
 
         public static sbyte GetSignedByte(object value, object type) {
             if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (sbyte)bi;
+                return unchecked((sbyte)(byte)(bi & byte.MaxValue));
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -606,7 +597,7 @@ namespace IronPython.Modules {
                 return GetWChar(asParam, type);
             }
 
-            throw PythonOps.TypeError("unicode string expected instead of {0} instance", PythonOps.GetPythonTypeName(value));
+            throw PythonOps.TypeErrorForBadInstance("unicode string expected instead of {0} instance", value);
         }
 
         public static object IntPtrToObject(IntPtr address) {
@@ -617,6 +608,22 @@ namespace IronPython.Modules {
             return res;
         }
 
+        internal static bool TryToIntStrict(object value, out BigInteger bi) {
+            // When IronPython upgrades to Python 3.10, this method becomes obsolete
+            // and can be replaced with PythonOps.TryToIndex(value, out bi)
+            if (IsFloatingPoint(value)) {
+                throw PythonOps.TypeErrorForBadInstance("int expected instead of {0}", value);
+            }
+
+            return PythonOps.TryToInt(value, out bi);
+        }
+
+        internal static bool IsFloatingPoint(object value) 
+            => value is double or float
+#if NETCOREAPP
+                or Half
+#endif
+            ;
     }
 }
 #endif

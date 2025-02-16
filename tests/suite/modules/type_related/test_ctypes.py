@@ -11,8 +11,31 @@ from array import array
 import sys
 import gc
 import unittest
+from decimal import Decimal
 
 from iptest import IronPythonTestCase, is_posix, is_cli, is_mono, big, myint, run_test
+
+class MyInt:
+    def __init__(self, value):
+        self.value = value
+    def __int__(self):
+        return self.value
+
+class MyIndex:
+    def __init__(self, value):
+        self.value = value
+    def __index__(self):
+        return self.value
+
+class MyIntIndex:
+    def __init__(self, intValue, indexValue):
+        self.intValue = intValue
+        self.indexValue = indexValue
+    def __int__(self):
+        return self.intValue
+    def __index__(self):
+        return self.indexValue
+
 
 class CTypesTest(IronPythonTestCase):
     export_error_msg = "Existing exports of data: object cannot be re-sized" if is_cli else "cannot resize an array that is exporting buffers"
@@ -236,5 +259,167 @@ class CTypesTest(IronPythonTestCase):
         else:
             self.assertIsNone(cm.exception.filename)
         self.assertIsNone(cm.exception.filename2)
+
+
+    def test_conversions_c_int(self):
+        # normal case
+        c_int_value = c_int(42)
+        self.assertEqual(c_int_value.value, 42)
+
+        # bool case
+        c_int_value = c_int(True)
+        self.assertEqual(c_int_value.value, 1)
+
+        # BigInteger case
+        c_int_value = c_int(big(42))
+        self.assertEqual(c_int_value.value, 42)
+
+        if is_cli or sys.version_info < (3, 10):
+            # __int__ supported
+            c_int_value = c_int(MyInt(42))
+            self.assertEqual(c_int_value.value, 42)
+            c_int_value.value = MyInt(24)
+            self.assertEqual(c_int_value.value, 24)
+        else:
+            # __int__ not supported
+            self.assertRaises(TypeError, c_int, MyInt(42))
+            with self.assertRaises(TypeError):
+                c_int_value.value = MyInt(42)
+
+        if is_cli or sys.version_info >= (3, 8):
+            # __index__ supported
+            c_int_value = c_int(MyIndex(42))
+            self.assertEqual(c_int_value.value, 42)
+            c_int_value.value = MyIndex(24)
+            self.assertEqual(c_int_value.value, 24)
+
+            # __index__ takes priority over __int__
+            c_int_value = c_int(MyIntIndex(44, 42))
+            self.assertEqual(c_int_value.value, 42)
+            c_int_value.value = MyIntIndex(22, 24)
+            self.assertEqual(c_int_value.value, 24)
+        else:
+            # __index__ not supported
+            self.assertRaises(TypeError, c_int, MyIndex(42))
+            with self.assertRaises(TypeError):
+                c_int_value.value = MyIndex(42)
+
+        # str not supported
+        self.assertRaises(TypeError, c_int, "abc")
+        with self.assertRaises(TypeError):
+             c_int_value.value = "abc"
+
+        # float not supported
+        self.assertRaises(TypeError, c_int, 42.6)
+        with self.assertRaises(TypeError):
+             c_int_value.value = 42.6
+
+        # System.Single not supported
+        if is_cli:
+            import System
+            self.assertRaises(TypeError, c_int, System.Single(42.6))
+            with self.assertRaises(TypeError):
+                c_int_value.value = System.Single(42.6)
+
+        # System.Half not supported
+        if is_cli:
+            import System, clr
+            half = clr.Convert(42.6, System.Half)
+            self.assertRaises(TypeError, c_int, half)
+            with self.assertRaises(TypeError):
+                c_int_value.value = System.Half(42.6)
+
+        # Decimal is supported as long as __int__ is supported
+        if is_cli or sys.version_info < (3, 10):
+            c_int_value = c_int(Decimal(42.6))
+        else:
+            self.assertRaises(TypeError, c_int, Decimal(42.6))
+
+
+    def test_conversions_c_char(self):
+        # normal case (c_char is unsigned)
+        c_char_value = c_char(42)
+        self.assertEqual(c_char_value.value, b"*")
+
+        c_char_value = c_char(b"*")
+        self.assertEqual(c_char_value.value, b"*")
+
+        # bool case
+        c_cbyte_value = c_char(True)
+        self.assertEqual(c_cbyte_value.value, b"\x01")
+
+        # BigInteger case
+        c_cbyte_value = c_char(big(42))
+        self.assertEqual(c_cbyte_value.value, b"*")
+
+        # out of range int not supported
+        self.assertRaises(TypeError, c_char, 256)
+        self.assertRaises(TypeError, c_char, -1)
+        with self.assertRaises(TypeError):
+            c_char_value.value = 256
+        with self.assertRaises(TypeError):
+            c_char_value.value = -1
+
+        # longer bytes not supported
+        self.assertRaises(TypeError, c_char, b"abc")
+        with self.assertRaises(TypeError):
+            c_char_value.value = b"abc"
+
+        # __int__ not supported
+        self.assertRaises(TypeError, c_char, MyInt(42))
+        with self.assertRaises(TypeError):
+            c_char_value.value = MyInt(42)
+
+        # __index__ not supported
+        self.assertRaises(TypeError, c_char, MyIndex(42))
+        with self.assertRaises(TypeError):
+            c_char_value.value = MyIndex(42)
+
+        # str not supported
+        self.assertRaises(TypeError, c_char, "a")
+        with self.assertRaises(TypeError):
+            c_char_value.value = "a"
+
+        # float not supported
+        self.assertRaises(TypeError, c_char, 42.6)
+        with self.assertRaises(TypeError):
+            c_char_value.value = 42.6
+
+
+    def test_conversions_overflow(self):
+        # Overflow is clipped to lowest bits
+        c_int_value = c_int((42 << 60) + 24)
+        self.assertEqual(c_int_value.value, 24)
+        c_int_value.value = (42 << 60) + 12
+        self.assertEqual(c_int_value.value, 12)
+
+        c_int_value = c_int((-42 << 60) - 24)
+        self.assertEqual(c_int_value.value, -24)
+
+        c_longlong_value = c_longlong((42 << 80) + 24)
+        self.assertEqual(c_longlong_value.value, 24)
+        c_longlong_value.value = (42 << 80) + 12
+        self.assertEqual(c_longlong_value.value, 12)
+
+        c_short_value = c_short((42 << 20) + 24)
+        self.assertEqual(c_short_value.value, 24)
+        c_short_value.value = (42 << 20) + 12
+        self.assertEqual(c_short_value.value, 12)
+        c_short_value.value = 32768
+        self.assertEqual(c_short_value.value, -32768)
+        c_short_value.value = 32769
+        self.assertEqual(c_short_value.value, -32767)
+
+        c_byte_value = c_byte((42 << 10) + 4)
+        self.assertEqual(c_byte_value.value, 4)
+        c_byte_value.value = (42 << 10) + 2
+        self.assertEqual(c_byte_value.value, 2)
+        c_byte_value.value = 128
+        self.assertEqual(c_byte_value.value, -128)
+        c_byte_value.value = 129
+        self.assertEqual(c_byte_value.value, -127)
+
+
+
 
 run_test(__name__)

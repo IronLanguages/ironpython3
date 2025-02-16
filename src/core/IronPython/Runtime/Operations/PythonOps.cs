@@ -877,6 +877,26 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
+        // This method is like `TryToIndex` but it additionally supports objects with `__int__`,
+        // which is expected for Python 3.7- and is supported until Python 3.10.
+        internal static bool TryToInt(object? o, out BigInteger res) {
+            if (TryToIndex(o, out res)) {
+                // supported since Python 3.8
+                return true;
+            }
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__int__", out object objres)) {
+                // warning since Python 3.8, unsupported in 3.10
+                res = objres switch {
+                    int i => i,
+                    BigInteger bi => bi,
+                    Extensible<BigInteger> ebi => ebi.Value,
+                    _ => throw TypeError("__int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(objres))
+                };
+                return true;
+            }
+            return false;
+        }
+
         private static bool IndexObjectToInt(object o, out int res, out BigInteger longRes) {
             switch (o) {
                 case int i:

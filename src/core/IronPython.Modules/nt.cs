@@ -454,7 +454,7 @@ namespace IronPython.Modules {
                 }
                 if (streams.IsConsoleStream()) return new stat_result(0x2000);
                 if (streams.IsStandardIOStream()) return new stat_result(0x1000);
-                if (StatStream(streams.ReadStream) is not null and var res) return res;
+                if (StatStream(streams.ReadStream) is object res) return res;
             }
             return LightExceptions.Throw(PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor"));
 

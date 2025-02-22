@@ -251,19 +251,19 @@ namespace IronPython.Modules {
                 switch (_type) {
                     case SimpleTypeKind.Boolean: owner.WriteByte(offset, ModuleOps.GetBoolean(value, this)); break;
                     case SimpleTypeKind.Char: owner.WriteByte(offset, ModuleOps.GetChar(value, this)); break;
-                    case SimpleTypeKind.SignedByte: owner.WriteByte(offset, ModuleOps.GetSignedByte(value, this)); break;
+                    case SimpleTypeKind.SignedByte: owner.WriteByte(offset, unchecked((byte)ModuleOps.GetSignedByte(value, this))); break;
                     case SimpleTypeKind.UnsignedByte: owner.WriteByte(offset, ModuleOps.GetUnsignedByte(value, this)); break;
-                    case SimpleTypeKind.WChar: owner.WriteInt16(offset, (short)ModuleOps.GetWChar(value, this)); break;
-                    case SimpleTypeKind.SignedShort: owner.WriteInt16(offset, ModuleOps.GetSignedShort(value, this), _swap);  break;
-                    case SimpleTypeKind.UnsignedShort: owner.WriteInt16(offset, ModuleOps.GetUnsignedShort(value, this), _swap); break;
-                    case SimpleTypeKind.VariantBool: owner.WriteInt16(offset, (short)ModuleOps.GetVariantBool(value, this), _swap); break;
+                    case SimpleTypeKind.WChar: owner.WriteInt16(offset, unchecked((short)ModuleOps.GetWChar(value, this))); break;
+                    case SimpleTypeKind.SignedShort: owner.WriteInt16(offset, ModuleOps.GetSignedShort(value, this), _swap); break;
+                    case SimpleTypeKind.UnsignedShort: owner.WriteInt16(offset, unchecked((short)ModuleOps.GetUnsignedShort(value, this)), _swap); break;
+                    case SimpleTypeKind.VariantBool: owner.WriteInt16(offset, unchecked((short)ModuleOps.GetVariantBool(value, this)), _swap); break;
                     case SimpleTypeKind.SignedInt: owner.WriteInt32(offset, ModuleOps.GetSignedInt(value, this), _swap); break;
-                    case SimpleTypeKind.UnsignedInt: owner.WriteInt32(offset, ModuleOps.GetUnsignedInt(value, this), _swap); break;
-                    case SimpleTypeKind.UnsignedLong: owner.WriteInt32(offset, ModuleOps.GetUnsignedLong(value, this), _swap); break;
+                    case SimpleTypeKind.UnsignedInt: owner.WriteInt32(offset, unchecked((int)ModuleOps.GetUnsignedInt(value, this)), _swap); break;
+                    case SimpleTypeKind.UnsignedLong: owner.WriteInt32(offset, unchecked((int)ModuleOps.GetUnsignedLong(value, this)), _swap); break;
                     case SimpleTypeKind.SignedLong: owner.WriteInt32(offset, ModuleOps.GetSignedLong(value, this), _swap); break;
                     case SimpleTypeKind.Single: owner.WriteInt32(offset, ModuleOps.GetSingleBits(value), _swap); break;
                     case SimpleTypeKind.Double: owner.WriteInt64(offset, ModuleOps.GetDoubleBits(value), _swap); break;
-                    case SimpleTypeKind.UnsignedLongLong: owner.WriteInt64(offset, ModuleOps.GetUnsignedLongLong(value, this), _swap); break;
+                    case SimpleTypeKind.UnsignedLongLong: owner.WriteInt64(offset, unchecked((long)ModuleOps.GetUnsignedLongLong(value, this)), _swap); break;
                     case SimpleTypeKind.SignedLongLong: owner.WriteInt64(offset, ModuleOps.GetSignedLongLong(value, this), _swap); break;
                     case SimpleTypeKind.Object: owner.WriteIntPtr(offset, ModuleOps.GetObject(value)); break;
                     case SimpleTypeKind.Pointer: owner.WriteIntPtr(offset, ModuleOps.GetPointer(value)); break;
@@ -626,23 +626,23 @@ namespace IronPython.Modules {
                         break;
                     case SimpleTypeKind.UnsignedInt:
                     case SimpleTypeKind.UnsignedLong:
-                        EmitInt32ToObject(method, value);
+                        EmitUIntToObject(method, value);
                         break;
                     case SimpleTypeKind.UnsignedLongLong:
                     case SimpleTypeKind.SignedLongLong:
-                        EmitInt64ToObject(method, value);
+                        EmitXInt64ToObject(method, value);
                         break;
                     case SimpleTypeKind.Object:
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.IntPtrToObject)));
                         break;
                     case SimpleTypeKind.WCharPointer:
-                        method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringUni", new[] { typeof(IntPtr) }));
+                        method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringUni", [typeof(IntPtr)]));
                         break;
                     case SimpleTypeKind.CharPointer:
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.IntPtrToBytes)));
                         break;
                     case SimpleTypeKind.BStr:
-                        method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringBSTR", new[] { typeof(IntPtr) }));
+                        method.Emit(OpCodes.Call, typeof(Marshal).GetMethod("PtrToStringBSTR", [typeof(IntPtr)]));
                         break;
                     case SimpleTypeKind.Char:
                         method.Emit(OpCodes.Call, typeof(ModuleOps).GetMethod(nameof(ModuleOps.CharToBytes)));
@@ -669,12 +669,13 @@ namespace IronPython.Modules {
                             method.MarkLabel(notNull);
 
                             method.Emit(OpCodes.Ldloc, tmpLocal);
-                            EmitInt32ToObject(method, new Local(tmpLocal));
+                            EmitUIntToObject(method, new Local(tmpLocal));
                         } else {
                             LocalBuilder tmpLocal = method.DeclareLocal(typeof(long));
                             method.Emit(OpCodes.Conv_I8);
                             method.Emit(OpCodes.Stloc, tmpLocal);
                             method.Emit(OpCodes.Ldloc, tmpLocal);
+                            method.Emit(OpCodes.Conv_U8);
 
                             method.Emit(OpCodes.Ldc_I4_0);
                             method.Emit(OpCodes.Conv_U8);
@@ -684,7 +685,7 @@ namespace IronPython.Modules {
                             method.MarkLabel(notNull);
 
                             method.Emit(OpCodes.Ldloc, tmpLocal);
-                            EmitInt64ToObject(method, new Local(tmpLocal));
+                            EmitXInt64ToObject(method, new Local(tmpLocal));
                         }
 
                         method.MarkLabel(done);
@@ -709,10 +710,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            private static void EmitInt64ToObject(ILGenerator method, LocalOrArg value) {
+            private static void EmitXInt64ToObject(ILGenerator method, LocalOrArg value) {
                 Label done;
                 Label bigInt = method.DefineLabel();
                 done = method.DefineLabel();
+                if (value.Type == typeof(ulong)) {
+                    method.Emit(OpCodes.Conv_I8);
+                }
                 method.Emit(OpCodes.Ldc_I4, Int32.MaxValue);
                 method.Emit(OpCodes.Conv_I8);
                 method.Emit(OpCodes.Bgt, bigInt);
@@ -729,13 +733,13 @@ namespace IronPython.Modules {
 
                 method.MarkLabel(bigInt);
                 value.Emit(method);
-                method.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("op_Implicit", new[] { value.Type }));
+                method.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("op_Implicit", [value.Type]));
                 method.Emit(OpCodes.Box, typeof(BigInteger));
 
                 method.MarkLabel(done);
             }
 
-            private static void EmitInt32ToObject(ILGenerator method, LocalOrArg value) {
+            private static void EmitUIntToObject(ILGenerator method, LocalOrArg value) {
                 Label intVal, done;
                 intVal = method.DefineLabel();
                 done = method.DefineLabel();
@@ -745,7 +749,7 @@ namespace IronPython.Modules {
                 method.Emit(OpCodes.Ble, intVal);
 
                 value.Emit(method);
-                method.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("op_Implicit", new[] { value.Type }));
+                method.Emit(OpCodes.Call, typeof(BigInteger).GetMethod("op_Implicit", [value.Type]));
                 method.Emit(OpCodes.Box, typeof(BigInteger));
                 method.Emit(OpCodes.Br, done);
 

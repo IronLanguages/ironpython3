@@ -581,7 +581,7 @@ public static class PythonTermios {
 
         object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf, mutate_flag: true);
 
-        if (ToTermiosError(context, result) is not null and var ex) {
+        if (ToTermiosError(context, result) is object ex) {
             return ex;
         }
         return PythonTuple.MakeTuple((int)ws[0], (int)ws[1]);
@@ -607,7 +607,7 @@ public static class PythonTermios {
         var buf = new MemoryBufferProtocolWrapper<ushort>(ws.AsMemory());
 
         object result = PythonFcntl.ioctl(fd, TIOCGWINSZ, buf, mutate_flag: true);
-        if (ToTermiosError(context, result) is not null and var ex) {
+        if (ToTermiosError(context, result) is object ex) {
             return ex;
         }
 
@@ -618,7 +618,7 @@ public static class PythonTermios {
         }
 
         result = PythonFcntl.ioctl(fd, TIOCSWINSZ, buf);
-        if (ToTermiosError(context, result) is not null and var ex2) {
+        if (ToTermiosError(context, result) is object ex2) {
             return ex2;
         }
 

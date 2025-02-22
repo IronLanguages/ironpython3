@@ -4,6 +4,8 @@
 
 #nullable enable
 
+using System.Numerics;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
@@ -155,10 +157,10 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("stack_effect: opcode requires oparg but oparg was not specified");
                 }
 
-                if (!Converter.TryConvertToIndex(oparg, out ioparg)) { // supported since CPython 3.8
-                    ioparg = Converter.ImplicitConvertToInt32(oparg) ?? // warning since CPython 3.8, unsupported in 3.10
-                        throw PythonOps.TypeError($"an integer is required (got type {PythonOps.GetPythonTypeName(oparg)})");
+                if (!PythonOps.TryToInt(oparg, out BigInteger bioparg)) {
+                    throw PythonOps.TypeError($"an integer is required (got type {PythonOps.GetPythonTypeName(oparg)})");
                 }
+                ioparg = (int)bioparg;
             } else if (oparg != null) {
                 throw PythonOps.ValueError("stack_effect: opcode does not permit oparg but oparg was specified");
             }

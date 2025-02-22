@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
@@ -50,11 +50,12 @@ namespace IronPython.Runtime {
 
         public static int GetTypecodeWidth(char typecode) {
             switch (typecode) {
+                case '?': // bool
                 case 'c': // bytechar
                 case 'b': // signed byte
                 case 'B': // unsigned byte
-                case '?': // bool
                     return 1;
+                case 'u': // unicode char
                 case 'h': // signed short
                 case 'H': // unsigned short
                     return 2;
@@ -70,8 +71,8 @@ namespace IronPython.Runtime {
                 case 'Q': // unsigned long long
                 case 'd': // double
                     return 8;
-                case 's': // char pointer
-                case 'p': // char pointer
+                case 's': // char pointer (C-style string)
+                case 'p': // char pointer (Pascal-style string)
                 case 'P': // void pointer
                 case 'r': // .NET signed pointer
                 case 'R': // .NET unsigned pointer
@@ -83,6 +84,9 @@ namespace IronPython.Runtime {
 
         public static bool TryGetFromBytes(char typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)]out object? result) {
             switch (typecode) {
+                case '?':
+                    result = bytes[0] != 0;
+                    return true;
                 case 'c':
                     result = Bytes.FromByte(bytes[0]);
                     return true;
@@ -91,9 +95,6 @@ namespace IronPython.Runtime {
                     return true;
                 case 'B':
                     result = bytes[0];
-                    return true;
-                case '?':
-                    result = bytes[0] != 0;
                     return true;
                 case 'h':
                     result = MemoryMarshal.Read<short>(bytes);
@@ -111,17 +112,17 @@ namespace IronPython.Runtime {
                 case 'N':
                     result = MemoryMarshal.Read<uint>(bytes);
                     return true;
-                case 'f':
-                    result = MemoryMarshal.Read<float>(bytes);
-                    return true;
-                case 'd':
-                    result = MemoryMarshal.Read<double>(bytes);
-                    return true;
                 case 'q':
                     result = MemoryMarshal.Read<long>(bytes);
                     return true;
                 case 'Q':
                     result = MemoryMarshal.Read<ulong>(bytes);
+                    return true;
+                case 'f':
+                    result = MemoryMarshal.Read<float>(bytes);
+                    return true;
+                case 'd':
+                    result = MemoryMarshal.Read<double>(bytes);
                     return true;
                 case 'P':
                     if (UIntPtr.Size == 4) goto case 'L';
@@ -141,6 +142,9 @@ namespace IronPython.Runtime {
 #pragma warning disable CS9191 // The 'ref' modifier for an argument corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
         public static bool TryGetBytes(char typecode, object obj, Span<byte> dest) {
             switch (typecode) {
+                case '?':
+                    var boolVal = PythonOps.IsTrue(obj);
+                    return MemoryMarshal.TryWrite(dest, ref boolVal);
                 case 'c':
                     var bytecharVal = (byte)((Bytes)obj)[0];
                     return MemoryMarshal.TryWrite(dest, ref bytecharVal);
@@ -150,9 +154,6 @@ namespace IronPython.Runtime {
                 case 'B':
                     var byteVal = Convert.ToByte(obj);
                     return MemoryMarshal.TryWrite(dest, ref byteVal);
-                case '?':
-                    var boolVal = PythonOps.IsTrue(obj);
-                    return MemoryMarshal.TryWrite(dest, ref boolVal);
                 case 'h':
                     var shortVal = Convert.ToInt16(obj);
                     return MemoryMarshal.TryWrite(dest, ref shortVal);
@@ -169,18 +170,18 @@ namespace IronPython.Runtime {
                 case 'N':
                     var uintVal = Convert.ToUInt32(obj);
                     return MemoryMarshal.TryWrite(dest, ref uintVal);
-                case 'f':
-                    var singleVal = Convert.ToSingle(obj);
-                    return MemoryMarshal.TryWrite(dest, ref singleVal);
-                case 'd':
-                    var doubleVal = Convert.ToDouble(obj);
-                    return MemoryMarshal.TryWrite(dest, ref doubleVal);
                 case 'q':
                     var longVal = Convert.ToInt64(obj);
                     return MemoryMarshal.TryWrite(dest, ref longVal);
                 case 'Q':
                     var ulongVal = Convert.ToUInt64(obj);
                     return MemoryMarshal.TryWrite(dest, ref ulongVal);
+                case 'f':
+                    var singleVal = Convert.ToSingle(obj);
+                    return MemoryMarshal.TryWrite(dest, ref singleVal);
+                case 'd':
+                    var doubleVal = Convert.ToDouble(obj);
+                    return MemoryMarshal.TryWrite(dest, ref doubleVal);
                 case 'P':
                     var bi = (BigInteger)obj;
                     if (UIntPtr.Size == 4) {
@@ -219,6 +220,8 @@ namespace IronPython.Runtime {
             long minValue;
 
             switch (typecode) {
+                case '?': // bool
+                    return false; // bool never causes overflow but is coerced to 0/1
                 case 'b': // signed byte
                     minValue = sbyte.MinValue;
                     maxValue = (ulong)sbyte.MaxValue;
@@ -227,8 +230,6 @@ namespace IronPython.Runtime {
                     minValue = byte.MinValue;
                     maxValue = byte.MaxValue;
                     break;
-                case '?': // bool
-                    return false; // bool never causes overflow but is coerced to 0/1
                 case 'h': // signed short
                     minValue = short.MinValue;
                     maxValue = (ulong)short.MaxValue;

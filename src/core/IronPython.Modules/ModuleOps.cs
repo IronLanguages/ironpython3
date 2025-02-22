@@ -231,65 +231,274 @@ namespace IronPython.Modules {
             return func.Id == id;
         }
 
-        public static IntPtr GetWCharPointer(object value) {
-            if (value is string strVal) {
-                return Marshal.StringToCoTaskMemUni(strVal);
-            }
-
-
-            if (value == null) {
-                return IntPtr.Zero;
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetWCharPointer(asParam);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("wchar pointer", value);
-        }
-
-        public static IntPtr GetBSTR(object value) {
-            if (value is string strVal) {
-                return Marshal.StringToBSTR(strVal);
-            }
-
-
-            if (value == null) {
-                return IntPtr.Zero;
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetBSTR(asParam);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("BSTR", value);
-        }
-
-        public static IntPtr GetCharPointer(object value) {
-            if (value is Bytes bytes) {
-                var data = bytes.UnsafeByteArray;
-                var ptr = Marshal.AllocCoTaskMem(data.Length + 1);
-                Marshal.Copy(data, 0, ptr, data.Length);
-                Marshal.WriteByte(ptr, data.Length, 0);
-                return ptr;
-            }
-
-            if (value == null) {
-                return IntPtr.Zero;
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetCharPointer(asParam);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("char pointer", value);
-        }
-
         public static Bytes IntPtrToBytes(IntPtr ptr) {
             // TODO: optimize this?
             var str = Marshal.PtrToStringAnsi(ptr);
             if (str is null) return null;
             return Bytes.Make(str.MakeByteArray());
+        }
+
+        public static object IntPtrToObject(IntPtr address) {
+            GCHandle handle = GCHandle.FromIntPtr(address);
+
+            object res = handle.Target;
+            handle.Free();
+            return res;
+        }
+
+        public static byte GetBoolean(object value, object type) {
+            if (value is bool) {
+                return ((bool)value) ? (byte)1 : (byte)0;
+            } else if (value is int) {
+                return ((int)value) != 0 ? (byte)1 : (byte)0;
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetBoolean(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("bool", value);
+        }
+
+        public static int GetVariantBool(object value, object type) {
+            return Converter.ConvertToBoolean(value) ? 1 : 0;
+        }
+
+        public static byte GetChar(object value, object type) {
+            // TODO: .NET interop?
+            if (value is Bytes bytes && bytes.Count == 1) {
+                return ((IList<byte>)bytes)[0];
+            }
+            if (value is ByteArray bytearray && bytearray.Count == 1) {
+                return ((IList<byte>)bytearray)[0];
+            }
+            if (value is int i) {
+                try {
+                    return checked((byte)i);
+                } catch (OverflowException) {
+                    throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
+                }
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetChar(asParam, type);
+            }
+
+            throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
+        }
+
+        public static char GetWChar(object value, object type) {
+            if (value is string strVal) {
+                if (strVal.Length != 1) throw PythonOps.TypeError("one character unicode string expected");
+                return strVal[0];
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetWChar(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForBadInstance("unicode string expected instead of {0} instance", value);
+        }
+
+        public static sbyte GetSignedByte(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return unchecked((sbyte)(byte)(bi & byte.MaxValue));
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetSignedByte(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("signed byte", value);
+        }
+
+        public static byte GetUnsignedByte(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return (byte)(bi & byte.MaxValue);
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetUnsignedByte(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("unsigned byte", value);
+        }
+
+
+        public static short GetSignedShort(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return unchecked((short)(ushort)(bi & ushort.MaxValue));
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetSignedShort(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("signed short", value);
+        }
+
+        public static ushort GetUnsignedShort(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return (ushort)(bi & ushort.MaxValue);
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetUnsignedShort(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("unsigned short", value);
+        }
+
+        public static int GetSignedInt(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return unchecked((int)(uint)(bi & uint.MaxValue));
+            }
+
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetSignedInt(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("signed int", value);
+        }
+
+        public static uint GetUnsignedInt(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return (uint)(bi & uint.MaxValue);
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetUnsignedInt(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("unsigned int", value);
+        }
+
+        public static long GetSignedLong(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return unchecked((long)(ulong)(bi & uint.MaxValue));
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetSignedLong(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("signed long", value);
+        }
+
+        public static ulong GetUnsignedLong(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return (ulong)(bi & uint.MaxValue);
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetUnsignedLong(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("unsigned long", value);
+        }
+
+        public static long GetSignedLongLong(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return unchecked((long)(ulong)(bi & ulong.MaxValue));
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetSignedLongLong(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("signed long long ", value);
+        }
+
+        public static ulong GetUnsignedLongLong(object value, object type) {
+            if (TryToIntStrict(value, out BigInteger bi)) {
+                return (ulong)(bi & ulong.MaxValue);
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetUnsignedLongLong(asParam, type);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("unsigned long long", value);
+        }
+
+        public static float GetSingle(object value, object type) {
+            if (value is double d) {
+                return (float)d;
+            } else if (value is float f) {
+                return f;
+            } else if (value is int i) {
+                return (float)i;
+            } else if (value is BigInteger bi) {
+                return (float)bi.ToFloat64();
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetSingle(asParam, type);
+            }
+
+            return (float)Converter.ConvertToDouble(value);
+        }
+
+        public static double GetDouble(object value, object type) {
+            if (value is double d) {
+                return d;
+            } else if (value is float f) {
+                return (double)f;
+            } else if (value is int i) {
+                return (double)i;
+            } else if (value is BigInteger bi) {
+                return bi.ToFloat64();
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetDouble(asParam, type);
+            }
+
+            return Converter.ConvertToDouble(value);
+        }
+
+        public static int GetSingleBits(object value) {
+            if (value is double) {
+                return BitConverter.ToInt32(BitConverter.GetBytes((float)(double)value), 0);
+            } else if (value is float) {
+                return BitConverter.ToInt32(BitConverter.GetBytes((float)value), 0);
+            } else if (value is int) {
+                return BitConverter.ToInt32(BitConverter.GetBytes((float)(int)value), 0);
+            } else if (value is BigInteger) {
+                return BitConverter.ToInt32(BitConverter.GetBytes((float)((BigInteger)value).ToFloat64()), 0);
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetSingleBits(asParam);
+            }
+
+            return BitConverter.ToInt32(BitConverter.GetBytes((float)Converter.ConvertToDouble(value)), 0);
+        }
+
+        public static long GetDoubleBits(object value) {
+            if (value is double) {
+                return BitConverter.ToInt64(BitConverter.GetBytes((double)value), 0);
+            } else if (value is float) {
+                return BitConverter.ToInt64(BitConverter.GetBytes((float)value), 0);
+            } else if (value is int) {
+                return BitConverter.ToInt64(BitConverter.GetBytes((double)(int)value), 0);
+            } else if (value is BigInteger) {
+                return BitConverter.ToInt64(BitConverter.GetBytes((double)((BigInteger)value).ToFloat64()), 0);
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetDoubleBits(asParam);
+            }
+
+            return BitConverter.ToInt64(BitConverter.GetBytes(Converter.ConvertToDouble(value)), 0);
+        }
+
+        public static IntPtr GetObject(object value) {
+            GCHandle handle = GCHandle.Alloc(value);
+
+            // TODO: Need to free the handle at some point
+            return GCHandle.ToIntPtr(handle);
         }
 
         public static IntPtr GetPointer(object value) {
@@ -346,266 +555,58 @@ namespace IronPython.Modules {
             return Marshal.ReadIntPtr(vtable, offset * IntPtr.Size);
         }
 
-        public static IntPtr GetObject(object value) {
-            GCHandle handle = GCHandle.Alloc(value);
+        public static IntPtr GetCharPointer(object value) {
+            if (value is Bytes bytes) {
+                var data = bytes.UnsafeByteArray;
+                var ptr = Marshal.AllocCoTaskMem(data.Length + 1);
+                Marshal.Copy(data, 0, ptr, data.Length);
+                Marshal.WriteByte(ptr, data.Length, 0);
+                return ptr;
+            }
 
-            // TODO: Need to free the handle at some point
-            return GCHandle.ToIntPtr(handle);
-        }
-
-        public static long GetSignedLongLong(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return unchecked((long)(ulong)(bi & ulong.MaxValue));
+            if (value == null) {
+                return IntPtr.Zero;
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetSignedLongLong(asParam, type);
+                return GetCharPointer(asParam);
             }
 
-            throw PythonOps.TypeErrorForTypeMismatch("signed long long ", value);
+            throw PythonOps.TypeErrorForTypeMismatch("char pointer", value);
         }
 
-        public static ulong GetUnsignedLongLong(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (ulong)(bi & ulong.MaxValue);
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetUnsignedLongLong(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("unsigned long long", value);
-        }
-
-        public static double GetDouble(object value, object type) {
-            if (value is double) {
-                return (double)value;
-            } else if (value is float) {
-                return (float)value;
-            } else if (value is int) {
-                return (double)(int)value;
-            } else if (value is BigInteger) {
-                return (double)((BigInteger)value).ToFloat64();
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetDouble(asParam, type);
-            }
-
-            return Converter.ConvertToDouble(value);
-        }
-
-        public static float GetSingle(object value, object type) {
-            if (value is double) {
-                return (float)(double)value;
-            } else if (value is float) {
-                return (float)value;
-            } else if (value is int) {
-                return (float)(int)value;
-            } else if (value is BigInteger) {
-                return (float)((BigInteger)value).ToFloat64();
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetSingle(asParam, type);
-            }
-
-            return (float)Converter.ConvertToDouble(value);
-        }
-
-        public static long GetDoubleBits(object value) {
-            if (value is double) {
-                return BitConverter.ToInt64(BitConverter.GetBytes((double)value), 0);
-            } else if (value is float) {
-                return BitConverter.ToInt64(BitConverter.GetBytes((float)value), 0);
-            } else if (value is int) {
-                return BitConverter.ToInt64(BitConverter.GetBytes((double)(int)value), 0);
-            } else if (value is BigInteger) {
-                return BitConverter.ToInt64(BitConverter.GetBytes((double)((BigInteger)value).ToFloat64()), 0);
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetDoubleBits(asParam);
-            }
-
-            return BitConverter.ToInt64(BitConverter.GetBytes(Converter.ConvertToDouble(value)), 0);
-        }
-
-        public static int GetSingleBits(object value) {
-            if (value is double) {
-                return BitConverter.ToInt32(BitConverter.GetBytes((float)(double)value), 0);
-            } else if (value is float) {
-                return BitConverter.ToInt32(BitConverter.GetBytes((float)value), 0);
-            } else if (value is int) {
-                return BitConverter.ToInt32(BitConverter.GetBytes((float)(int)value), 0);
-            } else if (value is BigInteger) {
-                return BitConverter.ToInt32(BitConverter.GetBytes((float)((BigInteger)value).ToFloat64()), 0);
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetSingleBits(asParam);
-            }
-
-            return BitConverter.ToInt32(BitConverter.GetBytes((float)Converter.ConvertToDouble(value)), 0);
-        }
-
-        public static int GetSignedLong(object value, object type) {
-            if (TryToIntStrict(value, out BigInteger bi)) {
-                return unchecked((int)(uint)(bi & uint.MaxValue));
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetSignedLong(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("signed long", value);
-        }
-
-        public static uint GetUnsignedLong(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (uint)(bi & uint.MaxValue);
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetUnsignedLong(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("unsigned long", value);
-        }
-
-        public static uint GetUnsignedInt(object value, object type) {
-            if (TryToIntStrict(value, out BigInteger bi)) {
-                return (uint)(bi & uint.MaxValue);
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetUnsignedInt(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("unsigned int", value);
-        }
-
-        public static int GetSignedInt(object value, object type) {
-            if (TryToIntStrict(value, out BigInteger bi)) {
-                return unchecked((int)(bi & uint.MaxValue));
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetSignedInt(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("signed int", value);
-        }
-
-        public static ushort GetUnsignedShort(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (ushort)(bi & ushort.MaxValue);
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetUnsignedShort(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("unsigned short", value);
-        }
-
-        public static short GetSignedShort(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return unchecked((short)(ushort)(bi & ushort.MaxValue));
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetSignedShort(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("signed short", value);
-        }
-
-        public static int GetVariantBool(object value, object type) {
-            return Converter.ConvertToBoolean(value) ? 1 : 0;
-        }
-
-        public static byte GetUnsignedByte(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return (byte)(bi & byte.MaxValue);
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetUnsignedByte(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("unsigned byte", value);
-        }
-
-        public static sbyte GetSignedByte(object value, object type) {
-            if (PythonOps.TryToInt(value, out BigInteger bi)) {
-                return unchecked((sbyte)(byte)(bi & byte.MaxValue));
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetSignedByte(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("signed byte", value);
-        }
-
-
-        public static byte GetBoolean(object value, object type) {
-            if (value is bool) {
-                return ((bool)value) ? (byte)1 : (byte)0;
-            } else if (value is int) {
-                return ((int)value) != 0 ? (byte)1 : (byte)0;
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetBoolean(asParam, type);
-            }
-
-            throw PythonOps.TypeErrorForTypeMismatch("bool", value);
-        }
-
-        public static byte GetChar(object value, object type) {
-            // TODO: .NET interop?
-            if (value is Bytes bytes && bytes.Count == 1) {
-                return ((IList<byte>)bytes)[0];
-            }
-            if (value is ByteArray bytearray && bytearray.Count == 1) {
-                return ((IList<byte>)bytearray)[0];
-            }
-            if (value is int i) {
-                try {
-                    return checked((byte)i);
-                } catch (OverflowException) {
-                    throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
-                }
-            }
-
-            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetChar(asParam, type);
-            }
-
-            throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
-        }
-
-        public static char GetWChar(object value, object type) {
+        public static IntPtr GetWCharPointer(object value) {
             if (value is string strVal) {
-                if (strVal.Length != 1) throw PythonOps.TypeError("one character unicode string expected");
-                return strVal[0];
+                return Marshal.StringToCoTaskMemUni(strVal);
+            }
+
+
+            if (value == null) {
+                return IntPtr.Zero;
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
-                return GetWChar(asParam, type);
+                return GetWCharPointer(asParam);
             }
 
-            throw PythonOps.TypeErrorForBadInstance("unicode string expected instead of {0} instance", value);
+            throw PythonOps.TypeErrorForTypeMismatch("wchar pointer", value);
         }
 
-        public static object IntPtrToObject(IntPtr address) {
-            GCHandle handle = GCHandle.FromIntPtr(address);
+        public static IntPtr GetBSTR(object value) {
+            if (value is string strVal) {
+                return Marshal.StringToBSTR(strVal);
+            }
 
-            object res = handle.Target;
-            handle.Free();
-            return res;
+
+            if (value == null) {
+                return IntPtr.Zero;
+            }
+
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
+                return GetBSTR(asParam);
+            }
+
+            throw PythonOps.TypeErrorForTypeMismatch("BSTR", value);
         }
 
         internal static bool TryToIntStrict(object value, out BigInteger bi) {
@@ -619,11 +620,11 @@ namespace IronPython.Modules {
         }
 
         internal static bool IsFloatingPoint(object value) 
-            => value is double or float
-#if NETCOREAPP
-                or Half
+#if NET6_0_OR_GREATER
+            => value is double or float or Half;
+#else
+            => value is double or float;
 #endif
-            ;
     }
 }
 #endif

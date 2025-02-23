@@ -19,7 +19,6 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using static IronPython.Modules.PythonIOModule;
-using IronPython.Hosting;
 
 
 [assembly: PythonModule("termios", typeof(IronPython.Modules.PythonTermios), PlatformsAttribute.PlatformFamily.Unix)]

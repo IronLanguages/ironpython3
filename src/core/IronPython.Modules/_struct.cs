@@ -150,6 +150,16 @@ namespace IronPython.Modules {
                                 WriteUInt(res, _isLittleEndian, GetULongValue(context, curObj++, values));
                             }
                             break;
+                        case FormatType.LongLong:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                WriteLong(res, _isLittleEndian, GetLongLongValue(context, curObj++, values));
+                            }
+                            break;
+                        case FormatType.UnsignedLongLong:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                WriteULong(res, _isLittleEndian, GetULongLongValue(context, curObj++, values));
+                            }
+                            break;
                         case FormatType.Pointer:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 WritePointer(res, _isLittleEndian, GetPointer(context, curObj++, values));
@@ -173,16 +183,6 @@ namespace IronPython.Modules {
                         case FormatType.SizeT:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 WriteUInt(res, _isLittleEndian, GetSizeT(context, curObj++, values));
-                            }
-                            break;
-                        case FormatType.LongLong:
-                            for (int j = 0; j < curFormat.Count; j++) {
-                                WriteLong(res, _isLittleEndian, GetLongLongValue(context, curObj++, values));
-                            }
-                            break;
-                        case FormatType.UnsignedLongLong:
-                            for (int j = 0; j < curFormat.Count; j++) {
-                                WriteULong(res, _isLittleEndian, GetULongLongValue(context, curObj++, values));
                             }
                             break;
                         case FormatType.Double:
@@ -315,6 +315,16 @@ namespace IronPython.Modules {
                                 res[res_idx++] = BigIntegerOps.__int__(CreateUIntValue(context, ref curIndex, _isLittleEndian, data));
                             }
                             break;
+                        case FormatType.LongLong:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                res[res_idx++] = BigIntegerOps.__int__(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
+                            }
+                            break;
+                        case FormatType.UnsignedLongLong:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                res[res_idx++] = BigIntegerOps.__int__(CreateULongValue(context, ref curIndex, _isLittleEndian, data));
+                            }
+                            break;
                         case FormatType.Pointer:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 if (IntPtr.Size == 4) {
@@ -350,16 +360,6 @@ namespace IronPython.Modules {
                         case FormatType.SizeT:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 res[res_idx++] = BigIntegerOps.__int__(CreateUIntValue(context, ref curIndex, _isLittleEndian, data));
-                            }
-                            break;
-                        case FormatType.LongLong:
-                            for (int j = 0; j < curFormat.Count; j++) {
-                                res[res_idx++] = BigIntegerOps.__int__(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
-                            }
-                            break;
-                        case FormatType.UnsignedLongLong:
-                            for (int j = 0; j < curFormat.Count; j++) {
-                                res[res_idx++] = BigIntegerOps.__int__(CreateULongValue(context, ref curIndex, _isLittleEndian, data));
                             }
                             break;
 #if NET6_0_OR_GREATER

@@ -405,8 +405,10 @@ namespace IronPython.Runtime {
             return new MemoryBufferWrapper(this, flags);
         }
 
-        private static char GetFormatChar()
-            => Type.GetTypeCode(typeof(T)) switch {
+        private static char GetFormatChar() {
+            Type type_T = typeof(T);
+            return Type.GetTypeCode(type_T) switch {
+                TypeCode.Boolean => '?',
                 TypeCode.SByte   => 'b',
                 TypeCode.Byte    => 'B',
                 TypeCode.Char    => 'u',
@@ -418,9 +420,13 @@ namespace IronPython.Runtime {
                 TypeCode.UInt64  => 'Q',
                 TypeCode.Single  => 'f',
                 TypeCode.Double  => 'd',
-                _ => throw new ArgumentException("Unsupported type"),
+                _ =>
+#if NET6_0_OR_GREATER
+                    type_T == typeof(Half) ? 'e' :
+#endif
+                    throw new ArgumentException("Unsupported type"),
             };
-
+        }
 
         private sealed unsafe class MemoryBufferWrapper : IPythonBuffer {
             private readonly MemoryBufferProtocolWrapper<T> _wrapper;

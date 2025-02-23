@@ -117,7 +117,7 @@ namespace IronPython.Modules {
 
             public array([NotNone] string type) {
                 if (type == null || type.Length != 1) {
-                    throw PythonOps.TypeError("expected character, got {0}", PythonOps.GetPythonTypeName(type));
+                    throw PythonOps.TypeErrorForBadInstance("expected character, got {0}", type);
                 }
 
                 _typeCode = type[0];
@@ -388,31 +388,8 @@ namespace IronPython.Modules {
                 _data.Insert(i, x);
             }
 
-            public int itemsize {
-                get {
-                    switch (_typeCode) {
-                        case 'b': // signed byte
-                        case 'B': // unsigned byte
-                            return 1;
-                        case 'u': // unicode char
-                        case 'h': // signed short
-                        case 'H': // unsigned short
-                            return 2;
-                        case 'i': // signed int
-                        case 'I': // unsigned int
-                        case 'l': // signed long
-                        case 'L': // unsigned long
-                        case 'f': // float
-                            return 4;
-                        case 'q': // signed long long
-                        case 'Q': // unsigned long long
-                        case 'd': // double
-                            return 8;
-                        default:
-                            throw new InvalidOperationException(); // should never happen
-                    }
-                }
-            }
+            public int itemsize
+                => TypecodeOps.GetTypecodeWidth(_typeCode);
 
             public object pop() {
                 return pop(-1);

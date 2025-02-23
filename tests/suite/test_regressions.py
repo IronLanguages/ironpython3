@@ -18,7 +18,9 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython, stdout_trapper
+from iptest import IronPythonTestCase, is_32, is_cli, is_mono, is_netcoreapp, is_netcoreapp21, is_windows, is_posix, run_test, skipUnlessIronPython, stdout_trapper
+
+is_long32bit = is_32 or is_windows
 
 class RegressionTest(IronPythonTestCase):
 
@@ -229,18 +231,22 @@ with open(r"%s", "w") as f:
         andCalled = False
 
         for code in ['L', 'I']:
-            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, 0x100000000)
+            if code != 'L' or is_long32bit:
+                self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, 0x100000000)
             self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, -1)
 
         for code in ['l', 'i', 'h', 'H', 'B', 'b']:
-            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack,  0x80000000)
-            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, -0x80000001)
+            if code != 'l' or is_long32bit:
+                self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack,  0x80000000)
+                self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, -0x80000001)
 
-        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('Q').pack, 0x10000000000000000)
-        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('Q').pack, -1)
+        for code in ['L', 'Q']:
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, 0x10000000000000000)
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, -1)
 
-        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('q').pack,  0x8000000000000000)
-        self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct('q').pack, -0x8000000000000001)
+        for code in ['l', 'q']:
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack,  0x8000000000000000)
+            self.assertRaisesRegex(_struct.error, "argument out of range", _struct.Struct(code).pack, -0x8000000000000001)
 
         self.assertRaisesRegex(_struct.error, r"ushort format requires 0 <= number .*", _struct.Struct('H').pack, 0x10000)
         self.assertRaisesRegex(_struct.error, r"ushort format requires 0 <= number .*", _struct.Struct('H').pack, -1)

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
@@ -48,6 +48,9 @@ namespace IronPython.Runtime {
         public static bool IsFloatCode(char typecode)
             => typecode == 'f' || typecode == 'd';
 
+        public static bool IsCLong32Bit { get; }
+            = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IntPtr.Size == 4;
+
         public static int GetTypecodeWidth(char typecode) {
             switch (typecode) {
                 case '?': // bool
@@ -61,12 +64,13 @@ namespace IronPython.Runtime {
                     return 2;
                 case 'i': // signed int
                 case 'I': // unsigned int
-                case 'l': // signed long
-                case 'L': // unsigned long
                 case 'f': // float
                 case 'n': // signed index
                 case 'N': // unsigned index
                     return 4;
+                case 'l': // signed long
+                case 'L': // unsigned long
+                    return IsCLong32Bit ? 4 : 8;
                 case 'q': // signed long long
                 case 'Q': // unsigned long long
                 case 'd': // double
@@ -102,16 +106,20 @@ namespace IronPython.Runtime {
                 case 'H':
                     result = MemoryMarshal.Read<ushort>(bytes);
                     return true;
-                case 'l':
                 case 'i':
                 case 'n':
                     result = MemoryMarshal.Read<int>(bytes);
                     return true;
-                case 'L':
                 case 'I':
                 case 'N':
                     result = MemoryMarshal.Read<uint>(bytes);
                     return true;
+                case 'l':
+                    if (IsCLong32Bit) goto case 'i';
+                    else goto case 'q';
+                case 'L':
+                    if (IsCLong32Bit) goto case 'I';
+                    else goto case 'Q';
                 case 'q':
                     result = MemoryMarshal.Read<long>(bytes);
                     return true;
@@ -125,7 +133,7 @@ namespace IronPython.Runtime {
                     result = MemoryMarshal.Read<double>(bytes);
                     return true;
                 case 'P':
-                    if (UIntPtr.Size == 4) goto case 'L';
+                    if (UIntPtr.Size == 4) goto case 'I';
                     else goto case 'Q';
                 case 'r':
                     result = MemoryMarshal.Read<IntPtr>(bytes);
@@ -160,16 +168,20 @@ namespace IronPython.Runtime {
                 case 'H':
                     var ushortVal = Convert.ToUInt16(obj);
                     return MemoryMarshal.TryWrite(dest, ref ushortVal);
-                case 'l':
                 case 'i':
                 case 'n':
                     var intVal = Convert.ToInt32(obj);
                     return MemoryMarshal.TryWrite(dest, ref intVal);
-                case 'L':
                 case 'I':
                 case 'N':
                     var uintVal = Convert.ToUInt32(obj);
                     return MemoryMarshal.TryWrite(dest, ref uintVal);
+                case 'l':
+                    if (IsCLong32Bit) goto case 'i';
+                    else goto case 'q';
+                case 'L':
+                    if (IsCLong32Bit) goto case 'I';
+                    else goto case 'Q';
                 case 'q':
                     var longVal = Convert.ToInt64(obj);
                     return MemoryMarshal.TryWrite(dest, ref longVal);
@@ -239,17 +251,21 @@ namespace IronPython.Runtime {
                     maxValue = ushort.MaxValue;
                     break;
                 case 'i': // signed int
-                case 'l': // signed long
                 case 'n': // signed index
                     minValue = int.MinValue;
                     maxValue = int.MaxValue;
                     break;
                 case 'I': // unsigned int
-                case 'L': // unsigned long
                 case 'N': // unsigned index
                     minValue = uint.MinValue;
                     maxValue = uint.MaxValue;
                     break;
+                case 'l': // signed long
+                    if (IsCLong32Bit) goto case 'i';
+                    else goto case 'q';
+                case 'L': // unsigned long
+                    if (IsCLong32Bit) goto case 'I';
+                    goto case 'Q';
                 case 'q': // signed long long
                     minValue = long.MinValue;
                     maxValue = long.MaxValue;

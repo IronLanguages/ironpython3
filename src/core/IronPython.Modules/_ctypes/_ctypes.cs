@@ -465,7 +465,7 @@ namespace IronPython.Modules {
         }
 
         public static int @sizeof(PythonType/*!*/ type) {
-            if (!(type is INativeType simpleType)) {
+            if (type is not INativeType simpleType) {
                 throw PythonOps.TypeError("this type has no size");
             }
 

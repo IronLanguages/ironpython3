@@ -43,6 +43,10 @@ namespace IronPython.Modules {
                 throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
 
             var actualTypeCode = MachineFormatToTypeCode(mformat_code, out bool isBigEndian, out string? encoding);
+            if (TypeCodeToMachineFormat(typecode[0]) == mformat_code) {
+                // if typecodes are equivelent, use original
+                actualTypeCode = typecode;
+            }
 
             var arrayType = DynamicHelpers.GetPythonTypeFromType(typeof(array));
 
@@ -106,6 +110,26 @@ namespace IronPython.Modules {
             }
         }
 
+        private static int TypeCodeToMachineFormat(char typeCode) {
+            return typeCode switch
+            {
+                'b' => 1,
+                'B' => 0,
+                'u' => 18,
+                'h' => 4,
+                'H' => 2,
+                'i' => 8,
+                'I' => 6,
+                'l' => TypecodeOps.IsCLong32Bit ? 8 : 12,
+                'L' => TypecodeOps.IsCLong32Bit ? 6 : 10,
+                'q' => 12,
+                'Q' => 10,
+                'f' => 14,
+                'd' => 16,
+                _ => throw new InvalidOperationException(),// should never happen
+            };
+        }
+
         public static readonly BuiltinFunction _array_reconstructor = BuiltinFunction.MakeFunction(nameof(_array_reconstructor), ArrayUtils.ConvertAll(typeof(ArrayModule).GetMember(nameof(ArrayReconstructor), BindingFlags.NonPublic | BindingFlags.Static), x => (MethodBase)x), typeof(ArrayModule));
 
         [PythonType]
@@ -166,8 +190,8 @@ namespace IronPython.Modules {
                     'H' => new ArrayData<ushort>(),
                     'i' => new ArrayData<int>(),
                     'I' => new ArrayData<uint>(),
-                    'l' => new ArrayData<int>(),
-                    'L' => new ArrayData<uint>(),
+                    'l' => TypecodeOps.IsCLong32Bit ? new ArrayData<int>() : new ArrayData<long>(),
+                    'L' => TypecodeOps.IsCLong32Bit ? new ArrayData<uint>() : new ArrayData<ulong>(),
                     'q' => new ArrayData<long>(),
                     'Q' => new ArrayData<ulong>(),
                     'f' => new ArrayData<float>(),
@@ -420,8 +444,8 @@ namespace IronPython.Modules {
                         case 'H': return (int)((ArrayData<ushort>)_data)[index];
                         case 'i': return ((ArrayData<int>)_data)[index];
                         case 'I': return (BigInteger)((ArrayData<uint>)_data)[index];
-                        case 'l': return ((ArrayData<int>)_data)[index];
-                        case 'L': return (BigInteger)((ArrayData<uint>)_data)[index];
+                        case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                        case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                         case 'q': return (BigInteger)((ArrayData<long>)_data)[index];
                         case 'Q': return (BigInteger)((ArrayData<ulong>)_data)[index];
                         case 'f': return (double)((ArrayData<float>)_data)[index];
@@ -447,8 +471,8 @@ namespace IronPython.Modules {
                     case 'H': bw.Write(((ArrayData<ushort>)_data)[index]); break;
                     case 'i': bw.Write(((ArrayData<int>)_data)[index]); break;
                     case 'I': bw.Write(((ArrayData<uint>)_data)[index]); break;
-                    case 'l': bw.Write(((ArrayData<int>)_data)[index]); break;
-                    case 'L': bw.Write(((ArrayData<uint>)_data)[index]); break;
+                    case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                    case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                     case 'q': bw.Write(((ArrayData<long>)_data)[index]); break;
                     case 'Q': bw.Write(((ArrayData<ulong>)_data)[index]); break;
                     case 'f': bw.Write(((ArrayData<float>)_data)[index]); break;
@@ -552,26 +576,6 @@ namespace IronPython.Modules {
                         tobytes()
                     ),
                     dict);
-
-                static int TypeCodeToMachineFormat(char typeCode) {
-                    return typeCode switch
-                    {
-                        'b' => 1,
-                        'B' => 0,
-                        'u' => 18,
-                        'h' => 4,
-                        'H' => 2,
-                        'i' => 8,
-                        'I' => 6,
-                        'l' => 8,
-                        'L' => 6,
-                        'q' => 12,
-                        'Q' => 10,
-                        'f' => 14,
-                        'd' => 16,
-                        _ => throw new InvalidOperationException(),// should never happen
-                    };
-                }
             }
 
             private void SliceAssign(int index, object? value) {
@@ -630,8 +634,8 @@ namespace IronPython.Modules {
                         case 'H': bw.Write(((ArrayData<ushort>)_data)[i]); break;
                         case 'i': bw.Write(((ArrayData<int>)_data)[i]); break;
                         case 'I': bw.Write(((ArrayData<uint>)_data)[i]); break;
-                        case 'l': bw.Write(((ArrayData<int>)_data)[i]); break;
-                        case 'L': bw.Write(((ArrayData<uint>)_data)[i]); break;
+                        case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                        case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                         case 'q': bw.Write(((ArrayData<long>)_data)[i]); break;
                         case 'Q': bw.Write(((ArrayData<ulong>)_data)[i]); break;
                         case 'f': bw.Write(((ArrayData<float>)_data)[i]); break;
@@ -679,8 +683,8 @@ namespace IronPython.Modules {
                         case 'H': ((ArrayData<ushort>)_data).Add(br.ReadUInt16()); break;
                         case 'i': ((ArrayData<int>)_data).Add(br.ReadInt32()); break;
                         case 'I': ((ArrayData<uint>)_data).Add(br.ReadUInt32()); break;
-                        case 'l': ((ArrayData<int>)_data).Add(br.ReadInt32()); break;
-                        case 'L': ((ArrayData<uint>)_data).Add(br.ReadUInt32()); break;
+                        case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                        case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                         case 'q': ((ArrayData<long>)_data).Add(br.ReadInt64()); break;
                         case 'Q': ((ArrayData<ulong>)_data).Add(br.ReadUInt64()); break;
                         case 'f': ((ArrayData<float>)_data).Add(br.ReadSingle()); break;
@@ -703,8 +707,8 @@ namespace IronPython.Modules {
                         case 'H': ((ArrayData<ushort>)_data)[i] = br.ReadUInt16(); break;
                         case 'i': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
                         case 'I': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
-                        case 'l': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
-                        case 'L': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
+                        case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                        case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                         case 'q': ((ArrayData<long>)_data)[i] = br.ReadInt64(); break;
                         case 'Q': ((ArrayData<ulong>)_data)[i] = br.ReadUInt64(); break;
                         case 'f': ((ArrayData<float>)_data)[i] = br.ReadSingle(); break;
@@ -733,8 +737,8 @@ namespace IronPython.Modules {
                         case 'H': ((ArrayData<ushort>)_data)[i] = br.ReadUInt16(); break;
                         case 'i': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
                         case 'I': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
-                        case 'l': ((ArrayData<int>)_data)[i] = br.ReadInt32(); break;
-                        case 'L': ((ArrayData<uint>)_data)[i] = br.ReadUInt32(); break;
+                        case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                        case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                         case 'q': ((ArrayData<long>)_data)[i] = br.ReadInt64(); break;
                         case 'Q': ((ArrayData<ulong>)_data)[i] = br.ReadUInt64(); break;
                         case 'f': ((ArrayData<float>)_data)[i] = br.ReadSingle(); break;
@@ -771,8 +775,8 @@ namespace IronPython.Modules {
                     case 'H': return BitConverter.GetBytes(((ArrayData<ushort>)_data)[index]);
                     case 'i': return BitConverter.GetBytes(((ArrayData<int>)_data)[index]);
                     case 'I': return BitConverter.GetBytes(((ArrayData<uint>)_data)[index]);
-                    case 'l': return BitConverter.GetBytes(((ArrayData<int>)_data)[index]);
-                    case 'L': return BitConverter.GetBytes(((ArrayData<uint>)_data)[index]);
+                    case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                    case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                     case 'q': return BitConverter.GetBytes(((ArrayData<long>)_data)[index]);
                     case 'Q': return BitConverter.GetBytes(((ArrayData<ulong>)_data)[index]);
                     case 'f': return BitConverter.GetBytes(((ArrayData<float>)_data)[index]);
@@ -790,8 +794,8 @@ namespace IronPython.Modules {
                     case 'H': return BitConverter.ToUInt16(bytes, 0);
                     case 'i': return BitConverter.ToInt32(bytes, 0);
                     case 'I': return BitConverter.ToUInt32(bytes, 0);
-                    case 'l': return BitConverter.ToInt32(bytes, 0);
-                    case 'L': return BitConverter.ToInt32(bytes, 0);
+                    case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                    case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                     case 'q': return BitConverter.ToInt64(bytes, 0);
                     case 'Q': return BitConverter.ToInt64(bytes, 0);
                     case 'f': return BitConverter.ToSingle(bytes, 0);
@@ -815,8 +819,8 @@ namespace IronPython.Modules {
                     case 'H': dataTuple = PythonTuple.MakeTuple(((ArrayData<ushort>)_data).Data); break;
                     case 'i': dataTuple = PythonTuple.MakeTuple(((ArrayData<int>)_data).Data); break;
                     case 'I': dataTuple = PythonTuple.MakeTuple(((ArrayData<uint>)_data).Data); break;
-                    case 'l': dataTuple = PythonTuple.MakeTuple(((ArrayData<int>)_data).Data); break;
-                    case 'L': dataTuple = PythonTuple.MakeTuple(((ArrayData<uint>)_data).Data); break;
+                    case 'l': if (TypecodeOps.IsCLong32Bit) goto case 'i'; else goto case 'q';
+                    case 'L': if (TypecodeOps.IsCLong32Bit) goto case 'I'; else goto case 'Q';
                     case 'q': dataTuple = PythonTuple.MakeTuple(((ArrayData<long>)_data).Data); break;
                     case 'Q': dataTuple = PythonTuple.MakeTuple(((ArrayData<ulong>)_data).Data); break;
                     case 'f': dataTuple = PythonTuple.MakeTuple(((ArrayData<float>)_data).Data); break;

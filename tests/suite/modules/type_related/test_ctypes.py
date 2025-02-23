@@ -8,6 +8,7 @@ Tests for CPython's ctypes module.
 
 from ctypes import *
 from array import array
+from struct import calcsize
 import sys
 import gc
 import unittest
@@ -177,13 +178,7 @@ class CTypesTest(IronPythonTestCase):
         class Test(Structure):
             _fields_ = [("x", c_bool, 1)]
 
-        class myindex:
-            def __init__(self, value):
-                self.value = value
-            def __index__(self):
-                return self.value
-
-        for val in (None, "", "False", "True", "0", "1", 0, 1, 2, 0.0, 1.0, [], (), {}, object(), myindex(0), myindex(1)):
+        for val in (None, "", "False", "True", "0", "1", 0, 1, 2, 0.0, 1.0, [], (), {}, object(), MyIndex(0), MyIndex(1)):
             with self.subTest(val=val):
                 self.assertIs(Test(val).x, bool(val))
 
@@ -191,24 +186,18 @@ class CTypesTest(IronPythonTestCase):
                 s.x = val
                 self.assertIs(s.x, bool(val))
 
-    def test_bitfield_long(self):
-        """Tests for bitfields of type c_long"""
+    def test_bitfield_int(self):
+        """Tests for bitfields of type c_int"""
 
         class Test(Structure):
-            _fields_ = [("x", c_long, 16), ("y", c_long, 16), ("z", c_long, 32)]
-
-        class myindex:
-            def __init__(self, value):
-                self.value = value
-            def __index__(self):
-                return self.value
+            _fields_ = [("x", c_int, 16), ("y", c_int, 16), ("z", c_int, 32)]
 
         self.assertEqual(Test(0x1234).x, 0x1234)
         self.assertEqual(Test(big(0x1234)).x, 0x1234)
         self.assertEqual(Test(myint(0x1234)).x, 0x1234)
         self.assertEqual(Test(True).x, 1)
         if is_cli or sys.version_info >= (3, 8):
-            self.assertEqual(Test(myindex(0x1234)).x, 0x1234)
+            self.assertEqual(Test(MyIndex(0x1234)).x, 0x1234)
             if is_cli or sys.version_info >= (3, 10):
                 msg = "'float' object cannot be interpreted as an integer"
             else:
@@ -218,10 +207,11 @@ class CTypesTest(IronPythonTestCase):
         with self.assertRaisesMessage(ValueError, "number of bits invalid for bit field"):
             class Test(Structure):
                 _fields_ = [("x", c_int, 0)]
-
-        self.assertEqual(repr(Test.x), "<Field type=c_long, ofs=0:0, bits=16>")
-        self.assertEqual(repr(Test.y), "<Field type=c_long, ofs=0:16, bits=16>")
-        self.assertEqual(repr(Test.z), "<Field type=c_long, ofs=4:0, bits=32>")
+        # if c_long and c_int are the same size, c_long is used
+        typename = "c_long" if calcsize('l') == calcsize('i') else "c_int"
+        self.assertEqual(repr(Test.x), "<Field type={}, ofs=0:0, bits=16>".format(typename))
+        self.assertEqual(repr(Test.y), "<Field type={}, ofs=0:16, bits=16>".format(typename))
+        self.assertEqual(repr(Test.z), "<Field type={}, ofs=4:0, bits=32>".format(typename))
 
         self.assertEqual((Test.x.offset, Test.x.size), (0, (16 << 16) + 0))
         self.assertEqual((Test.y.offset, Test.y.size), (0, (16 << 16) + 16))

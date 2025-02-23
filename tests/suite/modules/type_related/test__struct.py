@@ -5,7 +5,9 @@
 import _struct
 import sys
 
-from iptest import IronPythonTestCase, is_64, is_cli, is_cpython, run_test
+from iptest import IronPythonTestCase, is_32, is_64, is_cli, is_cpython, is_windows, run_test
+
+is_long32bit = is_32 or is_windows
 
 def pack(f, *v):
     return _struct.Struct(f).pack(*v)
@@ -78,16 +80,16 @@ class _StructTest(IronPythonTestCase):
 
     def test_cp9347(self):
         temp_list = [("2xB",    b'\x00\x00\xff',             255),
-                    ("4s4x",   b'AAAA\x00\x00\x00\x00',     b"AAAA"),
-                    ("x",      b'\x00'),
-                    ("ix",     b'\x01\x00\x00\x00\x00',     1),
-                    ("ix",     b'\x01\x00\x00\x80\x00',     -(2**(32-1)-1)),
-                    ("xI",     b'\x00\x00\x00\x00\xff\xff\xff\xff',     2**32-1),
-                    ("xlx",    b'\x00\x00\x00\x00x\xec\xff\xff\x00',        -5000),
-                    ("LxL",    b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
-                    ("LxxL",   b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
-                    ("32xLL",  b'\x00' *32 + b'~\x00\x00\x00~\x00\x00\x00', 126, 126),
-                    ("LxL8xLL", b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00' + b'\x00'*8 + b'~\x00\x00\x00'*2, 126, 126, 126, 126),
+                    ("4s4x",    b'AAAA\x00\x00\x00\x00',     b"AAAA"),
+                    ("x",       b'\x00'),
+                    ("ix",      b'\x01\x00\x00\x00\x00',     1),
+                    ("ix",      b'\x01\x00\x00\x80\x00',     -(2**(32-1)-1)),
+                    ("xI",      b'\x00\x00\x00\x00\xff\xff\xff\xff',     2**32-1),
+                    ("xix",     b'\x00\x00\x00\x00x\xec\xff\xff\x00',        -5000),
+                    ("IxI",     b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
+                    ("IxxI",    b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
+                    ("32xII",   b'\x00' *32 + b'~\x00\x00\x00~\x00\x00\x00', 126, 126),
+                    ("IxI8xII", b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00' + b'\x00'*8 + b'~\x00\x00\x00'*2, 126, 126, 126, 126),
         ]
 
         for stuff in temp_list:
@@ -96,7 +98,7 @@ class _StructTest(IronPythonTestCase):
             params = stuff[2:]
 
             actual = pack(format, *params)
-            self.assertEqual(expected_val, actual)
+            self.assertEqual(expected_val, actual, "Test failed for format: " + format)
             self.assertEqual(unpack(format, actual),
                     params)
 
@@ -168,7 +170,10 @@ class _StructTest(IronPythonTestCase):
         for x in struct_format:
             for y in struct_format:
                 temp_str = str(x) + str(y)
-                expected_size = expected[temp_str]
+                if is_long32bit:
+                    expected_size = expected[temp_str]
+                else:
+                    expected_size = expected[temp_str.replace("l", "q").replace("L", "Q")]
                 if is_64:
                     if x == "P": expected_size = min(expected_size + 4, 16)
                     if y == "P": expected_size = 16
@@ -181,7 +186,7 @@ class _StructTest(IronPythonTestCase):
         for x in (_struct.Struct.__new__(_struct.Struct), _struct.Struct.__new__(_struct.Struct, a = 2)):
             # state of uninitialized object...
             self.assertEqual(x.size, -1)
-            self.assertEqual(x.format, None if is_cli or is_cpython and sys.version_info < (3,7) else '\x00\x00\x00\x00\x00\x00\x00')
+            self.assertEqual(x.format, None if is_cli or is_cpython and sys.version_info < (3,7) else '\x00\x00\x00\x00\x00\x00\x00\x00')
             self.assertRaisesMessage(_struct.error, "pack requires exactly -1 arguments" if is_cli else "pack expected -1 items for packing (got 0)", x.pack)
             self.assertRaisesMessage(_struct.error, "unpack requires a bytes object of length -1" if is_cli or is_cpython and sys.version_info < (3,6) else "unpack requires a buffer of -1 bytes", x.unpack, b'')
 

@@ -182,10 +182,11 @@ namespace IronPython.Modules {
                             return 2;
                         case SimpleTypeKind.SignedInt:
                         case SimpleTypeKind.UnsignedInt:
-                        case SimpleTypeKind.SignedLong:
-                        case SimpleTypeKind.UnsignedLong:
                         case SimpleTypeKind.Single:
                             return 4;
+                        case SimpleTypeKind.SignedLong:
+                        case SimpleTypeKind.UnsignedLong:
+                            return TypecodeOps.IsCLong32Bit ? 4 : 8;
                         case SimpleTypeKind.UnsignedLongLong:
                         case SimpleTypeKind.SignedLongLong:
                         case SimpleTypeKind.Double:
@@ -220,8 +221,8 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedShort: res = GetIntReturn((ushort)owner.ReadInt16(offset, _swap)); break;
                     case SimpleTypeKind.SignedInt: res = GetIntReturn(owner.ReadInt32(offset, _swap)); break;
                     case SimpleTypeKind.UnsignedInt: res = GetIntReturn((uint)owner.ReadInt32(offset, _swap)); break;
-                    case SimpleTypeKind.SignedLong: res = GetIntReturn(owner.ReadInt32(offset, _swap)); break;
-                    case SimpleTypeKind.UnsignedLong: res = GetIntReturn((uint)owner.ReadInt32(offset, _swap)); break;
+                    case SimpleTypeKind.SignedLong: if (TypecodeOps.IsCLong32Bit) goto case SimpleTypeKind.SignedInt; else goto case SimpleTypeKind.SignedLongLong;
+                    case SimpleTypeKind.UnsignedLong: if (TypecodeOps.IsCLong32Bit) goto case SimpleTypeKind.UnsignedInt; else goto case SimpleTypeKind.UnsignedLongLong;
                     case SimpleTypeKind.SignedLongLong: res = GetIntReturn(owner.ReadInt64(offset, _swap)); break;
                     case SimpleTypeKind.UnsignedLongLong: res = GetIntReturn((ulong)owner.ReadInt64(offset, _swap)); break;
                     case SimpleTypeKind.Single: res = GetSingleReturn(owner.ReadInt32(offset, _swap)); break;
@@ -259,8 +260,20 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedShort: owner.WriteInt16(offset, unchecked((short)ModuleOps.GetUnsignedShort(value, this)), _swap); break;
                     case SimpleTypeKind.SignedInt: owner.WriteInt32(offset, ModuleOps.GetSignedInt(value, this), _swap); break;
                     case SimpleTypeKind.UnsignedInt: owner.WriteInt32(offset, unchecked((int)ModuleOps.GetUnsignedInt(value, this)), _swap); break;
-                    case SimpleTypeKind.SignedLong: owner.WriteInt32(offset, unchecked((int)ModuleOps.GetSignedLong(value, this)), _swap); break;
-                    case SimpleTypeKind.UnsignedLong: owner.WriteInt32(offset, unchecked((int)ModuleOps.GetUnsignedLong(value, this)), _swap); break;
+                    case SimpleTypeKind.SignedLong:
+                        if (TypecodeOps.IsCLong32Bit) {
+                            owner.WriteInt32(offset, unchecked((int)ModuleOps.GetSignedLong(value, this)), _swap);
+                        } else {
+                            owner.WriteInt64(offset, ModuleOps.GetSignedLong(value, this), _swap);
+                        }
+                        break;
+                    case SimpleTypeKind.UnsignedLong:
+                        if (TypecodeOps.IsCLong32Bit) {
+                            owner.WriteInt32(offset, unchecked((int)ModuleOps.GetUnsignedLong(value, this)), _swap);
+                        } else {
+                            owner.WriteInt64(offset, unchecked((long)ModuleOps.GetUnsignedLong(value, this)), _swap);
+                        }
+                        break;
                     case SimpleTypeKind.UnsignedLongLong: owner.WriteInt64(offset, unchecked((long)ModuleOps.GetUnsignedLongLong(value, this)), _swap); break;
                     case SimpleTypeKind.SignedLongLong: owner.WriteInt64(offset, ModuleOps.GetSignedLongLong(value, this), _swap); break;
                     case SimpleTypeKind.Single: owner.WriteInt32(offset, ModuleOps.GetSingleBits(value), _swap); break;
@@ -301,11 +314,13 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedShort:
                         return typeof(ushort);
                     case SimpleTypeKind.SignedInt:
-                    case SimpleTypeKind.SignedLong:
                         return typeof(int);
                     case SimpleTypeKind.UnsignedInt:
-                    case SimpleTypeKind.UnsignedLong:
                         return typeof(uint);
+                    case SimpleTypeKind.SignedLong:
+                        return TypecodeOps.IsCLong32Bit ? typeof(int) : typeof(long);
+                    case SimpleTypeKind.UnsignedLong:
+                        return TypecodeOps.IsCLong32Bit ? typeof(uint) : typeof(ulong);
                     case SimpleTypeKind.SignedLongLong:
                         return typeof(long);
                     case SimpleTypeKind.UnsignedLongLong:
@@ -589,8 +604,9 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.SignedShort:
                     case SimpleTypeKind.UnsignedShort:
                     case SimpleTypeKind.SignedInt:
-                    case SimpleTypeKind.SignedLong:
                         return typeof(int);
+                    case SimpleTypeKind.SignedLong:
+                        return TypecodeOps.IsCLong32Bit ? typeof(int) : typeof(object);
                     case SimpleTypeKind.UnsignedInt:
                     case SimpleTypeKind.UnsignedLong:
                     case SimpleTypeKind.UnsignedLongLong:
@@ -618,7 +634,6 @@ namespace IronPython.Modules {
                         break;
                     case SimpleTypeKind.Boolean:
                     case SimpleTypeKind.SignedInt:
-                    case SimpleTypeKind.SignedLong:
                         break;
                     case SimpleTypeKind.Single:
                         method.Emit(OpCodes.Conv_R8);
@@ -629,6 +644,10 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.UnsignedLong:
                     case SimpleTypeKind.UnsignedLongLong:
                         EmitUIntToObject(method, value);
+                        break;
+                    case SimpleTypeKind.SignedLong:
+                        if (TypecodeOps.IsCLong32Bit) break; // no conversion needed
+                        EmitInt64ToObject(method, value);
                         break;
                     case SimpleTypeKind.SignedLongLong:
                         EmitInt64ToObject(method, value);

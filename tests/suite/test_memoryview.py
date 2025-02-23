@@ -9,7 +9,9 @@ import sys
 import unittest
 import warnings
 
-from iptest import run_test, is_mono, is_cli, is_64
+from iptest import run_test, is_mono, is_cli, is_32, is_64, is_windows
+
+is_long32bit = is_32 or is_windows
 
 class SliceTests(unittest.TestCase):
     def testGet(self):
@@ -191,7 +193,7 @@ class MemoryViewTests(unittest.TestCase):
         self.assertFalse(mv_i == mv)
         self.assertFalse(mv_i == mv_h)
         mv_L = mv.cast('L')
-        self.assertTrue(mv_i == mv_L)
+        self.assertEquals(mv_i == mv_L, is_long32bit)
         mv_f = mv.cast('f')
         self.assertFalse(mv_i == mv_f)
 
@@ -206,7 +208,7 @@ class MemoryViewTests(unittest.TestCase):
 
         mv_P = mv.cast('P')
         self.assertFalse(mv_P == mv_i)
-        self.assertFalse(mv_P == mv_L)
+        self.assertEqual(mv_P == mv_L, not is_long32bit)
         self.assertTrue(mv_P == mv_q)
         self.assertTrue(mv_P == mv_Q)
 

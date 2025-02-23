@@ -376,7 +376,7 @@ namespace IronPython.Modules {
 
         public static long GetSignedLong(object value, object type) {
             if (TryToIntStrict(value, out BigInteger bi)) {
-                return unchecked((long)(ulong)(bi & uint.MaxValue));
+                return unchecked((long)(ulong)(bi & (TypecodeOps.IsCLong32Bit ? uint.MaxValue : ulong.MaxValue)));
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {
@@ -388,7 +388,7 @@ namespace IronPython.Modules {
 
         public static ulong GetUnsignedLong(object value, object type) {
             if (TryToIntStrict(value, out BigInteger bi)) {
-                return (ulong)(bi & uint.MaxValue);
+                return (ulong)(bi & (TypecodeOps.IsCLong32Bit ? uint.MaxValue : ulong.MaxValue));
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {

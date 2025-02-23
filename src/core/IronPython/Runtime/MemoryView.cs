@@ -589,7 +589,7 @@ namespace IronPython.Runtime {
                         throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", _format);
                     }
 
-                    if (typecode == 'Q') {
+                    if (typecode is 'Q' or 'L' or 'N') {
                         value = Converter.ConvertToUInt64(value);
                     } else {
                         value = Converter.ConvertToInt64(value);

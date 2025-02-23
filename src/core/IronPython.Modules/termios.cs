@@ -276,7 +276,7 @@ public static class PythonTermios {
     public const int TCSAFLUSH = 2;     // discard input, flush output, then change
 
 
-    // control characters
+    // control characters - indices into c_cc array
     public static int VEOF     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  0 : 4;
     public static int VEOL     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  1 : 11;
     public static int VEOL2    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?  2 : 16;
@@ -294,8 +294,25 @@ public static class PythonTermios {
     public static int VMIN     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 16 :  6;
     public static int VTIME    => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 17 :  5;
     [PythonHidden(PlatformID.MacOSX)]
-    public static int VSWTC => 7;
+    public static int VSWTC    => 7;
     public static int NCCS     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 20 : 32;
+
+
+    // control characters - character values
+    public static int CINTR    = 0x03;   // ^C
+    public static int CEOF     = 0x04;   // ^D
+    public static int CEOT     = 0x04;   // ^D
+    public static int CFLUSH   = 0x0f;   // ^O
+    public static int CSTART   = 0x11;   // ^Q
+    public static int CSTOP    = 0x13;   // ^S
+    public static int CKILL    = 0x15;   // ^U
+    public static int CLNEXT   = 0x16;   // ^V
+    public static int CWERASE  = 0x17;   // ^W
+    public static int CDSUSP   = 0x19;   // ^Y
+    public static int CSUSP    = 0x1a;   // ^Z
+    public static int CQUIT    = 0x1c;   // ^\
+    public static int CERASE   = 0x7f;   // DEL
+    public static int CEOL     => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 0xff : 0x00;
 
 
     // tcflush() uses these
@@ -309,6 +326,7 @@ public static class PythonTermios {
     public static int TCOON  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 2 : 1;     // restart output
     public static int TCIOFF => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 3 : 2;     // transmit STOP character
     public static int TCION  => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 4 : 3;     // transmit START character
+
 
     // baud rates
     public static int B0      => 0;
@@ -755,7 +773,7 @@ struct termios {
         if (fd < 0) {
             throw PythonOps.ValueError("file descriptor cannot be a negative integer ({0})", fd);
         }
-    }  
+    }
 
 
     private static object ToPythonInt(this ulong value)

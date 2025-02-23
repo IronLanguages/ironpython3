@@ -193,7 +193,7 @@ class MemoryViewTests(unittest.TestCase):
         self.assertFalse(mv_i == mv)
         self.assertFalse(mv_i == mv_h)
         mv_L = mv.cast('L')
-        self.assertEquals(mv_i == mv_L, is_long32bit)
+        self.assertEqual(mv_i == mv_L, is_long32bit)
         mv_f = mv.cast('f')
         self.assertFalse(mv_i == mv_f)
 

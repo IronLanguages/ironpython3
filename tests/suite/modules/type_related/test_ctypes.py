@@ -217,6 +217,7 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual((Test.y.offset, Test.y.size), (0, (16 << 16) + 16))
         self.assertEqual((Test.z.offset, Test.z.size), (4, (32 << 16) + 0))
 
+
     def test_bitfield_longlong(self):
         """Tests for bitfields of type c_longlong"""
 
@@ -235,6 +236,43 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual(TestU((1 << 64) - 1).x, 0x7fffffffffffffff)
         self.assertEqual(TestU(-(1 << 64)).x, 0)
         self.assertEqual(TestU(-(1 << 64) - 1).x, 0x7fffffffffffffff)
+
+    def test_bitfield_mixed1(self):
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_int),
+                ("b1", c_short, 3),
+                ("b2", c_short, 3),
+                ("c", c_int, 3),
+            ]
+
+
+        instance = Test()
+        instance.a = 1
+        instance.b1 = 5  # equals -3 in 2-complement on 3 bits
+        instance.b2 = 7  # equals -1 in 2-complement on 3 bits
+        instance.c = 3
+        self.assertEqual(instance.a, 1)
+        self.assertEqual(instance.b1, -3)
+        self.assertEqual(instance.b2, -1)
+        self.assertEqual(instance.c, 3)
+
+        self.assertTrue(isinstance(instance.a, int))
+        self.assertEqual(Test.a.offset, 0)
+        self.assertEqual(Test.a.size, 4)
+
+        self.assertEqual(Test.b1.offset, 4)
+        self.assertEqual(Test.b1.size & 0xffff, 0)  # bit offset
+        self.assertEqual(Test.b1.size >> 16, 3)  # num bits
+
+        self.assertEqual(Test.b2.offset, 4)
+        self.assertEqual(Test.b2.size & 0xffff, 3)  # bit offset
+        self.assertEqual(Test.b2.size >> 16, 3)  # num bits
+
+        self.assertEqual(Test.c.offset, 8)
+        self.assertEqual(Test.c.size & 0xffff, 0)  # bit offset
+        self.assertEqual(Test.c.size >> 16, 3)  # num bits
+    
 
     @unittest.skipIf(is_posix, 'Windows specific test')
     def test_loadlibrary_error(self):

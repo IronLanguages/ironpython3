@@ -633,8 +633,8 @@ namespace IronPython.Modules {
         /// Shared helper to get the _fields_ list for struct/union and validate it.
         /// </summary>
         private static IList<object>/*!*/ GetFieldsList(object fields) {
-            if (!(fields is IList<object> list)) {
-                throw PythonOps.TypeError("class must be a sequence of pairs");
+            if (fields is not IList<object> list) {
+                throw PythonOps.TypeError("'_fields_' must be a sequence of (name, C type) pairs");
             }
             return list;
         }

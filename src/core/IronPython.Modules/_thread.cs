@@ -199,9 +199,9 @@ namespace IronPython.Modules {
 
             public string __repr__() {
                 if (curHolder is null) {
-                    return $"<unlocked _thread.lock object at 0x{IdDispenser.GetId(this):16X}";
+                    return $"<unlocked _thread.lock object at 0x{IdDispenser.GetId(this):X16}>";
                 }
-                return $"<locked _thread.lock object 0x{IdDispenser.GetId(this):16X}";
+                return $"<locked _thread.lock object at 0x{IdDispenser.GetId(this):X16}>";
             }
 
             private void CreateBlockEvent() {
@@ -286,9 +286,9 @@ namespace IronPython.Modules {
 
             public string __repr__() {
                 if (curHolder is null) {
-                    return $"<unlocked _thread.RLock object owner=0 count=0 at 0x{IdDispenser.GetId(this):16X}";
+                    return $"<unlocked _thread.RLock object owner=0 count=0 at 0x{IdDispenser.GetId(this):X16}>";
                 }
-                return $"<locked _thread.RLock object owner={curHolder?.ManagedThreadId} count={count} at 0x{IdDispenser.GetId(this):16X}";
+                return $"<locked _thread.RLock object owner={curHolder?.ManagedThreadId} count={count} at 0x{IdDispenser.GetId(this):X16}>";
             }
 
             public void _acquire_restore([NotNone] PythonTuple state) {

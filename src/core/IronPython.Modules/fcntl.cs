@@ -535,7 +535,9 @@ public static class PythonFcntl {
     #endregion
 
 
+#if NET
     // Linux only
+    // Disabled on Mono because of inability to open directory descriptors
     #region Generated Directory Notify Flags
 
     // *** BEGIN GENERATED CODE ***
@@ -573,4 +575,5 @@ public static class PythonFcntl {
     // *** END GENERATED CODE ***
 
     #endregion
+#endif
 }

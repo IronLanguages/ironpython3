@@ -35,7 +35,7 @@ namespace IronPython.Modules {
 
         #region Public API Surface
 
-        public static double TIMEOUT_MAX = 0; // TODO: fill this with a proper value
+        public static double TIMEOUT_MAX = Math.Floor(TimeSpan.MaxValue.TotalSeconds);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType LockType = DynamicHelpers.GetPythonTypeFromType(typeof(@lock));
@@ -138,13 +138,15 @@ namespace IronPython.Modules {
 
         #endregion
 
+#nullable enable
+
         [PythonType, PythonHidden]
         public sealed class @lock {
-            private AutoResetEvent blockEvent;
-            private Thread curHolder;
+            private AutoResetEvent? blockEvent;
+            private Thread? curHolder;
 
             public object __enter__() {
-                acquire(true, -1);
+                acquire();
                 return this;
             }
 
@@ -152,9 +154,17 @@ namespace IronPython.Modules {
                 release(context);
             }
 
-            public bool acquire(bool blocking = true, float timeout = -1) {
+            public bool acquire(bool blocking = true, double timeout = -1) {
+                var timespan = Timeout.InfiniteTimeSpan;
+
+                if (timeout != -1) {
+                    if (!blocking) throw PythonOps.ValueError("can't specify a timeout for a non-blocking call");
+                    if (timeout < 0) throw PythonOps.ValueError("timeout value must be a non-negative number");
+                    timespan = TimeSpan.FromSeconds(timeout);
+                }
+
                 for (; ; ) {
-                    if (Interlocked.CompareExchange<Thread>(ref curHolder, Thread.CurrentThread, null) == null) {
+                    if (Interlocked.CompareExchange(ref curHolder, Thread.CurrentThread, null) is null) {
                         return true;
                     }
                     if (!blocking) {
@@ -166,7 +176,7 @@ namespace IronPython.Modules {
                         CreateBlockEvent();
                         continue;
                     }
-                    if (!blockEvent.WaitOne(timeout < 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(timeout))) {
+                    if (!blockEvent.WaitOne(timespan)) {
                         return false;
                     }
                     GC.KeepAlive(this);
@@ -174,8 +184,8 @@ namespace IronPython.Modules {
             }
 
             public void release(CodeContext/*!*/ context) {
-                if (Interlocked.Exchange<Thread>(ref curHolder, null) == null) {
-                    throw PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("threaderror"), "lock isn't held", null);
+                if (Interlocked.Exchange(ref curHolder, null) is null) {
+                    throw PythonOps.RuntimeError("release unlocked lock");
                 }
                 if (blockEvent != null) {
                     // if this isn't set yet we race, it's handled in Acquire()
@@ -184,17 +194,134 @@ namespace IronPython.Modules {
                 }
             }
 
-            public bool locked() {
-                return curHolder != null;
+            public bool locked()
+                => curHolder is not null;
+
+            public string __repr__() {
+                if (curHolder is null) {
+                    return $"<unlocked _thread.lock object at 0x{IdDispenser.GetId(this):X16}>";
+                }
+                return $"<locked _thread.lock object at 0x{IdDispenser.GetId(this):X16}>";
             }
 
             private void CreateBlockEvent() {
                 AutoResetEvent are = new AutoResetEvent(false);
-                if (Interlocked.CompareExchange<AutoResetEvent>(ref blockEvent, are, null) != null) {
+                if (Interlocked.CompareExchange(ref blockEvent, are, null) is not null) {
                     are.Close();
                 }
             }
         }
+
+        [PythonType]
+        public sealed class RLock {
+            private AutoResetEvent? blockEvent;
+            private Thread? curHolder;
+            private int count;
+
+            public object __enter__() {
+                acquire();
+                return this;
+            }
+
+            public void __exit__(CodeContext/*!*/ context, [NotNone] params object[] args) {
+                release();
+            }
+
+            public bool acquire(bool blocking = true, double timeout = -1) {
+                var timespan = Timeout.InfiniteTimeSpan;
+
+                if (timeout != -1) {
+                    if (!blocking) throw PythonOps.ValueError("can't specify a timeout for a non-blocking call");
+                    if (timeout < 0) throw PythonOps.ValueError("timeout value must be a non-negative number");
+                    timespan = TimeSpan.FromSeconds(timeout);
+                }
+
+                var currentThread = Thread.CurrentThread;
+
+                for (; ; ) {
+                    var previousThread = Interlocked.CompareExchange(ref curHolder, currentThread, null);
+                    if (previousThread == currentThread) {
+                        count++;
+                        return true;
+                    }
+                    if (previousThread is null) {
+                        count = 1;
+                        return true;
+                    }
+                    if (!blocking) {
+                        return false;
+                    }
+                    if (blockEvent is null) {
+                        // try again in case someone released us, checked the block
+                        // event and discovered it was null so they didn't set it.
+                        CreateBlockEvent();
+                        continue;
+                    }
+                    if (!blockEvent.WaitOne(timespan)) {
+                        return false;
+                    }
+                    GC.KeepAlive(this);
+                }
+            }
+
+            public void release() {
+                var currentThread = Thread.CurrentThread;
+
+                if (curHolder != currentThread) {
+                    throw PythonOps.RuntimeError("cannot release un-acquired lock");
+                }
+                if (--count > 0) {
+                    return;
+                }
+
+                if (Interlocked.Exchange(ref curHolder, null) is null) {
+                    throw PythonOps.RuntimeError("release unlocked lock");
+                }
+                if (blockEvent is not null) {
+                    // if this isn't set yet we race, it's handled in acquire()
+                    blockEvent.Set();
+                    GC.KeepAlive(this);
+                }
+            }
+
+            public string __repr__() {
+                if (curHolder is null) {
+                    return $"<unlocked _thread.RLock object owner=0 count=0 at 0x{IdDispenser.GetId(this):X16}>";
+                }
+                return $"<locked _thread.RLock object owner={curHolder?.ManagedThreadId} count={count} at 0x{IdDispenser.GetId(this):X16}>";
+            }
+
+            public void _acquire_restore([NotNone] PythonTuple state) {
+                acquire();
+                count = (int)state[0]!;
+                curHolder = (Thread?)state[1];
+            }
+
+            public PythonTuple _release_save() {
+                var count = Interlocked.Exchange(ref this.count, 0);
+                if (count == 0) {
+                    throw PythonOps.RuntimeError("cannot release un-acquired lock");
+                }
+
+                // release
+                var owner = Interlocked.Exchange(ref curHolder, null);
+                blockEvent?.Set();
+
+                return PythonTuple.MakeTuple(count, owner);
+            }
+
+            public bool _is_owned()
+                => curHolder == Thread.CurrentThread;
+
+            private void CreateBlockEvent() {
+                AutoResetEvent are = new AutoResetEvent(false);
+                if (Interlocked.CompareExchange(ref blockEvent, are, null) != null) {
+                    are.Close();
+                }
+            }
+        }
+
+#nullable restore
 
         #region Internal Implementation details
 

@@ -15,10 +15,8 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = []
-        if not is_windows: # https://github.com/IronLanguages/ironpython3/issues/1442
+        if not is_windows:
             failing_tests += [
-                ctypes.test.test_bitfields.BitFieldTest('test_mixed_1'),
-                ctypes.test.test_bitfields.BitFieldTest('test_mixed_4'),
                 ctypes.test.test_bitfields.C_Test('test_shorts'),
             ]
 

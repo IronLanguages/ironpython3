@@ -320,15 +320,19 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
 
         #region hqx
 
+        // TODO: removed in 3.11
         public static object a2b_hqx(object? data) {
             throw new NotImplementedException();
         }
+        // TODO: removed in 3.11
         public static object rledecode_hqx(object? data) {
             throw new NotImplementedException();
         }
+        // TODO: removed in 3.11
         public static object rlecode_hqx(object? data) {
             throw new NotImplementedException();
         }
+        // TODO: removed in 3.11
         public static object b2a_hqx(object? data) {
             throw new NotImplementedException();
         }

@@ -4,21 +4,24 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-22.04, macos-latest]
+        framework: ['net462', 'net6.0', 'net8.0']
 
     steps:
+      # Prerequisites
     - name: Install tools
       if: matrix.os == 'ubuntu-22.04'
       run: sudo apt-get -yq install mono-vbnc dos2unix
     - uses: actions/checkout@v4
       with:
         submodules: true
+
+      # Setup .NET
     - name: Setup .NET 6.0
       uses: actions/setup-dotnet@v4
       with:
@@ -31,26 +34,57 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
+
+      # CI debug information
     - name: Version Information
       run: |
         dotnet --info
         try { msbuild -version } catch { }
         try { mono --version } catch { }
       shell: pwsh
+
+      # Build & package
     - name: Build
-      run: pwsh make.ps1
+      run: pwsh make.ps1 -frameworks ${{ matrix.framework }}
     - name: Package
-      run: pwsh make.ps1 package
+      run: pwsh make.ps1 package -frameworks ${{ matrix.framework }}
+
+      # Upload package
     - uses: actions/upload-artifact@v4
       with:
-        name: packages-${{ matrix.os }}
+        name: packages-${{ matrix.os }}-${{ matrix.framework }}
         path: Package/Release/Packages
-    - name: Test (net462)
-      run: ./make.ps1 -frameworks net462 test-all
-      shell: pwsh
-    - name: Test (net6.0)
-      run: ./make.ps1 -frameworks net6.0 test-all
-      shell: pwsh
-    - name: Test (net8.0)
-      run: ./make.ps1 -frameworks net8.0 test-all
+
+  test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04, macos-latest]
+        framework: ['net462', 'net6.0', 'net8.0']
+
+    steps:
+      # Prerequisites
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+      # Setup .NET
+    - name: Setup .NET ${{ matrix.framework }}
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    - name: Setup .NET 9.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+      # Test action
+    - name: Test (${{ matrix.framework }})
+      run: ./make.ps1 -frameworks ${{ matrix.framework }} test-all
       shell: pwsh

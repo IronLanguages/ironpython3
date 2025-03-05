@@ -262,14 +262,14 @@ namespace IronPython.Modules {
                     INativeType? lastType = null;
                     List<Field> allFields = GetBaseSizeAlignmentAndFields(out int size, out int alignment);
 
-                    IList<object>? anonFields = GetAnonymousFields(this);
+                    IList<string>? anonFields = GetAnonymousFields(this);
 
                     foreach (object fieldDef in fieldDefList) {
                         GetFieldInfo(this, fieldDef, out string fieldName, out INativeType cdata, out bitCount);
 
-                        int prevSize = UpdateSizeAndAlignment(cdata, bitCount, ref lastType, ref size, ref alignment, ref curBitCount);
+                        int fieldOffset = UpdateSizeAndAlignment(cdata, bitCount, ref lastType, ref size, ref alignment, ref curBitCount);
 
-                        var newField = new Field(fieldName, cdata, prevSize, allFields.Count, bitCount, curBitCount - bitCount);
+                        var newField = new Field(fieldName, cdata, fieldOffset, allFields.Count, bitCount, curBitCount - bitCount);
                         allFields.Add(newField);
                         AddSlot(fieldName, newField);
 
@@ -292,7 +292,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal static void CheckAnonymousFields(List<Field> allFields, IList<object>? anonFields) {
+            internal static void CheckAnonymousFields(List<Field> allFields, IList<string>? anonFields) {
                 if (anonFields != null) {
                     foreach (string s in anonFields) {
                         bool found = false;
@@ -310,17 +310,25 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal static IList<object>? GetAnonymousFields(PythonType type) {
-                object anonymous;
-                IList<object>? anonFields = null;
-                if (type.TryGetBoundAttr(type.Context.SharedContext, type, "_anonymous_", out anonymous)) {
-                    anonFields = anonymous as IList<object>;
-                    if (anonFields == null) {
+
+            internal static IList<string>? GetAnonymousFields(PythonType type) {
+                IList<string>? anonFieldNames = null;
+                if (type.TryGetBoundAttr(type.Context.SharedContext, type, "_anonymous_", out object anonymous)) {
+                    if (anonymous is not IList<object> anonFields) {
                         throw PythonOps.TypeError("_anonymous_ must be a sequence");
                     }
+                    anonFieldNames = [];
+                    foreach (object anonField in anonFields) {
+                        if (Converter.TryConvertToString(anonField, out string? anonFieldStr)) {
+                            anonFieldNames.Add(anonFieldStr);
+                        } else {
+                            throw PythonOps.TypeErrorForBadInstance("anonymous field must be a string, not '{0}'", anonField);
+                        }
+                    }
                 }
-                return anonFields;
+                return anonFieldNames;
             }
+
 
             internal static void AddAnonymousFields(PythonType type, List<Field> allFields, INativeType cdata, Field newField) {
                 Field[] childFields;
@@ -346,6 +354,7 @@ namespace IronPython.Modules {
                     allFields.Add(anonField);
                 }
             }
+
 
             private List<Field> GetBaseSizeAlignmentAndFields(out int size, out int alignment) {
                 size = 0;

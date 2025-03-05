@@ -451,13 +451,15 @@ namespace IronPython.Modules {
                         // as long as they fit and match the alignment
                         int containerOffset = AlignBack(size, cdata.Alignment);  // TODO: _pack
                         int containerBitCount = (totalBitCount ?? 0) + (size - containerOffset) * 8;
-                        while (containerBitCount + bitCount > cdata.Size * 8) {
-                            // the bitfield does not fit into the container unit at this offset, try the next allowed offset
+                        if (containerBitCount + bitCount > cdata.Size * 8) {
+                            // the bitfield does not fit into the container unit at this offset, find the nearest allowed offset
                             int deltaOffset = cdata.Alignment; // TODO: _pack 
-                            containerOffset += deltaOffset;
-                            containerBitCount = Math.Max(0, containerBitCount - deltaOffset * 8);
+                            int numOffsets = Math.Max(1, (containerBitCount + bitCount.Value - 1) / (deltaOffset * 8));
+                            containerOffset += numOffsets * deltaOffset;
+                            containerBitCount = Math.Max(0, containerBitCount - numOffsets * deltaOffset * 8);
                         }
                         // the bitfield now fits into the container unit at this offset
+                        Debug.Assert(containerBitCount + bitCount <= cdata.Size * 8);
                         fieldOffset = size = containerOffset;
                         totalBitCount = containerBitCount + bitCount;
                         lastType = cdata;

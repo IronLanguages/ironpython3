@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -636,6 +637,15 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool IsNegativeZero(double value) {
             return (value == 0.0) && double.IsNegativeInfinity(1.0 / value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNegative(double value) {
+#if NET7_0_OR_GREATER
+            return double.IsNegative(value);
+#else
+            return value < 0.0 || IsNegativeZero(value);
+#endif
         }
 
         internal static int Sign(double value) {

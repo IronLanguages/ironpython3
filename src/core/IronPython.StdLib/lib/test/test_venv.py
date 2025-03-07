@@ -18,13 +18,6 @@ import textwrap
 import unittest
 import venv
 
-# pip currently requires ssl support, so we ensure we handle
-# it being missing (http://bugs.python.org/issue19744)
-try:
-    import ssl
-except ImportError:
-    ssl = None
-
 skipInVenv = unittest.skipIf(sys.prefix != sys.base_prefix,
                              'Test not appropriate in a venv')
 
@@ -307,18 +300,17 @@ class EnsurePipTest(BaseTest):
         self.run_with_capture(venv.create, self.env_dir, with_pip=False)
         self.assert_pip_not_installed()
 
-    @failsOnWindows
-    def test_devnull_exists_and_is_empty(self):
+    def test_devnull(self):
         # Fix for issue #20053 uses os.devnull to force a config file to
         # appear empty. However http://bugs.python.org/issue20541 means
         # that doesn't currently work properly on Windows. Once that is
         # fixed, the "win_location" part of test_with_pip should be restored
-        self.assertTrue(os.path.exists(os.devnull))
         with open(os.devnull, "rb") as f:
             self.assertEqual(f.read(), b"")
 
+        self.assertTrue(os.path.exists(os.devnull))
+
     # Requesting pip fails without SSL (http://bugs.python.org/issue19744)
-    @unittest.skipIf(ssl is None, ensurepip._MISSING_SSL_MESSAGE)
     def test_with_pip(self):
         rmtree(self.env_dir)
         with EnvironmentVarGuard() as envvars:

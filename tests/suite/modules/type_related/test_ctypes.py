@@ -15,7 +15,7 @@ import gc
 import unittest
 from decimal import Decimal
 
-from iptest import IronPythonTestCase, is_posix, is_cli, is_32, is_mono, is_netcoreapp, big, myint, run_test
+from iptest import IronPythonTestCase, is_posix, is_windows, is_cli, is_32, is_mono, is_netcoreapp, big, myint
 
 class MyInt:
     def __init__(self, value):
@@ -212,7 +212,7 @@ class CTypesTest(IronPythonTestCase):
                 msg = "int expected instead of float"
             self.assertRaisesMessage(TypeError, msg, Test, 2.3)
 
-        with self.assertRaisesMessage(ValueError, "number of bits invalid for bit field"):
+        with self.assertRaisesRegex(ValueError, "^number of bits invalid for bit field"):
             class Test(Structure):
                 _fields_ = [("x", c_int, 0)]
         # if c_long and c_int are the same size, c_long is used
@@ -294,7 +294,7 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
         if is_posix:
-            if is_cli:  # GCC results
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.b, c_int, 0, 3, 4)
                 self.check_bitfield(Test.c, c_uint, 0, 7, 1)
             else:  # bug in CPython
@@ -365,12 +365,12 @@ class CTypesTest(IronPythonTestCase):
             ]
 
         self.check_bitfield(Test.a, c_long, 0, 0, 3)
-        if is_cli:  # GCC results
+        if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
             self.check_bitfield(Test.b, c_int, 4, 0, 30)
         else: # bug in CPython
             self.check_bitfield(Test.b, c_int, 4, 3, 30)
         if is_posix:
-            if is_cli:  # GCC results
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.c, c_long, 0, 62, 2)
             else: # bug in CPython
                 self.check_bitfield(Test.c, c_long, 0, 33, 2)
@@ -399,13 +399,14 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
         if is_posix:
-            if is_cli:  # GCC results
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.b, c_int, 4, 0, 32)
                 self.check_bitfield(Test.c, c_longlong, 8, 0, 2)
+                self.assertEqual(sizeof(Test), 16)
             else: # bug in CPython
                 self.check_bitfield(Test.b, c_int, 4, 3, 32)
                 self.check_bitfield(Test.c, c_longlong, 0, 35, 2)
-            self.assertEqual(sizeof(Test), 16)
+                self.assertEqual(sizeof(Test), 8)
         else:
             self.check_bitfield(Test.b, c_int, 8, 0, 32)
             self.check_bitfield(Test.c, c_longlong, 16, 0, 2)
@@ -435,13 +436,14 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_byte, 1, 0, 3)
         if is_posix:
-            if is_cli:  # GCC results
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.b, c_short, 0, 11, 4)
                 self.check_bitfield(Test.c, c_longlong, 0, 15, 2)
+                self.assertEqual(sizeof(Test), 8)
             else: # bug in CPython
                 self.check_bitfield(Test.b, c_short, 1, 3, 4)
                 self.check_bitfield(Test.c, c_longlong, 1, 7, 2)
-            self.assertEqual(sizeof(Test), 8)
+                self.assertEqual(sizeof(Test), 9)
         else:
             self.check_bitfield(Test.b, c_short, 2, 0, 4)
             self.check_bitfield(Test.c, c_longlong, 8, 0, 2)
@@ -468,7 +470,7 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 20)
         if is_posix:
-            if is_cli:  # GCC results
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.b, c_short, 2, 4, 2)
                 self.check_bitfield(Test.c, c_short, 4, 0, 15)
             else: # bug in CPython
@@ -505,14 +507,15 @@ class CTypesTest(IronPythonTestCase):
             ]
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 20)
-        if is_posix:
-            if is_cli: # GCC results
+        if is_posix and (is_cli or sys.version_info < (3, 14)):  # CPython 3.14 implements MSVC behaviour (bug)
+            if is_cli:  # GCC-compliant results
                 self.check_bitfield(Test.b, c_short, 2, 4, 2)
                 self.check_bitfield(Test.c, c_short, 2, 6, 15)
+                self.assertEqual(sizeof(Test), 5)
             else: # bug in CPython
                 self.check_bitfield(Test.b, c_short, 6, 20, 2)
                 self.check_bitfield(Test.c, c_short, 6, 22, 15)
-            self.assertEqual(sizeof(Test), 5)
+                self.assertEqual(sizeof(Test), 8)
         else:
             self.check_bitfield(Test.b, c_short, 8, 0, 2)
             self.check_bitfield(Test.c, c_short, 10, 0, 15)
@@ -539,13 +542,14 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
         if is_posix:
-            if is_cli:  # GCC results
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.b, c_int, 4, 0, 31)
                 self.check_bitfield(Test.c, c_longlong, 8, 0, 3)
+                self.assertEqual(sizeof(Test), 16)
             else: # bug in CPython
                 self.check_bitfield(Test.b, c_int, 4, 3, 31)
                 self.check_bitfield(Test.c, c_longlong, 0, 34, 3)
-            self.assertEqual(sizeof(Test), 16)
+                self.assertEqual(sizeof(Test), 8)
         else:
             self.check_bitfield(Test.b, c_int, 8, 0, 31)
             self.check_bitfield(Test.c, c_longlong, 16, 0, 3)
@@ -572,7 +576,7 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
         if is_posix:
-            if is_cli:  # GCC results
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.b, c_int, 0, 3, 29)
             else: # bug in CPython
                 self.check_bitfield(Test.b, c_int, 4, 3, 29)
@@ -604,7 +608,7 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 4)
         if is_posix:
-            if is_cli:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
                 self.check_bitfield(Test.b, c_int, 4, 0, 29)
                 self.check_bitfield(Test.c, c_longlong, 0, 61, 3)
             else:  # bug in CPython
@@ -693,7 +697,8 @@ class CTypesTest(IronPythonTestCase):
         self.check_bitfield(Test.a, c_byte, 0, 0, 7)
         if is_posix:
             self.check_bitfield(Test.b, c_short, 0, 7, 2)
-            self.check_bitfield(Test.c, c_byte, 1, 1, 7)
+            if is_cli or sys.version_info >= (3, 14):  # bug in CPython 3.13 and earlier
+                self.check_bitfield(Test.c, c_byte, 1, 1, 7)
             self.assertEqual(sizeof(Test), 2)
         else:
             self.check_bitfield(Test.b, c_short, 2, 0, 2)
@@ -753,12 +758,13 @@ class CTypesTest(IronPythonTestCase):
             ]
 
         self.check_bitfield(Test.a, c_ushort, 0, 0, 8)
-        if is_posix:
+        if is_posix:  # GCC-compliant results
             self.check_bitfield(Test.b, c_int, 0, 8, 16)
             self.check_bitfield(Test.c, c_uint, 4, 0, 29)
-            self.check_bitfield(Test.d, c_longlong, 8, 0, 9)
-            self.check_bitfield(Test.e, c_uint, 8, 9, 2)
-            self.check_bitfield(Test.f, c_uint, 12, 0, 31)
+            if is_cli or sys.version_info >= (3, 14): # bug in CPython 3.13 and earlier
+                self.check_bitfield(Test.d, c_longlong, 8, 0, 9)
+                self.check_bitfield(Test.e, c_uint, 8, 9, 2)
+                self.check_bitfield(Test.f, c_uint, 12, 0, 31)
             self.assertEqual(sizeof(Test), 16)
         else:
             self.check_bitfield(Test.b, c_int, 4, 0, 16)
@@ -801,7 +807,7 @@ class CTypesTest(IronPythonTestCase):
             ]
 
         self.check_bitfield(Test.a, c_ushort, 0, 0, 8)
-        if is_posix:
+        if is_posix and is_cli:
             self.check_bitfield(Test.b, c_int, 0, 8, 16)
             self.check_bitfield(Test.c, c_uint, 3, 0, 29) # ??
             self.check_bitfield(Test.d, c_longlong, 4, 21, 9)
@@ -809,12 +815,13 @@ class CTypesTest(IronPythonTestCase):
             self.check_bitfield(Test.f, c_uint, 8, 0, 31)
             self.assertEqual(sizeof(Test), 12)
         else:
-            self.check_bitfield(Test.b, c_int, 4, 0, 16)
-            self.check_bitfield(Test.c, c_uint, 8, 0, 29)
-            self.check_bitfield(Test.d, c_longlong, 12, 0, 9)
-            self.check_bitfield(Test.e, c_uint, 20, 0, 2)
-            self.check_bitfield(Test.f, c_uint, 24, 0, 31)
-            self.assertEqual(sizeof(Test), 28)
+            if is_windows or sys.version_info >= (3, 14): # CPython 3.14 implements MSVC behavior even on POSIX (bug), CPython 3.13 and earlier is hopelessly incorrect
+                self.check_bitfield(Test.b, c_int, 4, 0, 16)
+                self.check_bitfield(Test.c, c_uint, 8, 0, 29)
+                self.check_bitfield(Test.d, c_longlong, 12, 0, 9)
+                self.check_bitfield(Test.e, c_uint, 20, 0, 2)
+                self.check_bitfield(Test.f, c_uint, 24, 0, 31)
+                self.assertEqual(sizeof(Test), 28)
 
 
     def test_bitfield_mixed_H1(self):
@@ -834,7 +841,10 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
         if is_posix:
-            self.check_bitfield(Test.b, c_byte, 6, 4, 3)
+            if is_cli or sys.version_info >= (3, 14):
+                self.check_bitfield(Test.b, c_byte, 6, 4, 3)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_byte, 7, 52, 3)
             self.assertEqual(sizeof(Test), 8)
         else:
             self.check_bitfield(Test.b, c_byte, 8, 0, 3)
@@ -858,7 +868,10 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
         if is_posix:
-            self.check_bitfield(Test.b, c_byte, 6, 4, 4)
+            if is_cli or sys.version_info >= (3, 14):
+                self.check_bitfield(Test.b, c_byte, 6, 4, 4)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_byte, 7, 52, 4)
             self.assertEqual(sizeof(Test), 8)
         else:
             self.check_bitfield(Test.b, c_byte, 8, 0, 4)
@@ -882,7 +895,10 @@ class CTypesTest(IronPythonTestCase):
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
         if is_posix:
-            self.check_bitfield(Test.b, c_byte, 7, 0, 5)
+            if (is_cli or sys.version_info >= (3, 14)):
+                self.check_bitfield(Test.b, c_byte, 7, 0, 5)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_byte, 7, 52, 5)
             self.assertEqual(sizeof(Test), 8)
         else:
             self.check_bitfield(Test.b, c_byte, 8, 0, 5)
@@ -1063,4 +1079,5 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual(c_byte_value.value, -127)
 
 
-run_test(__name__)
+if __name__ == "__main__":
+    unittest.main()

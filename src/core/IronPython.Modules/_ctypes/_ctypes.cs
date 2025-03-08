@@ -597,21 +597,17 @@ namespace IronPython.Modules {
             if (pt.Count != 3) {
                 bitCount = null;
             } else {
-                bitCount = CheckBits(cdata, pt);
+                bitCount = Converter.ConvertToInt32(pt[2]);
+                CheckBits(fieldName, cdata, bitCount.Value);
             }
         }
 
         /// <summary>
         /// Verifies that the provided bit field settings are valid for this type.
         /// </summary>
-        private static int CheckBits(INativeType cdata, PythonTuple pt) {
-            int bitCount = Converter.ConvertToInt32(pt[2]);
-
-            if (!(cdata is SimpleType simpType)) {
-                throw PythonOps.TypeError("bit fields not allowed for type {0}", ((PythonType)cdata).Name);
-            }
-
-            switch (simpType._type) {
+        private static void CheckBits(string fieldName, INativeType cdata, int bitCount) {
+            switch ((cdata as SimpleType)?._type) {
+                case null:
                 case SimpleTypeKind.Object:
                 case SimpleTypeKind.Pointer:
                 case SimpleTypeKind.Single:
@@ -620,13 +616,13 @@ namespace IronPython.Modules {
                 case SimpleTypeKind.CharPointer:
                 case SimpleTypeKind.WChar:
                 case SimpleTypeKind.WCharPointer:
+                case SimpleTypeKind.BStr:
                     throw PythonOps.TypeError("bit fields not allowed for type {0}", ((PythonType)cdata).Name);
             }
 
             if (bitCount <= 0 || bitCount > cdata.Size * 8) {
-                throw PythonOps.ValueError("number of bits invalid for bit field");
+                throw PythonOps.ValueError("number of bits invalid for bit field '{0}'", fieldName);
             }
-            return bitCount;
         }
 
         /// <summary>

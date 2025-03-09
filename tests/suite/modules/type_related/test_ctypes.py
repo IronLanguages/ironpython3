@@ -507,12 +507,12 @@ class CTypesTest(IronPythonTestCase):
             ]
 
         self.check_bitfield(Test.a, c_longlong, 0, 0, 20)
-        if is_posix and (is_cli or sys.version_info < (3, 14)):  # CPython 3.14 implements MSVC behaviour (bug)
+        if is_posix and (is_cli or sys.version_info < (3, 14)):  # CPython 3.14 implements MSVC behaviour when _layout_ is not set
             if is_cli:  # GCC-compliant results
                 self.check_bitfield(Test.b, c_short, 2, 4, 2)
                 self.check_bitfield(Test.c, c_short, 2, 6, 15)
                 self.assertEqual(sizeof(Test), 5)
-            else: # bug in CPython
+            else: # https://github.com/python/cpython/issues/131747
                 self.check_bitfield(Test.b, c_short, 6, 20, 2)
                 self.check_bitfield(Test.c, c_short, 6, 22, 15)
                 self.assertEqual(sizeof(Test), 8)
@@ -903,6 +903,55 @@ class CTypesTest(IronPythonTestCase):
         else:
             self.check_bitfield(Test.b, c_byte, 8, 0, 5)
             self.assertEqual(sizeof(Test), 16)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_msvc(self):
+        class Test(Structure):
+            _layout_ = 'ms'
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 5),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
+        self.check_bitfield(Test.b, c_byte, 8, 0, 5)
+        self.assertEqual(sizeof(Test), 16)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_gcc(self):
+        class Test(Structure):
+            _layout_ = 'gcc-sysv'
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 5),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
+        self.check_bitfield(Test.b, c_byte, 7, 0, 5)
+        self.assertEqual(sizeof(Test), 8)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_default(self):
+        class Test(Structure):
+            _layout_ = None
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 5),
+            ]
+        self.assertEqual(sizeof(Test), 8 if is_posix else 16)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_invalid(self):
+        with self.assertRaises(ValueError) as context:
+            class Test(Structure):
+                _layout_ = "invalid"
+                _fields_ = []
+
+        self.assertIn("unknown _layout_", str(context.exception))
 
 
     @unittest.skipIf(is_posix, 'Windows specific test')

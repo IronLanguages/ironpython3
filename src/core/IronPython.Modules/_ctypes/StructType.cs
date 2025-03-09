@@ -414,16 +414,13 @@ namespace IronPython.Modules {
                     if (_pack != null) throw new NotImplementedException("pack with bitfields");  // TODO: implement
 
                     if (UseMsvcBitfieldAlignmentRules) {
-                        if (totalBitCount != null) {
-                            // this bitfield is not the first field in the struct
-                            if (totalBitCount != null) { // there is already a bitfield container open
-                                // under the MSVC rules, only bitfields of type that has the same size/alignment, are packed into the same container unit
-                                if (lastType!.Size != cdata.Size || lastType.Alignment != cdata.Alignment) {
-                                    // if the bitfield type is not compatible with the type of the previous container unit, close the previous container unit
-                                    size += lastType.Size;
-                                    fieldOffset = size = PythonStruct.Align(size, cdata.Alignment);  // TODO: _pack
-                                    totalBitCount = null;
-                                }
+                        if (totalBitCount != null) { // there is already a bitfield container open
+                            // under the MSVC rules, only bitfields of type that has the same size/alignment, are packed into the same container unit
+                            if (lastType!.Size != cdata.Size || lastType.Alignment != cdata.Alignment) {
+                                // if the bitfield type is not compatible with the type of the previous container unit, close the previous container unit
+                                size += lastType.Size;
+                                fieldOffset = size = PythonStruct.Align(size, cdata.Alignment);  // TODO: _pack
+                                totalBitCount = null;
                             }
                         }
                         if (totalBitCount != null) {
@@ -431,7 +428,7 @@ namespace IronPython.Modules {
                             if ((bitCount + totalBitCount + 7) / 8 <= cdata.Size) {
                                 // new bitfield fits into the container unit
                                 fieldOffset = size;
-                                totalBitCount = bitCount + totalBitCount;
+                                totalBitCount += bitCount;
                             } else {
                                 // new bitfield does not fit into the container unit, close it
                                 size += lastType!.Size;
@@ -485,7 +482,7 @@ namespace IronPython.Modules {
                     lastType = cdata;
                 }
 
-                return fieldOffset;  // this is the offset of the field or the container unit for the bitfield
+                return fieldOffset;
             }
 
 

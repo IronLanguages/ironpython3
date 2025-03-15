@@ -1,6 +1,7 @@
 <Project ToolsVersion="4.0">
   <PropertyGroup>
-    <InterpreterId>Global|IronPython|3.4</InterpreterId>
+    <PythonInterpreter>IronPython</PythonInterpreter>
+    <PythonVersion>3.4</PythonVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.py" />

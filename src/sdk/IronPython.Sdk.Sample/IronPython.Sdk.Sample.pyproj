@@ -1,0 +1,9 @@
+<Project ToolsVersion="4.0">
+  <PropertyGroup>
+    <InterpreterId>Global|IronPython|3.4</InterpreterId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.py" />
+  </ItemGroup>
+  <Import Project="..\IronPython.Sdk\Sdk\Sdk.props" />
+</Project>

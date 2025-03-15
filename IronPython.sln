@@ -105,6 +105,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "msi", "msi", "{450F93D5-DF0
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Window32", "src\executables\IronPython.Window32\IronPython.Window32.csproj", "{8F177DC2-9822-45BD-AB05-1F40FCA86168}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.Sdk", "src\sdk\IronPython.Sdk\IronPython.Sdk.csproj", "{726D85B8-E98E-4F31-A081-B02035809A33}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -171,6 +173,10 @@ Global
 		{8F177DC2-9822-45BD-AB05-1F40FCA86168}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F177DC2-9822-45BD-AB05-1F40FCA86168}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F177DC2-9822-45BD-AB05-1F40FCA86168}.Release|Any CPU.Build.0 = Release|Any CPU
+		{726D85B8-E98E-4F31-A081-B02035809A33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{726D85B8-E98E-4F31-A081-B02035809A33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{726D85B8-E98E-4F31-A081-B02035809A33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{726D85B8-E98E-4F31-A081-B02035809A33}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

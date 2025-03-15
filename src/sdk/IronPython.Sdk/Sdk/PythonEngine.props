@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <ProjectHome>.</ProjectHome>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>$(MSBuildProjectName)</Name>
+    <RootNamespace>$(Name)</RootNamespace>
+  </PropertyGroup>
+</Project>

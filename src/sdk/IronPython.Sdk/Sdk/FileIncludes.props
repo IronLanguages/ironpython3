@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <StartupFile>main.py</StartupFile>
+    <!--
+    <StartupFile Condition="Exists('main.py')">main.py</StartupFile>
+    <StartupFile Condition="Exists('main.py') and '$(StartupFile)' == ''">main.py</StartupFile>
+    -->
+  </PropertyGroup>
+  <!-- This doesn't work right now -->
+  <ItemGroup>
+    <Compile Include="*.py" Exclude="obj\**;bin\**"/>
+  </ItemGroup>
+</Project>

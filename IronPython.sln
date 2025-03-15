@@ -107,6 +107,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Window32", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.Sdk", "src\sdk\IronPython.Sdk\IronPython.Sdk.csproj", "{726D85B8-E98E-4F31-A081-B02035809A33}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "IronPython.Sdk.Sample", "src\sdk\IronPython.Sdk.Sample\IronPython.Sdk.Sample.pyproj", "{C1E9ED5C-242E-4F90-8E69-7FDDE3C919BD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -177,6 +179,8 @@ Global
 		{726D85B8-E98E-4F31-A081-B02035809A33}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{726D85B8-E98E-4F31-A081-B02035809A33}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{726D85B8-E98E-4F31-A081-B02035809A33}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1E9ED5C-242E-4F90-8E69-7FDDE3C919BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1E9ED5C-242E-4F90-8E69-7FDDE3C919BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

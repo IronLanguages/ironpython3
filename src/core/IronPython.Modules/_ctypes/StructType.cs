@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting;
@@ -261,22 +262,20 @@ namespace IronPython.Modules {
                     INativeType? lastType = null;
                     List<Field> allFields = GetBaseSizeAlignmentAndFields(out int size, out int alignment);
 
-                    IList<object>? anonFields = GetAnonymousFields(this);
+                    IList<string>? anonFields = GetAnonymousFields(this);
 
                     foreach (object fieldDef in fieldDefList) {
                         GetFieldInfo(this, fieldDef, out string fieldName, out INativeType cdata, out bitCount);
 
-                        int prevSize = UpdateSizeAndAlignment(cdata, bitCount, lastType, ref size, ref alignment, ref curBitCount);
+                        int fieldOffset = UpdateSizeAndAlignment(cdata, bitCount, ref lastType, ref size, ref alignment, ref curBitCount);
 
-                        var newField = new Field(fieldName, cdata, prevSize, allFields.Count, bitCount, curBitCount - bitCount);
+                        var newField = new Field(fieldName, cdata, fieldOffset, allFields.Count, bitCount, curBitCount - bitCount);
                         allFields.Add(newField);
                         AddSlot(fieldName, newField);
 
                         if (anonFields != null && anonFields.Contains(fieldName)) {
                             AddAnonymousFields(this, allFields, cdata, newField);
                         }
-
-                        lastType = cdata;
                     }
 
                     CheckAnonymousFields(allFields, anonFields);
@@ -293,7 +292,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal static void CheckAnonymousFields(List<Field> allFields, IList<object>? anonFields) {
+            internal static void CheckAnonymousFields(List<Field> allFields, IList<string>? anonFields) {
                 if (anonFields != null) {
                     foreach (string s in anonFields) {
                         bool found = false;
@@ -311,17 +310,25 @@ namespace IronPython.Modules {
                 }
             }
 
-            internal static IList<object>? GetAnonymousFields(PythonType type) {
-                object anonymous;
-                IList<object>? anonFields = null;
-                if (type.TryGetBoundAttr(type.Context.SharedContext, type, "_anonymous_", out anonymous)) {
-                    anonFields = anonymous as IList<object>;
-                    if (anonFields == null) {
+
+            internal static IList<string>? GetAnonymousFields(PythonType type) {
+                IList<string>? anonFieldNames = null;
+                if (type.TryGetBoundAttr(type.Context.SharedContext, type, "_anonymous_", out object anonymous)) {
+                    if (anonymous is not IList<object> anonFields) {
                         throw PythonOps.TypeError("_anonymous_ must be a sequence");
                     }
+                    anonFieldNames = [];
+                    foreach (object anonField in anonFields) {
+                        if (Converter.TryConvertToString(anonField, out string? anonFieldStr)) {
+                            anonFieldNames.Add(anonFieldStr);
+                        } else {
+                            throw PythonOps.TypeErrorForBadInstance("anonymous field must be a string, not '{0}'", anonField);
+                        }
+                    }
                 }
-                return anonFields;
+                return anonFieldNames;
             }
+
 
             internal static void AddAnonymousFields(PythonType type, List<Field> allFields, INativeType cdata, Field newField) {
                 Field[] childFields;
@@ -348,6 +355,7 @@ namespace IronPython.Modules {
                 }
             }
 
+
             private List<Field> GetBaseSizeAlignmentAndFields(out int size, out int alignment) {
                 size = 0;
                 alignment = 1;
@@ -359,62 +367,124 @@ namespace IronPython.Modules {
                         st.EnsureFinal();
                         foreach (Field f in st._fields) {
                             allFields.Add(f);
-                            UpdateSizeAndAlignment(f.NativeType, f.BitCount, lastType, ref size, ref alignment, ref totalBitCount);
+                            UpdateSizeAndAlignment(f.NativeType, f.BitCount, ref lastType, ref size, ref alignment, ref totalBitCount);
 
                             if (f.NativeType == this) {
                                 throw StructureCannotContainSelf();
                             }
-
-                            lastType = f.NativeType;
                         }
                     }
                 }
                 return allFields;
             }
 
-            private int UpdateSizeAndAlignment(INativeType cdata, int? bitCount, INativeType? lastType, ref int size, ref int alignment, ref int? totalBitCount) {
-                Debug.Assert(totalBitCount == null || lastType != null); // lastType is null only on the first iteration, when totalBitCount is null as well
-                int prevSize = size;
+
+            /// <summary>
+            /// Processes one field definition and allocates its data payload within the struct.
+            /// </summary>
+            /// <param name="cdata">
+            /// The type of the field to process.</param>
+            /// <param name="bitCount">
+            /// Width of the bitfield in bits. If the fields to process is not a bitfield, this value is null</param>
+            /// <param name="lastType">
+            /// The type of the last field (or container unit) processed in the struct. If processing the first field in the struct, this value is null.
+            /// On return, this value is updated with the processed field's type, or, if the processed field was a bitfield, with its container unit type.</param>
+            /// <param name="size">
+            /// The total size of the struct in bytes excluding an open bitfield container, if any.
+            /// On input, the size of the struct before the field was allocated.
+            /// On return, the size of the struct after the field has been processed.
+            /// If the processed field was a bitfield, the size may not have been increased yet, depending whether the bitfield fit in the current container unit.
+            /// So the full (current) struct size in bits is size * 8 + totalBitCount. </param>
+            /// <param name="alignment">
+            /// The total alignment of the struct (the common denominator of all fields).
+            /// This value is being updated as necessary with the alignment of the processed field.</param>
+            /// <param name="totalBitCount">
+            /// The number of already occupied bits in the currently open containment unit for bitfields.
+            /// If the previous field is not a bitfield, this value is null.
+            /// On return, the count is updated with the number of occupied bits.</param>
+            /// <returns>
+            /// The offset of the processed field within the struct. If the processed field was a bitfield, this is the offset of its container unit.</returns>
+            private int UpdateSizeAndAlignment(INativeType cdata, int? bitCount, ref INativeType? lastType, ref int size, ref int alignment, ref int? totalBitCount) {
+                int fieldOffset;
                 if (bitCount != null) {
-                    if (lastType != null && lastType.Size != cdata.Size) {
-                        totalBitCount = null;
-                        prevSize = size += lastType.Size;
-                    }
+                    // process a bitfield
+                    Debug.Assert(bitCount <= cdata.Size * 8);
+                    Debug.Assert(totalBitCount == null || lastType != null);
 
-                    size = PythonStruct.Align(size, cdata.Alignment);
+                    if (_pack != null) throw new NotImplementedException("pack with bitfields");  // TODO: implement
 
-                    if (totalBitCount != null) {
-                        if ((bitCount + totalBitCount + 7) / 8 <= cdata.Size) {
-                            totalBitCount = bitCount + totalBitCount;
-                        } else {
-                            size += lastType!.Size;
-                            prevSize = size;
-                            totalBitCount = bitCount;
+                    if (UseMsvcBitfieldAlignmentRules) {
+                        if (totalBitCount != null) { // there is already a bitfield container open
+                            // under the MSVC rules, only bitfields of type that has the same size/alignment, are packed into the same container unit
+                            if (lastType!.Size != cdata.Size || lastType.Alignment != cdata.Alignment) {
+                                // if the bitfield type is not compatible with the type of the previous container unit, close the previous container unit
+                                size += lastType.Size;
+                                fieldOffset = size = PythonStruct.Align(size, cdata.Alignment);  // TODO: _pack
+                                totalBitCount = null;
+                            }
                         }
-                    } else {
-                        totalBitCount = bitCount;
+                        if (totalBitCount != null) {
+                            // container unit open
+                            if ((bitCount + totalBitCount + 7) / 8 <= cdata.Size) {
+                                // new bitfield fits into the container unit
+                                fieldOffset = size;
+                                totalBitCount += bitCount;
+                            } else {
+                                // new bitfield does not fit into the container unit, close it
+                                size += lastType!.Size;
+                                // and open a new container unit for the bitfield
+                                fieldOffset = size = PythonStruct.Align(size, cdata.Alignment);  // TODO: _pack
+                                totalBitCount = bitCount;
+                                lastType = cdata;
+                            }
+                        } else {
+                            // open a new container unit for the bitfield
+                            fieldOffset = size = PythonStruct.Align(size, cdata.Alignment);  // TODO: _pack
+                            totalBitCount = bitCount;
+                            lastType = cdata;
+                        }
+                    } else {  // GCC bitfield alignment rules
+                        // under the GCC rules, all bitfields are packed into the same container unit or an overlapping container unit of a different type,
+                        // as long as they fit and match the alignment
+                        int containerOffset = AlignBack(size, cdata.Alignment);  // TODO: _pack
+                        int containerBitCount = (totalBitCount ?? 0) + (size - containerOffset) * 8;
+                        if (containerBitCount + bitCount > cdata.Size * 8) {
+                            // the bitfield does not fit into the container unit at this offset, find the nearest allowed offset
+                            int deltaOffset = cdata.Alignment; // TODO: _pack 
+                            int numOffsets = Math.Max(1, (containerBitCount + bitCount.Value - 1) / (deltaOffset * 8));
+                            containerOffset += numOffsets * deltaOffset;
+                            containerBitCount = Math.Max(0, containerBitCount - numOffsets * deltaOffset * 8);
+                        }
+                        // the bitfield now fits into the container unit at this offset
+                        Debug.Assert(containerBitCount + bitCount <= cdata.Size * 8);
+                        fieldOffset = size = containerOffset;
+                        totalBitCount = containerBitCount + bitCount;
+                        lastType = cdata;
                     }
+                    alignment = Math.Max(alignment, lastType!.Alignment);  // TODO: _pack
                 } else {
+                    // process a regular field
                     if (totalBitCount != null) {
+                        // last field was a bitfield; close its container unit to prepare for the next regular field
                         size += lastType!.Size;
-                        prevSize = size;
                         totalBitCount = null;
                     }
 
                     if (_pack != null) {
                         alignment = _pack.Value;
-                        prevSize = size = PythonStruct.Align(size, _pack.Value);
-
+                        fieldOffset = size = PythonStruct.Align(size, _pack.Value);
                         size += cdata.Size;
                     } else {
                         alignment = Math.Max(alignment, cdata.Alignment);
-                        prevSize = size = PythonStruct.Align(size, cdata.Alignment);
+                        fieldOffset = size = PythonStruct.Align(size, cdata.Alignment);
                         size += cdata.Size;
                     }
+                    lastType = cdata;
                 }
 
-                return prevSize;
+                return fieldOffset;
             }
+
 
             [MemberNotNull(nameof(_fields), nameof(_size), nameof(_alignment))]
             internal void EnsureFinal() {
@@ -452,6 +522,12 @@ namespace IronPython.Modules {
                     throw new InvalidOperationException("size and alignment should always be initialized together");
                 }
             }
+
+            private static int AlignBack(int length, int size)
+                => length & ~(size - 1);
+
+            private static bool UseMsvcBitfieldAlignmentRules
+                => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         }
     }
 }

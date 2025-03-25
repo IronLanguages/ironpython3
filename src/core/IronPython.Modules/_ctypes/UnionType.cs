@@ -166,7 +166,7 @@ namespace IronPython.Modules {
             private void SetFields(object? fields) {
                 lock (this) {
                     IList<object> fieldDefList = GetFieldsList(fields);
-                    IList<object>? anonFields = StructType.GetAnonymousFields(this);
+                    IList<string>? anonFields = StructType.GetAnonymousFields(this);
 
                     int size = 0, alignment = 1;
                     List<Field> allFields = new List<Field>();//GetBaseSizeAlignmentAndFields(out size, out alignment);

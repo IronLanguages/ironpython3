@@ -2,6 +2,7 @@
   <PropertyGroup>
     <PythonInterpreter>IronPython</PythonInterpreter>
     <PythonVersion>3.4</PythonVersion>
+    <InterpreterId>Global|IronPython|3.4</InterpreterId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.py" />

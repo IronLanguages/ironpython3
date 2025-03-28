@@ -70,7 +70,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{EE77D917
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Console32", "src\executables\IronPython.Console32\IronPython.Console32.csproj", "{AD21022F-E7C1-4B74-97C1-0A0E48EFF992}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Analyzer", "src\roslyn\IronPython.Analyzer\IronPython.Analyzer.csproj", "{DA3415F3-6922-42D0-93D7-BEE2E8603A18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Analyzer", "src\tooling\IronPython.Analyzer\IronPython.Analyzer.csproj", "{DA3415F3-6922-42D0-93D7-BEE2E8603A18}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "choco", "choco", "{EA550FD8-2241-4131-8292-619D009E0199}"
 	ProjectSection(SolutionItems) = preProject
@@ -105,9 +105,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "msi", "msi", "{450F93D5-DF0
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.Window32", "src\executables\IronPython.Window32\IronPython.Window32.csproj", "{8F177DC2-9822-45BD-AB05-1F40FCA86168}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.Sdk", "src\sdk\IronPython.Sdk\IronPython.Sdk.csproj", "{726D85B8-E98E-4F31-A081-B02035809A33}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.Sdk", "src\tooling\IronPython.Sdk\IronPython.Sdk.csproj", "{726D85B8-E98E-4F31-A081-B02035809A33}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "IronPython.Sdk.Sample", "src\sdk\IronPython.Sdk.Sample\IronPython.Sdk.Sample.pyproj", "{C1E9ED5C-242E-4F90-8E69-7FDDE3C919BD}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "IronPython.Sdk.Sample", "src\tooling\IronPython.Sdk.Sample\IronPython.Sdk.Sample.pyproj", "{C1E9ED5C-242E-4F90-8E69-7FDDE3C919BD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

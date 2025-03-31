@@ -313,9 +313,12 @@ namespace IronPython.Hosting {
 
             PythonContext.SetHostVariables(prefix ?? "", executable, null);
 
-            // --------
+
+            // --- Local functions -------
+
             static bool FindRunner(string prefix, string name, string assembly, out string runner) {
                 runner = null;
+#if NET
                 while (prefix != null) {
                     runner = Path.Combine(prefix, name);
                     if (File.Exists(runner)) {
@@ -336,9 +339,8 @@ namespace IronPython.Hosting {
                         using var accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
 
                         for (long i = accessor.Capacity - fsAssemblyPath.Length; i >= 0;  i--) { // the path should be close to the end of the file
-                            if (accessor.ReadByte(i) != fsap0) {
-                                continue;
-                            }
+                            if (accessor.ReadByte(i) != fsap0) continue;
+
                             bool found = true;
                             for (int j = 1; j < fsAssemblyPath.Length; j++) {
                                 if (accessor.ReadByte(i + j) != fsAssemblyPath[j]) {
@@ -346,15 +348,15 @@ namespace IronPython.Hosting {
                                     break;
                                 }
                             }
-                            if (found) {
-                                return true;
-                            }
+                            if (found) return true;
                         }
                     } catch { }
                 }
+#endif
                 return false;
             }
 
+#if NET
             [UnsupportedOSPlatform("windows")]
             static bool IsExecutable(string filePath) {
                 var fileInfo = new Mono.Unix.UnixFileInfo(filePath);
@@ -362,6 +364,7 @@ namespace IronPython.Hosting {
 
                 return (fileMode & (Mono.Unix.FileAccessPermissions.UserExecute | Mono.Unix.FileAccessPermissions.GroupExecute | Mono.Unix.FileAccessPermissions.OtherExecute)) != 0;
             }
+#endif
         }
 
         /// <summary>

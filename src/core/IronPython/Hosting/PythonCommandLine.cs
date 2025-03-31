@@ -328,7 +328,7 @@ namespace IronPython.Hosting {
                     }
                     prefix = Path.GetDirectoryName(prefix);
                 }
-                if (runner != null && Path.GetExtension(assembly).Equals(".dll", StringComparison.OrdinalIgnoreCase)) {
+                if (prefix != null && Path.GetExtension(assembly).Equals(".dll", StringComparison.OrdinalIgnoreCase)) {
                     // make sure that the runner refers to this DLL
                     var relativeAssemblyPath = assembly.Substring(prefix.Length + 1); // skip over the path separator
                     byte[] fsAssemblyPath = Encoding.UTF8.GetBytes(relativeAssemblyPath);
@@ -350,7 +350,7 @@ namespace IronPython.Hosting {
                             }
                             if (found) return true;
                         }
-                    } catch { }
+                    } catch { }  // if reading the file fails, it is not our runner
                 }
 #endif
                 return false;

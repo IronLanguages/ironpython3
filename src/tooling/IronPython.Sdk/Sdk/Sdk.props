@@ -5,8 +5,8 @@
   <Import Project="FileIncludes.props" />
   <PropertyGroup>
     <!-- Default -->
-    <InterpreterId>Global|$(PythonInterpreter)|$(PythonVersion)</InterpreterId>
-
+    <!--<InterpreterId>Global|$(PythonInterpreter)|$(PythonVersion)</InterpreterId>-->
+    
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>c1e9ed5c-242e-4f90-8e69-7fdde3c919bd</ProjectGuid>
   </PropertyGroup>

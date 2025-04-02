@@ -40,8 +40,8 @@ using IronPython.Runtime.Types;
 [assembly: PythonModule("clr", typeof(IronPython.Runtime.ClrModule))]
 namespace IronPython.Runtime {
     /// <summary>
-    /// this class contains objecs and static methods used for
-    /// .NET/CLS interop with Python.  
+    /// This class contains objects and static methods used for
+    /// .NET/CLS interop with Python.
     /// </summary>
     public static class ClrModule {
 

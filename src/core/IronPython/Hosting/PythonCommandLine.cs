@@ -6,8 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
@@ -261,17 +263,18 @@ namespace IronPython.Hosting {
 
                 var name = Path.GetFileNameWithoutExtension(executable);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    var runner = Path.Combine(prefix, name + ".exe");
-                    if (File.Exists(runner)) {
+                    var exename = name + ".exe";
+                    var runner = Path.Combine(prefix, exename);
+                    if (File.Exists(runner) || FindRunner(prefix, exename, executable, out runner)) {
                         executable = runner;
                     } else {
-                        // TODO: was for .NET Core 2.1, can we drop this?
+                        // ipy.bat is created Install-IronPython.ps1, which installs from a zip file
                         runner = Path.Combine(prefix, name + ".bat");
                         if (File.Exists(runner)) executable = runner;
                     }
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     var runner = Path.Combine(prefix, name);
-                    if (File.Exists(runner)) {
+                    if (File.Exists(runner) || FindRunner(prefix, name, executable, out runner)) {
                         executable = runner;
                     } else {
                         runner = Path.Combine(prefix, name + ".sh");
@@ -289,7 +292,7 @@ namespace IronPython.Hosting {
                     if (File.Exists(path)) {
                         foreach (var line in File.ReadAllLines(path, Encoding.UTF8)) { // TODO: this actually needs to be decoded with surrogateescape
                             if (line.StartsWith('#')) continue;
-                            var split = line.Split(new[] { '=' }, 2);
+                            var split = line.Split(['='], 2);
                             if (split.Length != 2) continue;
                             if (split[0].Trim() == "home") {
                                 pyvenv_prefix = split[1].Trim();
@@ -309,6 +312,59 @@ namespace IronPython.Hosting {
             }
 
             PythonContext.SetHostVariables(prefix ?? "", executable, null);
+
+
+            // --- Local functions -------
+
+            static bool FindRunner(string prefix, string name, string assembly, out string runner) {
+                runner = null;
+#if NET
+                while (prefix != null) {
+                    runner = Path.Combine(prefix, name);
+                    if (File.Exists(runner)) {
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IsExecutable(runner)) {
+                            break;
+                        }
+                    }
+                    prefix = Path.GetDirectoryName(prefix);
+                }
+                if (prefix != null && Path.GetExtension(assembly).Equals(".dll", StringComparison.OrdinalIgnoreCase)) {
+                    // make sure that the runner refers to this DLL
+                    var relativeAssemblyPath = assembly.Substring(prefix.Length + 1); // skip over the path separator
+                    byte[] fsAssemblyPath = Encoding.UTF8.GetBytes(relativeAssemblyPath);
+                    byte fsap0 = fsAssemblyPath[0];
+
+                    try {
+                        using var mmf = MemoryMappedFile.CreateFromFile(runner, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+                        using var accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+
+                        for (long i = accessor.Capacity - fsAssemblyPath.Length; i >= 0;  i--) { // the path should be close to the end of the file
+                            if (accessor.ReadByte(i) != fsap0) continue;
+
+                            bool found = true;
+                            for (int j = 1; j < fsAssemblyPath.Length; j++) {
+                                if (accessor.ReadByte(i + j) != fsAssemblyPath[j]) {
+                                    found = false;
+                                    break;
+                                }
+                            }
+                            if (found) return true;
+                        }
+                    } catch { }  // if reading the file fails, it is not our runner
+                }
+#endif
+                return false;
+            }
+
+#if NET
+            [UnsupportedOSPlatform("windows")]
+            static bool IsExecutable(string filePath) {
+                var fileInfo = new Mono.Unix.UnixFileInfo(filePath);
+                var fileMode = fileInfo.FileAccessPermissions;
+
+                return (fileMode & (Mono.Unix.FileAccessPermissions.UserExecute | Mono.Unix.FileAccessPermissions.GroupExecute | Mono.Unix.FileAccessPermissions.OtherExecute)) != 0;
+            }
+#endif
         }
 
         /// <summary>

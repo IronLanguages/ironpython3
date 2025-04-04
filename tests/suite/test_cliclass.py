@@ -4,7 +4,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_netcoreapp, is_netcoreapp21, is_posix, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_netcoreapp, is_netcoreapp21, is_posix, is_arm64, big, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -1755,6 +1755,9 @@ if not hasattr(A, 'Rank'):
         from iptest import clr_int_types, myint, myfloat
 
         val = 1 << 64
+        if is_mono and is_arm64:
+            # on Mono/ARM64, floating point rounding errors on ARM64 can cause 1 << 64 to fit in 64 bits
+            val += 10000
         for t in clr_int_types:
             self.assertRaises(OverflowError, t, val)
             self.assertRaises(OverflowError, t, str(val))

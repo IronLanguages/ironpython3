@@ -6,7 +6,7 @@
 ## Run selected tests from test_datetime from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, is_mono, is_arm64, generate_suite, run_test
 
 import test.datetimetester
 
@@ -45,7 +45,13 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestTimeZone('test_constructor'),
         ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+        if is_mono and is_arm64:
+            skip_tests += [
+                test.datetimetester.TestTimeDelta('test_overflow'), # rounding differences
+            ]
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

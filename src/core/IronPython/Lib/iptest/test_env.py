@@ -15,6 +15,7 @@ is_windows    =  sys.platform == 'win32'
 is_linux      =  sys.platform == 'linux'
 is_osx        =  sys.platform == 'darwin'
 is_posix      =  is_linux or is_osx
+is_arm64      =  os.uname().machine in ['aarch64', 'arm64']
 
 is_netcoreapp =  False
 is_netcoreapp21 = False

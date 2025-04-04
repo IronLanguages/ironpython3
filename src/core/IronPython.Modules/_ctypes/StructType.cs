@@ -33,6 +33,9 @@ namespace IronPython.Modules {
         /// </summary>
         [PythonType, PythonHidden]
         public class StructType : PythonType, INativeType {
+
+            private enum LayoutKind { Msvc, Gcc }
+
             [DisallowNull]
             internal Field[]? _fields;              // not null after type construction completes
             private int? _size, _alignment, _pack;
@@ -252,6 +255,7 @@ namespace IronPython.Modules {
                 return PythonType.SetPythonType(underlyingSystemType, new StructType(underlyingSystemType));
             }
 
+
             [MemberNotNull(nameof(_fields), nameof(_size), nameof(_alignment))]
             private void SetFields(object? fields) {
                 lock (this) {
@@ -263,11 +267,12 @@ namespace IronPython.Modules {
                     List<Field> allFields = GetBaseSizeAlignmentAndFields(out int size, out int alignment);
 
                     IList<string>? anonFields = GetAnonymousFields(this);
+                    LayoutKind layout = GetStructLayout(this);
 
                     foreach (object fieldDef in fieldDefList) {
                         GetFieldInfo(this, fieldDef, out string fieldName, out INativeType cdata, out bitCount);
 
-                        int fieldOffset = UpdateSizeAndAlignment(cdata, bitCount, ref lastType, ref size, ref alignment, ref curBitCount);
+                        int fieldOffset = UpdateSizeAndAlignment(cdata, bitCount, layout, ref lastType, ref size, ref alignment, ref curBitCount);
 
                         var newField = new Field(fieldName, cdata, fieldOffset, allFields.Count, bitCount, curBitCount - bitCount);
                         allFields.Add(newField);
@@ -291,6 +296,7 @@ namespace IronPython.Modules {
                     _alignment = alignment;
                 }
             }
+
 
             internal static void CheckAnonymousFields(List<Field> allFields, IList<string>? anonFields) {
                 if (anonFields != null) {
@@ -365,9 +371,10 @@ namespace IronPython.Modules {
                 foreach (PythonType pt in BaseTypes) {
                     if (pt is StructType st) {
                         st.EnsureFinal();
+                        LayoutKind layout = GetStructLayout(st);
                         foreach (Field f in st._fields) {
                             allFields.Add(f);
-                            UpdateSizeAndAlignment(f.NativeType, f.BitCount, ref lastType, ref size, ref alignment, ref totalBitCount);
+                            UpdateSizeAndAlignment(f.NativeType, f.BitCount, layout, ref lastType, ref size, ref alignment, ref totalBitCount);
 
                             if (f.NativeType == this) {
                                 throw StructureCannotContainSelf();
@@ -404,7 +411,7 @@ namespace IronPython.Modules {
             /// On return, the count is updated with the number of occupied bits.</param>
             /// <returns>
             /// The offset of the processed field within the struct. If the processed field was a bitfield, this is the offset of its container unit.</returns>
-            private int UpdateSizeAndAlignment(INativeType cdata, int? bitCount, ref INativeType? lastType, ref int size, ref int alignment, ref int? totalBitCount) {
+            private int UpdateSizeAndAlignment(INativeType cdata, int? bitCount, LayoutKind layout, ref INativeType? lastType, ref int size, ref int alignment, ref int? totalBitCount) {
                 int fieldOffset;
                 if (bitCount != null) {
                     // process a bitfield
@@ -413,7 +420,7 @@ namespace IronPython.Modules {
 
                     if (_pack != null) throw new NotImplementedException("pack with bitfields");  // TODO: implement
 
-                    if (UseMsvcBitfieldAlignmentRules) {
+                    if (layout is LayoutKind.Msvc) {
                         if (totalBitCount != null) { // there is already a bitfield container open
                             // under the MSVC rules, only bitfields of type that has the same size/alignment, are packed into the same container unit
                             if (lastType!.Size != cdata.Size || lastType.Alignment != cdata.Alignment) {
@@ -443,7 +450,7 @@ namespace IronPython.Modules {
                             totalBitCount = bitCount;
                             lastType = cdata;
                         }
-                    } else {  // GCC bitfield alignment rules
+                    } else if (layout is LayoutKind.Gcc) {
                         // under the GCC rules, all bitfields are packed into the same container unit or an overlapping container unit of a different type,
                         // as long as they fit and match the alignment
                         int containerOffset = AlignBack(size, cdata.Alignment);  // TODO: _pack
@@ -460,6 +467,8 @@ namespace IronPython.Modules {
                         fieldOffset = size = containerOffset;
                         totalBitCount = containerBitCount + bitCount;
                         lastType = cdata;
+                    } else {
+                        throw new InvalidOperationException("unknown layout kind");
                     }
                     alignment = Math.Max(alignment, lastType!.Alignment);  // TODO: _pack
                 } else {
@@ -500,6 +509,20 @@ namespace IronPython.Modules {
                 }
             }
 
+
+            private static LayoutKind GetStructLayout(PythonType type) {
+                if (type.TryGetBoundAttr(type.Context.SharedContext, type, "_layout_", out object layout) && layout is not null) {
+                    if (Converter.TryConvertToString(layout, out string? layoutName)) {
+                        if (layoutName.StartsWith("ms", StringComparison.Ordinal)) return LayoutKind.Msvc;
+                        if (layoutName.StartsWith("gcc", StringComparison.Ordinal)) return LayoutKind.Gcc;
+                    }
+                    throw PythonOps.ValueError("unknown _layout_: {0}", layout);
+                }
+                // default layout for structs is platform dependent
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? LayoutKind.Msvc : LayoutKind.Gcc;
+            }
+
+
             /// <summary>
             /// If our size/alignment hasn't been initialized then grabs the size/alignment
             /// from all of our base classes.  If later new _fields_ are added we'll be
@@ -525,9 +548,6 @@ namespace IronPython.Modules {
 
             private static int AlignBack(int length, int size)
                 => length & ~(size - 1);
-
-            private static bool UseMsvcBitfieldAlignmentRules
-                => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         }
     }
 }

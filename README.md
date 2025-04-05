@@ -51,10 +51,12 @@ System.Console.WriteLine(greetings("world"));
 This example assumes that `IronPython` has been added to the C# project as a NuGet package.
 
 ## Code of Conduct
+
 This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
 For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
 
 ## State of the Project
+
 The current target is Python 3.4, although features and behaviors from later versions may be included.
 
 See the following lists for features from each version of CPython that have been implemented:
@@ -68,22 +70,29 @@ See the following lists for features from each version of CPython that have been
 - [What's New In Python 3.6](WhatsNewInPython36.md)
 
 ## Contributing
+
 For details on contributing see the [Contributing](CONTRIBUTING.md) article.
 
 ## Upgrading from IronPython 2
-For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPython 2 to 3](docs/upgrading-from-ipy2.md) article.
+
+For details on upgrading from IronPython 2 to 3 see the [Upgrading from IronPython 2 to 3](https://github.com/IronLanguages/ironpython3/wiki/Upgrading-from-IronPython2) article.
 
 ## Differences with CPython
-While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](docs/differences-from-c-python.md) for details.
+
+While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/wiki/Differences-from-CPython) for details.
 
 ## Package compatibility
-See the [Package compatibility](docs/package-compatibility.md) document for information on compatibility with popular packages.
+
+See the [Package compatibility](https://github.com/IronLanguages/ironpython3/wiki/Package-compatibility) document for information on compatibility with popular packages.
 
 ## Installation
-Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](docs/installing.md) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
+
+Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](https://github.com/IronLanguages/ironpython3/wiki/Installing) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
 
 ## Build
-See the [building document](docs/building.md). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
+
+See the [building document](https://github.com/IronLanguages/ironpython3/wiki/Building). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!
 
 ## Supported Platforms
+
 IronPython 3 targets .NET Framework 4.6.2, .NET Standard 2.0, .NET 6.0 and .NET 8.0. The support for .NET and .NET Core follow the lifecycle defined on [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core).

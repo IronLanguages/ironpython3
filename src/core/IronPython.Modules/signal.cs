@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -102,7 +104,7 @@ the first is the signal number, the second is the interrupted stack frame.";
 
 The default handler for SIGINT installed by Python.
 It raises KeyboardInterrupt.")]
-        public static object default_int_handlerImpl(int signalnum, TraceBackFrame frame) {
+        public static object default_int_handlerImpl(int signalnum, TraceBackFrame? frame) {
             throw new KeyboardInterruptException("");
         }
 
@@ -113,12 +115,12 @@ SIG_IGN -- if the signal is being ignored
 SIG_DFL -- if the default action for the signal is in effect
 None -- if an unknown handler is in effect
 anything else -- the callable Python object used as a handler")]
-        public static object getsignal(CodeContext/*!*/ context, int signalnum) {
+        public static object? getsignal(CodeContext/*!*/ context, int signalnum) {
             lock (GetPythonSignalState(context).PySignalToPyHandler) {
                 //Negative Scenarios
                 if (signalnum < 1 || signalnum > 22) {
                     throw PythonOps.ValueError("signal number out of range");
-                } else if (GetPythonSignalState(context).PySignalToPyHandler.TryGetValue(signalnum, out object value)) {
+                } else if (GetPythonSignalState(context).PySignalToPyHandler.TryGetValue(signalnum, out object? value)) {
                     //Default
                     return value;
                 } else {
@@ -138,7 +140,7 @@ returned.  See getsignal() for possible return values.
 *** IMPORTANT NOTICE ***
 A signal handler function is called with two arguments:
 the first is the signal number, the second is the interrupted stack frame.")]
-        public static object signal(CodeContext/*!*/ context, int sig, object action) {
+        public static object? signal(CodeContext/*!*/ context, int sig, object? action) {
             //Negative scenarios - sig
             if (sig < 1 || sig >= NSIG) {
                 throw PythonOps.ValueError("signal number out of range");
@@ -157,7 +159,7 @@ the first is the signal number, the second is the interrupted stack frame.")]
                 //no-op
             } else {
                 //Must match the signature of PySignalHandler
-                PythonFunction result = action as PythonFunction;
+                PythonFunction? result = action as PythonFunction;
                 if (result == null) {
                     //It could still be something like a type that implements __call__
                     if (! PythonOps.IsCallable(context, action)) {
@@ -166,7 +168,7 @@ the first is the signal number, the second is the interrupted stack frame.")]
                 }
             }
 
-            object last_handler = null;
+            object? last_handler = null;
             lock (GetPythonSignalState(context).PySignalToPyHandler) {
                 //CPython returns the previous handler for the signal
                 last_handler = getsignal(context, sig);
@@ -225,7 +227,7 @@ The fd must be non-blocking.")]
         private static readonly int[] _PySupportedSignals = { SIGABRT, SIGBREAK, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM, 6 };
 
         //Signature of Python functions that signal.signal(...) expects to be given
-        private delegate object PySignalHandler(int signalnum, TraceBackFrame frame);
+        private delegate object PySignalHandler(int signalnum, TraceBackFrame? frame);
     }
 }
 

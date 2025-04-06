@@ -763,7 +763,7 @@ namespace IronPython.Modules {
             private PythonTuple[] tuples;
 
             public product(CodeContext context, [NotNone] params object[] iterables) {
-                tuples = ArrayUtils.ConvertAll(iterables, x => new PythonTuple(PythonOps.GetEnumerator(x)));
+                tuples = ArrayUtils.ConvertAll(iterables, x => new PythonTuple(context, PythonOps.GetEnumerator(x)));
                 InnerEnumerator = Yielder(tuples);
             }
 
@@ -788,7 +788,7 @@ namespace IronPython.Modules {
                 tuples = new PythonTuple[iterables.Length * iRepeat];
                 for (int i = 0; i < iRepeat; i++) {
                     for (int j = 0; j < iterables.Length; j++) {
-                        tuples[i * iterables.Length + j] = new PythonTuple(iterables[j]);
+                        tuples[i * iterables.Length + j] = new PythonTuple(context, iterables[j]);
                     }
                 }
                 InnerEnumerator = Yielder(tuples);

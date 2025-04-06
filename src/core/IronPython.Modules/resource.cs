@@ -245,7 +245,7 @@ public static class PythonResourceModule {
                 throw PythonOps.TypeError("resource.struct_rusage() takes a {0}-sequence ({1}-sequence given)", n_sequence_fields, __len__());
         }
 
-        private struct_rusage(object o) : base(o) {
+        private struct_rusage(object o) : base(DefaultContext.Default, o) {
             if (__len__() != n_sequence_fields)
                 throw PythonOps.TypeError("resource.struct_rusage() takes a {0}-sequence ({1}-sequence given)", n_sequence_fields, __len__());
         }

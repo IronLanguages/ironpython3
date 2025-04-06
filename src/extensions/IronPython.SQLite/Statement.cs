@@ -213,7 +213,7 @@ namespace IronPython.SQLite
                 object proto = DynamicHelpers.GetPythonTypeFromType(typeof(PythonSQLite.PrepareProtocol));
                 object type = DynamicHelpers.GetPythonType(value);
 
-                object key = new PythonTuple(new[] { type, proto });
+                object key = new PythonTuple(DefaultContext.Default, new[] { type, proto });
 
                 return PythonSQLite.adapters.ContainsKey(key);
             }
@@ -228,7 +228,7 @@ namespace IronPython.SQLite
             object proto = DynamicHelpers.GetPythonTypeFromType(typeof(PythonSQLite.PrepareProtocol));
             object type = DynamicHelpers.GetPythonType(value);
 
-            object key = new PythonTuple(new[] { type, proto });
+            object key = new PythonTuple(DefaultContext.Default, new[] { type, proto });
 
             object adapter;
             if(PythonSQLite.adapters.TryGetValue(key, out adapter))

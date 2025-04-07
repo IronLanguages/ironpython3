@@ -172,7 +172,7 @@ namespace IronPython.Modules {
         """)]
         public static object? signal(CodeContext/*!*/ context, int signalnum, object? action) {
             // Negative scenarios - signalnum
-            if (signalnum < 1 || signalnum >= NSIG) {
+            if (signalnum <= 0 || signalnum >= NSIG) {
                 throw PythonOps.ValueError("signal number out of range");
             } else if (Array.IndexOf(_PySupportedSignals, signalnum) == -1) {
                 throw new RuntimeException("no IronPython support for given signal");

@@ -1870,13 +1870,15 @@ are defined in the signal module.")]
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
                 RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 killUnix(pid, sig);
-            } else {
-                if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (PythonSignal.NativeWindowsSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
 
                 // If the calls to GenerateConsoleCtrlEvent didn't work, simply
                 // forcefully kill the process.
                 Process toKill = Process.GetProcessById(pid);
                 toKill.Kill();
+            } else {
+                throw new PlatformNotSupportedException();
             }
         }
 

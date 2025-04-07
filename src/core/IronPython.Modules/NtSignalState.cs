@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -13,17 +15,19 @@ using IronPython.Runtime;
 namespace IronPython.Modules {
     public static partial class PythonSignal {
         [SupportedOSPlatform("windows")]
-        internal class NtSignalState : PythonSignalState {
-            //We use a single Windows event handler to process all signals. This handler simply
-            //delegates the work out to PySignalToPyHandler.
-            public NativeSignal.WinSignalsHandler WinAllSignalsHandlerDelegate;
+        private class NtSignalState : PythonSignalState {
+            // We use a single Windows event handler to process all signals. This handler simply
+            // delegates the work out to PySignalToPyHandler.
+            public NativeWindowsSignal.WinSignalsHandler WinAllSignalsHandlerDelegate;
+
 
             public NtSignalState(PythonContext pc) : base(pc) {
-                WinAllSignalsHandlerDelegate = new NativeSignal.WinSignalsHandler(WindowsEventHandler);
-                NativeSignal.SetConsoleCtrlHandler(this.WinAllSignalsHandlerDelegate, true);
+                WinAllSignalsHandlerDelegate = new NativeWindowsSignal.WinSignalsHandler(WindowsEventHandler);
+                NativeWindowsSignal.SetConsoleCtrlHandler(this.WinAllSignalsHandlerDelegate, true);
             }
 
-            //Our implementation of WinSignalsHandler
+
+            // Our implementation of WinSignalsHandler
             private bool WindowsEventHandler(uint winSignal) {
                 bool retVal;
                 int pySignal;
@@ -53,27 +57,27 @@ namespace IronPython.Modules {
                         int tempId = (int)PySignalToPyHandler[pySignal];
 
                         if (tempId == SIG_DFL) {
-                            //SIG_DFL - we let Windows do whatever it normally would
+                            // SIG_DFL - we let Windows do whatever it normally would
                             retVal = false;
                         } else if (tempId == SIG_IGN) {
-                            //SIG_IGN - we do nothing, but tell Windows we handled the signal
+                            // SIG_IGN - we do nothing, but tell Windows we handled the signal
                             retVal = true;
                         } else {
                             throw new Exception("unreachable");
                         }
                     } else if (PySignalToPyHandler[pySignal] == default_int_handler) {
                         if (pySignal != SIGINT) {
-                            //We're dealing with the default_int_handlerImpl which we
-                            //know doesn't care about the frame parameter
+                            // We're dealing with the default_int_handlerImpl which we
+                            // know doesn't care about the frame parameter
                             retVal = true;
                             default_int_handlerImpl(pySignal, null);
                         } else {
-                            //Let the real interrupt handler throw a KeyboardInterrupt for SIGINT.
-                            //It handles this far more gracefully than we can
+                            // Let the real interrupt handler throw a KeyboardInterrupt for SIGINT.
+                            // It handles this far more gracefully than we can
                             retVal = false;
                         }
                     } else {
-                        //We're dealing with a callable matching PySignalHandler's signature
+                        // We're dealing with a callable matching PySignalHandler's signature
                         retVal = true;
                         PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(PySignalToPyHandler[pySignal],
                                                                                             typeof(PySignalHandler));
@@ -96,7 +100,9 @@ namespace IronPython.Modules {
             }
         }
 
-        internal static class NativeSignal {
+
+        [SupportedOSPlatform("windows")]
+        internal static class NativeWindowsSignal {
             // Windows API expects to be given a function pointer like this to handle signals
             internal delegate bool WinSignalsHandler(uint winSignal);
 

@@ -572,14 +572,20 @@ namespace IronPython.Modules {
 
             #region binary operators
 
-            public static deque operator +([NotNone] deque x, object y) {
-                if (y is deque t) return x + t;
+            [SpecialName]
+            public static deque Add(CodeContext context, [NotNone] deque x, object y) {
+                if (y is deque t) return Add(context, x, t);
                 throw PythonOps.TypeError($"can only concatenate deque (not \"{PythonOps.GetPythonTypeName(y)}\") to deque");
             }
 
-            public static deque operator +([NotNone] deque x, [NotNone] deque y) {
-                var d = new deque(x._maxLen);
-                d.extend(x);
+            [SpecialName]
+            public static deque Add(CodeContext context, [NotNone] deque x, [NotNone] deque y) {
+                var d = (deque)__new__(context, DynamicHelpers.GetPythonType(x), null, null);
+                if (x._maxLen > 0) {
+                    d.__init__(x, x._maxLen);
+                } else {
+                    d.__init__(x);
+                }
                 d.extend(y);
                 return d;
             }

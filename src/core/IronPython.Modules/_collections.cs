@@ -920,7 +920,8 @@ namespace IronPython.Modules {
                 infinite.Add(this);
                 try {
                     StringBuilder sb = new StringBuilder();
-                    sb.Append("deque([");
+                    sb.Append(PythonOps.GetPythonTypeName(this));
+                    sb.Append("([");
                     string comma = "";
 
                     lock (_lockObj) {
@@ -1188,7 +1189,7 @@ namespace IronPython.Modules {
             }
 
             public override string __repr__(CodeContext context) {
-                return string.Format("defaultdict({0}, {1})", ReprFactory(context, default_factory), base.__repr__(context));
+                return string.Format("{0}({1}, {2})", PythonOps.GetPythonTypeName(this), ReprFactory(context, default_factory), base.__repr__(context));
 
                 static string ReprFactory(CodeContext context, object factory) {
                     var infinite = PythonOps.GetAndCheckInfinite(factory);

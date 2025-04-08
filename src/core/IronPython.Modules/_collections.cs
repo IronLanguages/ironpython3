@@ -818,6 +818,27 @@ namespace IronPython.Modules {
 
             #region private members
 
+            private object[] GetObjectArray() {
+                lock (_lockObj) {
+                    if (_itemCnt == 0) return [];
+
+                    object[] arr = new object[_itemCnt];
+                    int cnt1, cnt2;
+                    if (_head >= _tail) {
+                        cnt1 = _data.Length - _head;
+                        cnt2 = _itemCnt - cnt1;
+                    } else {
+                        cnt1 = _itemCnt;
+                        cnt2 = 0;
+                    }
+
+                    Array.Copy(_data, _head, arr, 0, cnt1);
+                    Array.Copy(_data, 0, arr, cnt1, cnt2);
+                    return arr;
+                }
+            }
+
+
             private void GrowArray() {
                 // do nothing if array is already at its max length
                 if (_data.Length == _maxLen) return;
@@ -967,7 +988,7 @@ namespace IronPython.Modules {
                 int res;
                 CompareUtil.Push(this);
                 try {
-                    res = ((IStructuralEquatable)new PythonTuple(this)).GetHashCode(comparer);
+                    res = ((IStructuralEquatable)new PythonTuple(GetObjectArray())).GetHashCode(comparer);
                 } finally {
                     CompareUtil.Pop(this);
                 }

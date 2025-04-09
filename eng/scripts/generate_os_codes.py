@@ -304,6 +304,34 @@ def generate_TIOC_commands(cw):
     generate_codes(cw, codeval, 'public', hex, unix_only=True)
 
 
+# python3 -c 'import signal;print(dict(sorted((s, int(getattr(signal, s))) for s in dir(signal) if s.startswith("SIG") and not s.startswith("SIG_"))))'
+# Python 3.12.3 [GCC 13.3.0] on linux 6.8.0
+SIG_codes_linux = {'SIGABRT': 6, 'SIGALRM': 14, 'SIGBUS': 7, 'SIGCHLD': 17, 'SIGCLD': 17, 'SIGCONT': 18, 'SIGFPE': 8, 'SIGHUP': 1, 'SIGILL': 4, 'SIGINT': 2, 'SIGIO': 29, 'SIGIOT': 6, 'SIGKILL': 9, 'SIGPIPE': 13, 'SIGPOLL': 29, 'SIGPROF': 27, 'SIGPWR': 30, 'SIGQUIT': 3, 'SIGRTMAX': 64, 'SIGRTMIN': 34, 'SIGSEGV': 11, 'SIGSTKFLT': 16, 'SIGSTOP': 19, 'SIGSYS': 31, 'SIGTERM': 15, 'SIGTRAP': 5, 'SIGTSTP': 20, 'SIGTTIN': 21, 'SIGTTOU': 22, 'SIGURG': 23, 'SIGUSR1': 10, 'SIGUSR2': 12, 'SIGVTALRM': 26, 'SIGWINCH': 28, 'SIGXCPU': 24, 'SIGXFSZ': 25}
+# Python 3.9.6 [Clang 17.0.0] on darwin 24.3.0
+SIG_codes_darwin = {'SIGABRT': 6, 'SIGALRM': 14, 'SIGBUS': 10, 'SIGCHLD': 20, 'SIGCONT': 19, 'SIGEMT': 7, 'SIGFPE': 8, 'SIGHUP': 1, 'SIGILL': 4, 'SIGINFO': 29, 'SIGINT': 2, 'SIGIO': 23, 'SIGIOT': 6, 'SIGKILL': 9, 'SIGPIPE': 13, 'SIGPROF': 27, 'SIGQUIT': 3, 'SIGSEGV': 11, 'SIGSTOP': 17, 'SIGSYS': 12, 'SIGTERM': 15, 'SIGTRAP': 5, 'SIGTSTP': 18, 'SIGTTIN': 21, 'SIGTTOU': 22, 'SIGURG': 16, 'SIGUSR1': 30, 'SIGUSR2': 31, 'SIGVTALRM': 26, 'SIGWINCH': 28, 'SIGXCPU': 24, 'SIGXFSZ': 25}
+# Python 3.6.8 [MSC v.1916 64 bit (AMD64)] on win32
+SIG_codes_windows = {'SIGABRT': 22, 'SIGBREAK': 21, 'SIGFPE': 8, 'SIGILL': 4, 'SIGINT': 2, 'SIGSEGV': 11, 'SIGTERM': 15}
+
+def generate_signal_codes(cw):
+    codeval = {}
+    for idx, SIG_codes in [(linux_idx, SIG_codes_linux), (darwin_idx, SIG_codes_darwin), (windows_idx, SIG_codes_windows)]:
+        for name in SIG_codes:
+            set_value(codeval, name, SIG_codes[name], idx)
+    codeval = OrderedDict(sorted(codeval.items()))
+    generate_codes(cw, codeval, 'public', str)
+
+
+def generate_supported_signals(cw):
+    for system, SIG_codes in [("Linux", SIG_codes_linux), ("MacOS", SIG_codes_darwin), ("Windows", SIG_codes_windows)]:
+        cw.writeline(f'[SupportedOSPlatform("{system.lower()}")]')
+        cw.writeline(f'private static readonly int[] _PySupportedSignals_{system} = [')
+        cw.indent()
+        cw.writeline(', '.join(sorted(SIG_codes)))
+        cw.dedent()
+        cw.writeline('];')
+        cw.writeline()
+
+
 def main():
     return generate(
         ("Errno Codes", generate_errno_codes),
@@ -315,6 +343,8 @@ def main():
         ("Directory Notify Flags", generate_DN_flags),
         ("LOCK Flags", generate_LOCK_flags),
         ("TIOC Commands", generate_TIOC_commands),
+        ("Signal Codes", generate_signal_codes),
+        ("Supported Signals", generate_supported_signals),
     )
 
 if __name__ == "__main__":

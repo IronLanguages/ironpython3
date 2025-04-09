@@ -11,7 +11,7 @@ TODO: until we can send signals to other processes consistently (e.g., os.kill),
 import signal
 import sys
 
-from iptest import IronPythonTestCase, is_windows, is_posix, is_osx, is_linux, run_test
+from iptest import IronPythonTestCase, is_cli, is_windows, is_posix, is_osx, is_linux, run_test
 
 if is_linux:
     SIG_codes = {'SIGABRT': 6, 'SIGALRM': 14, 'SIGBUS': 7, 'SIGCHLD': 17, 'SIGCLD': 17, 'SIGCONT': 18, 'SIGFPE': 8, 'SIGHUP': 1, 'SIGILL': 4, 'SIGINT': 2, 'SIGIO': 29, 'SIGIOT': 6, 'SIGKILL': 9, 'SIGPIPE': 13, 'SIGPOLL': 29, 'SIGPROF': 27, 'SIGPWR': 30, 'SIGQUIT': 3, 'SIGRTMAX': 64, 'SIGRTMIN': 34, 'SIGSEGV': 11, 'SIGSTKFLT': 16, 'SIGSTOP': 19, 'SIGSYS': 31, 'SIGTERM': 15, 'SIGTRAP': 5, 'SIGTSTP': 20, 'SIGTTIN': 21, 'SIGTTOU': 22, 'SIGURG': 23, 'SIGUSR1': 10, 'SIGUSR2': 12, 'SIGVTALRM': 26, 'SIGWINCH': 28, 'SIGXCPU': 24, 'SIGXFSZ': 25}
@@ -27,17 +27,20 @@ class SignalTest(IronPythonTestCase):
     def test_000_run_me_first(self):
         WEIRD_CASES = { signal.SIGINT: signal.default_int_handler }
         if is_posix:
-            WEIRD_CASES[signal.SIGKILL] = None
-            WEIRD_CASES[signal.SIGSTOP] = None
             WEIRD_CASES[signal.SIGPIPE] = signal.SIG_IGN
             WEIRD_CASES[signal.SIGXFSZ] = signal.SIG_IGN
+        if is_osx:
+            WEIRD_CASES[signal.SIGKILL] = None
+            WEIRD_CASES[signal.SIGSTOP] = None
 
         for x in [x for x in SUPPORTED_SIGNALS]:
             with self.subTest(sig=x):
                 self.assertEqual(signal.getsignal(x), WEIRD_CASES.get(x, signal.SIG_DFL))
 
+        # test that unsupported signals have no handler
         for x in range(1, signal.NSIG):
             if x in SUPPORTED_SIGNALS: continue
+            if is_linux and 35 <= x <= 64: continue # Real-time signals
             self.assertEqual(signal.getsignal(x), None)
 
 
@@ -59,6 +62,9 @@ class SignalTest(IronPythonTestCase):
 
         # when run with CPython, this verifies that SIG_codes are correct and matching CPython
         for sig in SIG_codes:
+            if sys.version_info < (3, 11) and not is_cli and sig == 'SIGSTKFLT':
+                # SIGSTKFLT is not defined in CPython < 3.11
+                continue
             self.assertEqual(getattr(signal, sig), SIG_codes[sig])
 
 
@@ -77,19 +83,23 @@ class SignalTest(IronPythonTestCase):
         def a(b, c):
             pass
 
+        # test that unsupported signals raise OSError on trying to set a handler
         for x in range(1, signal.NSIG):
             if x in SUPPORTED_SIGNALS: continue
-            self.assertRaises(ValueError,
+            if is_linux and 35 <= x <= 64: continue # Real-time signals
+            self.assertRaises(OSError,
                         signal.signal, x, a)
 
         for x in [-2, -1, 0, signal.NSIG, signal.NSIG + 1, signal.NSIG + 2]:
             self.assertRaisesMessage(ValueError, "signal number out of range",
                                 signal.signal, x, a)
 
+        # TODO
         def bad_sig0(): pass
         def bad_sig1(a): pass
         def bad_sig3(a,b,c): pass
 
+        # test that bad handler objects are caught with TypeError
         for y in SUPPORTED_SIGNALS:
             bad_handlers = [-2, -1, 2, 3, 4, 10, 22, 23, 24, None]
             for x in bad_handlers:

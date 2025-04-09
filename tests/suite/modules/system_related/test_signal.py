@@ -87,11 +87,11 @@ class SignalTest(IronPythonTestCase):
         for x in range(1, signal.NSIG):
             if x in SUPPORTED_SIGNALS: continue
             if is_linux and 35 <= x <= 64: continue # Real-time signals
-            self.assertRaises(OSError,
-                        signal.signal, x, a)
+            self.assertRaisesMessage(ValueError if is_windows else OSError, "invalid signal value" if is_windows else "signal number out of range",
+                                signal.signal, x, a)
 
         for x in [-2, -1, 0, signal.NSIG, signal.NSIG + 1, signal.NSIG + 2]:
-            self.assertRaisesMessage(ValueError, "signal number out of range",
+            self.assertRaisesMessage(ValueError, "invalid signal value" if is_windows else "signal number out of range",
                                 signal.signal, x, a)
 
         # TODO

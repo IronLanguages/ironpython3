@@ -157,8 +157,14 @@ class TestDefaultDict(unittest.TestCase):
             def _factory(self):
                 return []
         d = sub()
-        self.assertTrue(repr(d).startswith(
-            "defaultdict(<bound method sub._factory of defaultdict(..."))
+        # IronPython: repr class name change adopted from Python 3.7
+        # original Python 3.4 test:
+        # self.assertTrue(repr(d).startswith(
+        #     "defaultdict(<bound method sub._factory of defaultdict(..."))
+        # Python 3.7 test:
+        self.assertRegex(repr(d),
+            r"sub\(<bound method .*sub\._factory "
+            r"of sub\(\.\.\., \{\}\)>, \{\}\)")
 
         # NOTE: printing a subclass of a builtin type does not call its
         # tp_print slot. So this part is essentially the same test as above.

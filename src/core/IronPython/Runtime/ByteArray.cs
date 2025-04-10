@@ -1079,7 +1079,7 @@ namespace IronPython.Runtime {
 
         private string Repr() {
             lock (this) {
-                return "bytearray(" + _bytes.BytesRepr() + ")";
+                return PythonOps.GetPythonTypeName(this) +  "(" + _bytes.BytesRepr() + ")";
             }
         }
 

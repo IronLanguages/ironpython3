@@ -856,7 +856,7 @@ namespace IronPython.Modules {
             #region ICodeFormattable Members
 
             public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
-                string res = "array('" + typecode.ToString() + "'";
+                string res = PythonOps.GetPythonTypeName(this) + "('" + typecode.ToString() + "'";
                 if (_data.Count == 0) {
                     return res + ")";
                 }

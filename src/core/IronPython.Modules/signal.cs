@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
+using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -370,10 +371,15 @@ namespace IronPython.Modules {
                 }
             }
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                // These signals cannot be handled
+                if (signalnum == SIGKILL || signalnum == SIGSTOP) throw PythonNT.GetOsError(PythonErrno.EINVAL);
+            }
             object? last_handler = null;
             lock (GetPythonSignalState(context).PySignalToPyHandler) {
                 // CPython returns the previous handler for the signal
                 last_handler = getsignal(context, signalnum);
+                if (last_handler is null) throw PythonNT.GetOsError(PythonErrno.EINVAL);
                 // Set the new action
                 GetPythonSignalState(context).PySignalToPyHandler[signalnum] = action;
             }
@@ -432,6 +438,10 @@ namespace IronPython.Modules {
                     PySignalToPyHandler[sig] = SIG_DFL;
                 }
                 PySignalToPyHandler[SIGINT] = default_int_handler;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    PySignalToPyHandler[SIGPIPE] = SIG_IGN;
+                    PySignalToPyHandler[SIGXFSZ] = SIG_IGN;
+                }
             }
         }
 

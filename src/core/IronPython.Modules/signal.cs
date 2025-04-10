@@ -12,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;

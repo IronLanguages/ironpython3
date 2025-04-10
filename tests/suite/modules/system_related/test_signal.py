@@ -11,7 +11,7 @@ TODO: until we can send signals to other processes consistently (e.g., os.kill),
 import signal
 import sys
 
-from iptest import IronPythonTestCase, is_cli, is_windows, is_posix, is_osx, is_linux, run_test
+from iptest import IronPythonTestCase, is_cpython, is_windows, is_posix, is_osx, is_linux, run_test
 
 if is_linux:
     SIG_codes = {'SIGABRT': 6, 'SIGALRM': 14, 'SIGBUS': 7, 'SIGCHLD': 17, 'SIGCLD': 17, 'SIGCONT': 18, 'SIGFPE': 8, 'SIGHUP': 1, 'SIGILL': 4, 'SIGINT': 2, 'SIGIO': 29, 'SIGIOT': 6, 'SIGKILL': 9, 'SIGPIPE': 13, 'SIGPOLL': 29, 'SIGPROF': 27, 'SIGPWR': 30, 'SIGQUIT': 3, 'SIGRTMAX': 64, 'SIGRTMIN': 34, 'SIGSEGV': 11, 'SIGSTKFLT': 16, 'SIGSTOP': 19, 'SIGSYS': 31, 'SIGTERM': 15, 'SIGTRAP': 5, 'SIGTSTP': 20, 'SIGTTIN': 21, 'SIGTTOU': 22, 'SIGURG': 23, 'SIGUSR1': 10, 'SIGUSR2': 12, 'SIGVTALRM': 26, 'SIGWINCH': 28, 'SIGXCPU': 24, 'SIGXFSZ': 25}
@@ -62,7 +62,7 @@ class SignalTest(IronPythonTestCase):
 
         # when run with CPython, this verifies that SIG_codes are correct and matching CPython
         for sig in SIG_codes:
-            if sys.version_info < (3, 11) and not is_cli and sig == 'SIGSTKFLT':
+            if sys.version_info < (3, 11) and is_cpython and sig == 'SIGSTKFLT':
                 # SIGSTKFLT is not defined in CPython < 3.11
                 continue
             self.assertEqual(getattr(signal, sig), SIG_codes[sig])

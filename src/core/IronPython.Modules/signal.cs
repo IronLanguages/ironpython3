@@ -434,13 +434,19 @@ namespace IronPython.Modules {
                     : throw new NotSupportedException("Unsupported platform for signal module");
 
                 PySignalToPyHandler = new Dictionary<int, object>(sigs.Length);
+                object sig_dfl = ScriptingRuntimeHelpers.Int32ToObject(SIG_DFL);
+                object sig_ign = ScriptingRuntimeHelpers.Int32ToObject(SIG_IGN);
                 foreach (int sig in sigs) {
-                    PySignalToPyHandler[sig] = SIG_DFL;
+                    PySignalToPyHandler[sig] = sig_dfl;
                 }
                 PySignalToPyHandler[SIGINT] = default_int_handler;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    PySignalToPyHandler[SIGPIPE] = SIG_IGN;
-                    PySignalToPyHandler[SIGXFSZ] = SIG_IGN;
+                    PySignalToPyHandler[SIGPIPE] = sig_ign;
+                    PySignalToPyHandler[SIGXFSZ] = sig_ign;
+                }
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    PySignalToPyHandler.Remove(SIGKILL);
+                    PySignalToPyHandler.Remove(SIGSTOP);
                 }
             }
         }

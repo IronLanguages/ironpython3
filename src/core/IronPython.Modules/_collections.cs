@@ -988,7 +988,7 @@ namespace IronPython.Modules {
                 int res;
                 CompareUtil.Push(this);
                 try {
-                    res = ((IStructuralEquatable)new PythonTuple(GetObjectArray())).GetHashCode(comparer);
+                    res = ((IStructuralEquatable)PythonTuple.MakeTuple(GetObjectArray())).GetHashCode(comparer);
                 } finally {
                     CompareUtil.Pop(this);
                 }

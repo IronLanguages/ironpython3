@@ -344,10 +344,10 @@ namespace IronPython.Modules {
         """)]
         public static object? signal(CodeContext/*!*/ context, int signalnum, object? action) {
             // Negative scenarios - signalnum
-            if (signalnum <= 0 || signalnum >= NSIG) {
-                throw PythonOps.ValueError("signal number out of range");
-            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Array.IndexOf(_PySupportedSignals_Windows, signalnum) == -1) {
-                throw PythonOps.ValueError("invalid signal value");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (Array.IndexOf(_PySupportedSignals_Windows, signalnum) == -1) throw PythonOps.ValueError("invalid signal value");
+            } else {
+                if (signalnum <= 0 || signalnum >= NSIG) throw PythonOps.ValueError("signal number out of range");
             }
             // Negative scenarios - action
             if (action == null) {

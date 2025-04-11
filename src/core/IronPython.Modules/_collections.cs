@@ -572,14 +572,20 @@ namespace IronPython.Modules {
 
             #region binary operators
 
-            public static deque operator +([NotNone] deque x, object y) {
-                if (y is deque t) return x + t;
+            [SpecialName]
+            public static deque Add(CodeContext context, [NotNone] deque x, object y) {
+                if (y is deque t) return Add(context, x, t);
                 throw PythonOps.TypeError($"can only concatenate deque (not \"{PythonOps.GetPythonTypeName(y)}\") to deque");
             }
 
-            public static deque operator +([NotNone] deque x, [NotNone] deque y) {
-                var d = new deque(x._maxLen);
-                d.extend(x);
+            [SpecialName]
+            public static deque Add(CodeContext context, [NotNone] deque x, [NotNone] deque y) {
+                var d = (deque)__new__(context, DynamicHelpers.GetPythonType(x), null, null);
+                if (x._maxLen > 0) {
+                    d.__init__(x, x._maxLen);
+                } else {
+                    d.__init__(x);
+                }
                 d.extend(y);
                 return d;
             }
@@ -812,6 +818,27 @@ namespace IronPython.Modules {
 
             #region private members
 
+            private object[] GetObjectArray() {
+                lock (_lockObj) {
+                    if (_itemCnt == 0) return [];
+
+                    object[] arr = new object[_itemCnt];
+                    int cnt1, cnt2;
+                    if (_head >= _tail) {
+                        cnt1 = _data.Length - _head;
+                        cnt2 = _itemCnt - cnt1;
+                    } else {
+                        cnt1 = _itemCnt;
+                        cnt2 = 0;
+                    }
+
+                    Array.Copy(_data, _head, arr, 0, cnt1);
+                    Array.Copy(_data, 0, arr, cnt1, cnt2);
+                    return arr;
+                }
+            }
+
+
             private void GrowArray() {
                 // do nothing if array is already at its max length
                 if (_data.Length == _maxLen) return;
@@ -962,7 +989,7 @@ namespace IronPython.Modules {
                 int res;
                 CompareUtil.Push(this);
                 try {
-                    res = ((IStructuralEquatable)new PythonTuple(this)).GetHashCode(comparer);
+                    res = ((IStructuralEquatable)PythonTuple.MakeTuple(GetObjectArray())).GetHashCode(comparer);
                 } finally {
                     CompareUtil.Pop(this);
                 }

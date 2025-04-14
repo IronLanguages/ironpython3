@@ -7,6 +7,7 @@
 #if FEATURE_PROCESS
 
 using System;
+using System.Runtime.InteropServices;
 
 using IronPython.Runtime;
 
@@ -21,11 +22,12 @@ namespace IronPython.Modules {
 
 
             private void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e) {
-                int pySignal = e.SpecialKey switch {
-                    ConsoleSpecialKey.ControlC => SIGINT,
-                    ConsoleSpecialKey.ControlBreak => SIGBREAK,
-                    _ => throw new InvalidOperationException("unreachable"),
-                };
+                int pySignal = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SIGINT
+                    : e.SpecialKey switch {
+                        ConsoleSpecialKey.ControlC => SIGINT,
+                        ConsoleSpecialKey.ControlBreak => SIGBREAK,
+                        _ => throw new InvalidOperationException("unreachable"),
+                    };
 
                 lock (PySignalToPyHandler) {
                     if (PySignalToPyHandler[pySignal].GetType() == typeof(int)) {

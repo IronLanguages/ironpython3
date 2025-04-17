@@ -86,7 +86,7 @@ class SignalTest(IronPythonTestCase):
         # test that unsupported signals raise OSError on trying to set a handler
         for x in range(1, signal.NSIG):
             if x in SUPPORTED_SIGNALS: continue
-            if is_linux and 35 <= x <= 64: continue # Real-time signals
+            if is_linux and signal.SIGRTMIN <= x <= signal.SIGRTMAX: continue # Real-time signals
             self.assertRaisesMessage(ValueError if is_windows else OSError, "invalid signal value" if is_windows else "[Errno 22] Invalid argument",
                                 signal.signal, x, a)
 

@@ -59,7 +59,7 @@ Registers an adapter with pysqlite's adapter registry. Non-standard.")]
         public static void register_adapter(CodeContext context, PythonType type, object adapter)
         {
             object proto = DynamicHelpers.GetPythonTypeFromType(typeof(PrepareProtocol));
-            object key = new PythonTuple(new object[] { type, proto });
+            object key = new PythonTuple(DefaultContext.Default, new object[] { type, proto });
             adapters[key] = adapter;
         }
 

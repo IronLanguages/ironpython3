@@ -90,7 +90,7 @@ namespace IronPython.Runtime.Exceptions {
                 } else {
                     res = (BaseException)Activator.CreateInstance(cls.UnderlyingSystemType, cls)!;
                 }
-                res._args = new PythonTuple(args);
+                res._args = new PythonTuple(DefaultContext.Default, args);
                 return res;
             }
 

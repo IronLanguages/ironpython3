@@ -1302,7 +1302,7 @@ namespace IronPython.Runtime {
             int res;
             CompareUtil.Push(this);
             try {
-                res = ((IStructuralEquatable)new PythonTuple(this)).GetHashCode(comparer);
+                res = ((IStructuralEquatable)PythonTuple.Make(GetObjectArray())).GetHashCode(comparer);
             } finally {
                 CompareUtil.Pop(this);
             }

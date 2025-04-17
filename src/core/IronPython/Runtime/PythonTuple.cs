@@ -29,8 +29,8 @@ namespace IronPython.Runtime {
 
         internal static readonly PythonTuple EMPTY = new PythonTuple();
 
-        public PythonTuple([AllowNull]object o) {
-            _data = MakeItems(o);
+        public PythonTuple(CodeContext context, [AllowNull]object o) {
+            _data = MakeItems(context, o);
         }
 
         protected PythonTuple(object?[] items) {
@@ -55,19 +55,19 @@ namespace IronPython.Runtime {
             if (cls == TypeCache.PythonTuple) {
                 return EMPTY;
             } else {
-                if (!(cls.CreateInstance(context) is PythonTuple tupObj)) throw PythonOps.TypeError("{0} is not a subclass of tuple", cls);
+                if (cls.CreateInstance(context) is not PythonTuple tupObj) throw PythonOps.TypeError("{0} is not a subclass of tuple", cls);
                 return tupObj;
             }
         }
 
         public static PythonTuple __new__(CodeContext context, [NotNone] PythonType cls, object? sequence) {
-            if (sequence == null) return new PythonTuple(sequence); // this will throw the proper exception
+            if (sequence == null) return new PythonTuple(context, sequence); // this will throw the proper exception
 
             if (cls == TypeCache.PythonTuple) {
                 if (sequence.GetType() == typeof(PythonTuple)) return (PythonTuple)sequence;
-                return new PythonTuple(sequence);
+                return new PythonTuple(context, sequence);
             } else {
-                if (!(cls.CreateInstance(context, sequence) is PythonTuple tupObj)) throw PythonOps.TypeError("{0} is not a subclass of tuple", cls);
+                if (cls.CreateInstance(context, sequence) is not PythonTuple tupObj) throw PythonOps.TypeError("{0} is not a subclass of tuple", cls);
                 return tupObj;
             }
         }
@@ -115,15 +115,15 @@ namespace IronPython.Runtime {
 
         internal static PythonTuple Make(object o) {
             if (o is PythonTuple t) return t;
-            return new PythonTuple(o);
+            return new PythonTuple(DefaultContext.Default, o);
         }
 
         internal static PythonTuple MakeTuple(params object?[] items) {
             if (items.Length == 0) return EMPTY;
-            return new PythonTuple(items);
+            return new PythonTuple(DefaultContext.Default, items);
         }
 
-        private static object?[] MakeItems(object? o) {
+        private static object?[] MakeItems(CodeContext context, object? o) {
             var t = o?.GetType();
             // Only use fast paths if we have an exact tuple/list, otherwise use iter
             if (t == typeof(PythonTuple)) {
@@ -142,7 +142,7 @@ namespace IronPython.Runtime {
                 PerfTrack.NoteEvent(PerfTrack.Categories.OverAllocate, "TupleOA: " + PythonOps.GetPythonTypeName(o));
 
                 var l = new List<object?>();
-                IEnumerator i = PythonOps.GetEnumerator(o);
+                IEnumerator i = PythonOps.GetEnumerator(context, o);
                 while (i.MoveNext()) {
                     l.Add(i.Current);
                 }
@@ -315,8 +315,8 @@ namespace IronPython.Runtime {
         }
 
         public object __getnewargs__() {
-            // Call "new Tuple()" to force result to be a Tuple (otherwise, it could possibly be a Tuple subclass)
-            return PythonTuple.MakeTuple(new PythonTuple(this));
+            // Call "MakeTuple()" to force result to be specifically a Tuple (otherwise, it could possibly be a Tuple subclass)
+            return PythonTuple.MakeTuple(_data);
         }
 
         #region IEnumerable<object> Members

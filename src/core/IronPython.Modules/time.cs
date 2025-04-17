@@ -512,7 +512,7 @@ namespace IronPython.Modules {
             }
 
             internal struct_time(PythonTuple sequence)
-                : base(sequence) {
+                : base(DefaultContext.Default, sequence) {
             }
 
             public static struct_time __new__(CodeContext context, [NotNone] PythonType cls, int year, int month, int day, int hour, int minute, int second, int dayOfWeek, int dayOfYear, int isDst) {

@@ -1389,7 +1389,7 @@ namespace IronPython.Modules {
 
                 return MakeTuple(
                     DynamicHelpers.GetPythonTypeFromType(typeof(stat_result)),
-                    MakeTuple(new PythonTuple(this), timeDict)
+                    MakeTuple(new PythonTuple(DefaultContext.Default, this), timeDict)
                 );
             }
         }

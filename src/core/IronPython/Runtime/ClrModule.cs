@@ -1130,7 +1130,7 @@ import Namespace.")]
         /// All times are expressed in the same unit of measure as DateTime.Ticks
         /// </summary>
         public static PythonTuple GetProfilerData(CodeContext/*!*/ context, bool includeUnused = false) {
-            return new PythonTuple(Profiler.GetProfiler(context.LanguageContext).GetProfile(includeUnused));
+            return new PythonTuple(DefaultContext.Default, Profiler.GetProfiler(context.LanguageContext).GetProfile(includeUnused));
         }
 
         /// <summary>

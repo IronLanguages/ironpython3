@@ -1000,7 +1000,7 @@ namespace IronPython.Runtime.Operations {
                 List<object?> largs;
 
                 if (argsTuple != null && args.Length == names.Length) {
-                    if (!(argsTuple is PythonTuple tuple)) tuple = new PythonTuple(argsTuple);
+                    if (!(argsTuple is PythonTuple tuple)) tuple = new PythonTuple(DefaultContext.Default, argsTuple);
 
                     largs = new List<object?>(tuple);
                     largs.AddRange(args);
@@ -1813,7 +1813,7 @@ namespace IronPython.Runtime.Operations {
         /// LIST_TO_TUPLE
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static PythonTuple ListToTuple(PythonList list) => new PythonTuple(list);
+        public static PythonTuple ListToTuple(PythonList list) => new PythonTuple(DefaultContext.Default, list);
 
         /// <summary>
         /// SET_ADD

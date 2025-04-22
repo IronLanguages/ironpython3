@@ -22,6 +22,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -683,6 +684,11 @@ namespace IronPython.Runtime {
         internal FloatFormat FloatFormat { get; set; }
 
         internal FloatFormat DoubleFormat { get; set; }
+
+        /// <summary>
+        /// Not null if the Python context is running in a console host.
+        /// </summary>
+        internal IConsole/*?*/ Console { get; set; }
 
         /// <summary>
         /// Initializes the sys module on startup.  Called both to load and reload sys

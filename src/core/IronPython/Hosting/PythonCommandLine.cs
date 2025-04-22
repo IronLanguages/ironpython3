@@ -145,6 +145,7 @@ namespace IronPython.Hosting {
 
             Console.Output = new OutputWriter(PythonContext, false);
             Console.ErrorOutput = new OutputWriter(PythonContext, true);
+            Language.Console = Console;
 
             // TODO: must precede path initialization! (??? - test test_importpkg.py)
             int pathIndex = PythonContext.PythonOptions.SearchPaths.Count;

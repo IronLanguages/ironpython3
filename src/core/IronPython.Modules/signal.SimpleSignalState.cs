@@ -9,6 +9,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+using Microsoft.Scripting.Hosting.Shell;
+
 using IronPython.Runtime;
 
 namespace IronPython.Modules {
@@ -18,13 +20,23 @@ namespace IronPython.Modules {
 
             public SimpleSignalState(PythonContext pc) : base(pc) {
                 Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
-                if (pc.Console is Microsoft.Scripting.Hosting.Shell.BasicConsole console) {
+                if (pc.Console is BasicConsole console) {
                     // in console hosting scenarios, we need to override the console handler of Ctrl+C
                     _consoleHandler = console.ConsoleCancelEventHandler;
                     console.ConsoleCancelEventHandler = null;
                 }
             }
 
+            protected override void Dispose(bool disposing) {
+                if (disposing) {
+                    Console.CancelKeyPress -= new ConsoleCancelEventHandler(Console_CancelKeyPress);
+                    if (_consoleHandler != null && DefaultContext.DefaultPythonContext.Console is BasicConsole console) {
+                        // restore the original console handler
+                        console.ConsoleCancelEventHandler = _consoleHandler;
+                    }
+                }
+                base.Dispose(disposing);
+            }
 
             private void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e) {
                 int pySignal = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SIGINT

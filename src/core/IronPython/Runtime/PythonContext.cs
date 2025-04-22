@@ -545,11 +545,16 @@ namespace IronPython.Runtime {
         /// Sets per-runtime state used by a module.  The module should have a unique key for
         /// each piece of state it needs to store.
         /// </summary>
+        /// <remarks>
+        /// The previous piece of state (if any) is disposed if it implements IDisposable.
+        /// </remarks>
         public void SetModuleState(object key, object value) {
             EnsureModuleState();
 
             lock (_moduleState) {
+                _moduleState.TryGetValue(key, out object oldState);
                 _moduleState[key] = value;
+                (oldState as IDisposable)?.Dispose();
             }
         }
 
@@ -1318,6 +1323,12 @@ namespace IronPython.Runtime {
 
             Flush(SharedContext, SystemStandardOut);
             Flush(SharedContext, SystemStandardError);
+
+            lock (_moduleState) {
+                foreach (var state in _moduleState.Values) {
+                    (state as IDisposable)?.Dispose();
+                }
+            }
 
             static void Flush(CodeContext context, object obj) {
                 if (obj is PythonIOModule._IOBase pf) {

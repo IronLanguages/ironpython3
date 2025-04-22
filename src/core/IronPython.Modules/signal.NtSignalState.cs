@@ -27,6 +27,17 @@ namespace IronPython.Modules {
             }
 
 
+            protected override void Dispose(bool disposing) {
+                if (disposing) {
+                    NativeWindowsSignal.SetConsoleCtrlHandler(this.WinAllSignalsHandlerDelegate, false);
+                } else {
+                    var winAllSignalsHandlerDelegate = new NativeWindowsSignal.WinSignalsHandler(WindowsEventHandler);
+                    NativeWindowsSignal.SetConsoleCtrlHandler(winAllSignalsHandlerDelegate, false);
+                }
+                base.Dispose(disposing);
+            }
+
+
             // Our implementation of WinSignalsHandler
             private bool WindowsEventHandler(uint winSignal) {
                 bool retVal;

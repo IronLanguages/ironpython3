@@ -138,17 +138,17 @@ namespace IronPython.Runtime {
                 }
             } else if (PythonOps.TryGetBoundAttr(other, "keys", out object keysFunc)) {
                 // user defined dictionary
-                IEnumerator i = PythonOps.GetEnumerator(PythonCalls.Call(context, keysFunc));
+                IEnumerator i = PythonOps.GetEnumerator(context, PythonCalls.Call(context, keysFunc));
                 while (i.MoveNext()) {
                     self._storage.Add(ref self._storage, i.Current, PythonOps.GetIndex(context, other, i.Current));
                 }
             } else {
                 // list of lists (key/value pairs), list of tuples,
                 // tuple of tuples, etc...
-                IEnumerator i = PythonOps.GetEnumerator(other);
+                IEnumerator i = PythonOps.GetEnumerator(context, other);
                 int index = 0;
                 while (i.MoveNext()) {
-                    if (!AddKeyValue(self, i.Current)) {
+                    if (!AddKeyValue(context, self, i.Current)) {
                         throw PythonOps.ValueError("dictionary update sequence element #{0} has bad length; 2 is required", index);
                     }
                     index++;
@@ -196,8 +196,8 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        internal static bool AddKeyValue(PythonDictionary self, object o) {
-            IEnumerator i = PythonOps.GetEnumerator(o); //c.GetEnumerator();
+        internal static bool AddKeyValue(CodeContext context, PythonDictionary self, object o) {
+            IEnumerator i = PythonOps.GetEnumerator(context, o); //c.GetEnumerator();
             if (i.MoveNext()) {
                 object key = i.Current;
                 if (i.MoveNext()) {

@@ -381,7 +381,7 @@ namespace IronPython.Runtime.Operations {
 
             object? listIterator = null;
             if (self is PythonList) {
-                listIterator = PythonOps.GetEnumerator(self);
+                listIterator = PythonOps.GetEnumerator(context, self);
             }
 
             object? dictIterator = null;

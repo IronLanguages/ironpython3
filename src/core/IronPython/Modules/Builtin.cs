@@ -768,7 +768,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         private static readonly object UndefinedKeywordArgument = new object();
 
         public static object? max(CodeContext/*!*/ context, object? x) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError("max() arg is an empty sequence");
             object? ret = i.Current;
@@ -804,7 +804,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? max(CodeContext/*!*/ context, object? x, [ParamDictionary] IDictionary<string, object?> dict) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
 
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: true);
             object? method = kwargTuple.Item1;
@@ -881,7 +881,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? min(CodeContext/*!*/ context, object? x) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             if (!i.MoveNext()) {
                 throw PythonOps.ValueError("empty sequence");
             }
@@ -915,7 +915,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? min(CodeContext/*!*/ context, object? x, [ParamDictionary] IDictionary<string, object?> dict) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
             object? method = kwargTuple.Item1;
             object? def = kwargTuple.Item2;
@@ -1371,7 +1371,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             object? iterable,
             [ParamDictionary] IDictionary<string, object> kwArgs) {
 
-            IEnumerator iter = PythonOps.GetEnumerator(iterable);
+            IEnumerator iter = PythonOps.GetEnumerator(context, iterable);
             PythonList l = new PythonList(10);
             while (iter.MoveNext()) {
                 l.AddNoLock(iter.Current);
@@ -1395,7 +1395,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? sum(CodeContext/*!*/ context, object? sequence, object? start) {
-            IEnumerator i = PythonOps.GetEnumerator(sequence);
+            IEnumerator i = PythonOps.GetEnumerator(context, sequence);
 
             ValidateSumStart(start);
 

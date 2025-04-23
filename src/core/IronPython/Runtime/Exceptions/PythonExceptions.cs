@@ -775,8 +775,8 @@ for k, v in toError.items():
 
             if (PythonOps.IsInstance(value, type)) {
                 pyEx = value;
-            } else if (value is PythonTuple) {
-                pyEx = PythonOps.CallWithArgsTuple(type, [], value);
+            } else if (value is PythonTuple pt) {
+                pyEx = PythonOps.CallWithArgsTuple(type, [], pt);
             } else if (value != null) {
                 pyEx = PythonCalls.Call(context, type, value);
             } else {

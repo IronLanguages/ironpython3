@@ -383,11 +383,11 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public virtual object InPlaceAdd(object? other) {
+        public virtual object InPlaceAdd(CodeContext context, object? other) {
             if (ReferenceEquals(this, other)) {
                 InPlaceMultiply(2);
             } else {
-                IEnumerator e = PythonOps.GetEnumerator(other);
+                IEnumerator e = PythonOps.GetEnumerator(context, other);
                 while (e.MoveNext()) {
                     append(e.Current);
                 }

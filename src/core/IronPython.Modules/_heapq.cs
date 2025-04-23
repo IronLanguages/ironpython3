@@ -87,7 +87,7 @@ namespace IronPython.Modules {
             }
 
             PythonList ret = new PythonList(Math.Min(n, 4000)); // don't allocate anything too huge
-            IEnumerator en = PythonOps.GetEnumerator(iterable);
+            IEnumerator en = PythonOps.GetEnumerator(context, iterable);
 
             // populate list with first n items
             for (int i = 0; i < n; i++) {
@@ -120,7 +120,7 @@ namespace IronPython.Modules {
             }
 
             PythonList ret = new PythonList(Math.Min(n, 4000)); // don't allocate anything too huge
-            IEnumerator en = PythonOps.GetEnumerator(iterable);
+            IEnumerator en = PythonOps.GetEnumerator(context, iterable);
 
             // populate list with first n items
             for (int i = 0; i < n; i++) {

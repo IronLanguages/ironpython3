@@ -90,7 +90,7 @@ namespace IronPython.Modules {
             socketToOriginal = new Dictionary<Socket, object>();
             socketList = new PythonList();
 
-            IEnumerator cursor = PythonOps.GetEnumerator(sequence);
+            IEnumerator cursor = PythonOps.GetEnumerator(context, sequence);
             while (cursor.MoveNext()) {
                 object original = cursor.Current;
                 Socket socket = ObjectToSocket(context, original);

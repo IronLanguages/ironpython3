@@ -49,51 +49,28 @@ namespace IronPython.Modules {
                         pySignal = SIGBREAK;
                         break;
                     default:
-                        throw new Exception("unreachable");
+                        throw new InvalidOperationException("unreachable");
                 }
+                object? handler = PySignalToPyHandler[pySignal];
 
-                lock (PySignalToPyHandler) {
-                    if (PySignalToPyHandler[pySignal].GetType() == typeof(int)) {
-                        int tempId = (int)PySignalToPyHandler[pySignal];
-
-                        if (tempId == SIG_DFL) {
-                            // SIG_DFL - we let Windows do whatever it normally would
-                            retVal = false;
-                        } else if (tempId == SIG_IGN) {
-                            // SIG_IGN - we do nothing, but tell Windows we handled the signal
-                            retVal = true;
-                        } else {
-                            throw new Exception("unreachable");
-                        }
-                    } else if (PySignalToPyHandler[pySignal] == default_int_handler) {
-                        if (pySignal != SIGINT) {
-                            // We're dealing with the default_int_handlerImpl which we
-                            // know doesn't care about the frame parameter
-                            retVal = true;
-                            default_int_handlerImpl(pySignal, null);
-                        } else {
-                            // Let the real interrupt handler throw a KeyboardInterrupt for SIGINT.
-                            // It handles this far more gracefully than we can
-                            retVal = false;
-                        }
-                    } else {
-                        // We're dealing with a callable matching PySignalHandler's signature
+                if (handler is int tempId) {
+                    if (tempId == SIG_DFL) {
+                        // SIG_DFL - we let Windows do whatever it normally would
+                        retVal = false;
+                    } else if (tempId == SIG_IGN) {
+                        // SIG_IGN - we do nothing, but tell Windows we handled the signal
                         retVal = true;
-                        PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(PySignalToPyHandler[pySignal],
-                                                                                            typeof(PySignalHandler));
-
-                        try {
-                            if (SignalPythonContext.PythonOptions.Frames) {
-                                temp.Invoke(pySignal, SysModule._getframeImpl(null,
-                                                                              0,
-                                                                              SignalPythonContext._mainThreadFunctionStack));
-                            } else {
-                                temp.Invoke(pySignal, null);
-                            }
-                        } catch (Exception e) {
-                            System.Console.WriteLine(SignalPythonContext.FormatException(e));
-                        }
+                    } else {
+                        throw new InvalidOperationException("unreachable");
                     }
+                } else if (handler == default_int_handler && pySignal == SIGINT) {
+                    // Let the real interrupt handler throw a KeyboardInterrupt for SIGINT.
+                    // It handles this far more gracefully than we can
+                    retVal = false;
+                } else {
+                    // We're dealing with a callable matching PySignalHandler's signature
+                    CallPythonHandler(pySignal, handler);
+                    retVal = true;
                 }
 
                 return retVal;

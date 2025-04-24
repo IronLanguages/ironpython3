@@ -314,16 +314,13 @@ namespace IronPython.Modules {
           anything else -- the callable Python object used as a handler
         """)]
         public static object? getsignal(CodeContext/*!*/ context, int signalnum) {
-            lock (GetPythonSignalState(context).PySignalToPyHandler) {
-                // Negative Scenarios
-                if (signalnum <= 0 || signalnum >= NSIG) {
-                    throw PythonOps.ValueError("signal number out of range");
-                } else if (GetPythonSignalState(context).PySignalToPyHandler.TryGetValue(signalnum, out object? value)) {
-                    // Default
+            if (signalnum <= 0 || signalnum >= NSIG) throw PythonOps.ValueError("signal number out of range");
+
+            var state = GetPythonSignalState(context);
+            lock (state.SyncRoot) {
+                if (state.TryGetPyHandler(signalnum, out object? value)) {
                     return value;
                 } else {
-                    // Handles the special case of SIG_IGN. This is not really a signal,
-                    // but CPython returns null for it any ways
                     return null;
                 }
             }
@@ -375,12 +372,16 @@ namespace IronPython.Modules {
                 if (signalnum == SIGKILL || signalnum == SIGSTOP) throw PythonNT.GetOsError(PythonErrno.EINVAL);
             }
             object? last_handler = null;
-            lock (GetPythonSignalState(context).PySignalToPyHandler) {
+            var state = GetPythonSignalState(context);
+            lock (state.SyncRoot) {
                 // CPython returns the previous handler for the signal
-                last_handler = getsignal(context, signalnum);
-                if (last_handler is null) throw PythonNT.GetOsError(PythonErrno.EINVAL);
+                if (!state.TryGetPyHandler(signalnum, out last_handler) || last_handler is null) {
+                    // null marks signals that cannot be handled or are unsupported
+                    throw PythonNT.GetOsError(PythonErrno.EINVAL);
+                }
+
                 // Set the new action
-                GetPythonSignalState(context).PySignalToPyHandler[signalnum] = action;
+                state.SetPyHandler(signalnum, action);
             }
 
             return last_handler;
@@ -417,35 +418,97 @@ namespace IronPython.Modules {
             context.LanguageContext.SetModuleState(_PythonSignalStateKey, pss);
         }
 
-
+        /// <summary>
+        /// This class is used to store the installed signal handlers.
+        /// </summary>
         private class PythonSignalState {
             // this provides us with access to the Main thread's stack
-            public PythonContext SignalPythonContext;
+            public readonly PythonContext SignalPythonContext;
 
-            // Map out signal identifiers to their actual handlers
-            public Dictionary<int, object> PySignalToPyHandler;
+            public object SyncRoot => PySignalToPyHandler;
+
+            /// <summary>
+            /// Map out signal identifiers to their actual handlers.
+            /// </summary>
+            /// <remarks>
+            /// The objects in this array are either:
+            /// 1. Int32(SIG_DFL) - let the OS handle the signal in the default way;
+            /// 2. Int32(SIG_IGN) - ignore the signal;
+            /// 3. a callable Python object - the handler for the signal;
+            /// 4. null - the signal (or handling thereof) is not supported on this platform.
+            /// </remarks>
+            protected readonly object?[] PySignalToPyHandler;
 
             public PythonSignalState(PythonContext pc) {
                 SignalPythonContext = pc;
+                PySignalToPyHandler = new object[NSIG];
+
+                object sig_dfl = ScriptingRuntimeHelpers.Int32ToObject(SIG_DFL);
+                object sig_ign = ScriptingRuntimeHelpers.Int32ToObject(SIG_IGN);
+
                 int[] sigs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? _PySupportedSignals_Windows
                     : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? _PySupportedSignals_MacOS
                     : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? _PySupportedSignals_Linux
                     : throw new NotSupportedException("Unsupported platform for signal module");
 
-                PySignalToPyHandler = new Dictionary<int, object>(sigs.Length);
-                object sig_dfl = ScriptingRuntimeHelpers.Int32ToObject(SIG_DFL);
-                object sig_ign = ScriptingRuntimeHelpers.Int32ToObject(SIG_IGN);
+                // Setting all defined signals to SIG_DFL
                 foreach (int sig in sigs) {
                     PySignalToPyHandler[sig] = sig_dfl;
                 }
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                    for (int sig = SIGRTMIN; sig <= SIGRTMAX; sig++) {
+                        PySignalToPyHandler[sig] = sig_dfl;
+                    }
+                }
+
+                // Setting exceptions to the rule
                 PySignalToPyHandler[SIGINT] = default_int_handler;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     PySignalToPyHandler[SIGPIPE] = sig_ign;
                     PySignalToPyHandler[SIGXFSZ] = sig_ign;
                 }
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    PySignalToPyHandler.Remove(SIGKILL);
-                    PySignalToPyHandler.Remove(SIGSTOP);
+                    PySignalToPyHandler[SIGKILL] = null;
+                    PySignalToPyHandler[SIGSTOP] = null;
+                }
+            }
+
+
+            public virtual bool TryGetPyHandler(int signalnum, out object? value)
+                => (value = PySignalToPyHandler[signalnum]) != null;
+
+
+            public virtual void SetPyHandler(int signalnum, object value)
+                => PySignalToPyHandler[signalnum] = value;
+
+
+            /// <summary>
+            /// Call the Python handler callable passing the given signal number as argument to the callable.
+            /// </summary>
+            protected void CallPythonHandler(int signum, object? handler) {
+                if (handler is null) return;
+
+                if (handler == default_int_handler) {
+                    // We're dealing with the default_int_handlerImpl which we
+                    // know doesn't care about the frame parameter
+                    default_int_handlerImpl(signum, null);
+                    return;
+                } else {
+                    // We're dealing with a callable matching PySignalHandler's signature
+                    try {
+                        PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(handler,
+                                                                                            typeof(PySignalHandler));
+
+                        if (SignalPythonContext.PythonOptions.Frames) {
+                            temp.Invoke(signum, SysModule._getframeImpl(null,
+                                                                        0,
+                                                                        SignalPythonContext._mainThreadFunctionStack));
+                        } else {
+                            temp.Invoke(signum, null);
+                        }
+                    } catch (Exception ex) {
+                        System.Console.WriteLine(SignalPythonContext.FormatException(ex));
+                    }
                 }
             }
         }

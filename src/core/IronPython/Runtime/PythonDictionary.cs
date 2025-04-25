@@ -385,7 +385,7 @@ namespace IronPython.Runtime {
                     pyDict = new PythonDictionary();
                 }
 
-                IEnumerator i = PythonOps.GetEnumerator(o);
+                IEnumerator i = PythonOps.GetEnumerator(context, o);
                 while (i.MoveNext()) {
                     pyDict._storage.AddNoLock(ref pyDict._storage, i.Current, value);
                 }
@@ -399,14 +399,14 @@ namespace IronPython.Runtime {
 
             if (pyDict != null) {
                 // then store all the keys with their associated value
-                IEnumerator i = PythonOps.GetEnumerator(o);
+                IEnumerator i = PythonOps.GetEnumerator(context, o);
                 while (i.MoveNext()) {
                     pyDict[i.Current] = value;
                 }
             } else {
                 // slow path, cls.__new__ returned a user defined dictionary instead of a PythonDictionary.
                 PythonContext pc = context.LanguageContext;
-                IEnumerator i = PythonOps.GetEnumerator(o);
+                IEnumerator i = PythonOps.GetEnumerator(context, o);
                 while (i.MoveNext()) {
                     pc.SetIndex(dict, i.Current, value);
                 }

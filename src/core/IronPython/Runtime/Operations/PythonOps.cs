@@ -438,7 +438,7 @@ namespace IronPython.Runtime.Operations {
 
                 IEnumerator ie = PythonOps.GetEnumerator(bases);
                 while (ie.MoveNext()) {
-                    if (!(ie.Current is PythonType baseType)) continue;
+                    if (ie.Current is not PythonType baseType) continue;
                     if (c.IsSubclassOf(baseType)) return true;
                 }
                 return false;
@@ -1025,7 +1025,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static object? CallWithArgsTuple(object func, object?[] args, object argsTuple) {
+        public static object? CallWithArgsTuple(object func, object?[] args, IEnumerable argsTuple) {
             if (argsTuple is PythonTuple tp) {
                 object?[] nargs = new object[args.Length + tp.__len__()];
                 for (int i = 0; i < args.Length; i++) nargs[i] = args[i];
@@ -1035,7 +1035,7 @@ namespace IronPython.Runtime.Operations {
 
             PythonList allArgs = new PythonList(args.Length + 10);
             allArgs.AddRange(args);
-            IEnumerator e = PythonOps.GetEnumerator(argsTuple);
+            IEnumerator e = argsTuple.GetEnumerator();
             while (e.MoveNext()) allArgs.AddNoLock(e.Current);
 
             return PythonCalls.Call(func, allArgs.GetObjectArray());

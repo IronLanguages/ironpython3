@@ -27,7 +27,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "provides functionality for manipulating callable objects";
 
         public static object? reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>> siteData, object? func, object? seq) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
+            IEnumerator i = PythonOps.GetEnumerator(context, seq);
             if (!i.MoveNext()) {
                 throw PythonOps.TypeError("reduce() of empty sequence with no initial value");
             }
@@ -43,7 +43,7 @@ namespace IronPython.Modules {
         }
 
         public static object? reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>> siteData, object? func, object? seq, object? initializer) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
+            IEnumerator i = PythonOps.GetEnumerator(context, seq);
             EnsureReduceData(context, siteData);
 
             CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>> site = siteData.Data;

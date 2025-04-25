@@ -56,24 +56,24 @@ namespace IronPython.Modules {
                 clear();
             }
 
-            public void __init__(object iterable) {
+            public void __init__(CodeContext context, object iterable) {
                 _maxLen = -1;
                 clear();
-                extend(iterable);
+                extend(context, iterable);
             }
 
-            public void __init__(object iterable, object maxlen) {
+            public void __init__(CodeContext context, object iterable, object maxlen) {
                 _maxLen = VerifyMaxLenValue(maxlen);
 
                 clear();
-                extend(iterable);
+                extend(context, iterable);
             }
 
-            public void __init__(object iterable, [ParamDictionary] IDictionary<object, object> dict) {
+            public void __init__(CodeContext context, object iterable, [ParamDictionary] IDictionary<object, object> dict) {
                 if (VerifyMaxLen(dict) < 0) {
-                    __init__(iterable);
+                    __init__(context, iterable);
                 } else {
-                    __init__(iterable, VerifyMaxLen(dict));
+                    __init__(context, iterable, VerifyMaxLen(dict));
                 }
             }
 
@@ -187,7 +187,7 @@ namespace IronPython.Modules {
             public object copy(CodeContext context)
                 => __copy__(context);
 
-            public void extend(object iterable) {
+            public void extend(CodeContext context, object iterable) {
                 // d.extend(d)
                 if (ReferenceEquals(iterable, this)) {
                     WalkDeque(idx => {
@@ -197,13 +197,13 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                IEnumerator e = PythonOps.GetEnumerator(iterable);
+                IEnumerator e = PythonOps.GetEnumerator(context, iterable);
                 while (e.MoveNext()) {
                     append(e.Current);
                 }
             }
 
-            public void extendleft(object iterable) {
+            public void extendleft(CodeContext context, object iterable) {
                 // d.extendleft(d)
                 if (ReferenceEquals(iterable, this)) {
                     WalkDeque(idx => {
@@ -213,7 +213,7 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                IEnumerator e = PythonOps.GetEnumerator(iterable);
+                IEnumerator e = PythonOps.GetEnumerator(context, iterable);
                 while (e.MoveNext()) {
                     appendleft(e.Current);
                 }
@@ -511,7 +511,7 @@ namespace IronPython.Modules {
             public object __copy__(CodeContext/*!*/ context) {
                 if (GetType() == typeof(deque)) {
                     deque res = new deque(_maxLen);
-                    res.extend(((IEnumerable)this).GetEnumerator());
+                    res.extend(context, ((IEnumerable)this).GetEnumerator());
                     return res;
                 } else {
                     return PythonCalls.Call(context, DynamicHelpers.GetPythonType(this), ((IEnumerable)this).GetEnumerator());
@@ -564,8 +564,8 @@ namespace IronPython.Modules {
             }
 
             [SpecialName]
-            public deque InPlaceAdd(object other) {
-                extend(other);
+            public deque InPlaceAdd(CodeContext context, object other) {
+                extend(context, other);
                 return this;
             }
 
@@ -582,18 +582,18 @@ namespace IronPython.Modules {
             public static deque Add(CodeContext context, [NotNone] deque x, [NotNone] deque y) {
                 var d = (deque)__new__(context, DynamicHelpers.GetPythonType(x), null, null);
                 if (x._maxLen > 0) {
-                    d.__init__(x, x._maxLen);
+                    d.__init__(context, x, x._maxLen);
                 } else {
-                    d.__init__(x);
+                    d.__init__(context, x);
                 }
-                d.extend(y);
+                d.extend(context, y);
                 return d;
             }
 
             private static deque MultiplyWorker(deque self, int count) {
                 var d = new deque(self._maxLen);
                 if (count <= 0 || self._itemCnt == 0) return d;
-                d.extend(self);
+                d.extend(DefaultContext.Default, self); // TODO: context
                 if (count == 1) return d;
 
                 if (d._maxLen < 0 || d._itemCnt * count <= d._maxLen) {

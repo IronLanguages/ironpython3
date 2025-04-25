@@ -326,8 +326,8 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void fromlist([NotNone] PythonList iterable) {
-                IEnumerator ie = PythonOps.GetEnumerator(iterable);
+            public void fromlist(CodeContext context, [NotNone] PythonList iterable) {
+                IEnumerator ie = PythonOps.GetEnumerator(context, iterable);
 
                 List<object> items = new List<object>();
                 while (ie.MoveNext()) {

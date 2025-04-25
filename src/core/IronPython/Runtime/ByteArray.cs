@@ -585,8 +585,8 @@ namespace IronPython.Runtime {
         /// in the sequence seq. The separator between elements is the 
         /// string providing this method
         /// </summary>
-        public ByteArray join(object? iterable) {
-            IEnumerator seq = PythonOps.GetEnumerator(iterable);
+        public ByteArray join(CodeContext context, object? iterable) {
+            IEnumerator seq = PythonOps.GetEnumerator(context, iterable);
             if (!seq.MoveNext()) {
                 return new ByteArray();
             }

@@ -65,7 +65,7 @@ namespace IronPython.Runtime.Operations {
             Array res = @base == 0 ?
                 Array.CreateInstance(type, len) : Array.CreateInstance(type, [len], [@base]);
 
-            IEnumerator ie = PythonOps.GetEnumerator(items);
+            IEnumerator ie = PythonOps.GetEnumerator(context, items);
             int i = @base;
             while (ie.MoveNext()) {
                 res.SetValue(Converter.Convert(ie.Current, type), i++);

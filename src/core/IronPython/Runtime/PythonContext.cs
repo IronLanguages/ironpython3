@@ -685,10 +685,14 @@ namespace IronPython.Runtime {
 
         internal FloatFormat DoubleFormat { get; set; }
 
+#nullable enable
+
         /// <summary>
         /// Not null if the Python context is running in a console host.
         /// </summary>
-        internal IConsole/*?*/ Console { get; set; }
+        internal IConsole? Console { get; set; }
+
+#nullable restore
 
         /// <summary>
         /// Initializes the sys module on startup.  Called both to load and reload sys

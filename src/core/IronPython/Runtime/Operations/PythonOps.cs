@@ -1025,6 +1025,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        [Obsolete("Use PythonCalls.Call")]
         public static object? CallWithArgsTuple(object func, object?[] args, IEnumerable argsTuple) {
             if (argsTuple is PythonTuple tp) {
                 object?[] nargs = new object[args.Length + tp.__len__()];

@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 
 using IronPython.Runtime;
@@ -14,7 +15,6 @@ using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -25,7 +25,7 @@ namespace IronPython.Modules {
 
         private static readonly object _stackSizeKey = new object();
         private static object _threadCountKey = new object();
-        [ThreadStatic] private static List<@lock> _sentinelLocks;
+        [ThreadStatic] private static List<@lock>? _sentinelLocks;
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
@@ -40,21 +40,20 @@ namespace IronPython.Modules {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType LockType = DynamicHelpers.GetPythonTypeFromType(typeof(@lock));
 
-        [Documentation("start_new_thread(function, [args, [kwDict]]) -> thread id\nCreates a new thread running the given function")]
-        public static object start_new_thread(CodeContext/*!*/ context, object function, object args, object kwDict) {
-            PythonTuple tupArgs = args as PythonTuple;
-            if (tupArgs == null) throw PythonOps.TypeError("2nd arg must be a tuple");
+        [Documentation("start_new_thread(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
+        public static object start_new_thread(CodeContext/*!*/ context, object? function, object? args, object? kwDict) {
+            if (args is not PythonTuple tupArgs) throw PythonOps.TypeError("2nd arg must be a tuple");
+            if (kwDict is not PythonDictionary dict) throw PythonOps.TypeError("optional 3rd arg must be a dictionary");
 
-            Thread t = CreateThread(context, new ThreadObj(context, function, tupArgs, kwDict).Start);
+            Thread t = CreateThread(context, new ThreadObj(context, function, tupArgs, dict).Start);
             t.Start();
 
             return t.ManagedThreadId;
         }
 
         [Documentation("start_new_thread(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
-        public static object start_new_thread(CodeContext/*!*/ context, object function, object args) {
-            PythonTuple tupArgs = args as PythonTuple;
-            if (tupArgs == null) throw PythonOps.TypeError("2nd arg must be a tuple");
+        public static object start_new_thread(CodeContext/*!*/ context, object? function, object? args) {
+            if (args is not PythonTuple tupArgs) throw PythonOps.TypeError("2nd arg must be a tuple");
 
             Thread t = CreateThread(context, new ThreadObj(context, function, tupArgs, null).Start);
             t.IsBackground = true;
@@ -109,8 +108,13 @@ namespace IronPython.Modules {
         }
 
         // deprecated synonyms, wrappers over preferred names...
-        [Documentation("start_new(function, [args, [kwDict]]) -> thread id\nCreates a new thread running the given function")]
-        public static object start_new(CodeContext context, object function, object args) {
+        [Documentation("start_new(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
+        public static object start_new(CodeContext context, object? function, object? args, object? kwDict) {
+            return start_new_thread(context, function, args, kwDict);
+        }
+
+        [Documentation("start_new(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
+        public static object start_new(CodeContext context, object? function, object? args) {
             return start_new_thread(context, function, args);
         }
 
@@ -137,8 +141,6 @@ namespace IronPython.Modules {
         }
 
         #endregion
-
-#nullable enable
 
         [PythonType, PythonHidden]
         public sealed class @lock {
@@ -321,8 +323,6 @@ namespace IronPython.Modules {
             }
         }
 
-#nullable restore
-
         #region Internal Implementation details
 
         private static Thread CreateThread(CodeContext/*!*/ context, ThreadStart start) {
@@ -331,12 +331,12 @@ namespace IronPython.Modules {
         }
 
         private class ThreadObj {
-            private readonly object _func, _kwargs;
+            private readonly object? _func;
+            private readonly PythonDictionary? _kwargs;
             private readonly PythonTuple _args;
             private readonly CodeContext _context;
 
-            public ThreadObj(CodeContext context, object function, PythonTuple args, object kwargs) {
-                Debug.Assert(args != null);
+            public ThreadObj(CodeContext context, object? function, PythonTuple args, PythonDictionary? kwargs) {
                 _func = function;
                 _kwargs = kwargs;
                 _args = args;
@@ -349,13 +349,11 @@ namespace IronPython.Modules {
                     _context.LanguageContext.SetModuleState(_threadCountKey, startCount + 1);
                 }
                 try {
-#pragma warning disable 618 // TODO: obsolete
                     if (_kwargs != null) {
-                        PythonOps.CallWithArgsTupleAndKeywordDictAndContext(_context, _func, [], [], _args, _kwargs);
+                        PythonCalls.CallWithKeywordArgs(_context, _func, _args.ToArray(), new PythonDictionary(_kwargs));
                     } else {
-                        PythonOps.CallWithArgsTuple(_func, [], _args);
+                        PythonCalls.Call(_context, _func, _args.ToArray());
                     }
-#pragma warning restore 618
                 } catch (SystemExitException) {
                     // ignore and quit
                 } catch (Exception e) {
@@ -397,17 +395,17 @@ namespace IronPython.Modules {
             #region Custom Attribute Access
 
             [SpecialName]
-            public object GetCustomMember(string name) {
+            public object GetCustomMember([NotNone] string name) {
                 return _dict.get(name, OperationFailed.Value);
             }
 
             [SpecialName]
-            public void SetMemberAfter(string name, object value) {
+            public void SetMemberAfter([NotNone] string name, object? value) {
                 _dict[name] = value;
             }
 
             [SpecialName]
-            public void DeleteMember(string name) {
+            public void DeleteMember([NotNone] string name) {
                 _dict.__delitem__(name);
             }
 
@@ -428,21 +426,21 @@ namespace IronPython.Modules {
             private class ThreadLocalDictionaryStorage : DictionaryStorage {
                 private readonly Microsoft.Scripting.Utils.ThreadLocal<CommonDictionaryStorage> _storage = new Microsoft.Scripting.Utils.ThreadLocal<CommonDictionaryStorage>();
 
-                public override void Add(ref DictionaryStorage storage, object key, object value) {
+                public override void Add(ref DictionaryStorage storage, object? key, object? value) {
                     GetStorage().Add(key, value);
                 }
 
-                public override bool Contains(object key) {
+                public override bool Contains(object? key) {
                     return GetStorage().Contains(key);
                 }
 
-                public override bool Remove(ref DictionaryStorage storage, object key) {
+                public override bool Remove(ref DictionaryStorage storage, object? key) {
                     return GetStorage().Remove(ref storage, key);
                 }
 
                 public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
 
-                public override bool TryGetValue(object key, out object value) {
+                public override bool TryGetValue(object? key, out object? value) {
                     return GetStorage().TryGetValue(key, out value);
                 }
 
@@ -454,7 +452,7 @@ namespace IronPython.Modules {
                     GetStorage().Clear(ref storage);
                 }
 
-                public override List<KeyValuePair<object, object>>/*!*/ GetItems() {
+                public override List<KeyValuePair<object?, object?>>/*!*/ GetItems() {
                     return GetStorage().GetItems();
                 }
 

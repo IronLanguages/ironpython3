@@ -14,9 +14,15 @@ using IronPython.Runtime;
 namespace IronPython.Modules {
     public static partial class PythonSignal {
         private class SimpleSignalState : PythonSignalState {
+            private readonly ConsoleCancelEventHandler? _consoleHandler;
 
             public SimpleSignalState(PythonContext pc) : base(pc) {
                 Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+                if (pc.Console is Microsoft.Scripting.Hosting.Shell.BasicConsole console) {
+                    // in console hosting scenarios, we need to override the console handler of Ctrl+C
+                    _consoleHandler = console.ConsoleCancelEventHandler;
+                    console.ConsoleCancelEventHandler = null;
+                }
             }
 
 
@@ -42,8 +48,8 @@ namespace IronPython.Modules {
                         throw new InvalidOperationException("unreachable");
                     }
                 } else if (ReferenceEquals(handler, default_int_handler) && pySignal == SIGINT) {
-                    // Let the real interrupt handler throw a KeyboardInterrupt for SIGINT.
-                    // It handles this far more gracefully than we can
+                    // Forward the signal to the console handler, if any
+                    _consoleHandler?.Invoke(sender, e);
                     return;
                 } else {
                     CallPythonHandler(pySignal, handler);

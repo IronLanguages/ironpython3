@@ -361,40 +361,44 @@ namespace IronPython.Modules {
             return new NativeArgument(instance, "P");
         }
 
-        public static object call_cdeclfunction(CodeContext context, int address, PythonTuple args) {
+#nullable enable
+
+        public static object? call_cdeclfunction(CodeContext context, int address, [NotNone] PythonTuple args) {
             return call_cdeclfunction(context, new IntPtr(address), args);
         }
 
-        public static object call_cdeclfunction(CodeContext context, BigInteger address, PythonTuple args) {
+        public static object? call_cdeclfunction(CodeContext context, BigInteger address, [NotNone] PythonTuple args) {
             return call_cdeclfunction(context, new IntPtr((long)address), args);
         }
 
-        public static object call_cdeclfunction(CodeContext context, IntPtr address, PythonTuple args) {
+        public static object? call_cdeclfunction(CodeContext context, IntPtr address, [NotNone] PythonTuple args) {
             CFuncPtrType funcType = GetFunctionType(context, FUNCFLAG_CDECL);
 
             _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
 
-            return PythonOps.CallWithArgsTuple(func, System.Array.Empty<object>(), args);
+            return PythonCalls.Call(context, func, args.ToArray());
         }
 
         public static void call_commethod() {
         }
 
-        public static object call_function(CodeContext context, int address, PythonTuple args) {
+        public static object? call_function(CodeContext context, int address, [NotNone] PythonTuple args) {
             return call_function(context, new IntPtr(address), args);
         }
 
-        public static object call_function(CodeContext context, BigInteger address, PythonTuple args) {
+        public static object? call_function(CodeContext context, BigInteger address, [NotNone] PythonTuple args) {
             return call_function(context, new IntPtr((long)address), args);
         }
 
-        public static object call_function(CodeContext context, IntPtr address, PythonTuple args) {
+        public static object? call_function(CodeContext context, IntPtr address, [NotNone] PythonTuple args) {
             CFuncPtrType funcType = GetFunctionType(context, FUNCFLAG_STDCALL);
 
             _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
 
-            return PythonOps.CallWithArgsTuple(func, System.Array.Empty<object>(), args);
+            return PythonCalls.Call(context, func, args.ToArray());
         }
+
+#nullable restore
 
         private static CFuncPtrType GetFunctionType(CodeContext context, int flags) {
             // Ideally we should cache these...

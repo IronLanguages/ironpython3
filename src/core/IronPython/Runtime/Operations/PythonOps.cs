@@ -1025,7 +1025,8 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static object? CallWithArgsTuple(object func, object?[] args, IEnumerable argsTuple) {
+        [Obsolete("Use PythonCalls.Call")]
+        public static object? CallWithArgsTuple(object func, object?[] args, object argsTuple) {
             if (argsTuple is PythonTuple tp) {
                 object?[] nargs = new object[args.Length + tp.__len__()];
                 for (int i = 0; i < args.Length; i++) nargs[i] = args[i];
@@ -1035,7 +1036,7 @@ namespace IronPython.Runtime.Operations {
 
             PythonList allArgs = new PythonList(args.Length + 10);
             allArgs.AddRange(args);
-            IEnumerator e = argsTuple.GetEnumerator();
+            IEnumerator e = PythonOps.GetEnumerator(DefaultContext.Default, argsTuple);
             while (e.MoveNext()) allArgs.AddNoLock(e.Current);
 
             return PythonCalls.Call(func, allArgs.GetObjectArray());

@@ -421,7 +421,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// This class is used to store the installed signal handlers.
         /// </summary>
-        private class PythonSignalState {
+        private class PythonSignalState : IDisposable {
             // this provides us with access to the Main thread's stack
             public readonly PythonContext SignalPythonContext;
 
@@ -511,6 +511,25 @@ namespace IronPython.Modules {
                     }
                 }
             }
+
+            public void Dispose() {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            ~PythonSignalState() {
+                Dispose(false);
+            }
+
+            protected virtual void Dispose(bool disposing) {
+                if (!_disposed) {
+                    if (disposing) {
+                        Array.Clear(PySignalToPyHandler, 0, PySignalToPyHandler.Length);
+                    }
+                    _disposed = true;
+                }
+            }
+            private bool _disposed = false;
         }
 
 

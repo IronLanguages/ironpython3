@@ -495,27 +495,26 @@ namespace IronPython.Modules {
             protected void CallPythonHandler(int signum, object? handler) {
                 if (handler is null) return;
 
-                if (handler == default_int_handler) {
-                    // We're dealing with the default_int_handlerImpl which we
-                    // know doesn't care about the frame parameter
-                    default_int_handlerImpl(signum, null);
-                    return;
-                } else {
-                    // We're dealing with a callable matching PySignalHandler's signature
-                    try {
-                        PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(handler,
-                                                                                            typeof(PySignalHandler));
+                try {
+                    if (handler == default_int_handler) {
+                        // We're dealing with the default_int_handlerImpl which we
+                        // know doesn't care about the frame parameter
+                        default_int_handlerImpl(signum, null);
+                    } else {
+                        // We're dealing with a callable matching PySignalHandler's signature
+                            PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(handler,
+                                                                                                typeof(PySignalHandler));
 
-                        if (SignalPythonContext.PythonOptions.Frames) {
-                            temp.Invoke(signum, SysModule._getframeImpl(null,
-                                                                        0,
-                                                                        SignalPythonContext._mainThreadFunctionStack));
-                        } else {
-                            temp.Invoke(signum, null);
-                        }
-                    } catch (Exception ex) {
-                        System.Console.WriteLine(SignalPythonContext.FormatException(ex));
+                            if (SignalPythonContext.PythonOptions.Frames) {
+                                temp.Invoke(signum, SysModule._getframeImpl(null,
+                                                                            0,
+                                                                            SignalPythonContext._mainThreadFunctionStack));
+                            } else {
+                                temp.Invoke(signum, null);
+                            }
                     }
+                } catch (Exception ex) {
+                    SignalPythonContext.DomainManager.SharedIO.ErrorWriter.WriteLine(SignalPythonContext.FormatException(ex));
                 }
             }
 

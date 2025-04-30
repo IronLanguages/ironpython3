@@ -76,8 +76,12 @@ namespace IronPython.Modules {
         [SupportedOSPlatform("macos")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static PythonSignalState MakePosixSignalState(PythonContext context) {
-            // Use SimpleSignalState until the real Posix one is written
-            return new SimpleSignalState(context);
+            #if NET
+                return new PosixSignalState(context);
+            #else
+                // PosixSignalState depends on PosixSignalRegistration, which is not available in Mono or .NET Standard 2.0
+                return new SimpleSignalState(context);
+            #endif
         }
 
 
@@ -439,12 +443,15 @@ namespace IronPython.Modules {
             /// </remarks>
             protected readonly object?[] PySignalToPyHandler;
 
+            protected readonly object sig_dfl;
+            protected readonly object sig_ign;
+
             public PythonSignalState(PythonContext pc) {
                 SignalPythonContext = pc;
                 PySignalToPyHandler = new object[NSIG];
 
-                object sig_dfl = ScriptingRuntimeHelpers.Int32ToObject(SIG_DFL);
-                object sig_ign = ScriptingRuntimeHelpers.Int32ToObject(SIG_IGN);
+                sig_dfl = ScriptingRuntimeHelpers.Int32ToObject(SIG_DFL);
+                sig_ign = ScriptingRuntimeHelpers.Int32ToObject(SIG_IGN);
 
                 int[] sigs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? _PySupportedSignals_Windows
                     : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? _PySupportedSignals_MacOS

@@ -76,8 +76,12 @@ namespace IronPython.Modules {
         [SupportedOSPlatform("macos")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static PythonSignalState MakePosixSignalState(PythonContext context) {
-            // Use SimpleSignalState until the real Posix one is written
-            return new SimpleSignalState(context);
+            #if NET
+                return new PosixSignalState(context);
+            #else
+                // PosixSignalState depends on PosixSignalRegistration, which is not available in Mono or .NET Standard 2.0
+                return new SimpleSignalState(context);
+            #endif
         }
 
 
@@ -439,12 +443,15 @@ namespace IronPython.Modules {
             /// </remarks>
             protected readonly object?[] PySignalToPyHandler;
 
+            protected readonly object sig_dfl;
+            protected readonly object sig_ign;
+
             public PythonSignalState(PythonContext pc) {
                 SignalPythonContext = pc;
                 PySignalToPyHandler = new object[NSIG];
 
-                object sig_dfl = ScriptingRuntimeHelpers.Int32ToObject(SIG_DFL);
-                object sig_ign = ScriptingRuntimeHelpers.Int32ToObject(SIG_IGN);
+                sig_dfl = ScriptingRuntimeHelpers.Int32ToObject(SIG_DFL);
+                sig_ign = ScriptingRuntimeHelpers.Int32ToObject(SIG_IGN);
 
                 int[] sigs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? _PySupportedSignals_Windows
                     : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? _PySupportedSignals_MacOS
@@ -488,27 +495,26 @@ namespace IronPython.Modules {
             protected void CallPythonHandler(int signum, object? handler) {
                 if (handler is null) return;
 
-                if (handler == default_int_handler) {
-                    // We're dealing with the default_int_handlerImpl which we
-                    // know doesn't care about the frame parameter
-                    default_int_handlerImpl(signum, null);
-                    return;
-                } else {
-                    // We're dealing with a callable matching PySignalHandler's signature
-                    try {
-                        PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(handler,
-                                                                                            typeof(PySignalHandler));
+                try {
+                    if (handler == default_int_handler) {
+                        // We're dealing with the default_int_handlerImpl which we
+                        // know doesn't care about the frame parameter
+                        default_int_handlerImpl(signum, null);
+                    } else {
+                        // We're dealing with a callable matching PySignalHandler's signature
+                            PySignalHandler temp = (PySignalHandler)Converter.ConvertToDelegate(handler,
+                                                                                                typeof(PySignalHandler));
 
-                        if (SignalPythonContext.PythonOptions.Frames) {
-                            temp.Invoke(signum, SysModule._getframeImpl(null,
-                                                                        0,
-                                                                        SignalPythonContext._mainThreadFunctionStack));
-                        } else {
-                            temp.Invoke(signum, null);
-                        }
-                    } catch (Exception ex) {
-                        System.Console.WriteLine(SignalPythonContext.FormatException(ex));
+                            if (SignalPythonContext.PythonOptions.Frames) {
+                                temp.Invoke(signum, SysModule._getframeImpl(null,
+                                                                            0,
+                                                                            SignalPythonContext._mainThreadFunctionStack));
+                            } else {
+                                temp.Invoke(signum, null);
+                            }
                     }
+                } catch (Exception ex) {
+                    SignalPythonContext.DomainManager.SharedIO.ErrorWriter.WriteLine(SignalPythonContext.FormatException(ex));
                 }
             }
 

@@ -6,15 +6,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Text;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -100,14 +98,14 @@ namespace IronPython.Runtime {
         }
 
         public static PythonTuple popitem(PythonDictionary self) {
-            using IEnumerator<KeyValuePair<object, object>> ie = self.GetEnumerator();
-            if (ie.MoveNext()) {
-                object key = ie.Current.Key;
-                object val = ie.Current.Value;
-                self.RemoveDirect(key);
-                return PythonTuple.MakeTuple(key, val);
+            try {
+                var pair = self._storage.GetItems().Last();
+                self.RemoveDirect(pair.Key);
+                return PythonTuple.MakeTuple(pair.Key, pair.Value);
             }
-            throw PythonOps.KeyError("dictionary is empty");
+            catch (InvalidOperationException) {
+                throw PythonOps.KeyError("dictionary is empty");
+            }
         }
 
         public static object setdefault(PythonDictionary self, object key) {
@@ -122,7 +120,11 @@ namespace IronPython.Runtime {
 
         public static void update(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             if (other is PythonDictionary pyDict) {
-                pyDict._storage.CopyTo(ref self._storage);
+                if (pyDict.TreatAsMapping) {
+                    SlowUpdate(context, self, other);
+                } else {
+                    pyDict._storage.CopyTo(ref self._storage);
+                }
             } else {
                 SlowUpdate(context, self, other);
             }
@@ -131,7 +133,7 @@ namespace IronPython.Runtime {
         private static void SlowUpdate(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             if (other is MappingProxy proxy) {
                 update(context, self, proxy.GetDictionary(context));
-            } else if (other is IDictionary dict) {
+            } else if (other is IDictionary dict && other is not PythonDictionary) {
                 IDictionaryEnumerator e = dict.GetEnumerator();
                 while (e.MoveNext()) {
                     self._storage.Add(ref self._storage, e.Key, e.Value);

@@ -54,6 +54,8 @@ Param(
 
 $ErrorActionPreference = "Stop"
 
+$downloaded = $false
+
 if (-not $ZipFile) {
     # If zipfile path not given, try to locate it
     $splitPSScriptRoot = $PSScriptRoot -split "\$([IO.Path]::DirectorySeparatorChar)"
@@ -72,7 +74,24 @@ if (-not $ZipFile) {
         }
         $ZipFile = $zipFiles
     } else {
-        Write-Error "Cannot locate implicit zip file. Provide path to the zip file using '-ZipFile <path>'."
+        $zipUrl = (Invoke-RestMethod "https://api.github.com/repos/IronLanguages/ironpython3/releases/latest").assets |
+            Where-Object -Property name -Like "IronPython.3.*.zip" | 
+            Select-Object -ExpandProperty browser_download_url
+        
+        $downloadPath = "$env:TEMP\$([guid]::NewGuid()).zip"
+        
+        Try {
+            Invoke-WebRequest -Uri $zipUrl -OutFile $downloadPath | Out-Null
+            
+            if (-not (Test-Path -PathType Leaf $downloadPath)) {
+                throw
+            }
+            
+            $downloaded = $true
+            $ZipFile = $downloadPath
+        } Catch {
+            Write-Error "Cannot retrieve zip file implicitly. Check your network connection or provide a path to the zip file using '-ZipFile <path>'."
+        }
     }
 } elseif (-not (Test-Path $ZipFile)) {
     Write-Error "ZipFile not found: $ZipFile"
@@ -95,6 +114,12 @@ New-Item $Path -ItemType Directory | Out-Null
 if (-not $unzipDir) {
     $unzipDir = Join-Path $Path "unzipped"
     Expand-Archive -Path $ZipFile -DestinationPath $unzipDir
+    
+    # Cleanup temporary files
+    if ($downloaded) {
+        Remove-Item -Path $ZipFile
+    }
+    
     $unzipped = $true
 }
 

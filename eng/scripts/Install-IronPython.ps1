@@ -16,6 +16,10 @@
     PS>Expand-Archive -Path IronPython.3.4.0.zip -DestinationPath IronPython-unzipped
     PS>./IronPython-unzipped/scripts/Install-IronPython -Path ~/ipyenv/v3.4.0
 
+    or with a one-liner
+
+    PS>iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/IronLanguages/ironpython3/22d006e3612291e716fc21438ef12fe5f89c23a0/eng/scripts/Install-IronPython.ps1'))
+
     The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.0.
 
 .EXAMPLE

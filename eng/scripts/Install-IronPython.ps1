@@ -108,11 +108,13 @@ if (Test-Path $Path) {
             Write-Error "Overwriting of multiple destinations not allowed: $Path"
         }
         Remove-Item -Path $Path -Force -Recurse
+        New-Item $Path -ItemType Directory | Out-Null
     } else {
-        Write-Warning "Path already exists: $Path"
+        Write-Warning "Path already exists: $(Resolve-Path $Path)"
     }
+} else {
+    New-Item $Path -ItemType Directory | Out-Null
 }
-New-Item $Path -ItemType Directory | Out-Null
 
 # Unzip archive
 if (-not $unzipDir) {

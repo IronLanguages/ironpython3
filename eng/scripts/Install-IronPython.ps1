@@ -40,7 +40,7 @@
 Param(
     # Target directory to which IronPython is to be installed.
     [Parameter(Position=0, Mandatory)]
-    [string] $Path,
+    [string] $Path = ".",
 
     # The path to the downloaded zip file with IronPython binaries. If empty, the script will try to grab the package directly produced by the local build.
     [string] $ZipFile,
@@ -105,7 +105,7 @@ if (Test-Path $Path) {
         }
         Remove-Item -Path $Path -Force -Recurse
     } else {
-        Write-Error "Path already exists: $Path"
+        Write-Warning "Path already exists: $Path"
     }
 }
 New-Item $Path -ItemType Directory | Out-Null

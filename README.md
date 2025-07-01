@@ -89,6 +89,14 @@ See the [Package compatibility](https://github.com/IronLanguages/ironpython3/wik
 
 Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](https://github.com/IronLanguages/ironpython3/wiki/Installing) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
 
+### PowerShell
+
+For usage in PowerShell, you can install using the Install-IronPython.ps1 within the aforementioned `.zip` file or using this one-liner:
+
+```pwsh
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1'))
+```
+
 ## Build
 
 See the [building document](https://github.com/IronLanguages/ironpython3/wiki/Building). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!

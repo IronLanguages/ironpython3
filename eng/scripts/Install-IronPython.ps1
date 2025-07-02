@@ -18,7 +18,7 @@
 
     or with a one-liner
 
-    PS>iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/IronLanguages/ironpython3/22d006e3612291e716fc21438ef12fe5f89c23a0/eng/scripts/Install-IronPython.ps1'))
+    PS>& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/anonhostpi/ironpython3/iex-web-support/eng/scripts/Install-IronPython.ps1').Content)) -Path "~/Test"
 
     The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.0.
 
@@ -44,7 +44,7 @@
 Param(
     # Target directory to which IronPython is to be installed.
     [Parameter(Position=0, Mandatory)]
-    [string] $Path = ".",
+    [string] $Path,
 
     # The path to the downloaded zip file with IronPython binaries. If empty, the script will try to grab the package directly produced by the local build.
     [string] $ZipFile,

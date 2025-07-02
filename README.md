@@ -113,9 +113,16 @@ ipy -c "print('Hello from IronPython!')"
 Import-Module ".\IronPython.dll"
 
 & {
-    [IronPython.Hosting.Python]::CreateEngine().
-        CreateScriptSourceFromString("print('Hello from IronPython!')").
-        Execute()
+    $engine = [IronPython.Hosting.Python]::CreateEngine()
+
+    # You need to add the correct paths, as IronPython will use PowerShell's installation path by default
+    $paths = $engine.GetSearchPaths()
+    $paths.Add("$(Resolve-Path ".\lib")")
+    $paths.Add("$(Resolve-Path ".\lib\site-packages")")
+    $engine.SetSearchPaths($paths)
+
+    # Then have fun!
+    $engine.Execute("print('Hello from IronPython!')")
 }
 ```
 

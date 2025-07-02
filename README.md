@@ -94,7 +94,8 @@ Binaries of IronPython 3 can be downloaded from the [release page](https://githu
 For usage in PowerShell, you can install using the Install-IronPython.ps1 within the aforementioned `.zip` file or using this one-liner:
 
 ```pwsh
-iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1'))
+$bootstrap = 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1'
+& ([scriptblock]::Create((iwr $bootstrap).Content)) -Path "."
 ```
 
 Once installed, you can start using IronPython directly in PowerShell!

@@ -97,6 +97,27 @@ For usage in PowerShell, you can install using the Install-IronPython.ps1 within
 iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1'))
 ```
 
+Once installed, you can start using IronPython directly in PowerShell!
+- If installed without the one-liner, the following referenced files will be located at the path you provided with -Path (default is current working directory)
+
+To use the ipy shim, you can use:
+```pwsh
+.\Enter-IronPythonEnvironment.ps1
+
+ipy -c "print('Hello from IronPython!')"
+```
+
+... or to use IronPython embedded in PowerShell, you can use:
+```pwsh
+Import-Module ".\IronPython.dll"
+
+& {
+    [IronPython.Hosting.Python]::CreateEngine().
+        CreateScriptSourceFromString("print('Hello from IronPython!')").
+        Execute()
+}
+```
+
 ## Build
 
 See the [building document](https://github.com/IronLanguages/ironpython3/wiki/Building). Since the main development is on Windows, bugs on other platforms may inadvertently be introduced - please report them!

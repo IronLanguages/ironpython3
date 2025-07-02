@@ -78,13 +78,12 @@ if (-not $ZipFile) {
         }
         $ZipFile = $zipFiles
     } else {
-        $zipUrl = (Invoke-RestMethod "https://api.github.com/repos/IronLanguages/ironpython3/releases/latest").assets |
-            Where-Object -Property name -Like "IronPython.3.*.zip" | 
-            Select-Object -ExpandProperty browser_download_url
-        
-        $downloadPath = "$env:TEMP\$([guid]::NewGuid()).zip"
-        
         Try {
+            $zipUrl = (Invoke-RestMethod "https://api.github.com/repos/IronLanguages/ironpython3/releases/latest").assets |
+                Where-Object -Property name -Like "IronPython.3.*.zip" | 
+                Select-Object -ExpandProperty browser_download_url
+        
+            $downloadPath = "$env:TEMP\$([guid]::NewGuid()).zip"
             Invoke-WebRequest -Uri $zipUrl -OutFile $downloadPath | Out-Null
             
             if (-not (Test-Path -PathType Leaf $downloadPath)) {

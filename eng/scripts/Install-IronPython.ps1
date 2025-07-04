@@ -18,7 +18,7 @@
 
     or with a one-liner
 
-    PS>& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/anonhostpi/ironpython3/iex-web-support/eng/scripts/Install-IronPython.ps1').Content)) -Path "~/Test"
+    PS>& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path "~/Test"
 
     The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.0.
 

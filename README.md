@@ -95,6 +95,9 @@ For usage in PowerShell, you can install using the Install-IronPython.ps1 within
 
 ```pwsh
 & ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path "~/ipyenv/v3.4.0"
+
+# Optionally, ensure pip:
+# & "~/ipyenv/v3.4.0/ipy" -m ensurepip
 ```
 
 Once installed, you can start using IronPython directly in PowerShell!
@@ -109,8 +112,11 @@ ipy -c "print('Hello from IronPython!')"
 ... or to use IronPython embedded in PowerShell, you can use:
 ```pwsh
 Import-Module "~/ipyenv/v3.4.0/IronPython.dll"
+Import-Module "~/ipyenv/v3.4.0/IronPython.SQLite.dll"
+# For WPF:
+# Import-Module "~/ipyenv/v3.4.0/IronPython.WPF.dll"
 
-& {
+$engine = & {
     $engine = [IronPython.Hosting.Python]::CreateEngine()
 
     # You need to add the correct paths, as IronPython will use PowerShell's installation path by default
@@ -121,6 +127,11 @@ Import-Module "~/ipyenv/v3.4.0/IronPython.dll"
 
     # Then have fun!
     $engine.Execute("print('Hello from IronPython!')")
+
+    # Optionally, if you need to initialize _sqlite3:
+    # $engine.Execute("import sqlite3")
+
+    return $engine
 }
 ```
 

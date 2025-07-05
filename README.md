@@ -94,21 +94,21 @@ Binaries of IronPython 3 can be downloaded from the [release page](https://githu
 For usage in PowerShell, you can install using the Install-IronPython.ps1 within the aforementioned `.zip` file or by simply using this one-liner:
 
 ```pwsh
-& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path "."
+& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path "~/ipyenv/v3.4.0"
 ```
 
 Once installed, you can start using IronPython directly in PowerShell!
 
 To use the ipy shim, you can use:
 ```pwsh
-.\Enter-IronPythonEnvironment.ps1
+& "~/ipyenv/v3.4.0/Enter-IronPythonEnvironment.ps1"
 
 ipy -c "print('Hello from IronPython!')"
 ```
 
 ... or to use IronPython embedded in PowerShell, you can use:
 ```pwsh
-Import-Module ".\IronPython.dll"
+Import-Module "~/ipyenv/v3.4.0/IronPython.dll"
 
 & {
     $engine = [IronPython.Hosting.Python]::CreateEngine()

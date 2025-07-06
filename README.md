@@ -112,17 +112,24 @@ ipy -c "print('Hello from IronPython!')"
 ... or to use IronPython embedded in PowerShell, you can use:
 ```pwsh
 Import-Module "~/ipyenv/v3.4.0/IronPython.dll"
-Import-Module "~/ipyenv/v3.4.0/IronPython.SQLite.dll"
-# For WPF:
-# Import-Module "~/ipyenv/v3.4.0/IronPython.WPF.dll"
 
 $engine = & {
     $engine = [IronPython.Hosting.Python]::CreateEngine()
 
     # You need to add the correct paths, as IronPython will use PowerShell's installation path by default
     $paths = $engine.GetSearchPaths()
-    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.0")")
-    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.0/site-packages")")
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.0/lib")")
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.0/lib/site-packages")")
+
+    # To use `wpf` and `sqlite3` you have to add the DLLs search path
+    # - the [IronPython.SQLite] and [IronPython.WPF] powershell namespaces will become available on python import
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.0/DLLs")")
+
+    # or if you prefer to have the powershell namespaces early, you can use:
+    # - just note, you will have to initialize _sqlite3 (see further down the script)
+    # Import-Module "~/ipyenv/v3.4.0/DLLs/IronPython.SQLite.dll"
+    # Import-Module "~/ipyenv/v3.4.0/DLLs/IronPython.WPF.dll"
+
     $engine.SetSearchPaths($paths)
 
     # Then have fun!

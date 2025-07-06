@@ -96,7 +96,9 @@ Binaries of IronPython 3 can be downloaded from the [release page](https://githu
 For usage in PowerShell, you can install using the Install-IronPython.ps1 within the aforementioned `.zip` file or by simply using this one-liner:
 
 ```pwsh
-& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path "~/ipyenv/v3.4.2"
+& ([scriptblock]::Create((iwr `
+    -Uri 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) `
+    -Path "~/ipyenv/v3.4.2"
 
 # Optionally, ensure pip:
 # & "~/ipyenv/v3.4.2/ipy" -m ensurepip

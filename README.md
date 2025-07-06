@@ -18,6 +18,8 @@ IronPython 3 targets Python 3, including the re-organized standard library, Unic
 
 ## Examples
 
+To see how to use in PowerShell (either directly embedded or executable invocation), skip to [Installation](#Installation)
+
 The following C# program:
 
 ```cs

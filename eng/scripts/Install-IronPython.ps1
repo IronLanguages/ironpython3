@@ -12,22 +12,26 @@
 
 .EXAMPLE
 
-    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.0/IronPython.3.4.0.zip -OutFile IronPython.3.4.0.zip
-    PS>Expand-Archive -Path IronPython.3.4.0.zip -DestinationPath IronPython-unzipped
-    PS>./IronPython-unzipped/scripts/Install-IronPython -Path ~/ipyenv/v3.4.0
+    With a one-liner, install latest over the web:
 
-    or with a one-liner
+    PS>& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path ~/ipyenv/v3.4.2
 
-    PS>& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path ~/ipyenv/v3.4.0
-
-    The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.0.
+    The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.2
 
 .EXAMPLE
 
-    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.0/IronPython.3.4.0.zip -OutFile IronPython.3.4.0.zip
-    PS>Install-IronPython -Path ~/ipyenv/v3.4.0 -ZipFile IronPython.3.4.0.zip -Framework net462 -Force
+    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.2/IronPython.3.4.2.zip -OutFile IronPython.3.4.2.zip
+    PS>Expand-Archive -Path IronPython.3.4.2.zip -DestinationPath IronPython-unzipped
+    PS>./IronPython-unzipped/scripts/Install-IronPython -Path ~/ipyenv/v3.4.2
 
-    The official binaries are downloaded from GitHub to the current directory and then the installation proceeds using the downloaded zip file. IronPython is installed into ~/ipyenv/v3.4.0, overwriting any previous installation in that location. IronPython binaries running on .NET Framework 4.6.2 are used during the installation.
+    The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.2
+
+.EXAMPLE
+
+    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.2/IronPython.3.4.2.zip -OutFile IronPython.3.4.2.zip
+    PS>Install-IronPython -Path ~/ipyenv/v3.4.2 -ZipFile IronPython.3.4.2.zip -Framework net462 -Force
+
+    The official binaries are downloaded from GitHub to the current directory and then the installation proceeds using the downloaded zip file. IronPython is installed into ~/ipyenv/v3.4.2, overwriting any previous installation in that location. IronPython binaries running on .NET Framework 4.6.2 are used during the installation.
     This example assumes that the installation script is in a directory on the search path ($env:PATH).
 
 .EXAMPLE

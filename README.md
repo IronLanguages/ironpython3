@@ -121,8 +121,8 @@ $engine = & {
 
     # You need to add the correct paths, as IronPython will use PowerShell's installation path by default
     $paths = $engine.GetSearchPaths()
-    $paths.Add("$(Resolve-Path ".\lib")")
-    $paths.Add("$(Resolve-Path ".\lib\site-packages")")
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.0")")
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.0/site-packages")")
     $engine.SetSearchPaths($paths)
 
     # Then have fun!

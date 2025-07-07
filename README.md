@@ -12,11 +12,13 @@ IronPython 3 targets Python 3, including the re-organized standard library, Unic
 | **What?** | **Where?** |
 | --------: | :------------: |
 | **Windows/Linux/macOS Builds** | [![Build status](https://dotnet.visualstudio.com/IronLanguages/_apis/build/status/ironpython3)](https://dotnet.visualstudio.com/IronLanguages/_build/latest?definitionId=43) [![Github build status](https://github.com/IronLanguages/ironpython3/workflows/CI/badge.svg)](https://github.com/IronLanguages/ironpython3/actions?workflow=CI) |
-| **Downloads** | [![NuGet](https://img.shields.io/nuget/vpre/IronPython.svg)](https://www.nuget.org/packages/IronPython/3.4.0) [![Release](https://img.shields.io/github/release/IronLanguages/ironpython3.svg?include_prereleases)](https://github.com/IronLanguages/ironpython3/releases/latest)|
+| **Downloads** | [![NuGet](https://img.shields.io/nuget/vpre/IronPython.svg)](https://www.nuget.org/packages/IronPython/3.4.2) [![Release](https://img.shields.io/github/release/IronLanguages/ironpython3.svg?include_prereleases)](https://github.com/IronLanguages/ironpython3/releases/latest)|
 | **Help** | [![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython) [![StackExchange](https://img.shields.io/badge/stack%20overflow-ironpython-informational?logo=stack-overflow&logoColor=white)](https://stackoverflow.com/questions/tagged/ironpython) |
 
 
 ## Examples
+
+To see how to use in PowerShell (either directly embedded or executable invocation), skip to [Installation](#Installation)
 
 The following C# program:
 
@@ -87,7 +89,62 @@ See the [Package compatibility](https://github.com/IronLanguages/ironpython3/wik
 
 ## Installation
 
-Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.0). See the [installation document](https://github.com/IronLanguages/ironpython3/wiki/Installing) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
+Binaries of IronPython 3 can be downloaded from the [release page](https://github.com/IronLanguages/ironpython3/releases/latest), available in various formats: `.msi`, `.zip`, `.deb`, `.pkg`. The IronPython package is also available on [NuGet](https://www.nuget.org/packages/IronPython/3.4.2). See the [installation document](https://github.com/IronLanguages/ironpython3/wiki/Installing) for detailed instructions on how to install a standalone IronPython interpreter on various operating systems and .NET frameworks.
+
+### PowerShell
+
+For usage in PowerShell, you can install using the Install-IronPython.ps1 within the aforementioned `.zip` file or by simply using this one-liner:
+
+```pwsh
+& ([scriptblock]::Create((iwr `
+    -Uri 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) `
+    -Path "~/ipyenv/v3.4.2"
+
+# Optionally, ensure pip:
+# & "~/ipyenv/v3.4.2/ipy" -m ensurepip
+```
+
+Once installed, you can start using IronPython directly in PowerShell!
+
+To use the ipy shim, you can use:
+```pwsh
+& "~/ipyenv/v3.4.2/Enter-IronPythonEnvironment.ps1"
+
+ipy -c "print('Hello from IronPython!')"
+```
+
+... or to use IronPython embedded in PowerShell, you can use:
+```pwsh
+Import-Module "~/ipyenv/v3.4.2/IronPython.dll"
+
+$engine = & {
+    $engine = [IronPython.Hosting.Python]::CreateEngine()
+
+    # You need to add the correct paths, as IronPython will use PowerShell's installation path by default
+    $paths = $engine.GetSearchPaths()
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.2/lib")")
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.2/lib/site-packages")")
+
+    # To use `wpf` and `sqlite3` you have to add the DLLs search path
+    # - the [IronPython.SQLite] and [IronPython.WPF] powershell namespaces will become available on python import
+    $paths.Add("$(Resolve-Path "~/ipyenv/v3.4.2/DLLs")")
+
+    # or if you prefer to have the powershell namespaces early, you can use:
+    # - just note, you will have to initialize _sqlite3 (see further down the script)
+    # Import-Module "~/ipyenv/v3.4.2/DLLs/IronPython.SQLite.dll"
+    # Import-Module "~/ipyenv/v3.4.2/DLLs/IronPython.WPF.dll"
+
+    $engine.SetSearchPaths($paths)
+
+    # Then have fun!
+    $engine.Execute("print('Hello from IronPython!')")
+
+    # Optionally, if you need to initialize _sqlite3:
+    # $engine.Execute("import sqlite3")
+
+    return $engine
+}
+```
 
 ## Build
 

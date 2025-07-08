@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,7 +18,7 @@ using Microsoft.Scripting.Utils;
 namespace IronPython.Hosting {
 
     public sealed class PythonOptionsParser : OptionsParser<PythonConsoleOptions> {
-        private List<string> _warningFilters;
+        private List<string>? _warningFilters;
 
         public PythonOptionsParser() {
         }
@@ -205,8 +207,8 @@ namespace IronPython.Hosting {
             }
         }
 
-        protected override void HandleImplementationSpecificOption(string arg, string val) {
-            object frames;
+        protected override void HandleImplementationSpecificOption(string arg, string? val) {
+            object? frames;
             switch (arg) {
                 case "NoFrames":
                     if (LanguageSetup.Options.TryGetValue("Frames", out frames) && frames != ScriptingRuntimeHelpers.False) {

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.ComponentModel;
 
@@ -35,7 +37,7 @@ namespace IronPython.Runtime.Operations {
             return new LookupException(string.Format(format, args));
         }
 
-        public static Exception OSError(string format, params object[] args) {
+        public static Exception OSError(string format, params object?[] args) {
             return new OSException(string.Format(format, args));
         }
 

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,7 +13,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime {
     internal class CompareUtil {
         [ThreadStatic]
-        private static Stack<object> CmpStack;
+        private static Stack<object>? CmpStack;
 
         internal static bool Check(object o) => CmpStack?.Contains(o) ?? false;
 
@@ -27,13 +29,13 @@ namespace IronPython.Runtime {
 
         internal static void Pop(object o) {
             Debug.Assert(CmpStack != null && CmpStack.Count > 0);
-            Debug.Assert(CmpStack.Peek() == o);
+            Debug.Assert(CmpStack!.Peek() == o);
             CmpStack.Pop();
         }
 
         internal static void Pop(object o1, object o2) {
             Debug.Assert(CmpStack != null && CmpStack.Count > 0);
-            Debug.Assert(CmpStack.Peek() is TwoObjects t && t.Equals(new TwoObjects(o1, o2)));
+            Debug.Assert(CmpStack!.Peek() is TwoObjects t && t.Equals(new TwoObjects(o1, o2)));
             CmpStack.Pop();
         }
 
@@ -55,7 +57,7 @@ namespace IronPython.Runtime {
             }
             public override int GetHashCode() => throw new NotSupportedException();
 
-            public override bool Equals(object other) => other is TwoObjects o && o.obj1 == obj1 && o.obj2 == obj2;
+            public override bool Equals(object? other) => other is TwoObjects o && o.obj1 == obj1 && o.obj2 == obj2;
         }
     }
 }

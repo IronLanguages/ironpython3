@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
+#nullable enable
 
 using System;
-using System.Diagnostics;
 using System.Dynamic;
-using Microsoft.Scripting.Actions;
+using System.Linq.Expressions;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Types;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -37,7 +38,7 @@ namespace IronPython.Runtime.Binding {
         internal static MethodCallExpression MakeTryGetTypeMember(PythonContext/*!*/ PythonContext, PythonTypeSlot dts, Expression self, ParameterExpression tmp) {
             return MakeTryGetTypeMember(
                 PythonContext,
-                dts, 
+                dts,
                 tmp,
                 self,
                 Ast.Property(
@@ -96,15 +97,13 @@ namespace IronPython.Runtime.Binding {
         /// TODO: This should be specialized for each callable object
         /// </summary>
         protected static DynamicMetaObject/*!*/ MakeDelegateTarget(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ toType, DynamicMetaObject/*!*/ arg) {
-            Debug.Assert(arg != null);
-
             PythonContext state = PythonContext.GetPythonContext(action);
             CodeContext context = state != null ? state.SharedContext : DefaultContext.Default;
-            
+
             return new DynamicMetaObject(
                 Ast.Convert(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.GetDelegate)),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.GetDelegate))!,
                         AstUtils.Constant(context),
                         arg.Expression,
                         AstUtils.Constant(toType)
@@ -138,6 +137,5 @@ namespace IronPython.Runtime.Binding {
 
             return gma.Name;
         }
-
     }
 }

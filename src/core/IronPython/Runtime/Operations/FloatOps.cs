@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -21,7 +23,7 @@ using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribut
 namespace IronPython.Runtime.Operations {
 
     public static partial class DoubleOps {
-        private static Regex _fromHexRegex;
+        private static Regex? _fromHexRegex;
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls) {
@@ -67,7 +69,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static bool TryToFloat(CodeContext context, object/*?*/ value, out double result) {
+        internal static bool TryToFloat(CodeContext context, object? value, out double result) {
             if (value is double d) {
                 result = d;
             } else if (value is int i) {
@@ -80,7 +82,7 @@ namespace IronPython.Runtime.Operations {
                 result = ed.Value;
             } else if (value is Extensible<BigInteger> ebi) {
                 result = BigIntegerOps.ToDouble(ebi.Value);
-            } else if (PythonOps.TryToIndex(value, out object ireal)) { // Python 3.8: fall back on __index__
+            } else if (PythonOps.TryToIndex(value, out object? ireal)) { // Python 3.8: fall back on __index__
                 result = ireal switch {
                     int ii => ii,
                     BigInteger bii => BigIntegerOps.ToDouble(bii),
@@ -91,7 +93,7 @@ namespace IronPython.Runtime.Operations {
             }
             return true;
 
-            static bool TryInvokeFloat(CodeContext context, object/*?*/ o, out double result) {
+            static bool TryInvokeFloat(CodeContext context, object? o, out double result) {
                 if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__float__", out object retobj)) {
                     switch (retobj) {
                         case double d:
@@ -208,7 +210,7 @@ namespace IronPython.Runtime.Operations {
                             return zeroRes;
                         }
 
-                        return PythonCalls.Call(cls, zeroRes);
+                        return PythonCalls.Call(cls, zeroRes)!;
                     }
                     // integer value is too big, no way we're fitting this in.
                     throw HexStringOverflow();
@@ -313,7 +315,7 @@ namespace IronPython.Runtime.Operations {
                 return res;
             }
 
-            return PythonCalls.Call(cls, res);
+            return PythonCalls.Call(cls, res)!;
         }
 
         private static double? TryParseSpecialFloat(string self) {

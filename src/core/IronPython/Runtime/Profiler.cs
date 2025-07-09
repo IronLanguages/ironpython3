@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using MSAst = System.Linq.Expressions;
 
 using System;
@@ -222,7 +224,7 @@ namespace IronPython.Runtime {
                     tick,
                     Ast.Call(
                         Ast.Constant(this, typeof(Profiler)),
-                        typeof(Profiler).GetMethod(nameof(Profiler.StartCall)),
+                        typeof(Profiler).GetMethod(nameof(Profiler.StartCall))!,
                         AstUtils.Constant(profileIndex)
                     )
                 ),
@@ -231,7 +233,7 @@ namespace IronPython.Runtime {
                 ).Finally(
                     Ast.Call(
                         Ast.Constant(this, typeof(Profiler)),
-                        typeof(Profiler).GetMethod(nameof(Profiler.FinishCall)),
+                        typeof(Profiler).GetMethod(nameof(Profiler.FinishCall))!,
                         AstUtils.Constant(profileIndex),
                         tick
                     )
@@ -245,7 +247,7 @@ namespace IronPython.Runtime {
                     tick,
                     Ast.Call(
                         Ast.Constant(this, typeof(Profiler)),
-                        typeof(Profiler).GetMethod(nameof(Profiler.StartNestedCall)),
+                        typeof(Profiler).GetMethod(nameof(Profiler.StartNestedCall))!,
                         AstUtils.Constant(profileIndex),
                         tick
                     )
@@ -257,7 +259,7 @@ namespace IronPython.Runtime {
                         tick,
                         Ast.Call(
                             Ast.Constant(this, typeof(Profiler)),
-                            typeof(Profiler).GetMethod(nameof(Profiler.FinishNestedCall)),
+                            typeof(Profiler).GetMethod(nameof(Profiler.FinishNestedCall))!,
                             AstUtils.Constant(profileIndex),
                             tick
                         )

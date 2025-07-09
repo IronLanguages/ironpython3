@@ -151,11 +151,7 @@ namespace IronPython.Runtime {
             // we need to manually look up a slot to get the correct behavior when
             // the __missing__ function is declared on a sub-type which is an old-class
             if (GetType() != typeof(PythonDictionary) &&
-                PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default,
-                this,
-                key,
-                "__missing__",
-                out value)) {
+                PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default, this, key, "__missing__", out value)) {
                 return true;
             }
 
@@ -353,8 +349,7 @@ namespace IronPython.Runtime {
         public DictionaryValueView values() => new DictionaryValueView(this);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public void update() {
-        }
+        public void update() { }
 
         public void update(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> other) {
             DictionaryOps.update(context, this, other);
@@ -682,6 +677,11 @@ namespace IronPython.Runtime {
         internal bool TryRemoveValue(object key, out object value) {
             return _storage.TryRemoveValue(ref _storage, key, out value);
         }
+
+        /// <summary>
+        /// If __iter__ is overridden then we should treat the dict as a mapping.
+        /// </summary>
+        internal bool TreatAsMapping => GetType() != typeof(PythonDictionary) && ((Func<object>)__iter__).Method.DeclaringType != typeof(PythonDictionary);
 
         #region Debugger View
 

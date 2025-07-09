@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+
 using Microsoft.Scripting.Hosting.Shell; 
 
 namespace IronPython.Hosting {
@@ -12,7 +15,7 @@ namespace IronPython.Hosting {
 
         public bool SkipImportSite { get; set; }
 
-        public string ModuleToRun { get; set; }
+        public string? ModuleToRun { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether to skip the first line of the code to execute.

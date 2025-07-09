@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 
@@ -198,11 +200,11 @@ namespace IronPython.Hosting {
         /// </summary>
         /// <param name="scope"></param>
         /// <param name="moduleName"></param>
-        public static void ImportModule (this ScriptScope/*!*/ scope, string/*!*/ moduleName) {
-            ContractUtils.RequiresNotNull (scope, nameof(scope));
-            ContractUtils.RequiresNotNull (moduleName, nameof(moduleName));
+        public static void ImportModule(this ScriptScope/*!*/ scope, string/*!*/ moduleName) {
+            ContractUtils.RequiresNotNull(scope, nameof(scope));
+            ContractUtils.RequiresNotNull(moduleName, nameof(moduleName));
 
-            scope.SetVariable (moduleName, scope.Engine.ImportModule (moduleName));
+            scope.SetVariable(moduleName, scope.Engine.ImportModule(moduleName));
         }
 
         /// <summary>
@@ -270,12 +272,12 @@ namespace IronPython.Hosting {
         /// 
         /// The ScriptRuntimeSetup object can then be additional configured and used to create a ScriptRuntime.
         /// </summary>
-        public static ScriptRuntimeSetup/*!*/ CreateRuntimeSetup(IDictionary<string, object> options) {
+        public static ScriptRuntimeSetup/*!*/ CreateRuntimeSetup(IDictionary<string, object>? options) {
             ScriptRuntimeSetup setup = new ScriptRuntimeSetup();
             setup.LanguageSetups.Add(CreateLanguageSetup(options));
 
             if (options != null) {
-                object value;
+                object? value;
                 if (options.TryGetValue("Debug", out value) &&
                     value is bool &&
                     (bool)value) {
@@ -298,7 +300,7 @@ namespace IronPython.Hosting {
         /// The LanguageSetup object can be used with other LanguageSetup objects from other languages to
         /// configure a ScriptRuntimeSetup object.
         /// </summary>
-        public static LanguageSetup/*!*/ CreateLanguageSetup(IDictionary<string, object> options) {
+        public static LanguageSetup/*!*/ CreateLanguageSetup(IDictionary<string, object>? options) {
             var setup = new LanguageSetup(
                 typeof(PythonContext).AssemblyQualifiedName,
                 PythonContext.IronPythonDisplayName,
@@ -360,7 +362,7 @@ namespace IronPython.Hosting {
         }
 
         private static PythonContext/*!*/ GetPythonContext(ScriptEngine/*!*/ engine) {
-            return HostingHelpers.GetLanguageContext(engine) as PythonContext;
+            return (PythonContext)HostingHelpers.GetLanguageContext(engine);
         }
 
         #endregion

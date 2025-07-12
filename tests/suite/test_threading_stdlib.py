@@ -14,7 +14,16 @@ def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_threading)
 
     if is_ironpython:
-        failing_tests = []
+        failing_tests = [
+            test.test_threading.CRLockTests('test_weakref_deleted'), # TypeError: cannot create weak reference to 'RLock' object
+            test.test_threading.CRLockTests('test_weakref_exists'), # TypeError: cannot create weak reference to 'RLock' object
+            test.test_threading.LockTests('test_weakref_deleted'), # TypeError: cannot create weak reference to 'lock' object
+            test.test_threading.LockTests('test_weakref_exists'), # TypeError: cannot create weak reference to 'lock' object
+            test.test_threading.ConditionAsRLockTests('test_weakref_deleted'), # AssertionError
+            test.test_threading.PyRLockTests('test_weakref_deleted'), # AssertionError
+            test.test_threading.ThreadTests('test_main_thread_during_shutdown'), # AssertionError
+            test.test_threading.ThreadingExceptionTests('test_bare_raise_in_brand_new_thread'), # AssertionError: TypeError('exceptions must derive from BaseException',) is not an instance of <class 'RuntimeError'>
+        ]
 
         skip_tests = [
             test.test_threading.SubinterpThreadingTests('test_threads_join'), # ImportError: No module named '_testcapi'

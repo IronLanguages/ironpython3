@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -84,8 +86,7 @@ namespace IronPython.Runtime {
                 kind = fromClass ? MemberKind.Method : MemberKind.Function;
             } else if (value is BuiltinMethodDescriptor || value is Method) {
                 kind = MemberKind.Method;
-            } else if (value is PythonType) {
-                var pt = value as PythonType;
+            } else if (value is PythonType pt) {
                 if (pt.IsSystemType && pt.UnderlyingSystemType.IsEnum) {
                     kind = MemberKind.Enum;
                 } else {

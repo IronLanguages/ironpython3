@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+
 using IronPython.Runtime.Binding;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Generation;
 
 namespace IronPython.Runtime {
     public static partial class Symbols {
@@ -96,7 +97,6 @@ namespace IronPython.Runtime {
             }
         }
 
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         internal static PythonOperationKind OperatorToReverseOperator(PythonOperationKind op) {
             switch (op) {
@@ -115,6 +115,5 @@ namespace IronPython.Runtime {
                     return op | PythonOperationKind.Reversed;
             }
         }
-
     }
 }

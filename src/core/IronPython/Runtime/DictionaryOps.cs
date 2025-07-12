@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -29,8 +27,8 @@ namespace IronPython.Runtime {
         // Dictionary has an odd not-implemented check to support custom dictionaries and therefore
         // needs a custom __eq__ / __ne__ implementation.
 
-        public static string/*!*/ __repr__(CodeContext/*!*/ context, IDictionary<object, object> self) {
-            List<object> infinite = PythonOps.GetAndCheckInfinite(self);
+        public static string/*!*/ __repr__(CodeContext/*!*/ context, IDictionary<object?, object?> self) {
+            List<object>? infinite = PythonOps.GetAndCheckInfinite(self);
             if (infinite == null) {
                 return "{...}";
             }
@@ -41,7 +39,7 @@ namespace IronPython.Runtime {
                 StringBuilder buf = new StringBuilder();
                 buf.Append("{");
                 bool first = true;
-                foreach (KeyValuePair<object, object> kv in self) {
+                foreach (KeyValuePair<object?, object?> kv in self) {
                     if (first) first = false;
                     else buf.Append(", ");
 
@@ -66,7 +64,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object get(PythonDictionary self, object key, object defaultValue = null) {
+        public static object? get(PythonDictionary self, object key, object? defaultValue = null) {
             if (self.TryGetValueNoMissing(key, out object ret)) return ret;
             return defaultValue;
         }
@@ -110,11 +108,11 @@ namespace IronPython.Runtime {
             throw PythonOps.KeyError("dictionary is empty");
         }
 
-        public static object setdefault(PythonDictionary self, object key) {
+        public static object? setdefault(PythonDictionary self, object key) {
             return setdefault(self, key, null);
         }
 
-        public static object setdefault(PythonDictionary self, object key, object defaultValue) {
+        public static object? setdefault(PythonDictionary self, object key, object? defaultValue) {
             if (self.TryGetValueNoMissing(key, out object ret)) return ret;
             self.SetItem(key, defaultValue);
             return defaultValue;
@@ -136,7 +134,7 @@ namespace IronPython.Runtime {
                 while (e.MoveNext()) {
                     self._storage.Add(ref self._storage, e.Key, e.Value);
                 }
-            } else if (PythonOps.TryGetBoundAttr(other, "keys", out object keysFunc)) {
+            } else if (PythonOps.TryGetBoundAttr(other, "keys", out object? keysFunc)) {
                 // user defined dictionary
                 IEnumerator i = PythonOps.GetEnumerator(context, PythonCalls.Call(context, keysFunc));
                 while (i.MoveNext()) {
@@ -160,9 +158,8 @@ namespace IronPython.Runtime {
 
         #region Dictionary Helper APIs
 
-        internal static bool TryGetValueVirtual(CodeContext context, PythonDictionary self, object key, ref object DefaultGetItem, out object value) {
+        internal static bool TryGetValueVirtual(CodeContext context, PythonDictionary self, object key, ref object DefaultGetItem, out object? value) {
             if (self is IPythonObject sdo) {
-                Debug.Assert(sdo != null);
                 PythonType myType = sdo.PythonType;
                 PythonTypeSlot dts;
 

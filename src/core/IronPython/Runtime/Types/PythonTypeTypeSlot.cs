@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
@@ -40,7 +42,7 @@ namespace IronPython.Runtime.Types {
 
             if (!(value is PythonType dt)) throw PythonOps.TypeError("__class__ must be set to a class, not '{0}' object", PythonOps.GetPythonTypeName(value));
 
-            if(dt.UnderlyingSystemType != DynamicHelpers.GetPythonType(instance).UnderlyingSystemType)
+            if (dt.UnderlyingSystemType != DynamicHelpers.GetPythonType(instance).UnderlyingSystemType)
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__class__ assignment", DynamicHelpers.GetPythonType(instance), dt.UnderlyingSystemType);
 
             sdo.SetPythonType(dt);

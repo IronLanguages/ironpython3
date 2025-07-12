@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
@@ -40,7 +43,6 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static PythonList GetMemberNames(CodeContext/*!*/ context, Assembly self) {
-            Debug.Assert(self != null);
             PythonList ret = DynamicHelpers.GetPythonTypeFromType(self.GetType()).GetMemberNames(context);
 
             foreach (object o in GetReflectedAssembly(context, self).Keys) {
@@ -59,10 +61,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static TopNamespaceTracker GetReflectedAssembly(CodeContext/*!*/ context, Assembly assem) {
-            Debug.Assert(assem != null);
             var assemblyMap = GetAssemblyMap(context.LanguageContext as PythonContext);
             lock (assemblyMap) {
-                TopNamespaceTracker reflectedAssembly;
+                TopNamespaceTracker? reflectedAssembly;
                 if (assemblyMap.TryGetValue(assem, out reflectedAssembly))
                     return reflectedAssembly;
 
@@ -73,5 +74,5 @@ namespace IronPython.Runtime.Operations {
                 return reflectedAssembly;
             }
         }
-    }   
+    }
 }

@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
+#nullable enable
 
-using System;
 using System.Dynamic;
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Linq.Expressions;
 
 using IronPython.Runtime.Operations;
 
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -31,7 +30,7 @@ namespace IronPython.Runtime.Binding {
             return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object? obj) {
             if (!(obj is PythonSetSliceBinder ob)) {
                 return false;
             }
@@ -51,7 +50,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression/*!*/ CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSetSliceBinder)),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSetSliceBinder))!,
                 BindingHelpers.CreateBinderStateExpression()
             );
         }

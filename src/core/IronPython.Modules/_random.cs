@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Numerics;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_random", typeof(IronPython.Modules.PythonRandom))]
@@ -19,7 +22,7 @@ namespace IronPython.Modules {
         public class Random {
             private RandomGen _rnd;
 
-            public Random(object seed = null) {
+            public Random(object? seed = null) {
                 this.seed(seed);
             }
 
@@ -57,7 +60,8 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void seed(object s = null) {
+            [MemberNotNull(nameof(_rnd))]
+            public void seed(object? s = null) {
                 int newSeed;
                 switch (s) {
                     case null:
@@ -79,7 +83,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void setstate(PythonTuple state) {
+            public void setstate([NotNone] PythonTuple state) {
                 if (state.Count != 58) throw PythonOps.ValueError("state vector is the wrong size");
                 var stateArray = state._data.Cast<int>().ToArray();
                 lock (this) {

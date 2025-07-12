@@ -97,4 +97,22 @@ class StructTest(unittest.TestCase):
         # struct.error: iterative unpacking requires a buffer of a multiple of {N} bytes
         self.assertRaises(struct.error, struct.iter_unpack, "h", b"\0")
 
+
+    def test_sizes(self):
+        # test sizes of standard struct types
+        for mode in ('<', '>', '=', '!'):
+            self.assertEqual(struct.calcsize(mode + 'b'), 1)
+            self.assertEqual(struct.calcsize(mode + 'B'), 1)
+            self.assertEqual(struct.calcsize(mode + 'h'), 2)
+            self.assertEqual(struct.calcsize(mode + 'H'), 2)
+            self.assertEqual(struct.calcsize(mode + 'i'), 4)
+            self.assertEqual(struct.calcsize(mode + 'I'), 4)
+            self.assertEqual(struct.calcsize(mode + 'l'), 4)
+            self.assertEqual(struct.calcsize(mode + 'L'), 4)
+            self.assertEqual(struct.calcsize(mode + 'q'), 8)
+            self.assertEqual(struct.calcsize(mode + 'Q'), 8)
+            self.assertEqual(struct.calcsize(mode + 'f'), 4)
+            self.assertEqual(struct.calcsize(mode + 'd'), 8)
+
+
 run_test(__name__)

@@ -74,21 +74,15 @@ def gen_typecache_storage(cw):
             types[x.typeType] = [x]
     for type in types:        
         for a_type in types[type]:
-            cw.write('private static %s %s;' % (type, a_type.name))
+            cw.write('private static %s? %s;' % (type, a_type.name))
     
 # outputs the public getters for each cached type    
 def gen_typecache(cw):
     for x in data:
-        cw.enter_block("public static %s %s" % (x.typeType, x.entryName))
-        cw.enter_block("get")
-        
-        if x.typeType != 'PythonType': cast = '(%s)' % x.typeType
-        else: cast = ""
-        
-        cw.write("if (%s == null) %s = %sDynamicHelpers.GetPythonTypeFromType(typeof(%s));" % (x.name, x.name, cast, x.type))
-        cw.write("return %s;" % x.name)
-        cw.exit_block()
-        cw.exit_block()
+        cw.write("public static %s %s" % (x.typeType, x.entryName))
+        cw.indent()
+        cw.write("=> %s ??= DynamicHelpers.GetPythonTypeFromType(typeof(%s));" % (x.name, x.type))
+        cw.dedent()
         cw.write("")
 
 def main():

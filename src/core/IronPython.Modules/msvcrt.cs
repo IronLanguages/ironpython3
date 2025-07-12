@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_NATIVE
 
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Reflection;
@@ -68,7 +71,7 @@ to os.fdopen() to create a file object.
             return context.LanguageContext.FileManager.Add(new(stream));
         }
 
-        private static bool TryGetFileHandle(Stream stream, out object handle) {
+        private static bool TryGetFileHandle(Stream stream, [NotNullWhen(true)] out object? handle) {
             if (stream is FileStream) {
                 handle = ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
                 return true;
@@ -98,7 +101,7 @@ if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
             var sbox = context.LanguageContext.FileManager.GetStreams(fd);
 
-            object handle;
+            object? handle;
             if (TryGetFileHandle(sbox.ReadStream, out handle)) return handle;
 
             return -1;

@@ -90,7 +90,7 @@ class TermiosTest(unittest.TestCase):
         self.verify_flags(action, action_values)
 
 
-    def test_cc(self):
+    def test_cc_v(self):
         if is_osx:
             cc = ["VEOF", "VEOL", "VEOL2", "VERASE", "VWERASE", "VKILL", "VREPRINT", "VINTR", "VQUIT", "VSUSP", "VSTART", "VSTOP", "VLNEXT", "VDISCARD", "VMIN", "VTIME", "NCCS"]
             cc_values = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 16, 17, 20]
@@ -98,6 +98,15 @@ class TermiosTest(unittest.TestCase):
             cc = ["VEOF", "VEOL", "VEOL2", "VERASE", "VWERASE", "VKILL", "VREPRINT", "VINTR", "VQUIT", "VSUSP", "VSTART", "VSTOP", "VLNEXT", "VDISCARD", "VMIN", "VTIME", "VSWTC", "NCCS"]
             cc_values = [4, 11, 16, 2, 14, 3, 12, 0, 1, 10, 8, 9, 15, 13, 6, 5, 7, 32]
         self.verify_flags(cc, cc_values)
+
+
+    def test_cc_c(self):
+        cc = ["CINTR", "CEOF", "CEOT", "CFLUSH", "CSTART", "CSTOP", "CKILL", "CLNEXT", "CWERASE", "CDSUSP", "CSUSP", "CQUIT", "CERASE", "CEOL"]
+        cc_codes = [0x03, 0x04, 0x04, 0x0F, 0x11, 0x13, 0x15, 0x16, 0x17, 0x19, 0x1A, 0x1C, 0x7F, 0x00]
+        if is_osx:
+            cc_codes[-1] = 0xFF  # CEOL is not standard
+        self.verify_flags(cc, cc_codes)
+
 
     def test_baud_rates(self):
         rates = ["B0", "B50", "B75", "B110", "B134", "B150", "B200", "B300", "B600", "B1200", "B1800", "B2400", "B4800", "B9600", "B19200", "B38400", "B57600", "B115200", "B230400"]

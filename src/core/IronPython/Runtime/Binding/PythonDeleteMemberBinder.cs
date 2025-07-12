@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
+using System.Dynamic;
 using System.Linq.Expressions;
 
-using System;
-using Microsoft.Scripting;
-using System.Dynamic;
-using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -30,7 +28,7 @@ namespace IronPython.Runtime.Binding {
             _context = context;
         }
 
-        public override DynamicMetaObject FallbackDeleteMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
+        public override DynamicMetaObject FallbackDeleteMember(DynamicMetaObject self, DynamicMetaObject? errorSuggestion) {
             if (self.NeedsDeferral()) {
                 return Defer(self);
             }
@@ -48,7 +46,7 @@ namespace IronPython.Runtime.Binding {
             return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object? obj) {
             if (!(obj is PythonDeleteMemberBinder ob)) {
                 return false;
             }
@@ -64,7 +62,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeDeleteAction)),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeDeleteAction))!,
                 BindingHelpers.CreateBinderStateExpression(),
                 AstUtils.Constant(Name)
             );

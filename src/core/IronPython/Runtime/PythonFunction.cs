@@ -139,7 +139,7 @@ namespace IronPython.Runtime {
             get {
                 if (_defaults.Length == 0) return null;
 
-                return new PythonTuple(_defaults);
+                return new PythonTuple(DefaultContext.Default, _defaults);
             }
             set {
                 _defaults = value == null ? [] : value.ToArray();
@@ -222,11 +222,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object __call__(CodeContext/*!*/ context, params object[] args) {
+        public object __call__(CodeContext/*!*/ context, [NotNone] params object[] args) {
             return PythonCalls.Call(context, this, args);
         }
 
-        public object __call__(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict, params object[] args) {
+        public object __call__(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) {
             return PythonCalls.CallWithKeywordArgs(context, this, args, dict);
         }
 

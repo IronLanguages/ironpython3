@@ -13,12 +13,10 @@ using IronPython.Runtime.Types;
 [assembly: PythonModule("audioop", typeof(IronPython.Modules.PythonAudioOp))]
 namespace IronPython.Modules {
     public static class PythonAudioOp {
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("audiooperror", dict, "error", "audioop");
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
 
         private static PythonType error(CodeContext/*!*/ context) => (PythonType)context.LanguageContext.GetModuleState("audiooperror");
 

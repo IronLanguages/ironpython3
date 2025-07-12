@@ -438,7 +438,7 @@ namespace IronPython.Runtime.Operations {
 
                 IEnumerator ie = PythonOps.GetEnumerator(bases);
                 while (ie.MoveNext()) {
-                    if (!(ie.Current is PythonType baseType)) continue;
+                    if (ie.Current is not PythonType baseType) continue;
                     if (c.IsSubclassOf(baseType)) return true;
                 }
                 return false;
@@ -821,6 +821,11 @@ namespace IronPython.Runtime.Operations {
             throw TypeErrorForUnIndexableObject(o);
         }
 
+        internal static BigInteger ToIndex(object? o) {
+            if (TryToIndex(o, out BigInteger index)) return index;
+            throw TypeErrorForUnIndexableObject(o);
+        }
+
         internal static bool TryToIndex(object? o, [NotNullWhen(true)] out object? index) {
             var context = DefaultContext.Default;
 
@@ -869,6 +874,26 @@ namespace IronPython.Runtime.Operations {
             }
 
             index = default;
+            return false;
+        }
+
+        // This method is like `TryToIndex` but it additionally supports objects with `__int__`,
+        // which is expected for Python 3.7- and is supported until Python 3.10.
+        internal static bool TryToInt(object? o, out BigInteger res) {
+            if (TryToIndex(o, out res)) {
+                // supported since Python 3.8
+                return true;
+            }
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__int__", out object objres)) {
+                // warning since Python 3.8, unsupported in 3.10
+                res = objres switch {
+                    int i => i,
+                    BigInteger bi => bi,
+                    Extensible<BigInteger> ebi => ebi.Value,
+                    _ => throw TypeError("__int__ returned non-int (type {0})", PythonOps.GetPythonTypeName(objres))
+                };
+                return true;
+            }
             return false;
         }
 
@@ -975,7 +1000,7 @@ namespace IronPython.Runtime.Operations {
                 List<object?> largs;
 
                 if (argsTuple != null && args.Length == names.Length) {
-                    if (!(argsTuple is PythonTuple tuple)) tuple = new PythonTuple(argsTuple);
+                    if (!(argsTuple is PythonTuple tuple)) tuple = new PythonTuple(DefaultContext.Default, argsTuple);
 
                     largs = new List<object?>(tuple);
                     largs.AddRange(args);
@@ -1000,6 +1025,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        [Obsolete("Use PythonCalls.Call")]
         public static object? CallWithArgsTuple(object func, object?[] args, object argsTuple) {
             if (argsTuple is PythonTuple tp) {
                 object?[] nargs = new object[args.Length + tp.__len__()];
@@ -1010,7 +1036,7 @@ namespace IronPython.Runtime.Operations {
 
             PythonList allArgs = new PythonList(args.Length + 10);
             allArgs.AddRange(args);
-            IEnumerator e = PythonOps.GetEnumerator(argsTuple);
+            IEnumerator e = PythonOps.GetEnumerator(DefaultContext.Default, argsTuple);
             while (e.MoveNext()) allArgs.AddNoLock(e.Current);
 
             return PythonCalls.Call(func, allArgs.GetObjectArray());
@@ -1788,7 +1814,7 @@ namespace IronPython.Runtime.Operations {
         /// LIST_TO_TUPLE
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static PythonTuple ListToTuple(PythonList list) => new PythonTuple(list);
+        public static PythonTuple ListToTuple(PythonList list) => new PythonTuple(DefaultContext.Default, list);
 
         /// <summary>
         /// SET_ADD

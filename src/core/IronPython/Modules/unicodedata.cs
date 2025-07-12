@@ -39,12 +39,10 @@ namespace IronPython.Modules {
 
         public static string unidata_version => ucd.unidata_version;
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IDictionary/*!*/ dict) {
             EnsureInitialized();
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
 
         /// <summary>
         /// Ensures that the modules is initialized so that static methods don't throw.

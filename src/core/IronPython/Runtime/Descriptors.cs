@@ -116,9 +116,9 @@ namespace IronPython.Runtime {
 
         public PythonProperty() { }
 
-        public PythonProperty(params object[] args) { }
+        public PythonProperty([NotNone] params object[] args) { }
 
-        public PythonProperty([ParamDictionary] IDictionary<object, object> dict, params object[] args) { }
+        public PythonProperty([ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) { }
 
         public void __init__(object fget = null, object fset = null, object fdel = null, object doc = null) {
             _fget = fget; _fset = fset; _fdel = fdel; _doc = doc;

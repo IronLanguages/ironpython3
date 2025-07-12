@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
+#nullable enable
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Dynamic;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Actions.Calls;
-using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -32,7 +24,7 @@ namespace IronPython.Runtime.Binding {
             _context = context;
         }
 
-        public override DynamicMetaObject/*!*/ FallbackInvoke(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject errorSuggestion) {
+        public override DynamicMetaObject/*!*/ FallbackInvoke(DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args, DynamicMetaObject? errorSuggestion) {
             if (target.Value is IDynamicMetaObjectProvider && errorSuggestion == null) {
                 // try creating an instance...
                 return target.BindCreateInstance(
@@ -51,7 +43,7 @@ namespace IronPython.Runtime.Binding {
             return InvokeFallback(target, args, BindingHelpers.CallInfoToSignature(CallInfo), errorSuggestion);
         }
 
-        internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig, DynamicMetaObject errorSuggestion) {
+        internal DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallSignature sig, DynamicMetaObject? errorSuggestion) {
             return
                 PythonProtocol.Call(this, target, args) ??
                 Context.Binder.Create(sig, target, args, AstUtils.Constant(_context.SharedContext)) ??
@@ -62,7 +54,7 @@ namespace IronPython.Runtime.Binding {
             return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object? obj) {
             if (!(obj is CompatibilityInvokeBinder ob)) {
                 return false;
             }

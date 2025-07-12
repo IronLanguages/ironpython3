@@ -239,10 +239,10 @@ namespace IronPython.SQLite
                                     (bool?)null
                                 };
 
-                                new_description[i] = new PythonTuple(descriptor);
+                                new_description[i] = new PythonTuple(DefaultContext.Default, descriptor);
                             }
 
-                            this.description = new PythonTuple(new_description);
+                            this.description = new PythonTuple(DefaultContext.Default, new_description);
                         }
                     }
 
@@ -362,7 +362,7 @@ namespace IronPython.SQLite
                     row[i] = converted;
                 }
 
-                return new PythonTuple(row);
+                return new PythonTuple(DefaultContext.Default, row);
             }
 
             public Cursor executescript(string operation)

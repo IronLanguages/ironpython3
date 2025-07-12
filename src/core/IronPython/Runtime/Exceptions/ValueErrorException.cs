@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -16,9 +18,9 @@ namespace IronPython.Runtime.Exceptions {
 
     [Serializable]
     public class ValueErrorException : ArgumentException, IPythonAwareException {
-        private PythonExceptions.BaseException _pyExceptionObject;
-        private List<DynamicStackFrame> _frames;
-        private TraceBack _traceback;
+        private PythonExceptions.BaseException? _pyExceptionObject;
+        private List<DynamicStackFrame>? _frames;
+        private TraceBack? _traceback;
 
         public ValueErrorException() : base() { }
         public ValueErrorException(string msg) : base(msg) { }
@@ -36,22 +38,21 @@ namespace IronPython.Runtime.Exceptions {
         }
 #endif
 
-        PythonExceptions.BaseException IPythonAwareException.PythonException {
+        PythonExceptions.BaseException? IPythonAwareException.PythonException {
             get { return _pyExceptionObject; }
             set { _pyExceptionObject = value; }
         }
 
-        List<DynamicStackFrame> IPythonAwareException.Frames {
+        List<DynamicStackFrame>? IPythonAwareException.Frames {
             get { return _frames; }
             set { _frames = value; }
         }
 
-        TraceBack IPythonAwareException.TraceBack {
+        TraceBack? IPythonAwareException.TraceBack {
             get { return _traceback; }
             set { _traceback = value; }
         }
     }
-
 
     // *** END GENERATED CODE ***
 

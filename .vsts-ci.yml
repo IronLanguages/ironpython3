@@ -18,7 +18,7 @@ jobs:
   displayName: Linux (Ubuntu)
   timeoutInMinutes: 180
   pool:
-    vmImage: ubuntu-latest
+    vmImage: ubuntu-22.04
   steps:
   - template: eng/steps.yml
     parameters:

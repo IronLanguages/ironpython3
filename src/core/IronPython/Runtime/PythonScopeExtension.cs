@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
+
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 using Microsoft.Scripting.Runtime;
@@ -18,7 +20,7 @@ namespace IronPython.Runtime {
     internal class PythonScopeExtension : ScopeExtension {
         private readonly ModuleContext _modContext;
         private readonly PythonModule _module;
-        private Dictionary<object, object> _objectKeys;
+        private Dictionary<object, object>? _objectKeys;
 
         public PythonScopeExtension(PythonContext context, Scope scope) : base(scope) {
             _module = new PythonModule(context, scope);
@@ -43,6 +45,7 @@ namespace IronPython.Runtime {
             }
         }
 
+        [MemberNotNull(nameof(_objectKeys))]
         public Dictionary<object, object> EnsureObjectKeys() {
             if (_objectKeys == null) {
                 Interlocked.CompareExchange(ref _objectKeys, new Dictionary<object, object>(), null);
@@ -51,7 +54,7 @@ namespace IronPython.Runtime {
             return _objectKeys;
         }
 
-        public Dictionary<object, object> ObjectKeys {
+        public Dictionary<object, object>? ObjectKeys {
             get {
                 return _objectKeys;
             }

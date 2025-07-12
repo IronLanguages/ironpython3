@@ -57,7 +57,7 @@ namespace IronPython.Runtime {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext context, [NotNone] PythonType cls, [ParamDictionary, NotNone] IDictionary<object, object> dict, [NotNone] params object[] args) {
+        public static object __new__(CodeContext context, [NotNone] PythonType cls, [ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) {
             if (cls == TypeCache.ByteArray) return new ByteArray();
             return cls.CreateInstance(context);
         }
@@ -585,8 +585,8 @@ namespace IronPython.Runtime {
         /// in the sequence seq. The separator between elements is the 
         /// string providing this method
         /// </summary>
-        public ByteArray join(object? iterable) {
-            IEnumerator seq = PythonOps.GetEnumerator(iterable);
+        public ByteArray join(CodeContext context, object? iterable) {
+            IEnumerator seq = PythonOps.GetEnumerator(context, iterable);
             if (!seq.MoveNext()) {
                 return new ByteArray();
             }
@@ -1079,7 +1079,7 @@ namespace IronPython.Runtime {
 
         private string Repr() {
             lock (this) {
-                return "bytearray(" + _bytes.BytesRepr() + ")";
+                return PythonOps.GetPythonTypeName(this) +  "(" + _bytes.BytesRepr() + ")";
             }
         }
 
@@ -1584,7 +1584,7 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
 
-        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError) {
             return _bytes.GetBuffer(this, "B", flags);
         }
 

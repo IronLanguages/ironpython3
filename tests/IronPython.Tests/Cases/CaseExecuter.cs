@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -17,6 +18,7 @@ using IronPython;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
@@ -289,7 +291,9 @@ namespace IronPythonTest.Cases {
                 engine.GetSysModule().SetVariable("argv", PythonList.FromArrayNoCopy(new object[] { source.Path }));
                 var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
 
-                int res = 0;
+                ExceptionDispatchInfo exceptionInfo = null;
+
+                int res = -1;
                 int maxStackSize = 2 * 1024 * 1024; // 2 MiB
                 var thread = new Thread(() => {
                     try {
@@ -300,6 +304,13 @@ namespace IronPythonTest.Cases {
                         #pragma warning disable SYSLIB0006 // 'Thread.ResetAbort is not supported and throws PlatformNotSupportedException.' 
                         Thread.ResetAbort();
                         #pragma warning restore SYSLIB0006
+                    } catch (Exception ex) {
+                        if (ex.GetPythonException() is object pex && DynamicHelpers.GetPythonType(pex).Name == "SkipTest") {
+                            NUnit.Framework.TestContext.Progress.WriteLine($"Test {testcase.Name} skipped: {pex}");
+                            res = 0;
+                        } else {
+                            exceptionInfo = ExceptionDispatchInfo.Capture(ex);
+                        }
                     }
                 }, maxStackSize) {
                     IsBackground = true
@@ -316,6 +327,9 @@ namespace IronPythonTest.Cases {
                     NUnit.Framework.TestContext.Error.WriteLine($"{testcase.Name} timed out after {testcase.Options.Timeout / 1000.0} seconds.");
                     return -1;
                 }
+
+                exceptionInfo?.Throw();
+
                 return res;
             } finally {
                 Environment.CurrentDirectory = cwd;

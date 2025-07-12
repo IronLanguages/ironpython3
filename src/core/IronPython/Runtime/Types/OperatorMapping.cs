@@ -1,6 +1,12 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+#nullable enable
+
+using System;
 using System.Collections.Generic;
-using System.Text;
+
 using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime.Types {
@@ -13,7 +19,7 @@ namespace IronPython.Runtime.Types {
         private readonly PythonOperationKind _operator;
         private readonly string _name;
 
-        private OperatorMapping(PythonOperationKind op, string name, string altName, Type alternateExpectedType = null) {
+        private OperatorMapping(PythonOperationKind op, string name, string? altName, Type? alternateExpectedType = null) {
             _operator = op;
             _name = name;
             AlternateName = altName;
@@ -23,14 +29,14 @@ namespace IronPython.Runtime.Types {
         /// <summary>
         /// Given an operator returns the OperatorMapping associated with the operator or null
         /// </summary>
-        public static OperatorMapping GetOperatorMapping(PythonOperationKind op) {
+        public static OperatorMapping? GetOperatorMapping(PythonOperationKind op) {
             foreach (OperatorMapping info in _infos) {
                 if (info._operator == op) return info;
             }
             return null;
         }
 
-        public static OperatorMapping GetOperatorMapping(string name) {
+        public static OperatorMapping? GetOperatorMapping(string name) {
             foreach (OperatorMapping info in _infos) {
                 if (info.Name == name || info.AlternateName == name) {
                     return info;
@@ -58,14 +64,14 @@ namespace IronPython.Runtime.Types {
         /// Gets the secondary method name associated with the method. This method name is
         /// usually a standard .NET method name with pascal casing (e.g. Add).
         /// </summary>
-        public string AlternateName { get; }
+        public string? AlternateName { get; }
 
         /// <summary>
         /// Gets the return type that must match for the alternate operator to be valid.
         /// This is available alternate operators don't have special names and therefore
         /// could be confused for a normal method which isn't fulfilling the contract.
         /// </summary>
-        public Type AlternateExpectedType { get; }
+        public Type? AlternateExpectedType { get; }
 
         private static OperatorMapping[] MakeOperatorTable() {
             List<OperatorMapping> res = new List<OperatorMapping>();
@@ -109,7 +115,7 @@ namespace IronPython.Runtime.Types {
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceBitwiseAnd, "op_BitwiseAndAssignment", "InPlaceBitwiseAnd"));     // &=
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceBitwiseOr, "op_BitwiseOrAssignment", "InPlaceBitwiseOr"));      // |=
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceTrueDivide, "op_DivisionAssignment", "InPlaceDivide"));         // /=
-            
+
             // these exist just for TypeInfo to map by name
             res.Add(new OperatorMapping(PythonOperationKind.GetItem, "get_Item", "GetItem"));        // not defined
             res.Add(new OperatorMapping(PythonOperationKind.SetItem, "set_Item", "SetItem"));        // not defined

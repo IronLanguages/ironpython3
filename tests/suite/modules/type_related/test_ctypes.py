@@ -6,17 +6,49 @@
 Tests for CPython's ctypes module.
 '''
 
+import _ctypes
 from ctypes import *
 from array import array
+from struct import calcsize
 import sys
 import gc
 import unittest
+from decimal import Decimal
 
-from iptest import IronPythonTestCase, is_posix, is_cli, is_mono, big, myint, run_test
+from iptest import IronPythonTestCase, is_posix, is_windows, is_cli, is_32, is_mono, is_netcoreapp, big, myint
+
+class MyInt:
+    def __init__(self, value):
+        self.value = value
+    def __int__(self):
+        return self.value
+
+class MyIndex:
+    def __init__(self, value):
+        self.value = value
+    def __index__(self):
+        return self.value
+
+class MyIntIndex:
+    def __init__(self, intValue, indexValue):
+        self.intValue = intValue
+        self.indexValue = indexValue
+    def __int__(self):
+        return self.intValue
+    def __index__(self):
+        return self.indexValue
+
 
 class CTypesTest(IronPythonTestCase):
     export_error_msg = "Existing exports of data: object cannot be re-sized" if is_cli else "cannot resize an array that is exporting buffers"
     readonly_error_msg = "underlying buffer is not writable"
+
+    def check_bitfield(self, bitfield, fieldtype, offset, bitoffset, bitwidth):
+        self.assertEqual(repr(bitfield), "<Field type={}, ofs={}:{}, bits={}>".format(fieldtype.__name__, offset, bitoffset, bitwidth))
+        self.assertEqual(bitfield.offset, offset)
+        self.assertEqual(bitfield.size & 0xffff, bitoffset)
+        self.assertEqual(bitfield.size >> 16, bitwidth)
+
 
     def test_from_array(self):
         arr = array('i', range(16))
@@ -154,13 +186,7 @@ class CTypesTest(IronPythonTestCase):
         class Test(Structure):
             _fields_ = [("x", c_bool, 1)]
 
-        class myindex:
-            def __init__(self, value):
-                self.value = value
-            def __index__(self):
-                return self.value
-
-        for val in (None, "", "False", "True", "0", "1", 0, 1, 2, 0.0, 1.0, [], (), {}, object(), myindex(0), myindex(1)):
+        for val in (None, "", "False", "True", "0", "1", 0, 1, 2, 0.0, 1.0, [], (), {}, object(), MyIndex(0), MyIndex(1)):
             with self.subTest(val=val):
                 self.assertIs(Test(val).x, bool(val))
 
@@ -168,41 +194,37 @@ class CTypesTest(IronPythonTestCase):
                 s.x = val
                 self.assertIs(s.x, bool(val))
 
-    def test_bitfield_long(self):
-        """Tests for bitfields of type c_long"""
+    def test_bitfield_int(self):
+        """Tests for bitfields of type c_int"""
 
         class Test(Structure):
-            _fields_ = [("x", c_long, 16), ("y", c_long, 16), ("z", c_long, 32)]
-
-        class myindex:
-            def __init__(self, value):
-                self.value = value
-            def __index__(self):
-                return self.value
+            _fields_ = [("x", c_int, 16), ("y", c_int, 16), ("z", c_int, 32)]
 
         self.assertEqual(Test(0x1234).x, 0x1234)
         self.assertEqual(Test(big(0x1234)).x, 0x1234)
         self.assertEqual(Test(myint(0x1234)).x, 0x1234)
         self.assertEqual(Test(True).x, 1)
         if is_cli or sys.version_info >= (3, 8):
-            self.assertEqual(Test(myindex(0x1234)).x, 0x1234)
+            self.assertEqual(Test(MyIndex(0x1234)).x, 0x1234)
             if is_cli or sys.version_info >= (3, 10):
                 msg = "'float' object cannot be interpreted as an integer"
             else:
                 msg = "int expected instead of float"
             self.assertRaisesMessage(TypeError, msg, Test, 2.3)
 
-        with self.assertRaisesMessage(ValueError, "number of bits invalid for bit field"):
+        with self.assertRaisesRegex(ValueError, "^number of bits invalid for bit field"):
             class Test(Structure):
                 _fields_ = [("x", c_int, 0)]
-
-        self.assertEqual(repr(Test.x), "<Field type=c_long, ofs=0:0, bits=16>")
-        self.assertEqual(repr(Test.y), "<Field type=c_long, ofs=0:16, bits=16>")
-        self.assertEqual(repr(Test.z), "<Field type=c_long, ofs=4:0, bits=32>")
+        # if c_long and c_int are the same size, c_long is used
+        typename = "c_long" if calcsize('l') == calcsize('i') else "c_int"
+        self.assertEqual(repr(Test.x), "<Field type={}, ofs=0:0, bits=16>".format(typename))
+        self.assertEqual(repr(Test.y), "<Field type={}, ofs=0:16, bits=16>".format(typename))
+        self.assertEqual(repr(Test.z), "<Field type={}, ofs=4:0, bits=32>".format(typename))
 
         self.assertEqual((Test.x.offset, Test.x.size), (0, (16 << 16) + 0))
         self.assertEqual((Test.y.offset, Test.y.size), (0, (16 << 16) + 16))
         self.assertEqual((Test.z.offset, Test.z.size), (4, (32 << 16) + 0))
+
 
     def test_bitfield_longlong(self):
         """Tests for bitfields of type c_longlong"""
@@ -223,6 +245,715 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual(TestU(-(1 << 64)).x, 0)
         self.assertEqual(TestU(-(1 << 64) - 1).x, 0x7fffffffffffffff)
 
+
+    @unittest.skipUnless(is_cli, "packed bitfields canary")
+    def test_bitfield_mixed_packed_check(self):
+        with self.assertRaises(NotImplementedError):
+            # This test will fail when packed bitfields become supported
+            # In this case, delete this test and re-enable:
+            # * test_bitfield_mixed_E_packed
+            # * test_bitfield_mixed_G4_packed
+            class Test(Structure):
+                _pack_ = 1
+                _fields_ = [
+                    ("a", c_int, 10),
+                    ("b", c_int, 20),
+                ]
+
+
+    @unittest.skipIf(is_32 and is_posix, "assumes 64-bit long on POSIX")
+    def test_bitfield_mixed_B(self):
+        """
+        struct B   // GCC: 8, MSVC: 24
+        {
+            long long a : 3;        // GCC, MSVC: 0 (0:0)
+            int b : 4;              // GCC: 3 (0:3) (fits in the same container as a)
+                                    // MSVC: 64 (8:0) (different type than a)
+            unsigned int c : 1;     // GCC: 7 (0:7) (fits in the same container as a)
+                                    // MSVC: 68 (8:4) (different type than b but same size and alignment)
+            long d : 5;             // GCC: 8 (1:0) (fits in the same container as a)
+                                    // MSVC: 69 (8:5) (different type than c, but same size and alignment)
+            long long e : 5;        // GCC: 13 (1:5) (fits in the same container as a)
+                                    // MSVC: 128 (16:0) (different type than d)
+            long long f : 1;        // GCC: 18 (2:2) (fits in the same container as a)
+                                    // MSVC: 133 (16:5) (fits in the same container as e)
+            ssize_t g : 2;          // GCC: 19 (2:3) (fits in the same container as a)
+                                    // MSVC: 134 (16:6) (equivalent type, fits in the same container as e)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 3),
+                ("b", c_int, 4),
+                ("c", c_uint, 1),
+                ("d", c_long, 5),
+                ("e", c_longlong, 5),
+                ("f", c_longlong, 1),
+                ("g", c_ssize_t, 2),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.b, c_int, 0, 3, 4)
+                self.check_bitfield(Test.c, c_uint, 0, 7, 1)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_int, 4, 3, 4)
+                self.check_bitfield(Test.c, c_uint, 4, 7, 1)
+            self.check_bitfield(Test.d, c_long, 0, 8, 5)
+            self.check_bitfield(Test.e, c_longlong, 0, 13, 5)
+            self.check_bitfield(Test.f, c_longlong, 0, 18, 1)
+            self.check_bitfield(Test.g, c_ssize_t, 0, 19, 2)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_int, 8, 0, 4)
+            self.check_bitfield(Test.c, c_uint, 8, 4, 1)
+            self.check_bitfield(Test.d, c_long, 8, 5, 5)
+            self.check_bitfield(Test.e, c_longlong, 16, 0, 5)
+            self.check_bitfield(Test.f, c_longlong, 16, 5, 1)
+            self.check_bitfield(Test.g, c_ssize_t, 16, 6, 2)
+            self.assertEqual(sizeof(Test), 24)
+
+
+    def test_bitfield_mixed_C(self):
+        """
+        struct C   // GCC: 8, MSVC: 8
+        {
+            int x;
+            wchar_t a : 2;          // GCC, MSVC: 32 (4:0)
+            unsigned short b : 3;   // GCC: 34 (4:2) (fits in the same container as a)
+                                    // MSVC: 34 (4:2) (equivalent type, fits in the same container as a)
+            wchar_t c : 1;          // GCC: 37 (4:5) (fits in the same container as a)
+                                    // MSVC: 37 (4:5) (equivalent type, fits in the same container as a)
+            unsigned short d : 5;   // GCC: 38 (4:6) (fits in the same container as a)
+                                    // MSVC: 38 (4:6) (equivalent type, fits in the same container as a)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("x", c_int),
+                ("a", c_short, 2),
+                ("b", c_ushort, 3),
+                ("c", c_short, 1),
+                ("d", c_ushort, 5),
+            ]
+
+        self.check_bitfield(Test.a, c_short, 4, 0, 2)
+        self.check_bitfield(Test.b, c_ushort, 4, 2, 3)
+        self.check_bitfield(Test.c, c_short, 4, 5, 1)
+        self.check_bitfield(Test.d, c_ushort, 4, 6, 5)
+        self.assertEqual(sizeof(Test), 8)
+
+
+    @unittest.skipIf(is_32 and is_posix, "assumes 64-bit long on POSIX")
+    def test_bitfield_mixed_D1(self):
+        """
+        struct D1  // GCC: 8, MSVC: 8
+        {
+            long a : 3;     // GCC, MSVC: 0 (0:0)
+            int b : 30;     // GCC: 32 (4:0) (doesn't fit in the same container as a)
+                            // MSVC: 32 (4:0) (same type but doesn't fit in the same container as a)
+            long c : 2;     // GCC: 62 (7:6) (fits in the same container as a)
+                            // MSVC: 62 (7:6) (fits in the same container as b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_long, 3),
+                ("b", c_int, 30),
+                ("c", c_long, 2),
+            ]
+
+        self.check_bitfield(Test.a, c_long, 0, 0, 3)
+        if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+            self.check_bitfield(Test.b, c_int, 4, 0, 30)
+        else: # bug in CPython
+            self.check_bitfield(Test.b, c_int, 4, 3, 30)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.c, c_long, 0, 62, 2)
+            else: # bug in CPython
+                self.check_bitfield(Test.c, c_long, 0, 33, 2)
+        else:
+            self.check_bitfield(Test.c, c_long, 4, 30, 2)
+        self.assertEqual(sizeof(Test), 8)
+
+
+    def test_bitfield_mixed_D2(self):
+        """
+        struct D2  // GCC: 16, MSVC: 24
+        {
+            long long a : 3;    // GCC, MSVC: 0 (0:0)
+            int b : 32;         // GCC: 32 (4:0) (fits in the same container as a, padded to satisfy alignment)
+                                // MSVC: 64 (8:0) (different type than a)
+            long long c : 2;    // GCC: 64 (8:0) (doesn't fit in the same container as b)
+                                // MSVC: 128 (16:0) (different type than b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 3),
+                ("b", c_int, 32),
+                ("c", c_longlong, 2),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.b, c_int, 4, 0, 32)
+                self.check_bitfield(Test.c, c_longlong, 8, 0, 2)
+                self.assertEqual(sizeof(Test), 16)
+            else: # bug in CPython
+                self.check_bitfield(Test.b, c_int, 4, 3, 32)
+                self.check_bitfield(Test.c, c_longlong, 0, 35, 2)
+                self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_int, 8, 0, 32)
+            self.check_bitfield(Test.c, c_longlong, 16, 0, 2)
+            self.assertEqual(sizeof(Test), 24)
+
+
+    def test_bitfield_mixed_D3(self):
+        """
+        struct D3  // GCC: 8, MSVC: 16
+        {
+            char x;
+            char a : 3;         // GCC: 8 (1:0)
+                                // MSVC: 8 (1:0)
+            short b : 4;        // GCC: 11 (1:3) (fits in the same container as a)
+                                // MSVC: 16 (2:0) (different type than a)
+            long long c : 2;    // GCC: 15 (1:7) (fits in the same container as a and b)
+                                // MSVC: 64 (8:0) (different type than b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("x", c_char),
+                ("a", c_byte, 3),
+                ("b", c_short, 4),
+                ("c", c_longlong, 2),
+            ]
+
+        self.check_bitfield(Test.a, c_byte, 1, 0, 3)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.b, c_short, 0, 11, 4)
+                self.check_bitfield(Test.c, c_longlong, 0, 15, 2)
+                self.assertEqual(sizeof(Test), 8)
+            else: # bug in CPython
+                self.check_bitfield(Test.b, c_short, 1, 3, 4)
+                self.check_bitfield(Test.c, c_longlong, 1, 7, 2)
+                self.assertEqual(sizeof(Test), 9)
+        else:
+            self.check_bitfield(Test.b, c_short, 2, 0, 4)
+            self.check_bitfield(Test.c, c_longlong, 8, 0, 2)
+            self.assertEqual(sizeof(Test), 16)
+
+
+    def test_bitfield_mixed_E(self):
+        """
+        struct E  // GCC: 8, MSVC: 16
+        {
+            long long a : 20;   // GCC, MSVC: 0 (0:0)
+            short b : 2;        // GCC: 20 (2:4) (fits in the same container as a)
+                                // MSVC: 64 (8:0) (different type than a)
+            short c : 15;       // GCC: 32 (4:0) (doesn't fit in the same container as b)
+                                // MSVC: 80 (10:0) (doesn't fit in the same container as b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 20),
+                ("b", c_short, 2),
+                ("c", c_short, 15),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 20)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.b, c_short, 2, 4, 2)
+                self.check_bitfield(Test.c, c_short, 4, 0, 15)
+            else: # bug in CPython
+                self.check_bitfield(Test.b, c_short, 6, 20, 2)
+                self.check_bitfield(Test.c, c_short, 6, 22, 15)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_short, 8, 0, 2)
+            self.check_bitfield(Test.c, c_short, 10, 0, 15)
+            self.assertEqual(sizeof(Test), 16)
+
+
+    @unittest.skipIf(is_cli, "TODO: NotImplementedError: pack with bitfields")
+    def test_bitfield_mixed_E_packed(self):
+        """
+        // same as E but packed along 1 byte
+        #pragma pack(push, 1)
+        struct E_packed  // GCC: 5, MSVC: 12
+        {
+            long long a : 20;   // GCC, MSVC: 0 (0:0)
+            short b : 2;        // GCC: 20 (2:4) (fits in the same container as a)
+                                // MSVC: 64 (8:0) (different type than a)
+            short c : 15;       // GCC: 22 (2:6) (straddles alignment boundary for `short`)
+                                // MSVC: 80 (10:0) (doesn't fit in the same container as b)
+        };
+        #pragma pack(pop)
+        """
+        class Test(Structure):
+            _pack_ = 1
+            _fields_ = [
+                ("a", c_longlong, 20),
+                ("b", c_short, 2),
+                ("c", c_short, 15),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 20)
+        if is_posix and (is_cli or sys.version_info < (3, 14)):  # CPython 3.14 implements MSVC behaviour when _layout_ is not set
+            if is_cli:  # GCC-compliant results
+                self.check_bitfield(Test.b, c_short, 2, 4, 2)
+                self.check_bitfield(Test.c, c_short, 2, 6, 15)
+                self.assertEqual(sizeof(Test), 5)
+            else: # https://github.com/python/cpython/issues/131747
+                self.check_bitfield(Test.b, c_short, 6, 20, 2)
+                self.check_bitfield(Test.c, c_short, 6, 22, 15)
+                self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_short, 8, 0, 2)
+            self.check_bitfield(Test.c, c_short, 10, 0, 15)
+            self.assertEqual(sizeof(Test), 12)
+
+
+    def test_bitfield_mixed_F1(self):
+        """
+        struct F1  // GCC: 16, MSVC: 24
+        {
+            long long a : 3;    // GCC, MSVC: 0 (0:0)
+            int b : 31;         // GCC: 32 (4:0) (fits in the same container as a, padded to satisfy alignment)
+                                // MSVC: 64 (8:0) (different type than a)
+            long long c : 3;    // GCC: 64 (8:0) (doesn't fit in the same container as b)
+                                // MSVC: 128 (16:0) (different type than b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 3),
+                ("b", c_int, 31),
+                ("c", c_longlong, 3),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.b, c_int, 4, 0, 31)
+                self.check_bitfield(Test.c, c_longlong, 8, 0, 3)
+                self.assertEqual(sizeof(Test), 16)
+            else: # bug in CPython
+                self.check_bitfield(Test.b, c_int, 4, 3, 31)
+                self.check_bitfield(Test.c, c_longlong, 0, 34, 3)
+                self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_int, 8, 0, 31)
+            self.check_bitfield(Test.c, c_longlong, 16, 0, 3)
+            self.assertEqual(sizeof(Test), 24)
+
+
+    def test_bitfield_mixed_F2(self):
+        """
+        struct F2  // GCC: 8, MSVC: 24
+        {
+            long long a : 3;    // GCC, MSVC: 0 (0:0)
+            int b : 29;         // GCC: 3 (0:3) (fits in the same container as a)
+                                // MSVC: 64 (8:0) (different type than a)
+            long long c : 3;    // GCC: 32 (4:0) (doesn't fit in the same container as b, alignment 4)
+                                // MSVC: 128 (16:0) (different type than b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 3),
+                ("b", c_int, 29),
+                ("c", c_longlong, 3),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 3)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.b, c_int, 0, 3, 29)
+            else: # bug in CPython
+                self.check_bitfield(Test.b, c_int, 4, 3, 29)
+            self.check_bitfield(Test.c, c_longlong, 0, 32, 3)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_int, 8, 0, 29)
+            self.check_bitfield(Test.c, c_longlong, 16, 0, 3)
+            self.assertEqual(sizeof(Test), 24)
+
+
+    def test_bitfield_mixed_F3(self):
+        """
+        struct F3  // GCC: 8, MSVC: 24
+        {
+            long long a : 4; 	// GCC, MSVC: 0 (0:0)
+            int b : 29;      	// GCC: 32 (4:0) (doesn't fit in the same container as a)
+                                // MSVC: 64 (8:0) (different type than a)
+            long long c : 3; 	// GCC: 61 (7:5) (fits in the same container as b)
+                                // MSVC: 128 (16:0) (different type than b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 4),
+                ("b", c_int, 29),
+                ("c", c_longlong, 3),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 4)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):  # GCC-compliant results
+                self.check_bitfield(Test.b, c_int, 4, 0, 29)
+                self.check_bitfield(Test.c, c_longlong, 0, 61, 3)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_int, 4, 4, 29)
+                self.check_bitfield(Test.c, c_longlong, 0, 33, 3)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_int, 8, 0, 29)
+            self.check_bitfield(Test.c, c_longlong, 16, 0, 3)
+            self.assertEqual(sizeof(Test), 24)
+
+
+    def test_bitfield_mixed_F4(self):
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_int),
+                ("b1", c_short, 3),
+                ("b2", c_short, 3),
+                ("c", c_int, 3),
+            ]
+
+        self.assertEqual(Test.a.offset, 0)
+        self.assertEqual(Test.a.size, 4)
+
+        self.check_bitfield(Test.b1, c_short, 4, 0, 3)
+        self.check_bitfield(Test.b2, c_short, 4, 3, 3)
+        if is_posix:
+            self.check_bitfield(Test.c, c_int, 4, 6, 3)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.c, c_int, 8, 0, 3)
+            self.assertEqual(sizeof(Test), 12)
+
+        instance = Test()
+        self.assertTrue(isinstance(instance.a, int))
+        instance.a = 1
+        instance.b1 = 5  # equals -3 in 2-complement on 3 bits
+        instance.b2 = 7  # equals -1 in 2-complement on 3 bits
+        instance.c = 3
+        self.assertEqual(instance.a, 1)
+        self.assertEqual(instance.b1, -3)
+        self.assertEqual(instance.b2, -1)
+        self.assertEqual(instance.c, 3)
+
+
+    def test_bitfield_mixed_G1(self):
+        """
+        struct G1  // GCC, MSVC: 3
+        {
+            char a : 7;     // GCC, MSVC: 0 (0:0)
+            char b : 2;     // GCC, MSVC: 8 (1:0) (does'n fit in the same byte as a)
+            char c : 7;     // GCC, MSVC: 16 (2:0) (does'n fit in the same byte as b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_byte, 7),
+                ("b", c_byte, 2),
+                ("c", c_byte, 7),
+            ]
+
+        self.check_bitfield(Test.a, c_byte, 0, 0, 7)
+        self.check_bitfield(Test.b, c_byte, 1, 0, 2)
+        self.check_bitfield(Test.c, c_byte, 2, 0, 7)
+        self.assertEqual(sizeof(Test), 3)
+
+
+    def test_bitfield_mixed_G2(self):
+        """
+        struct G2  // GCC: 2, MSVC: 6
+        {
+            char a : 7;     // GCC, MSVC: 0 (0:0)
+            short b : 2;    // GCC: 7 (0:7) (fits in the same container as a)
+                            // MSVC: 16 (2:0) (different type than a)
+            char c : 7;     // GCC: 9 (1:1) (fits in the same container as b)
+                            // MSVC: 32 (4:0) (different type than b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_byte, 7),
+                ("b", c_short, 2),
+                ("c", c_byte, 7),
+            ]
+
+        self.check_bitfield(Test.a, c_byte, 0, 0, 7)
+        if is_posix:
+            self.check_bitfield(Test.b, c_short, 0, 7, 2)
+            if is_cli or sys.version_info >= (3, 14):  # bug in CPython 3.13 and earlier
+                self.check_bitfield(Test.c, c_byte, 1, 1, 7)
+            self.assertEqual(sizeof(Test), 2)
+        else:
+            self.check_bitfield(Test.b, c_short, 2, 0, 2)
+            self.check_bitfield(Test.c, c_byte, 4, 0, 7)
+            self.assertEqual(sizeof(Test), 6)
+
+
+    def test_bitfield_mixed_G3(self):
+        """
+        struct G3  // GCC, MSVC: 6
+        {
+            char a : 7;     // GCC, MSVC: 0 (0:0)
+            short b : 10;   // GCC: 16 (2:0) (doesn't fit in the same container as a)
+                            // MSVC: 16 (2:0) (different type than a)
+            char c : 7;     // GCC: 32 (4:0) (doesn't fit in the same container as b)
+                            // MSVC: 32 (4:0) (different type than b)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_byte, 7),
+                ("b", c_short, 10),
+                ("c", c_byte, 7),
+            ]
+
+        self.check_bitfield(Test.a, c_byte, 0, 0, 7)
+        self.check_bitfield(Test.b, c_short, 2, 0, 10)
+        self.check_bitfield(Test.c, c_byte, 4, 0, 7)
+        self.assertEqual(sizeof(Test), 6)
+
+
+    def test_bitfield_mixed_G4(self):
+        """
+        struct G4  // GCC: 16, MSVC: 32
+        {
+            unsigned short a : 8;   // GCC, MSVC: 0 (0:0)
+            int            b : 16;  // GCC: 8 (1:0) (fits in the same container as a)
+                                    // MSVC: 32 (4:0) (different type than a)
+            unsigned int   c : 29;  // GCC: 32 (4:0) (doesn't fit in the same container as b)
+                                    // MSVC: 64 (8:0) (different type than b)
+            long long      d : 9;   // GCC: 64 (8:0) (doesn't fit in the same container as a, b, or c)
+                                    // MSVC: 128 (16:0) (different type than c)
+            unsigned int   e : 2;   // GCC: 73 (9:1) (fits in the same container as d)
+                                    // MSVC: 192 (24:0) (different type than e)
+            unsigned int   f : 31;  // GCC: 96: (12:0) (fits in the same container as d)
+                                    // MSVC: 224 (28:0) (doesn't fit in the same container as e)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_ushort, 8),
+                ("b", c_int, 16),
+                ("c", c_uint, 29),
+                ("d", c_longlong, 9),
+                ("e", c_uint, 2),
+                ("f", c_uint, 31),
+            ]
+
+        self.check_bitfield(Test.a, c_ushort, 0, 0, 8)
+        if is_posix:  # GCC-compliant results
+            self.check_bitfield(Test.b, c_int, 0, 8, 16)
+            self.check_bitfield(Test.c, c_uint, 4, 0, 29)
+            if is_cli or sys.version_info >= (3, 14): # bug in CPython 3.13 and earlier
+                self.check_bitfield(Test.d, c_longlong, 8, 0, 9)
+                self.check_bitfield(Test.e, c_uint, 8, 9, 2)
+                self.check_bitfield(Test.f, c_uint, 12, 0, 31)
+            self.assertEqual(sizeof(Test), 16)
+        else:
+            self.check_bitfield(Test.b, c_int, 4, 0, 16)
+            self.check_bitfield(Test.c, c_uint, 8, 0, 29)
+            self.check_bitfield(Test.d, c_longlong, 16, 0, 9)
+            self.check_bitfield(Test.e, c_uint, 24, 0, 2)
+            self.check_bitfield(Test.f, c_uint, 28, 0, 31)
+            self.assertEqual(sizeof(Test), 32)
+
+
+    @unittest.skipIf(is_cli, "TODO: NotImplementedError: pack with bitfields")
+    def test_bitfield_mixed_G4_packed(self):
+        """
+        #pragma pack(push, 4)
+        struct G4_packed  // GCC: 12, MSVC: 28
+        {
+            unsigned short a : 8;  	// GCC, MSVC: 0 (0:0)
+            int            b : 16; 	// GCC: 8 (1:0) (fits in the same container as a)
+                                    // MSVC: 32 (4:0) (different type than a)
+            unsigned int   c : 29; 	// GCC: 24 (3:0) (doesn't fit in the same container as b)
+                                    // MSVC: 64 (8:0) (different type than b)
+            long long      d : 9;  	// GCC: 53 (6:5) (fits in the same container as c)
+                                    // MSVC: 96 (12:0) (different type than d)
+            unsigned int   e : 2;  	// GCC: 62 (7:6) (fits in the same container as d)
+                                    // MSVC: 160 (20:0) (different type than e)
+            unsigned int   f : 31; 	// GCC: 64: (8:0) (does not fit in the same container as e)
+                                    // MSVC: 192 (24:0) (does not fit in the same container as e)
+        };
+        #pragma pack(pop)
+        """
+        class Test(Structure):
+            _pack_ = 4
+            _fields_ = [
+                ("a", c_ushort, 8),
+                ("b", c_int, 16),
+                ("c", c_uint, 29),
+                ("d", c_longlong, 9),
+                ("e", c_uint, 2),
+                ("f", c_uint, 31),
+            ]
+
+        self.check_bitfield(Test.a, c_ushort, 0, 0, 8)
+        if is_posix and is_cli:
+            self.check_bitfield(Test.b, c_int, 0, 8, 16)
+            self.check_bitfield(Test.c, c_uint, 3, 0, 29) # ??
+            self.check_bitfield(Test.d, c_longlong, 4, 21, 9)
+            self.check_bitfield(Test.e, c_uint, 4, 30, 2)
+            self.check_bitfield(Test.f, c_uint, 8, 0, 31)
+            self.assertEqual(sizeof(Test), 12)
+        else:
+            if is_windows or sys.version_info >= (3, 14): # CPython 3.14 implements MSVC behavior even on POSIX (bug), CPython 3.13 and earlier is hopelessly incorrect
+                self.check_bitfield(Test.b, c_int, 4, 0, 16)
+                self.check_bitfield(Test.c, c_uint, 8, 0, 29)
+                self.check_bitfield(Test.d, c_longlong, 12, 0, 9)
+                self.check_bitfield(Test.e, c_uint, 20, 0, 2)
+                self.check_bitfield(Test.f, c_uint, 24, 0, 31)
+                self.assertEqual(sizeof(Test), 28)
+
+
+    def test_bitfield_mixed_H1(self):
+        """
+        struct H1  // GCC: 8, MSVC: 16
+        {
+            long long a : 52;   // GCC, MSVC: 0 (0:0)
+            char b : 3;         // GCC: 52 (6:4) (fits in the same container as a)
+                                // MSVC: 64 (8:0) (different type than a)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 3),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):
+                self.check_bitfield(Test.b, c_byte, 6, 4, 3)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_byte, 7, 52, 3)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_byte, 8, 0, 3)
+            self.assertEqual(sizeof(Test), 16)
+
+
+    def test_bitfield_mixed_H2(self):
+        """
+        struct H2  // GCC: 8, MSVC: 16
+        {
+            long long a : 52;   // GCC, MSVC: 0 (0:0)
+            char b : 4;         // GCC: 52 (6:4) (fits in the same container as a, just fits in the shared byte)
+                                // MSVC: 64 (8:0) (different type than a)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 4),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
+        if is_posix:
+            if is_cli or sys.version_info >= (3, 14):
+                self.check_bitfield(Test.b, c_byte, 6, 4, 4)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_byte, 7, 52, 4)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_byte, 8, 0, 4)
+            self.assertEqual(sizeof(Test), 16)
+
+
+    def test_bitfield_mixed_H3(self):
+        """
+        struct H3  // GCC: 8, MSVC: 16
+        {
+            long long a : 52;   // GCC, MSVC: 0 (0:0)
+            char b : 5;         // GCC: 52 (7:0) (fits in the same container but padding bits added to prevent byte boundary crossing)
+                                // MSVC: 64 (8:0) (different type than a)
+        };
+        """
+        class Test(Structure):
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 5),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
+        if is_posix:
+            if (is_cli or sys.version_info >= (3, 14)):
+                self.check_bitfield(Test.b, c_byte, 7, 0, 5)
+            else:  # bug in CPython
+                self.check_bitfield(Test.b, c_byte, 7, 52, 5)
+            self.assertEqual(sizeof(Test), 8)
+        else:
+            self.check_bitfield(Test.b, c_byte, 8, 0, 5)
+            self.assertEqual(sizeof(Test), 16)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_msvc(self):
+        class Test(Structure):
+            _layout_ = 'ms'
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 5),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
+        self.check_bitfield(Test.b, c_byte, 8, 0, 5)
+        self.assertEqual(sizeof(Test), 16)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_gcc(self):
+        class Test(Structure):
+            _layout_ = 'gcc-sysv'
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 5),
+            ]
+
+        self.check_bitfield(Test.a, c_longlong, 0, 0, 52)
+        self.check_bitfield(Test.b, c_byte, 7, 0, 5)
+        self.assertEqual(sizeof(Test), 8)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_default(self):
+        class Test(Structure):
+            _layout_ = None
+            _fields_ = [
+                ("a", c_longlong, 52),
+                ("b", c_byte, 5),
+            ]
+        self.assertEqual(sizeof(Test), 8 if is_posix else 16)
+
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 14), '_layout_ not supported before CPython 3.14')
+    def test_bitfield_mixed_H3_layout_invalid(self):
+        with self.assertRaises(ValueError) as context:
+            class Test(Structure):
+                _layout_ = "invalid"
+                _fields_ = []
+
+        self.assertIn("unknown _layout_", str(context.exception))
+
+
     @unittest.skipIf(is_posix, 'Windows specific test')
     def test_loadlibrary_error(self):
         with self.assertRaises(OSError) as cm:
@@ -237,4 +968,165 @@ class CTypesTest(IronPythonTestCase):
             self.assertIsNone(cm.exception.filename)
         self.assertIsNone(cm.exception.filename2)
 
-run_test(__name__)
+
+    def test_conversions_c_int(self):
+        # normal case
+        c_int_value = c_int(42)
+        self.assertEqual(c_int_value.value, 42)
+
+        # bool case
+        c_int_value = c_int(True)
+        self.assertEqual(c_int_value.value, 1)
+
+        # BigInteger case
+        c_int_value = c_int(big(42))
+        self.assertEqual(c_int_value.value, 42)
+
+        if is_cli or sys.version_info < (3, 10):
+            # __int__ supported
+            c_int_value = c_int(MyInt(42))
+            self.assertEqual(c_int_value.value, 42)
+            c_int_value.value = MyInt(24)
+            self.assertEqual(c_int_value.value, 24)
+        else:
+            # __int__ not supported
+            self.assertRaises(TypeError, c_int, MyInt(42))
+            with self.assertRaises(TypeError):
+                c_int_value.value = MyInt(42)
+
+        if is_cli or sys.version_info >= (3, 8):
+            # __index__ supported
+            c_int_value = c_int(MyIndex(42))
+            self.assertEqual(c_int_value.value, 42)
+            c_int_value.value = MyIndex(24)
+            self.assertEqual(c_int_value.value, 24)
+
+            # __index__ takes priority over __int__
+            c_int_value = c_int(MyIntIndex(44, 42))
+            self.assertEqual(c_int_value.value, 42)
+            c_int_value.value = MyIntIndex(22, 24)
+            self.assertEqual(c_int_value.value, 24)
+        else:
+            # __index__ not supported
+            self.assertRaises(TypeError, c_int, MyIndex(42))
+            with self.assertRaises(TypeError):
+                c_int_value.value = MyIndex(42)
+
+        # str not supported
+        self.assertRaises(TypeError, c_int, "abc")
+        with self.assertRaises(TypeError):
+             c_int_value.value = "abc"
+
+        # float not supported
+        self.assertRaises(TypeError, c_int, 42.6)
+        with self.assertRaises(TypeError):
+             c_int_value.value = 42.6
+
+        # System.Single not supported
+        if is_cli:
+            import System
+            self.assertRaises(TypeError, c_int, System.Single(42.6))
+            with self.assertRaises(TypeError):
+                c_int_value.value = System.Single(42.6)
+
+        # System.Half not supported
+        if is_netcoreapp:
+            import System, clr
+            half = clr.Convert(42.6, System.Half)
+            self.assertRaises(TypeError, c_int, half)
+            with self.assertRaises(TypeError):
+                c_int_value.value = System.Half(42.6)
+
+        # Decimal is supported as long as __int__ is supported
+        if is_cli or sys.version_info < (3, 10):
+            c_int_value = c_int(Decimal(42.6))
+        else:
+            self.assertRaises(TypeError, c_int, Decimal(42.6))
+
+
+    def test_conversions_c_char(self):
+        # normal case (c_char is unsigned)
+        c_char_value = c_char(42)
+        self.assertEqual(c_char_value.value, b"*")
+
+        c_char_value = c_char(b"*")
+        self.assertEqual(c_char_value.value, b"*")
+
+        # bool case
+        c_cbyte_value = c_char(True)
+        self.assertEqual(c_cbyte_value.value, b"\x01")
+
+        # BigInteger case
+        c_cbyte_value = c_char(big(42))
+        self.assertEqual(c_cbyte_value.value, b"*")
+
+        # out of range int not supported
+        self.assertRaises(TypeError, c_char, 256)
+        self.assertRaises(TypeError, c_char, -1)
+        with self.assertRaises(TypeError):
+            c_char_value.value = 256
+        with self.assertRaises(TypeError):
+            c_char_value.value = -1
+
+        # longer bytes not supported
+        self.assertRaises(TypeError, c_char, b"abc")
+        with self.assertRaises(TypeError):
+            c_char_value.value = b"abc"
+
+        # __int__ not supported
+        self.assertRaises(TypeError, c_char, MyInt(42))
+        with self.assertRaises(TypeError):
+            c_char_value.value = MyInt(42)
+
+        # __index__ not supported
+        self.assertRaises(TypeError, c_char, MyIndex(42))
+        with self.assertRaises(TypeError):
+            c_char_value.value = MyIndex(42)
+
+        # str not supported
+        self.assertRaises(TypeError, c_char, "a")
+        with self.assertRaises(TypeError):
+            c_char_value.value = "a"
+
+        # float not supported
+        self.assertRaises(TypeError, c_char, 42.6)
+        with self.assertRaises(TypeError):
+            c_char_value.value = 42.6
+
+
+    def test_conversions_overflow(self):
+        # Overflow is clipped to lowest bits
+        c_int_value = c_int((42 << 60) + 24)
+        self.assertEqual(c_int_value.value, 24)
+        c_int_value.value = (42 << 60) + 12
+        self.assertEqual(c_int_value.value, 12)
+
+        c_int_value = c_int((-42 << 60) - 24)
+        self.assertEqual(c_int_value.value, -24)
+
+        c_longlong_value = c_longlong((42 << 80) + 24)
+        self.assertEqual(c_longlong_value.value, 24)
+        c_longlong_value.value = (42 << 80) + 12
+        self.assertEqual(c_longlong_value.value, 12)
+
+        c_short_value = c_short((42 << 20) + 24)
+        self.assertEqual(c_short_value.value, 24)
+        c_short_value.value = (42 << 20) + 12
+        self.assertEqual(c_short_value.value, 12)
+        c_short_value.value = 32768
+        self.assertEqual(c_short_value.value, -32768)
+        c_short_value.value = 32769
+        self.assertEqual(c_short_value.value, -32767)
+
+        c_byte_value = c_byte((42 << 10) + 4)
+        self.assertEqual(c_byte_value.value, 4)
+        c_byte_value.value = (42 << 10) + 2
+        self.assertEqual(c_byte_value.value, 2)
+        c_byte_value.value = 128
+        self.assertEqual(c_byte_value.value, -128)
+        c_byte_value.value = 129
+        self.assertEqual(c_byte_value.value, -127)
+
+
+if __name__ == "__main__":
+    unittest.main()

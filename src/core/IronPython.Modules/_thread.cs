@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 
 using IronPython.Runtime;
@@ -14,7 +15,6 @@ using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 
@@ -25,7 +25,7 @@ namespace IronPython.Modules {
 
         private static readonly object _stackSizeKey = new object();
         private static object _threadCountKey = new object();
-        [ThreadStatic] private static List<@lock> _sentinelLocks;
+        [ThreadStatic] private static List<@lock>? _sentinelLocks;
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
@@ -35,26 +35,25 @@ namespace IronPython.Modules {
 
         #region Public API Surface
 
-        public static double TIMEOUT_MAX = 0; // TODO: fill this with a proper value
+        public static double TIMEOUT_MAX = Math.Floor(TimeSpan.MaxValue.TotalSeconds);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType LockType = DynamicHelpers.GetPythonTypeFromType(typeof(@lock));
 
-        [Documentation("start_new_thread(function, [args, [kwDict]]) -> thread id\nCreates a new thread running the given function")]
-        public static object start_new_thread(CodeContext/*!*/ context, object function, object args, object kwDict) {
-            PythonTuple tupArgs = args as PythonTuple;
-            if (tupArgs == null) throw PythonOps.TypeError("2nd arg must be a tuple");
+        [Documentation("start_new_thread(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
+        public static object start_new_thread(CodeContext/*!*/ context, object? function, object? args, object? kwDict) {
+            if (args is not PythonTuple tupArgs) throw PythonOps.TypeError("2nd arg must be a tuple");
+            if (kwDict is not PythonDictionary dict) throw PythonOps.TypeError("optional 3rd arg must be a dictionary");
 
-            Thread t = CreateThread(context, new ThreadObj(context, function, tupArgs, kwDict).Start);
+            Thread t = CreateThread(context, new ThreadObj(context, function, tupArgs, dict).Start);
             t.Start();
 
             return t.ManagedThreadId;
         }
 
         [Documentation("start_new_thread(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
-        public static object start_new_thread(CodeContext/*!*/ context, object function, object args) {
-            PythonTuple tupArgs = args as PythonTuple;
-            if (tupArgs == null) throw PythonOps.TypeError("2nd arg must be a tuple");
+        public static object start_new_thread(CodeContext/*!*/ context, object? function, object? args) {
+            if (args is not PythonTuple tupArgs) throw PythonOps.TypeError("2nd arg must be a tuple");
 
             Thread t = CreateThread(context, new ThreadObj(context, function, tupArgs, null).Start);
             t.IsBackground = true;
@@ -109,8 +108,13 @@ namespace IronPython.Modules {
         }
 
         // deprecated synonyms, wrappers over preferred names...
-        [Documentation("start_new(function, [args, [kwDict]]) -> thread id\nCreates a new thread running the given function")]
-        public static object start_new(CodeContext context, object function, object args) {
+        [Documentation("start_new(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
+        public static object start_new(CodeContext context, object? function, object? args, object? kwDict) {
+            return start_new_thread(context, function, args, kwDict);
+        }
+
+        [Documentation("start_new(function, args, [kwDict]) -> thread id\nCreates a new thread running the given function")]
+        public static object start_new(CodeContext context, object? function, object? args) {
             return start_new_thread(context, function, args);
         }
 
@@ -139,22 +143,30 @@ namespace IronPython.Modules {
         #endregion
 
         [PythonType, PythonHidden]
-        public class @lock {
-            private AutoResetEvent blockEvent;
-            private Thread curHolder;
+        public sealed class @lock {
+            private AutoResetEvent? blockEvent;
+            private Thread? curHolder;
 
             public object __enter__() {
-                acquire(true, -1);
+                acquire();
                 return this;
             }
 
-            public void __exit__(CodeContext/*!*/ context, params object[] args) {
+            public void __exit__(CodeContext/*!*/ context, [NotNone] params object[] args) {
                 release(context);
             }
 
-            public bool acquire(bool blocking = true, float timeout = -1) {
+            public bool acquire(bool blocking = true, double timeout = -1) {
+                var timespan = Timeout.InfiniteTimeSpan;
+
+                if (timeout != -1) {
+                    if (!blocking) throw PythonOps.ValueError("can't specify a timeout for a non-blocking call");
+                    if (timeout < 0) throw PythonOps.ValueError("timeout value must be a non-negative number");
+                    timespan = TimeSpan.FromSeconds(timeout);
+                }
+
                 for (; ; ) {
-                    if (Interlocked.CompareExchange<Thread>(ref curHolder, Thread.CurrentThread, null) == null) {
+                    if (Interlocked.CompareExchange(ref curHolder, Thread.CurrentThread, null) is null) {
                         return true;
                     }
                     if (!blocking) {
@@ -166,20 +178,16 @@ namespace IronPython.Modules {
                         CreateBlockEvent();
                         continue;
                     }
-                    if (!blockEvent.WaitOne(timeout < 0 ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(timeout))) {
+                    if (!blockEvent.WaitOne(timespan)) {
                         return false;
                     }
                     GC.KeepAlive(this);
                 }
             }
 
-            public void release(CodeContext/*!*/ context, params object[] param) {
-                release(context);
-            }
-
             public void release(CodeContext/*!*/ context) {
-                if (Interlocked.Exchange<Thread>(ref curHolder, null) == null) {
-                    throw PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("threaderror"), "lock isn't held", null);
+                if (Interlocked.Exchange(ref curHolder, null) is null) {
+                    throw PythonOps.RuntimeError("release unlocked lock");
                 }
                 if (blockEvent != null) {
                     // if this isn't set yet we race, it's handled in Acquire()
@@ -188,13 +196,128 @@ namespace IronPython.Modules {
                 }
             }
 
-            public bool locked() {
-                return curHolder != null;
+            public bool locked()
+                => curHolder is not null;
+
+            public string __repr__() {
+                if (curHolder is null) {
+                    return $"<unlocked _thread.lock object at 0x{IdDispenser.GetId(this):X16}>";
+                }
+                return $"<locked _thread.lock object at 0x{IdDispenser.GetId(this):X16}>";
             }
 
             private void CreateBlockEvent() {
                 AutoResetEvent are = new AutoResetEvent(false);
-                if (Interlocked.CompareExchange<AutoResetEvent>(ref blockEvent, are, null) != null) {
+                if (Interlocked.CompareExchange(ref blockEvent, are, null) is not null) {
+                    are.Close();
+                }
+            }
+        }
+
+        [PythonType]
+        public sealed class RLock {
+            private AutoResetEvent? blockEvent;
+            private Thread? curHolder;
+            private int count;
+
+            public object __enter__() {
+                acquire();
+                return this;
+            }
+
+            public void __exit__(CodeContext/*!*/ context, [NotNone] params object[] args) {
+                release();
+            }
+
+            public bool acquire(bool blocking = true, double timeout = -1) {
+                var timespan = Timeout.InfiniteTimeSpan;
+
+                if (timeout != -1) {
+                    if (!blocking) throw PythonOps.ValueError("can't specify a timeout for a non-blocking call");
+                    if (timeout < 0) throw PythonOps.ValueError("timeout value must be a non-negative number");
+                    timespan = TimeSpan.FromSeconds(timeout);
+                }
+
+                var currentThread = Thread.CurrentThread;
+
+                for (; ; ) {
+                    var previousThread = Interlocked.CompareExchange(ref curHolder, currentThread, null);
+                    if (previousThread == currentThread) {
+                        count++;
+                        return true;
+                    }
+                    if (previousThread is null) {
+                        count = 1;
+                        return true;
+                    }
+                    if (!blocking) {
+                        return false;
+                    }
+                    if (blockEvent is null) {
+                        // try again in case someone released us, checked the block
+                        // event and discovered it was null so they didn't set it.
+                        CreateBlockEvent();
+                        continue;
+                    }
+                    if (!blockEvent.WaitOne(timespan)) {
+                        return false;
+                    }
+                    GC.KeepAlive(this);
+                }
+            }
+
+            public void release() {
+                var currentThread = Thread.CurrentThread;
+
+                if (curHolder != currentThread) {
+                    throw PythonOps.RuntimeError("cannot release un-acquired lock");
+                }
+                if (--count > 0) {
+                    return;
+                }
+
+                if (Interlocked.Exchange(ref curHolder, null) is null) {
+                    throw PythonOps.RuntimeError("release unlocked lock");
+                }
+                if (blockEvent is not null) {
+                    // if this isn't set yet we race, it's handled in acquire()
+                    blockEvent.Set();
+                    GC.KeepAlive(this);
+                }
+            }
+
+            public string __repr__() {
+                if (curHolder is null) {
+                    return $"<unlocked _thread.RLock object owner=0 count=0 at 0x{IdDispenser.GetId(this):X16}>";
+                }
+                return $"<locked _thread.RLock object owner={curHolder?.ManagedThreadId} count={count} at 0x{IdDispenser.GetId(this):X16}>";
+            }
+
+            public void _acquire_restore([NotNone] PythonTuple state) {
+                acquire();
+                count = (int)state[0]!;
+                curHolder = (Thread?)state[1];
+            }
+
+            public PythonTuple _release_save() {
+                var count = Interlocked.Exchange(ref this.count, 0);
+                if (count == 0) {
+                    throw PythonOps.RuntimeError("cannot release un-acquired lock");
+                }
+
+                // release
+                var owner = Interlocked.Exchange(ref curHolder, null);
+                blockEvent?.Set();
+
+                return PythonTuple.MakeTuple(count, owner);
+            }
+
+            public bool _is_owned()
+                => curHolder == Thread.CurrentThread;
+
+            private void CreateBlockEvent() {
+                AutoResetEvent are = new AutoResetEvent(false);
+                if (Interlocked.CompareExchange(ref blockEvent, are, null) != null) {
                     are.Close();
                 }
             }
@@ -208,12 +331,12 @@ namespace IronPython.Modules {
         }
 
         private class ThreadObj {
-            private readonly object _func, _kwargs;
+            private readonly object? _func;
+            private readonly PythonDictionary? _kwargs;
             private readonly PythonTuple _args;
             private readonly CodeContext _context;
 
-            public ThreadObj(CodeContext context, object function, PythonTuple args, object kwargs) {
-                Debug.Assert(args != null);
+            public ThreadObj(CodeContext context, object? function, PythonTuple args, PythonDictionary? kwargs) {
                 _func = function;
                 _kwargs = kwargs;
                 _args = args;
@@ -226,13 +349,11 @@ namespace IronPython.Modules {
                     _context.LanguageContext.SetModuleState(_threadCountKey, startCount + 1);
                 }
                 try {
-#pragma warning disable 618 // TODO: obsolete
                     if (_kwargs != null) {
-                        PythonOps.CallWithArgsTupleAndKeywordDictAndContext(_context, _func, [], [], _args, _kwargs);
+                        PythonCalls.CallWithKeywordArgs(_context, _func, _args.ToArray(), new PythonDictionary(_kwargs));
                     } else {
-                        PythonOps.CallWithArgsTuple(_func, [], _args);
+                        PythonCalls.Call(_context, _func, _args.ToArray());
                     }
-#pragma warning restore 618
                 } catch (SystemExitException) {
                     // ignore and quit
                 } catch (Exception e) {
@@ -274,17 +395,17 @@ namespace IronPython.Modules {
             #region Custom Attribute Access
 
             [SpecialName]
-            public object GetCustomMember(string name) {
+            public object GetCustomMember([NotNone] string name) {
                 return _dict.get(name, OperationFailed.Value);
             }
 
             [SpecialName]
-            public void SetMemberAfter(string name, object value) {
+            public void SetMemberAfter([NotNone] string name, object? value) {
                 _dict[name] = value;
             }
 
             [SpecialName]
-            public void DeleteMember(string name) {
+            public void DeleteMember([NotNone] string name) {
                 _dict.__delitem__(name);
             }
 
@@ -305,21 +426,21 @@ namespace IronPython.Modules {
             private class ThreadLocalDictionaryStorage : DictionaryStorage {
                 private readonly Microsoft.Scripting.Utils.ThreadLocal<CommonDictionaryStorage> _storage = new Microsoft.Scripting.Utils.ThreadLocal<CommonDictionaryStorage>();
 
-                public override void Add(ref DictionaryStorage storage, object key, object value) {
+                public override void Add(ref DictionaryStorage storage, object? key, object? value) {
                     GetStorage().Add(key, value);
                 }
 
-                public override bool Contains(object key) {
+                public override bool Contains(object? key) {
                     return GetStorage().Contains(key);
                 }
 
-                public override bool Remove(ref DictionaryStorage storage, object key) {
+                public override bool Remove(ref DictionaryStorage storage, object? key) {
                     return GetStorage().Remove(ref storage, key);
                 }
 
                 public override DictionaryStorage AsMutable(ref DictionaryStorage storage) => this;
 
-                public override bool TryGetValue(object key, out object value) {
+                public override bool TryGetValue(object? key, out object? value) {
                     return GetStorage().TryGetValue(key, out value);
                 }
 
@@ -331,7 +452,7 @@ namespace IronPython.Modules {
                     GetStorage().Clear(ref storage);
                 }
 
-                public override List<KeyValuePair<object, object>>/*!*/ GetItems() {
+                public override List<KeyValuePair<object?, object?>>/*!*/ GetItems() {
                     return GetStorage().GetItems();
                 }
 

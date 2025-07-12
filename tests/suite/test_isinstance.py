@@ -974,4 +974,26 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertRaises(TypeError, tuple.__new__, str)
         self.assertRaises(TypeError, tuple.__new__, str, 'abc')
 
+
+    def test_container_repr(self):
+        import array, collections
+        class MyArray(array.array): pass
+        class MyBytearray(bytearray): pass
+        class MyDeque(collections.deque): pass
+        class MyDefaultDict(collections.defaultdict): pass
+        class MySet(set): pass
+
+        if is_cli or sys.version_info >= (3, 7):
+            self.assertEqual(repr(MyArray('b')), "MyArray('b')")
+            self.assertEqual(repr(MyBytearray(b'x')), "MyBytearray(b'x')")
+            self.assertEqual(repr(MyDeque(['c'])), "MyDeque(['c'])")
+            self.assertTrue("MyDefaultDict" in repr(MyDefaultDict(list)))
+        else:
+            self.assertEqual(repr(MyArray('b')), "array('b')")
+            self.assertEqual(repr(MyBytearray(b'x')), "bytearray(b'x')")
+            self.assertEqual(repr(MyDeque(['c'])), "deque(['c'])")
+            self.assertTrue("defaultdict" in repr(MyDefaultDict(list)))
+        self.assertEqual(repr(MySet()), "MySet()")
+
+
 run_test(__name__)

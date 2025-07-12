@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_CTYPES
 
 using System;
@@ -48,7 +50,7 @@ namespace IronPython.Modules {
             /// Serializes the provided value into the specified address at the given
             /// offset.
             /// </summary>
-            object SetValue(MemoryHolder/*!*/ address, int offset, object value);
+            object? SetValue(MemoryHolder/*!*/ address, int offset, object value);
 
             /// <summary>
             /// Gets the .NET type which is used when calling or returning the value
@@ -66,12 +68,12 @@ namespace IronPython.Modules {
             /// Emits marshalling of an object from Python to native code.  This produces the
             /// native type from the Python type.
             /// </summary>
-            MarshalCleanup EmitMarshalling(ILGenerator/*!*/ method, LocalOrArg/*!*/ argIndex, List<object>/*!*/ constantPool, int constantPoolArgument);
+            MarshalCleanup? EmitMarshalling(ILGenerator/*!*/ method, LocalOrArg/*!*/ argIndex, List<object>/*!*/ constantPool, int constantPoolArgument);
 
             /// <summary>
             /// Emits marshalling from native code to Python code This produces the python type 
             /// from the native type.  This is used for return values and parameters 
-            /// to Python callable objects that are passed back out to native code.
+            /// to Python callable objects that are passed back out of native code.
             /// </summary>
             void EmitReverseMarshalling(ILGenerator/*!*/ method, LocalOrArg/*!*/ value, List<object>/*!*/ constantPool, int constantPoolArgument);
 

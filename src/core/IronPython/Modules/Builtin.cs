@@ -768,7 +768,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         private static readonly object UndefinedKeywordArgument = new object();
 
         public static object? max(CodeContext/*!*/ context, object? x) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError("max() arg is an empty sequence");
             object? ret = i.Current;
@@ -803,8 +803,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+        public static object? max(CodeContext/*!*/ context, object? x, [ParamDictionary] IDictionary<string, object?> dict) {
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
 
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: true);
             object? method = kwargTuple.Item1;
@@ -832,7 +832,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
+        public static object? max(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary] IDictionary<string, object?> dict) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -842,7 +842,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? max(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
+        public static object? max(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -881,7 +881,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? min(CodeContext/*!*/ context, object? x) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             if (!i.MoveNext()) {
                 throw PythonOps.ValueError("empty sequence");
             }
@@ -914,8 +914,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+        public static object? min(CodeContext/*!*/ context, object? x, [ParamDictionary] IDictionary<string, object?> dict) {
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
             object? method = kwargTuple.Item1;
             object? def = kwargTuple.Item2;
@@ -941,7 +941,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary, NotNone] IDictionary<string, object?> dict) {
+        public static object? min(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary] IDictionary<string, object?> dict) {
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -950,7 +950,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object? min(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
+        public static object? min(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
             object? method = kwargTuple.Item1;
 
@@ -1172,7 +1172,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             PrintHelper(context, " ", "\n", null, args, false);
         }
 
-        public static void print(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<string, object?> kwargs, [NotNone] params object?[] args) {
+        public static void print(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> kwargs, [NotNone] params object?[] args) {
             object? sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
                 throw PythonOps.TypeError("sep must be None or str, not {0}", PythonOps.GetPythonTypeName(sep));
@@ -1369,9 +1369,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonList sorted(CodeContext/*!*/ context,
             object? iterable,
-            [ParamDictionary, NotNone] IDictionary<string, object> kwArgs) {
+            [ParamDictionary] IDictionary<string, object> kwArgs) {
 
-            IEnumerator iter = PythonOps.GetEnumerator(iterable);
+            IEnumerator iter = PythonOps.GetEnumerator(context, iterable);
             PythonList l = new PythonList(10);
             while (iter.MoveNext()) {
                 l.AddNoLock(iter.Current);
@@ -1395,7 +1395,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? sum(CodeContext/*!*/ context, object? sequence, object? start) {
-            IEnumerator i = PythonOps.GetEnumerator(sequence);
+            IEnumerator i = PythonOps.GetEnumerator(context, sequence);
 
             ValidateSumStart(start);
 
@@ -1693,11 +1693,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return localContext;
         }
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
             dict["__debug__"] = ScriptingRuntimeHelpers.BooleanToObject(!context.PythonOptions.Optimize);
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
     }
 }

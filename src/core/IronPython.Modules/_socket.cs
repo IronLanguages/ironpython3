@@ -36,7 +36,6 @@ namespace IronPython.Modules {
         private static readonly object _defaultBufsizeKey = new object();
         private const int DefaultBufferSize = 8192;
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             if (!context.HasModuleState(_defaultTimeoutKey)) {
@@ -49,7 +48,6 @@ namespace IronPython.Modules {
             context.EnsureModuleException("socketgaierror", error, dict, "gaierror", "socket");
             context.EnsureModuleException("sockettimeout", error, dict, "timeout", "socket");
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
 
         public static PythonType error => PythonExceptions.OSError;
 

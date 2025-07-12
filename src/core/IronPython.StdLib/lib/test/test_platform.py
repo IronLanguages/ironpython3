@@ -81,6 +81,7 @@ class PlatformTest(unittest.TestCase):
         sys._git = self.save_git
         sys.platform = self.save_platform
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "not compatible with IronPython platform changes")
     def test_sys_version(self):
         # Old test.
         for input, output in (

@@ -91,7 +91,7 @@ namespace IronPython.Runtime.Operations {
             return CreateFunction("__new__", "NonDefaultNew", "NonDefaultNewKW", "NonDefaultNewKWNoParams");
         }
 
-        public static object DefaultNew(CodeContext context, PythonType type\u00F8, params object[] args\u00F8) {
+        public static object DefaultNew(CodeContext context, PythonType type\u00F8, params object[] args) {
             if (type\u00F8 == null) {
                 throw PythonOps.TypeError(
                     "__new__ expected type object, got {0}",
@@ -99,16 +99,16 @@ namespace IronPython.Runtime.Operations {
                 );
             }
 
-            CheckNewArgs(context, null, args\u00F8, type\u00F8);
+            CheckNewArgs(context, null, args, type\u00F8);
 
             return type\u00F8.CreateInstance(context);
         }
 
-        public static object DefaultNewClsKW(CodeContext context, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
-            object res = DefaultNew(context, type\u00F8, args\u00F8);
+        public static object DefaultNewClsKW(CodeContext context, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
+            object res = DefaultNew(context, type\u00F8, args);
 
-            if (kwargs\u00F8.Count > 0) {
-                foreach (KeyValuePair<object, object> kvp in (IDictionary<object, object>)kwargs\u00F8) {
+            if (kwargs.Count > 0) {
+                foreach (KeyValuePair<object, object> kvp in kwargs) {
                     PythonOps.SetAttr(context,
                         res,
                         kvp.Key.ToString(),
@@ -118,60 +118,60 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        public static object OverloadedNewBasic(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage, BuiltinFunction overloads\u00F8, PythonType type\u00F8, params object[] args\u00F8) {
+        public static object OverloadedNewBasic(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage, BuiltinFunction overloads\u00F8, PythonType type\u00F8, params object[] args) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
-            if (args\u00F8 == null) args\u00F8 = new object[1];
-            return overloads\u00F8.Call(context, storage, null, args\u00F8);
+            if (args == null) args = new object[1];
+            return overloads\u00F8.Call(context, storage, null, args);
         }
 
-        public static object OverloadedNewKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs\u00F8) {
+        public static object OverloadedNewKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
 
-            return overloads\u00F8.Call(context, null, null, [], kwargs\u00F8);
+            return overloads\u00F8.Call(context, null, null, [], kwargs);
         }
 
-        public static object OverloadedNewClsKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
+        public static object OverloadedNewClsKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
-            if (args\u00F8 == null) args\u00F8 = new object[1];
+            if (args == null) args = new object[1];
 
-            return overloads\u00F8.Call(context, null, null, args\u00F8, kwargs\u00F8);
+            return overloads\u00F8.Call(context, null, null, args, kwargs);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args\u00F8")]
-        public static void DefaultInit(CodeContext context, object self, params object[] args\u00F8) {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
+        public static void DefaultInit(CodeContext context, object self, params object[] args) {
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kwargs\u00F8"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args\u00F8")]
-        public static void DefaultInitKW(CodeContext context, object self, [ParamDictionary] IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kwargs"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args")]
+        public static void DefaultInitKW(CodeContext context, object self, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context")]
         [StaticExtensionMethod]
-        public static object NonDefaultNew(CodeContext context, PythonType type\u00F8, params object[] args\u00F8) {
+        public static object NonDefaultNew(CodeContext context, PythonType type\u00F8, params object[] args) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
-            if (args\u00F8 == null) args\u00F8 = new object[1];
-            return type\u00F8.CreateInstance(context, args\u00F8);
+            if (args == null) args = new object[1];
+            return type\u00F8.CreateInstance(context, args);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context")]
         [StaticExtensionMethod]
-        public static object NonDefaultNewKW(CodeContext context, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
+        public static object NonDefaultNewKW(CodeContext context, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs, params object[] args) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
-            if (args\u00F8 == null) args\u00F8 = new object[1];
+            if (args == null) args = new object[1];
 
             string[] names;
-            GetKeywordArgs(kwargs\u00F8, args\u00F8, out args\u00F8, out names);
-            return type\u00F8.CreateInstance(context, args\u00F8, names);
+            GetKeywordArgs(kwargs, args, out args, out names);
+            return type\u00F8.CreateInstance(context, args, names);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context")]
         [StaticExtensionMethod]
-        public static object NonDefaultNewKWNoParams(CodeContext context, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs\u00F8) {
+        public static object NonDefaultNewKWNoParams(CodeContext context, PythonType type\u00F8, [ParamDictionary] IDictionary<object, object> kwargs) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
 
             string[] names;
             object[] args;
-            GetKeywordArgs(kwargs\u00F8, [], out args, out names);
+            GetKeywordArgs(kwargs, [], out args, out names);
             return type\u00F8.CreateInstance(context, args, names);
         }
 

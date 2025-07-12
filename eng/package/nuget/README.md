@@ -22,8 +22,8 @@ System.Console.WriteLine(greetings("world"));
 
 ## Differences with CPython
 
-While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/blob/main/docs/differences-from-c-python.md) for details.
+While compatibility with CPython is one of our main goals with IronPython 3, there are still some differences that may cause issues. See [Differences from CPython](https://github.com/IronLanguages/ironpython3/wiki/Differences-from-CPython) for details.
 
 ## Package compatibility
 
-See the [Package compatibility](https://github.com/IronLanguages/ironpython3/blob/main/docs/package-compatibility.md) document for information on compatibility with popular Python packages. Note that to run most packages, IronPython Standard Library must be present.
+See the [Package compatibility](https://github.com/IronLanguages/ironpython3/wiki/Package-compatibility) document for information on compatibility with popular Python packages. Note that to run most packages, IronPython Standard Library must be present.

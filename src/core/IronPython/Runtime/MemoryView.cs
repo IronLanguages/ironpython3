@@ -297,7 +297,7 @@ namespace IronPython.Runtime {
             return this;
         }
 
-        public void __exit__(CodeContext/*!*/ context, params object?[]? excinfo) {
+        public void __exit__(CodeContext/*!*/ context, [NotNone] params object?[] excinfo) {
             release(context);
         }
 
@@ -589,7 +589,7 @@ namespace IronPython.Runtime {
                         throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", _format);
                     }
 
-                    if (typecode == 'Q') {
+                    if (typecode is 'Q' or 'L' or 'N') {
                         value = Converter.ConvertToUInt64(value);
                     } else {
                         value = Converter.ConvertToInt64(value);
@@ -963,32 +963,39 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
 
-        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
+        IPythonBuffer? IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError) {
             CheckBuffer();
 
             if (flags.HasFlag(BufferFlags.Writable) && _isReadOnly)
-                throw PythonOps.BufferError("memoryview: underlying buffer is not writable");
+                return ReportError("memoryview: underlying buffer is not writable");
 
             if (flags.HasFlag(BufferFlags.CContiguous) && !_isCContig)
-                throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
+                return ReportError("memoryview: underlying buffer is not C-contiguous");
 
             if (flags.HasFlag(BufferFlags.FContiguous) && !_isFContig)
-                throw PythonOps.BufferError("memoryview: underlying buffer is not Fortran contiguous");
+                return ReportError("memoryview: underlying buffer is not Fortran contiguous");
 
             if (flags.HasFlag(BufferFlags.AnyContiguous) && !_isCContig && !_isFContig)
-                throw PythonOps.BufferError("memoryview: underlying buffer is not contiguous");
+                return ReportError("memoryview: underlying buffer is not contiguous");
 
             // TODO: Support for suboffsets
             //if (!flags.HasFlag(!BufferFlags.Indirect) && _suboffsets != null)
-            //    throw PythonOps.BufferError("memoryview: underlying buffer requires suboffsets");
+            //    return ReportError("memoryview: underlying buffer requires suboffsets");
 
             if (!flags.HasFlag(BufferFlags.Strides) && !_isCContig)
-                throw PythonOps.BufferError("memoryview: underlying buffer is not C-contiguous");
+                return ReportError("memoryview: underlying buffer is not C-contiguous");
 
             if (!flags.HasFlag(BufferFlags.ND) && flags.HasFlag(BufferFlags.Format))
-                throw PythonOps.BufferError("memoryview: cannot cast to unsigned bytes if the format flag is present");
+                return ReportError("memoryview: cannot cast to unsigned bytes if the format flag is present");
 
             return new MemoryView(this, flags);
+
+            IPythonBuffer? ReportError(string msg) {
+                if (throwOnError) {
+                    throw PythonOps.BufferError(msg);
+                }
+                return null;
+            }
         }
 
         #endregion

@@ -27,7 +27,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "provides functionality for manipulating callable objects";
 
         public static object? reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>> siteData, object? func, object? seq) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
+            IEnumerator i = PythonOps.GetEnumerator(context, seq);
             if (!i.MoveNext()) {
                 throw PythonOps.TypeError("reduce() of empty sequence with no initial value");
             }
@@ -43,7 +43,7 @@ namespace IronPython.Modules {
         }
 
         public static object? reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>>> siteData, object? func, object? seq, object? initializer) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
+            IEnumerator i = PythonOps.GetEnumerator(context, seq);
             EnsureReduceData(context, siteData);
 
             CallSite<Func<CallSite, CodeContext, object?, object?, object?, object?>> site = siteData.Data;
@@ -89,14 +89,14 @@ namespace IronPython.Modules {
             /// <summary>
             /// Creates a new partial object with the provided positional arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object? func, [NotNone] params object[]/*!*/ args)
+            public partial(CodeContext/*!*/ context, object? func, [NotNone] params object[] args)
                 : this(context, func, new PythonDictionary(), args) {
             }
 
             /// <summary>
             /// Creates a new partial object with the provided positional and keyword arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object? func, [NotNone, ParamDictionary] IDictionary<object, object> keywords, [NotNone] params object[]/*!*/ args) {
+            public partial(CodeContext/*!*/ context, object? func, [ParamDictionary] IDictionary<object, object> keywords, [NotNone] params object[] args) {
                 if (!PythonOps.IsCallable(context, func)) {
                     throw PythonOps.TypeError("the first argument must be callable");
                 }
@@ -148,7 +148,7 @@ namespace IronPython.Modules {
                 get {
                     return EnsureDict();
                 }
-                [param: NotNone] 
+                [param: NotNone]
                 set {
                     _dict = value;
                 }
@@ -244,7 +244,7 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments and keyword arguments.
             /// </summary>
             [SpecialName]
-            public object? Call(CodeContext/*!*/ context, [ParamDictionary, NotNone] IDictionary<object, object?> dict, [NotNone] params object?[] args) {
+            public object? Call(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object?> dict, [NotNone] params object?[] args) {
 
                 IDictionary<object, object?> finalDict;
                 if (_keywordArgs != null) {

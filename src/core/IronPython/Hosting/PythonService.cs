@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_REMOTING
 using System.Runtime.Remoting;
 #else
@@ -11,8 +13,10 @@ using MarshalByRefObject = System.Object;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Utils;
@@ -27,7 +31,7 @@ namespace IronPython.Hosting {
     public sealed class PythonService : MarshalByRefObject {
         private readonly ScriptEngine/*!*/ _engine;
         private readonly PythonContext/*!*/ _context;
-        private ScriptScope _sys, _builtins, _clr;
+        private ScriptScope? _sys, _builtins, _clr;
 
         public PythonService(PythonContext/*!*/ context, ScriptEngine/*!*/ engine) {
             Assert.NotNull(context, engine);
@@ -76,7 +80,7 @@ namespace IronPython.Hosting {
             _context.PublishModule(name, module);
             module.__init__(name, docString);
             module.__dict__["__file__"] = filename;
-            
+
             return HostingHelpers.CreateScriptScope(_engine, module.Scope);
         }
 
@@ -109,7 +113,7 @@ namespace IronPython.Hosting {
         }
 
 #if FEATURE_REMOTING
-        public ObjectHandle GetSetCommandDispatcher(ObjectHandle dispatcher) {
+        public ObjectHandle? GetSetCommandDispatcher(ObjectHandle dispatcher) {
             var res = _context.GetSetCommandDispatcher((Action<Action>)dispatcher.Unwrap());
             if (res != null) {
                 return new ObjectHandle(res);

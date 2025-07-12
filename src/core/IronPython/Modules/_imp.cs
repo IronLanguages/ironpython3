@@ -139,7 +139,7 @@ namespace IronPython.Modules {
             }
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-            public object find_module(params object[] args) {
+            public object find_module([NotNone] params object[] args) {
                 return null;
             }
         }

@@ -265,7 +265,7 @@ def get_clr_name(e):
     return e.replace('Error', '') + 'Exception'
 
 FACTORY = """
-public static Exception %(name)s(string format, params object[] args) {
+public static Exception %(name)s(string format, params object?[] args) {
     return new %(clrname)s(string.Format(format, args));
 }"""
 

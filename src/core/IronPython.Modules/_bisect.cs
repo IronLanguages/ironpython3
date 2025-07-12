@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Reflection;
@@ -29,9 +31,9 @@ common approach.
 
         #region Private Implementation Details
 
-        private static int InternalBisectLeft(CodeContext/*!*/ context, PythonList list, object item, int lo, int hi) {
+        private static int InternalBisectLeft(CodeContext/*!*/ context, PythonList list, object? item, int lo, int hi) {
             int mid;
-            object litem;
+            object? litem;
 
             if (lo < 0) {
                 throw PythonOps.ValueError("lo must be non-negative");
@@ -52,7 +54,7 @@ common approach.
             return lo;
         }
 
-        private static int InternalBisectLeft(CodeContext/*!*/ context, object list, object item, int lo, int hi) {
+        private static int InternalBisectLeft(CodeContext/*!*/ context, object? list, object? item, int lo, int hi) {
             int mid;
             object litem;
 
@@ -63,6 +65,7 @@ common approach.
             if (hi == -1) {
                 hi = PythonOps.Length(list);
             }
+
             IComparer comparer = context.LanguageContext.GetLtComparer(GetComparisonType(context, list));
             while (lo < hi) {
                 mid = (int)(((long)lo + hi) / 2);
@@ -75,8 +78,8 @@ common approach.
             return lo;
         }
 
-        private static int InternalBisectRight(CodeContext/*!*/ context, PythonList list, object item, int lo, int hi) {
-            object litem;
+        private static int InternalBisectRight(CodeContext/*!*/ context, PythonList list, object? item, int lo, int hi) {
+            object? litem;
             int mid;
 
             if (lo < 0) {
@@ -98,7 +101,7 @@ common approach.
             return lo;
         }
 
-        private static int InternalBisectRight(CodeContext/*!*/ context, object list, object item, int lo, int hi) {
+        private static int InternalBisectRight(CodeContext/*!*/ context, object list, object? item, int lo, int hi) {
             object litem;
             int mid;
 
@@ -122,7 +125,7 @@ common approach.
             return lo;
         }
 
-        private static Type GetComparisonType(CodeContext/*!*/ context, object a) {
+        private static Type GetComparisonType(CodeContext/*!*/ context, object? a) {
             if (PythonOps.Length(a) > 0) {
                 // use the 1st index to determine the type - we're assuming lists are
                 // homogeneous
@@ -183,7 +186,7 @@ before the leftmost x already there.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static object bisect_left(CodeContext/*!*/ context, object a, object x, int lo = 0, int hi = -1) {
+        public static object bisect_left(CodeContext/*!*/ context, object? a, object? x, int lo = 0, int hi = -1) {
             if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 return InternalBisectLeft(context, l, x, lo, hi);
             }
@@ -201,7 +204,7 @@ If x is already in a, insert it to the right of the rightmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void InsortRight(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
+        public static void InsortRight(CodeContext/*!*/ context, object a, object x, int lo = 0, int hi = -1) {
             if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 l.Insert(InternalBisectRight(context, l, x, lo, hi), x);
                 return;
@@ -227,7 +230,7 @@ If x is already in a, insert it to the left of the leftmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void insort_left(CodeContext/*!*/ context, object a, object x, int lo=0,  int hi=-1) {
+        public static void insort_left(CodeContext/*!*/ context, object? a, object? x, int lo = 0, int hi = -1) {
             if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 l.Insert(InternalBisectLeft(context, l, x, lo, hi), x);
                 return;

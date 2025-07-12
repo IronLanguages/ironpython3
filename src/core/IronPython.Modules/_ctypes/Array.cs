@@ -23,7 +23,7 @@ namespace IronPython.Modules {
         [PythonType("Array")]
         public abstract class _Array : CData {
 
-            public void __init__(params object[] args) {
+            public void __init__([NotNone] params object[] args) {
                 INativeType nativeType = NativeType;
 
                 MemHolder = new MemoryHolder(nativeType.Size);

@@ -5,6 +5,7 @@
 #nullable enable
 
 using Microsoft.Win32.SafeHandles;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -74,7 +75,7 @@ namespace IronPython.Modules {
         }
 
         [SpecialName]
-        public static void PerformModuleReload([NotNone] PythonContext context, [NotNone] PythonDictionary dict) {
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
             var have_functions = new PythonList();
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 have_functions.Add("MS_WINDOWS");
@@ -225,7 +226,7 @@ namespace IronPython.Modules {
         /// R_OK | W_OK | X_OK: Check for the specific permissions.  Only W_OK is respected.
         /// </summary>
         [Documentation("access(path, mode, *, dir_fd=None, effective_ids=False, follow_symlinks=True)")]
-        public static bool access(CodeContext/*!*/ context, [NotNone] string path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static bool access(CodeContext/*!*/ context, [NotNone] string path, int mode, [ParamDictionary] IDictionary<string, object> kwargs) {
             if (path == null) throw PythonOps.TypeError("expected string, got None");
 
             foreach (var pair in kwargs) {
@@ -274,11 +275,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static bool access(CodeContext context, [NotNone] Bytes path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static bool access(CodeContext context, [NotNone] Bytes path, int mode, [ParamDictionary] IDictionary<string, object> kwargs)
             => access(context, path.ToFsString(context), mode, kwargs);
 
         [Documentation("")]
-        public static bool access(CodeContext context, object? path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static bool access(CodeContext context, object? path, int mode, [ParamDictionary] IDictionary<string, object> kwargs)
             => access(context, ConvertToFsString(context, path, nameof(path)), mode, kwargs);
 
 #if FEATURE_FILESYSTEM
@@ -302,7 +303,7 @@ namespace IronPython.Modules {
             => chdir(ConvertToFsString(context, path, nameof(path)));
 
         [Documentation("chmod(path, mode, *, dir_fd=None, follow_symlinks=True)")]
-        public static void chmod([NotNone] string path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static void chmod([NotNone] string path, int mode, [ParamDictionary] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
                 switch (key) {
                     case "dir_fd":
@@ -333,11 +334,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void chmod(CodeContext context, [NotNone] Bytes path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void chmod(CodeContext context, [NotNone] Bytes path, int mode, [ParamDictionary] IDictionary<string, object> kwargs)
             => chmod(path.ToFsString(context), mode, kwargs);
 
         [Documentation("")]
-        public static void chmod(CodeContext context, object? path, int mode, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void chmod(CodeContext context, object? path, int mode, [ParamDictionary] IDictionary<string, object> kwargs)
             => chmod(ConvertToFsString(context, path, nameof(path)), mode, kwargs);
 
 #endif
@@ -453,7 +454,7 @@ namespace IronPython.Modules {
                 }
                 if (streams.IsConsoleStream()) return new stat_result(0x2000);
                 if (streams.IsStandardIOStream()) return new stat_result(0x1000);
-                if (StatStream(streams.ReadStream) is not null and var res) return res;
+                if (StatStream(streams.ReadStream) is object res) return res;
             }
             return LightExceptions.Throw(PythonOps.OSError(PythonErrno.EBADF, "Bad file descriptor"));
 
@@ -497,7 +498,7 @@ namespace IronPython.Modules {
 #endif
 
         [Documentation("link(src, dst, *, src_dir_fd=None, dst_dir_fd=None, follow_symlinks=True)")]
-        public static void link([NotNone] string src, [NotNone] string dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static void link([NotNone] string src, [NotNone] string dst, [ParamDictionary] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
                 switch (key) {
                     case "src_dir_fd":
@@ -525,17 +526,21 @@ namespace IronPython.Modules {
         }
 
         public static bool isatty(CodeContext context, int fd) {
-            if (context.LanguageContext.FileManager.TryGetStreams(fd, out var streams))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                return isattyUnix(fd);
+            }
+            if (context.LanguageContext.FileManager.TryGetStreams(fd, out var streams)) {
                 return streams.IsConsoleStream();
+            }
             return false;
         }
 
         [Documentation("")]
-        public static void link(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void link(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary] IDictionary<string, object> kwargs)
             => link(src.ToFsString(context), dst.ToFsString(context), kwargs);
 
         [Documentation("")]
-        public static void link(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void link(CodeContext context, object? src, object? dst, [ParamDictionary] IDictionary<string, object> kwargs)
             => link(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs);
 
 
@@ -590,7 +595,7 @@ namespace IronPython.Modules {
             "Like stat(), but do not follow symbolic links.\n" +
             "Equivalent to calling stat(...) with follow_symlinks=False.")]
         [LightThrowing]
-        public static object lstat([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static object lstat([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs) {
             if (kwargs.ContainsKey("follow_symlinks"))
                 throw PythonOps.TypeError("'follow_symlinks' is an invalid keyword argument for lstat(...)");
 
@@ -599,11 +604,11 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing, Documentation("")]
-        public static object lstat(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static object lstat(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs)
             => lstat(path.ToFsString(context), kwargs);
 
         [LightThrowing, Documentation("")]
-        public static object lstat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static object lstat(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs)
             => lstat(ConvertToFsString(context, path, nameof(path)), kwargs);
 
         [PythonType]
@@ -706,7 +711,7 @@ namespace IronPython.Modules {
 #if FEATURE_NATIVE
 
         [Documentation("symlink(src, dst, target_is_directory=False, *, dir_fd=None)")]
-        public static void symlink([NotNone] string src, [NotNone] string dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
+        public static void symlink([NotNone] string src, [NotNone] string dst, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
@@ -736,11 +741,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void symlink(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static void symlink(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => symlink(src.ToFsString(context), dst.ToFsString(context), kwargs, args);
 
         [Documentation("")]
-        public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static void symlink(CodeContext context, object? src, object? dst, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => symlink(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs, args);
 
         [PythonType]
@@ -778,7 +783,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_FILESYSTEM
         [Documentation("mkdir(path, mode=511, *, dir_fd=None)")]
-        public static void mkdir([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
+        public static void mkdir([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 1, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
@@ -808,11 +813,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void mkdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static void mkdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => mkdir(path.ToFsString(context), kwargs, args);
 
         [Documentation("")]
-        public static void mkdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static void mkdir(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => mkdir(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
         [Documentation("""
@@ -825,7 +830,7 @@ namespace IronPython.Modules {
             dir_fd may not be implemented on your platform.
             If it is unavailable, using it will raise a NotImplementedError.
             """)]
-        public static object open(CodeContext/*!*/ context, [NotNone] string path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
+        public static object open(CodeContext/*!*/ context, [NotNone] string path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 2, numOptPosParms: 1, numKwParms: 1, numArgs, kwargs.Count);
 
@@ -906,11 +911,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static object open(CodeContext context, [NotNone] Bytes path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static object open(CodeContext context, [NotNone] Bytes path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => open(context, path.ToFsString(context), flags, kwargs, args);
 
         [Documentation("")]
-        public static object open(CodeContext context, object? path, int flags, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static object open(CodeContext context, object? path, int flags, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => open(context, ConvertToFsString(context, path, nameof(path)), flags, kwargs, args);
 
         private static FileOptions FileOptionsFromFlags(int flag) {
@@ -983,7 +988,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("rename(src, dst, *, src_dir_fd=None, dst_dir_fd=None)")]
-        public static void rename([NotNone] string src, [NotNone] string dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static void rename([NotNone] string src, [NotNone] string dst, [ParamDictionary] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
                 switch (key) {
                     case "src_dir_fd":
@@ -1011,11 +1016,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void rename(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void rename(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary] IDictionary<string, object> kwargs)
             => rename(src.ToFsString(context), dst.ToFsString(context), kwargs);
 
         [Documentation("")]
-        public static void rename(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void rename(CodeContext context, object? src, object? dst, [ParamDictionary] IDictionary<string, object> kwargs)
             => rename(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs);
 
         private const uint MOVEFILE_REPLACE_EXISTING = 0x01;
@@ -1024,7 +1029,7 @@ namespace IronPython.Modules {
         private static extern bool MoveFileEx(string src, string dst, uint flags);
 
         [Documentation("replace(src, dst, *, src_dir_fd=None, dst_dir_fd=None)")]
-        public static void replace([NotNone] string src, [NotNone] string dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static void replace([NotNone] string src, [NotNone] string dst, [ParamDictionary] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
                 switch (key) {
                     case "src_dir_fd":
@@ -1048,16 +1053,16 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void replace(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void replace(CodeContext context, [NotNone] Bytes src, [NotNone] Bytes dst, [ParamDictionary] IDictionary<string, object> kwargs)
             => replace(src.ToFsString(context), dst.ToFsString(context), kwargs);
 
         [Documentation("")]
-        public static void replace(CodeContext context, object? src, object? dst, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void replace(CodeContext context, object? src, object? dst, [ParamDictionary] IDictionary<string, object> kwargs)
             => replace(ConvertToFsString(context, src, nameof(src)), ConvertToFsString(context, dst, nameof(dst)), kwargs);
 
 
         [Documentation("rmdir(path, *, dir_fd=None)")]
-        public static void rmdir([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static void rmdir([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
                 switch (key) {
                     case "dir_fd":
@@ -1075,11 +1080,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void rmdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void rmdir(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs)
             => rmdir(path.ToFsString(context), kwargs);
 
         [Documentation("")]
-        public static void rmdir(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void rmdir(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs)
             => rmdir(ConvertToFsString(context, path, nameof(path)), kwargs);
 
 #if FEATURE_PROCESS
@@ -1384,7 +1389,7 @@ namespace IronPython.Modules {
 
                 return MakeTuple(
                     DynamicHelpers.GetPythonTypeFromType(typeof(stat_result)),
-                    MakeTuple(new PythonTuple(this), timeDict)
+                    MakeTuple(new PythonTuple(DefaultContext.Default, this), timeDict)
                 );
             }
         }
@@ -1430,7 +1435,7 @@ namespace IronPython.Modules {
         [Documentation("stat(path, *, dir_fd=None, follow_symlinks=True) -> stat_result\n\n" +
             "Gathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static object stat([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
@@ -1504,11 +1509,11 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing, Documentation("")]
-        public static object stat(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> dict)
+        public static object stat(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> dict)
             => stat(path.ToFsString(context), dict);
 
         [LightThrowing, Documentation("")]
-        public static object stat(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> dict) {
+        public static object stat(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> dict) {
             if (PythonOps.TryToIndex(path, out BigInteger bi)) {
                 if (bi.AsInt32(out int i)) {
                     return stat(context, i);
@@ -1646,7 +1651,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("remove(path, *, dir_fd=None)")]
-        public static void remove([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs) {
+        public static void remove([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs) {
             foreach (var key in kwargs.Keys) {
                 switch (key) {
                     case "dir_fd":
@@ -1660,23 +1665,23 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void remove(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void remove(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs)
             => remove(path.ToFsString(context), kwargs);
 
         [Documentation("")]
-        public static void remove(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void remove(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs)
             => remove(ConvertToFsString(context, path, nameof(path)), kwargs);
 
         [Documentation("unlink(path, *, dir_fd=None)")]
-        public static void unlink([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void unlink([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs)
             => remove(path, kwargs);
 
         [Documentation("")]
-        public static void unlink(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void unlink(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs)
             => unlink(path.ToFsString(context), kwargs);
 
         [Documentation("")]
-        public static void unlink(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs)
+        public static void unlink(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs)
             => unlink(ConvertToFsString(context, path, nameof(path)), kwargs);
 
         private static void UnlinkWorker(string path) {
@@ -1739,7 +1744,7 @@ namespace IronPython.Modules {
 #if FEATURE_FILESYSTEM
 
         [Documentation("utime(path, times=None, *[, ns], dir_fd=None, follow_symlinks=True)")]
-        public static void utime([NotNone] string path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
+        public static void utime([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
             var numArgs = args.Length;
             CheckOptionalArgsCount(numRegParms: 1, numOptPosParms: 1, numKwParms: 3, numArgs, kwargs.Count);
 
@@ -1813,11 +1818,11 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static void utime(CodeContext context, [NotNone] Bytes path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static void utime(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => utime(path.ToFsString(context), kwargs, args);
 
         [Documentation("")]
-        public static void utime(CodeContext context, object? path, [ParamDictionary, NotNone] IDictionary<string, object> kwargs, [NotNone] params object[] args)
+        public static void utime(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args)
             => utime(ConvertToFsString(context, path, nameof(path)), kwargs, args);
 
 #endif
@@ -1865,13 +1870,15 @@ are defined in the signal module.")]
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
                 RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 killUnix(pid, sig);
-            } else {
-                if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (PythonSignal.NativeWindowsSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
 
                 // If the calls to GenerateConsoleCtrlEvent didn't work, simply
                 // forcefully kill the process.
                 Process toKill = Process.GetProcessById(pid);
                 toKill.Kill();
+            } else {
+                throw new PlatformNotSupportedException();
             }
         }
 

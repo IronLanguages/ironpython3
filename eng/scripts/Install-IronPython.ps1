@@ -12,18 +12,26 @@
 
 .EXAMPLE
 
-    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.0/IronPython.3.4.0.zip -OutFile IronPython.3.4.0.zip
-    PS>Expand-Archive -Path IronPython.3.4.0.zip -DestinationPath IronPython-unzipped
-    PS>./IronPython-unzipped/scripts/Install-IronPython -Path ~/ipyenv/v3.4.0
+    With a one-liner, install latest over the web:
 
-    The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.0.
+    PS>& ([scriptblock]::Create((iwr 'https://raw.githubusercontent.com/IronLanguages/ironpython3/main/eng/scripts/Install-IronPython.ps1').Content)) -Path ~/ipyenv/v3.4.2
+
+    The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.2
 
 .EXAMPLE
 
-    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.0/IronPython.3.4.0.zip -OutFile IronPython.3.4.0.zip
-    PS>Install-IronPython -Path ~/ipyenv/v3.4.0 -ZipFile IronPython.3.4.0.zip -Framework net462 -Force
+    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.2/IronPython.3.4.2.zip -OutFile IronPython.3.4.2.zip
+    PS>Expand-Archive -Path IronPython.3.4.2.zip -DestinationPath IronPython-unzipped
+    PS>./IronPython-unzipped/scripts/Install-IronPython -Path ~/ipyenv/v3.4.2
 
-    The official binaries are downloaded from GitHub to the current directory and then the installation proceeds using the downloaded zip file. IronPython is installed into ~/ipyenv/v3.4.0, overwriting any previous installation in that location. IronPython binaries running on .NET Framework 4.6.2 are used during the installation.
+    The official binaries are downloaded from GitHub to the current directory, unzipped, and then the installation proceeds using the script from the unzipped directory. IronPython is installed into ~/ipyenv/v3.4.2
+
+.EXAMPLE
+
+    PS>Invoke-WebRequest -Uri https://github.com/IronLanguages/ironpython3/releases/download/v3.4.2/IronPython.3.4.2.zip -OutFile IronPython.3.4.2.zip
+    PS>Install-IronPython -Path ~/ipyenv/v3.4.2 -ZipFile IronPython.3.4.2.zip -Framework net462 -Force
+
+    The official binaries are downloaded from GitHub to the current directory and then the installation proceeds using the downloaded zip file. IronPython is installed into ~/ipyenv/v3.4.2, overwriting any previous installation in that location. IronPython binaries running on .NET Framework 4.6.2 are used during the installation.
     This example assumes that the installation script is in a directory on the search path ($env:PATH).
 
 .EXAMPLE
@@ -54,6 +62,8 @@ Param(
 
 $ErrorActionPreference = "Stop"
 
+$downloaded = $false
+
 if (-not $ZipFile) {
     # If zipfile path not given, try to locate it
     $splitPSScriptRoot = $PSScriptRoot -split "\$([IO.Path]::DirectorySeparatorChar)"
@@ -72,7 +82,23 @@ if (-not $ZipFile) {
         }
         $ZipFile = $zipFiles
     } else {
-        Write-Error "Cannot locate implicit zip file. Provide path to the zip file using '-ZipFile <path>'."
+        Try {
+            $zipUrl = (Invoke-RestMethod "https://api.github.com/repos/IronLanguages/ironpython3/releases/latest").assets |
+                Where-Object -Property name -Like "IronPython.3.*.zip" | 
+                Select-Object -ExpandProperty browser_download_url
+        
+            $downloadPath = "$([System.IO.Path]::GetTempPath())$([guid]::NewGuid()).zip"
+            Invoke-WebRequest -Uri $zipUrl -OutFile $downloadPath | Out-Null
+            
+            if (-not (Test-Path -PathType Leaf $downloadPath)) {
+                throw
+            }
+            
+            $downloaded = $true
+            $ZipFile = $downloadPath
+        } Catch {
+            Write-Error "Cannot retrieve zip file implicitly. Check your network connection or provide a path to the zip file using '-ZipFile <path>'."
+        }
     }
 } elseif (-not (Test-Path $ZipFile)) {
     Write-Error "ZipFile not found: $ZipFile"
@@ -85,16 +111,24 @@ if (Test-Path $Path) {
             Write-Error "Overwriting of multiple destinations not allowed: $Path"
         }
         Remove-Item -Path $Path -Force -Recurse
+        New-Item $Path -ItemType Directory | Out-Null
     } else {
-        Write-Error "Path already exists: $Path"
+        Write-Warning "Path already exists: $(Resolve-Path $Path)"
     }
+} else {
+    New-Item $Path -ItemType Directory | Out-Null
 }
-New-Item $Path -ItemType Directory | Out-Null
 
 # Unzip archive
 if (-not $unzipDir) {
     $unzipDir = Join-Path $Path "unzipped"
     Expand-Archive -Path $ZipFile -DestinationPath $unzipDir
+    
+    # Cleanup temporary files
+    if ($downloaded) {
+        Remove-Item -Path $ZipFile
+    }
+    
     $unzipped = $true
 }
 

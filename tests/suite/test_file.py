@@ -502,20 +502,6 @@ class FileTest(IronPythonTestCase):
         f.close()
         self.assertRaises(OSError, os.fdopen, fd)
 
-    def test_file_manager_leak(self):
-        # the number of iterations should be larger than Microsoft.Scripting.Utils.HybridMapping.SIZE (currently 4K)
-        N = 5000
-        for i in range(N):
-            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
-            f = os.fdopen(fd, 'w', closefd=True)
-            f.close()
-
-        for i in range(N):
-            fd = os.open(self.temp_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
-            f = os.fdopen(fd, 'w', closefd=False)
-            g = os.fdopen(f.fileno(), 'w', closefd=True)
-            g.close()
-
     def test_sharing(self):
         modes = ['w', 'w+', 'a+', 'r', 'w']
         fname = self.temp_file

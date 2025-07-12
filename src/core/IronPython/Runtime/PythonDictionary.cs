@@ -245,7 +245,7 @@ namespace IronPython.Runtime {
             return DictionaryOps.get(this, key, defaultValue);
         }
 
-        public virtual object this[params object[] key] {
+        public virtual object this[[NotNone] params object[] key] {
             get {
                 if (key == null) {
                     return GetItem(null);
@@ -300,7 +300,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void __delitem__(params object[] key) {
+        public virtual void __delitem__([NotNone] params object[] key) {
             if (key == null) {
                 __delitem__((object)null);
             } else if (key.Length > 0) {
@@ -356,17 +356,17 @@ namespace IronPython.Runtime {
         public void update() {
         }
 
-        public void update(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> other\u00F8) {
-            DictionaryOps.update(context, this, other\u00F8);
+        public void update(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> other) {
+            DictionaryOps.update(context, this, other);
         }
 
         public void update(CodeContext/*!*/ context, object other\u00F8) {
             DictionaryOps.update(context, this, other\u00F8);
         }
 
-        public void update(CodeContext/*!*/ context, object other\u00F8, [ParamDictionary] IDictionary<object, object> otherArgs\u00F8) {
+        public void update(CodeContext/*!*/ context, object other\u00F8, [ParamDictionary] IDictionary<object, object> otherArgs) {
             DictionaryOps.update(context, this, other\u00F8);
-            DictionaryOps.update(context, this, otherArgs\u00F8);
+            DictionaryOps.update(context, this, otherArgs);
         }
 
         private static object fromkeysAny(CodeContext/*!*/ context, PythonType cls, object o, object value) {
@@ -385,7 +385,7 @@ namespace IronPython.Runtime {
                     pyDict = new PythonDictionary();
                 }
 
-                IEnumerator i = PythonOps.GetEnumerator(o);
+                IEnumerator i = PythonOps.GetEnumerator(context, o);
                 while (i.MoveNext()) {
                     pyDict._storage.AddNoLock(ref pyDict._storage, i.Current, value);
                 }
@@ -399,14 +399,14 @@ namespace IronPython.Runtime {
 
             if (pyDict != null) {
                 // then store all the keys with their associated value
-                IEnumerator i = PythonOps.GetEnumerator(o);
+                IEnumerator i = PythonOps.GetEnumerator(context, o);
                 while (i.MoveNext()) {
                     pyDict[i.Current] = value;
                 }
             } else {
                 // slow path, cls.__new__ returned a user defined dictionary instead of a PythonDictionary.
                 PythonContext pc = context.LanguageContext;
-                IEnumerator i = PythonOps.GetEnumerator(o);
+                IEnumerator i = PythonOps.GetEnumerator(context, o);
                 while (i.MoveNext()) {
                     pc.SetIndex(dict, i.Current, value);
                 }

@@ -146,7 +146,7 @@ namespace IronPython.Modules {
             double real = Math.Acos(0.5 * (a - b));
             double imag = Math.Log(c + Math.Sqrt(c + 1) * Math.Sqrt(c - 1));
 
-            return new Complex(real, num.Imaginary >= 0 ? imag : -imag);
+            return new Complex(real, DoubleOps.IsNegative(num.Imaginary) ? imag : -imag);
         }
 
         //asin(x) = -i*ln( i*x + (1-x*x)^1/2)

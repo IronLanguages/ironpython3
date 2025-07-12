@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Linq;
-using System.Reflection;
+#nullable enable
 
-using IronPython.Runtime.Operations;
+using System;
+using System.Reflection;
 
 namespace IronPython.Runtime {
     [PythonType("sys.version_info")]
@@ -98,12 +97,12 @@ namespace IronPython.Runtime {
 
         static CurrentVersion() {
             var assembly = typeof(CurrentVersion).Assembly;
-            var version = new AssemblyName(assembly.FullName).Version; // don't use Assembly.GetName since it fails in partial trust scenarios
+            var version = new AssemblyName(assembly.FullName!).Version!; // don't use Assembly.GetName since it fails in partial trust scenarios
             Major = version.Major;
             Minor = version.Minor;
             Micro = version.Build;
             Series = version.ToString(2);
-            var split = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var split = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             ReleaseLevel = split[split.Length - 2];
             ReleaseSerial = int.Parse(split[split.Length - 1]);
             DisplayName = $"IronPython {GetVersionString(Major, Minor, Micro, ReleaseLevel, ReleaseSerial)}";

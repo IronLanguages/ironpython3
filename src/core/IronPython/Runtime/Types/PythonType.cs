@@ -500,11 +500,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return false;
         }
 
-        public object __call__(CodeContext context, params object[] args) {
+        public object __call__(CodeContext context, [NotNone] params object[] args) {
             return PythonTypeOps.CallParams(context, this, args);
         }
 
-        public object __call__(CodeContext context, [ParamDictionary] IDictionary<string, object> kwArgs, params object[] args) {
+        public object __call__(CodeContext context, [ParamDictionary] IDictionary<string, object> kwArgs, [NotNone] params object[] args) {
             return PythonTypeOps.CallWorker(context, this, kwArgs, args);
         }
 
@@ -538,7 +538,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             throw PythonOps.AttributeError("type object '{0}' has no attribute '{1}'", Name, name);
         }
 
-        public PythonType this[params Type[] args] {
+        public PythonType this[[NotNone] params Type[] args] {
             get {
                 if (UnderlyingSystemType == typeof(Array)) {
                     if (args.Length == 1) {
@@ -638,7 +638,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             type.QualName = name;
         }
 
-        public static PythonDictionary __prepare__([ParamDictionary] IDictionary<object, object> kwargs, params object[] args)
+        public static PythonDictionary __prepare__([ParamDictionary] IDictionary<object, object> kwargs, [NotNone] params object[] args)
             => new PythonDictionary();
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {

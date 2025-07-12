@@ -123,7 +123,7 @@ namespace IronPython.Runtime.Operations {
                     int len = 0;
                     if (useHint) PythonOps.TryInvokeLengthHint(context ?? DefaultContext.Default, value, out len);
                     List<byte> ret = new List<byte>(len);
-                    IEnumerator ie = PythonOps.GetEnumerator(value);
+                    IEnumerator ie = PythonOps.GetEnumerator(context ?? DefaultContext.Default, value);
                     while (ie.MoveNext()) {
                         ret.Add(GetByte(ie.Current));
                     }

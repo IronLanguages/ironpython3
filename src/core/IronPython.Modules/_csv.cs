@@ -64,7 +64,7 @@ namespace IronPython.Modules {
 dialect = csv.register_dialect(name, dialect)")]
         public static void register_dialect(CodeContext/*!*/ context,
             [ParamDictionary] IDictionary<object, object> kwArgs,
-            params object[] args) {
+            [NotNone] params object[] args) {
             string name = null;
             object dialectObj = null;
             Dialect dialect = null;
@@ -157,7 +157,7 @@ dialect = csv.register_dialect(name, dialect)")]
     of the CSV file (which can span multiple input lines)")]
         public static object reader(CodeContext/*!*/ context,
             [ParamDictionary] IDictionary<object, object> kwArgs,
-            params object[] args) {
+            [NotNone] params object[] args) {
             object dialectObj = null;
             Dialect dialect = null;
             IEnumerator e = null;
@@ -198,7 +198,7 @@ dialect = csv.register_dialect(name, dialect)")]
 
         public static object writer(CodeContext/*!*/ context,
             [ParamDictionary] IDictionary<object, object> kwArgs,
-            params object[] args) {
+            [NotNone] params object[] args) {
             object output_file = null;
             object dialectObj = null;
             Dialect dialect = null;
@@ -416,7 +416,7 @@ The Dialect type records CSV parsing and generation options.")]
 
             public Dialect(CodeContext/*!*/ context,
                 [ParamDictionary] IDictionary<object, object> kwArgs,
-                params object[] args) {
+                [NotNone] params object[] args) {
                 object dialect = null;
                 object delimiter = null;
                 object doublequote = null;
@@ -507,10 +507,10 @@ The Dialect type records CSV parsing and generation options.")]
 
             // CPython defines these overloads on Dialect since 3.10
             [Documentation("raises an exception to avoid pickling")]
-            public object __reduce__(params object[] args) => throw PythonOps.TypeError("cannot pickle 'Dialect' instances");
+            public object __reduce__([NotNone] params object[] args) => throw PythonOps.TypeError("cannot pickle 'Dialect' instances");
 
             [Documentation("raises an exception to avoid pickling")]
-            public object __reduce_ex__(params object[] args) => throw PythonOps.TypeError("cannot pickle 'Dialect' instances");
+            public object __reduce_ex__([NotNone] params object[] args) => throw PythonOps.TypeError("cannot pickle 'Dialect' instances");
 
             public string escapechar {
                 get { return _escapechar; }

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -42,11 +44,11 @@ namespace IronPython.Runtime.Types {
     }
 
     internal class UserInstanceCreator : InstanceCreator {
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object[], object>> _ctorSite;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object>> _ctorSite0;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object, object>> _ctorSite1;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object, object, object>> _ctorSite2;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object, object, object, object>> _ctorSite3;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object[], object>>? _ctorSite;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object>>? _ctorSite0;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object, object>>? _ctorSite1;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object, object, object>>? _ctorSite2;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object, object, object, object>>? _ctorSite3;
 
         public UserInstanceCreator(PythonType/*!*/ type)
             : base(type) {
@@ -134,16 +136,16 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override object CreateInstance(CodeContext context, object[] args, string[] names) {
-            return PythonCalls.CallWithKeywordArgs(context, Type.Ctor, ArrayUtils.Insert(Type, args), names);
+            return PythonCalls.CallWithKeywordArgs(context, Type.Ctor, ArrayUtils.Insert(Type, args), names)!;
         }
     }
 
     internal class SystemInstanceCreator : InstanceCreator {
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object[], object>> _ctorSite;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object>> _ctorSite0;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>> _ctorSite1;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, object>> _ctorSite2;
-        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, object, object>> _ctorSite3;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object[], object>>? _ctorSite;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object>>? _ctorSite0;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>? _ctorSite1;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, object>>? _ctorSite2;
+        private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, object, object>>? _ctorSite3;
 
         public SystemInstanceCreator(PythonType/*!*/ type)
             : base(type) {
@@ -230,7 +232,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override object CreateInstance(CodeContext context, object[] args, string[] names) {
-            return PythonCalls.CallWithKeywordArgs(context, Type.Ctor, args, names);
+            return PythonCalls.CallWithKeywordArgs(context, Type.Ctor, args, names)!;
         }
     }
 }

@@ -567,7 +567,7 @@ namespace IronPython.Runtime.Binding {
         private object ListAddAssign(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(PythonList) &&
                 other != null && other.GetType() == typeof(PythonList)) {
-                return ((PythonList)self).InPlaceAdd(other);
+                return ((PythonList)self).InPlaceAdd(DefaultContext.Default, other);
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);

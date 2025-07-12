@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -123,7 +125,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Returns a regular expression of Python files which should not be emitted in debug mode.
         /// </summary>
-        public Regex NoDebug { get; }
+        public Regex? NoDebug { get; }
 
         public bool Quiet { get; }
 
@@ -138,7 +140,7 @@ namespace IronPython.Runtime {
             : this(null) {
         }
 
-        public PythonOptions(IDictionary<string, object> options)
+        public PythonOptions(IDictionary<string, object>? options)
             : base(EnsureSearchPaths(options)) {
 
             Arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
@@ -160,7 +162,7 @@ namespace IronPython.Runtime {
             Frames = FullFrames || GetOption(options, "Frames", true);
             GCStress = GetOption<int?>(options, "GCStress", null);
             Tracing = GetOption(options, "Tracing", false);
-            NoDebug = GetOption(options, "NoDebug", (Regex)null);
+            NoDebug = GetOption(options, "NoDebug", (Regex?)null);
             Quiet = GetOption(options, "Quiet", false);
             NoImportLib = GetOption(options, "NoImportLib", false);
             Isolated = GetOption(options, "Isolated", false);
@@ -168,7 +170,7 @@ namespace IronPython.Runtime {
             ConsoleSupportLevel = GetEnumOption(options, "ConsoleSupportLevel", SharedIO.SupportLevel.Full);
         }
 
-        private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {
+        private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object>? options) {
             if (options == null) {
                 return new Dictionary<string, object>() { { "SearchPaths", new[] { "." } } };
             } else if (!options.ContainsKey("SearchPaths")) {
@@ -177,8 +179,8 @@ namespace IronPython.Runtime {
             return options;
         }
 
-        private static T GetEnumOption<T>(IDictionary<string, object> options, string name, T defaultValue) where T : struct, Enum {
-            if (options != null && options.TryGetValue(name, out object value)) {
+        private static T GetEnumOption<T>(IDictionary<string, object>? options, string name, T defaultValue) where T : struct, Enum {
+            if (options != null && options.TryGetValue(name, out object? value)) {
                 if (value is T variable) {
                     return variable;
                 }

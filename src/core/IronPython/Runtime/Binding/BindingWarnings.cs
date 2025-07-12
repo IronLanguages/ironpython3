@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading;
 
 using IronPython.Runtime.Exceptions;
@@ -20,7 +22,7 @@ namespace IronPython.Runtime.Binding {
     /// Provides support for emitting warnings when built in methods are invoked at runtime.
     /// </summary>
     internal static class BindingWarnings {
-        public static bool ShouldWarn(PythonContext/*!*/ context, OverloadInfo/*!*/ method, out WarningInfo info) {
+        public static bool ShouldWarn(PythonContext/*!*/ context, OverloadInfo/*!*/ method, [NotNullWhen(true)] out WarningInfo? info) {
             Assert.NotNull(method);
 
             ObsoleteAttribute[] os = (ObsoleteAttribute[])method.ReflectionInfo.GetCustomAttributes(typeof(ObsoleteAttribute), true);
@@ -39,25 +41,23 @@ namespace IronPython.Runtime.Binding {
 
 #if FEATURE_APARTMENTSTATE
             // no apartment states on Silverlight
-            if (method.DeclaringType == typeof(Thread)) {
-                if (method.Name == "Sleep") {
-                    info = new WarningInfo(
-                        PythonExceptions.RuntimeWarning,
-                        "Calling Thread.Sleep on an STA thread doesn't pump messages.  Use Thread.CurrentThread.Join instead.",
-                        Expression.Equal(
-                            Expression.Call(
-                                Expression.Property(
-                                    null,
-                                    typeof(Thread).GetProperty("CurrentThread")
-                                ),
-                                typeof(Thread).GetMethod("GetApartmentState")
+            if (method.DeclaringType == typeof(Thread) && method.Name == nameof(Thread.Sleep)) {
+                info = new WarningInfo(
+                    PythonExceptions.RuntimeWarning,
+                    "Calling Thread.Sleep on an STA thread doesn't pump messages.  Use Thread.CurrentThread.Join instead.",
+                    Expression.Equal(
+                        Expression.Call(
+                            Expression.Property(
+                                null,
+                                typeof(Thread).GetProperty(nameof(Thread.CurrentThread))!
                             ),
-                            AstUtils.Constant(ApartmentState.STA)
-                        )
-                    );
+                            typeof(Thread).GetMethod(nameof(Thread.GetApartmentState))!
+                        ),
+                        AstUtils.Constant(ApartmentState.STA)
+                    )
+                );
 
-                    return true;
-                }
+                return true;
             }
 #endif
 

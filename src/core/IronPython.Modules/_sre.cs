@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Globalization;
 
@@ -17,7 +19,7 @@ namespace IronPython.Modules {
         public const int MAXREPEAT = 65535;
         public const int MAXGROUPS = int.MaxValue;
 
-        public static object getlower(CodeContext/*!*/ context, object val, object encoding) {
+        public static object getlower(CodeContext/*!*/ context, object? val, object? encoding) {
             int encInt = context.LanguageContext.ConvertToInt32(val);
             int charVal = context.LanguageContext.ConvertToInt32(val);
 
@@ -28,7 +30,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object compile(object a, object b, object c) {
+        public static object? compile(object? a, object? b, object? c) {
             return null;
         }
     }

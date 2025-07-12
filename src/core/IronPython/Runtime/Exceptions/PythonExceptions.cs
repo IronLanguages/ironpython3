@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Exceptions {
                 return PythonOps.ToString(msg);
             }
 
-            public override void __init__(params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 base.__init__(args);
 
                 if (args != null && args.Length != 0) {
@@ -82,7 +82,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _UnicodeTranslateError : BaseException {
-            public override void __init__(params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 if (args.Length != 4) {
                     throw PythonOps.TypeError("function takes exactly 4 arguments ({0} given)", args.Length);
                 }
@@ -120,12 +120,12 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _OSError {
-            public static new object __new__(PythonType cls, [ParamDictionary] IDictionary<string, object> kwArgs, params object[] args) {
+            public static new object __new__(PythonType cls, [ParamDictionary] IDictionary<string, object> kwArgs, [NotNone] params object[] args) {
                 if (cls == OSError && args.Length >= 2 && args[0] is int errno) {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                         if (args.Length >= 4 && args[3] is int winerror) {
                             errno = WinErrorToErrno(winerror);
-                        } 
+                        }
                     }
                     cls = ErrorEnumToPythonType(ErrnoToErrorEnum(errno));
                 }
@@ -159,7 +159,7 @@ namespace IronPython.Runtime.Exceptions {
                 set { _characters_written = PythonOps.Index(value); }
             }
 
-            public override void __init__(params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 if (args.Length >= 2 && args.Length <= 5) {
                     errno = args[0];
                     strerror = args[1];
@@ -603,7 +603,7 @@ for k, v in toError.items():
         }
 
         public partial class _ImportError {
-            public void __init__([ParamDictionary] IDictionary<string, object> kwargs, params object[] args) {
+            public void __init__([ParamDictionary] IDictionary<string, object> kwargs, [NotNone] params object[] args) {
                 base.__init__(args);
 
                 foreach (var pair in kwargs) {
@@ -726,7 +726,7 @@ for k, v in toError.items():
         }
 
         public partial class _StopIteration : BaseException {
-            public override void __init__(params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 base.__init__(args);
 
                 if (args?.Length > 0) {
@@ -736,7 +736,7 @@ for k, v in toError.items():
         }
 
         public partial class _BlockingIOError {
-            public override void __init__(params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 if (args.Length >= 3) {
                     if (PythonOps.TryToIndex(args[2], out object index)) // this is the behavior since CPython 3.8
                         characters_written = index;
@@ -775,8 +775,8 @@ for k, v in toError.items():
 
             if (PythonOps.IsInstance(value, type)) {
                 pyEx = value;
-            } else if (value is PythonTuple) {
-                pyEx = PythonOps.CallWithArgsTuple(type, [], value);
+            } else if (value is PythonTuple pt) {
+                pyEx = PythonCalls.Call(context, type, pt.ToArray());
             } else if (value != null) {
                 pyEx = PythonCalls.Call(context, type, value);
             } else {

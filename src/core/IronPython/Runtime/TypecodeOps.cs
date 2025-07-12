@@ -48,30 +48,35 @@ namespace IronPython.Runtime {
         public static bool IsFloatCode(char typecode)
             => typecode == 'f' || typecode == 'd';
 
+        public static bool IsCLong32Bit { get; }
+            = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IntPtr.Size == 4;
+
         public static int GetTypecodeWidth(char typecode) {
             switch (typecode) {
+                case '?': // bool
                 case 'c': // bytechar
                 case 'b': // signed byte
                 case 'B': // unsigned byte
-                case '?': // bool
                     return 1;
+                case 'u': // unicode char
                 case 'h': // signed short
                 case 'H': // unsigned short
                     return 2;
                 case 'i': // signed int
                 case 'I': // unsigned int
-                case 'l': // signed long
-                case 'L': // unsigned long
                 case 'f': // float
                 case 'n': // signed index
                 case 'N': // unsigned index
                     return 4;
+                case 'l': // signed long
+                case 'L': // unsigned long
+                    return IsCLong32Bit ? 4 : 8;
                 case 'q': // signed long long
                 case 'Q': // unsigned long long
                 case 'd': // double
                     return 8;
-                case 's': // char pointer
-                case 'p': // char pointer
+                case 's': // char pointer (C-style string)
+                case 'p': // char pointer (Pascal-style string)
                 case 'P': // void pointer
                 case 'r': // .NET signed pointer
                 case 'R': // .NET unsigned pointer
@@ -83,6 +88,9 @@ namespace IronPython.Runtime {
 
         public static bool TryGetFromBytes(char typecode, ReadOnlySpan<byte> bytes, [NotNullWhen(true)]out object? result) {
             switch (typecode) {
+                case '?':
+                    result = bytes[0] != 0;
+                    return true;
                 case 'c':
                     result = Bytes.FromByte(bytes[0]);
                     return true;
@@ -92,24 +100,31 @@ namespace IronPython.Runtime {
                 case 'B':
                     result = bytes[0];
                     return true;
-                case '?':
-                    result = bytes[0] != 0;
-                    return true;
                 case 'h':
                     result = MemoryMarshal.Read<short>(bytes);
                     return true;
                 case 'H':
                     result = MemoryMarshal.Read<ushort>(bytes);
                     return true;
-                case 'l':
                 case 'i':
                 case 'n':
                     result = MemoryMarshal.Read<int>(bytes);
                     return true;
-                case 'L':
                 case 'I':
                 case 'N':
                     result = MemoryMarshal.Read<uint>(bytes);
+                    return true;
+                case 'l':
+                    if (IsCLong32Bit) goto case 'i';
+                    else goto case 'q';
+                case 'L':
+                    if (IsCLong32Bit) goto case 'I';
+                    else goto case 'Q';
+                case 'q':
+                    result = MemoryMarshal.Read<long>(bytes);
+                    return true;
+                case 'Q':
+                    result = MemoryMarshal.Read<ulong>(bytes);
                     return true;
                 case 'f':
                     result = MemoryMarshal.Read<float>(bytes);
@@ -117,14 +132,8 @@ namespace IronPython.Runtime {
                 case 'd':
                     result = MemoryMarshal.Read<double>(bytes);
                     return true;
-                case 'q':
-                    result = MemoryMarshal.Read<long>(bytes);
-                    return true;
-                case 'Q':
-                    result = MemoryMarshal.Read<ulong>(bytes);
-                    return true;
                 case 'P':
-                    if (UIntPtr.Size == 4) goto case 'L';
+                    if (UIntPtr.Size == 4) goto case 'I';
                     else goto case 'Q';
                 case 'r':
                     result = MemoryMarshal.Read<IntPtr>(bytes);
@@ -141,6 +150,9 @@ namespace IronPython.Runtime {
 #pragma warning disable CS9191 // The 'ref' modifier for an argument corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
         public static bool TryGetBytes(char typecode, object obj, Span<byte> dest) {
             switch (typecode) {
+                case '?':
+                    var boolVal = PythonOps.IsTrue(obj);
+                    return MemoryMarshal.TryWrite(dest, ref boolVal);
                 case 'c':
                     var bytecharVal = (byte)((Bytes)obj)[0];
                     return MemoryMarshal.TryWrite(dest, ref bytecharVal);
@@ -150,37 +162,38 @@ namespace IronPython.Runtime {
                 case 'B':
                     var byteVal = Convert.ToByte(obj);
                     return MemoryMarshal.TryWrite(dest, ref byteVal);
-                case '?':
-                    var boolVal = PythonOps.IsTrue(obj);
-                    return MemoryMarshal.TryWrite(dest, ref boolVal);
                 case 'h':
                     var shortVal = Convert.ToInt16(obj);
                     return MemoryMarshal.TryWrite(dest, ref shortVal);
                 case 'H':
                     var ushortVal = Convert.ToUInt16(obj);
                     return MemoryMarshal.TryWrite(dest, ref ushortVal);
-                case 'l':
                 case 'i':
                 case 'n':
                     var intVal = Convert.ToInt32(obj);
                     return MemoryMarshal.TryWrite(dest, ref intVal);
-                case 'L':
                 case 'I':
                 case 'N':
                     var uintVal = Convert.ToUInt32(obj);
                     return MemoryMarshal.TryWrite(dest, ref uintVal);
-                case 'f':
-                    var singleVal = Convert.ToSingle(obj);
-                    return MemoryMarshal.TryWrite(dest, ref singleVal);
-                case 'd':
-                    var doubleVal = Convert.ToDouble(obj);
-                    return MemoryMarshal.TryWrite(dest, ref doubleVal);
+                case 'l':
+                    if (IsCLong32Bit) goto case 'i';
+                    else goto case 'q';
+                case 'L':
+                    if (IsCLong32Bit) goto case 'I';
+                    else goto case 'Q';
                 case 'q':
                     var longVal = Convert.ToInt64(obj);
                     return MemoryMarshal.TryWrite(dest, ref longVal);
                 case 'Q':
                     var ulongVal = Convert.ToUInt64(obj);
                     return MemoryMarshal.TryWrite(dest, ref ulongVal);
+                case 'f':
+                    var singleVal = Convert.ToSingle(obj);
+                    return MemoryMarshal.TryWrite(dest, ref singleVal);
+                case 'd':
+                    var doubleVal = Convert.ToDouble(obj);
+                    return MemoryMarshal.TryWrite(dest, ref doubleVal);
                 case 'P':
                     var bi = (BigInteger)obj;
                     if (UIntPtr.Size == 4) {
@@ -219,6 +232,8 @@ namespace IronPython.Runtime {
             long minValue;
 
             switch (typecode) {
+                case '?': // bool
+                    return false; // bool never causes overflow but is coerced to 0/1
                 case 'b': // signed byte
                     minValue = sbyte.MinValue;
                     maxValue = (ulong)sbyte.MaxValue;
@@ -227,8 +242,6 @@ namespace IronPython.Runtime {
                     minValue = byte.MinValue;
                     maxValue = byte.MaxValue;
                     break;
-                case '?': // bool
-                    return false; // bool never causes overflow but is coerced to 0/1
                 case 'h': // signed short
                     minValue = short.MinValue;
                     maxValue = (ulong)short.MaxValue;
@@ -238,17 +251,21 @@ namespace IronPython.Runtime {
                     maxValue = ushort.MaxValue;
                     break;
                 case 'i': // signed int
-                case 'l': // signed long
                 case 'n': // signed index
                     minValue = int.MinValue;
                     maxValue = int.MaxValue;
                     break;
                 case 'I': // unsigned int
-                case 'L': // unsigned long
                 case 'N': // unsigned index
                     minValue = uint.MinValue;
                     maxValue = uint.MaxValue;
                     break;
+                case 'l': // signed long
+                    if (IsCLong32Bit) goto case 'i';
+                    else goto case 'q';
+                case 'L': // unsigned long
+                    if (IsCLong32Bit) goto case 'I';
+                    goto case 'Q';
                 case 'q': // signed long long
                     minValue = long.MinValue;
                     maxValue = long.MaxValue;

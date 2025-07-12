@@ -2,21 +2,21 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_NATIVE
 
 using System;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting.Runtime;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using System.Numerics;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("spwd", typeof(IronPython.Modules.PythonSpwd), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules {
-    
+
     public static class PythonSpwd {
         public const string __doc__ = @"This module provides access to the Unix shadow password database.
 It is available on various Unix versions.
@@ -41,7 +41,7 @@ You have to be root to be able to use this module.";
             public int sp_inact;
             public int sp_expire;
             public int sp_flag;
-        };        
+        };
 
         [PythonType("struct_spwd")]
         [Documentation(@"spwd.struct_spwd: Results from getsp*() routines.
@@ -54,35 +54,35 @@ or via the object attributes as named in the above tuple.")]
             private const int LENGTH = 9;
 
             internal struct_spwd(string sp_nam, string sp_pwd, int sp_lstchg, int sp_min, int sp_max, int sp_warn, int sp_inact, int sp_expire, int sp_flag) :
-                base(new object[] { sp_nam ,sp_pwd, sp_lstchg, sp_min, sp_max, sp_warn, sp_inact, sp_expire, sp_flag }) {
+                base(new object[] { sp_nam, sp_pwd, sp_lstchg, sp_min, sp_max, sp_warn, sp_inact, sp_expire, sp_flag }) {
             }
 
             [Documentation("login name")]
-            public string sp_nam => (string)_data[0];
+            public string sp_nam => (string)_data[0]!;
 
             [Documentation("encrypted password")]
-            public string sp_pwd => (string)_data[1];
+            public string sp_pwd => (string)_data[1]!;
 
             [Documentation("date of last change")]
-            public int sp_lstchg => (int)_data[2];
+            public int sp_lstchg => (int)_data[2]!;
 
             [Documentation("min #days between changes")]
-            public int sp_min => (int)_data[3];
+            public int sp_min => (int)_data[3]!;
 
             [Documentation("max #days between changes")]
-            public int sp_max => (int)_data[4];
+            public int sp_max => (int)_data[4]!;
 
             [Documentation("#days before pw expires to warn user about it")]
-            public int sp_warn => (int)_data[5];
+            public int sp_warn => (int)_data[5]!;
 
             [Documentation("#days after pw expires until account is disabled")]
-            public int sp_inact => (int)_data[6];
+            public int sp_inact => (int)_data[6]!;
 
             [Documentation("#days since 1970-01-01 when account expires")]
-            public int sp_expire => (int)_data[7];
+            public int sp_expire => (int)_data[7]!;
 
             [Documentation("reserved")]
-            public int sp_flag => (int)_data[8];
+            public int sp_flag => (int)_data[8]!;
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return $"spwd.struct_spwd(sp_name='{sp_nam}', sp_pwd='{sp_pwd}', sp_lstchg={sp_lstchg}, sp_min={sp_min}, sp_max={sp_max}, sp_warn={sp_warn}, sp_inact={sp_inact}, sp_expire={sp_expire}, sp_flag={sp_flag})";
@@ -95,9 +95,9 @@ or via the object attributes as named in the above tuple.")]
         }
 
         [Documentation("Return the shadow password database entry for the given user name.")]
-        public static struct_spwd getspnam(string name) {
+        public static struct_spwd getspnam([NotNone] string name) {
             var pwd = _getspnam(name);
-            if(pwd == IntPtr.Zero) {
+            if (pwd == IntPtr.Zero) {
                 throw PythonOps.KeyError($"getspnam(): name not found");
             }
 
@@ -109,28 +109,29 @@ or via the object attributes as named in the above tuple.")]
             var res = new PythonList();
             setspent();
             IntPtr val = getspent();
-            while(val != IntPtr.Zero) {
+            while (val != IntPtr.Zero) {
                 res.Add(Make(val));
                 val = getspent();
             }
-            
+
             return res;
         }
 
 
         #region P/Invoke Declarations
 
-        [DllImport("libc", EntryPoint="getspnam", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", EntryPoint = "getspnam", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr _getspnam([MarshalAs(UnmanagedType.LPStr)] string name);
 
-        [DllImport("libc", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", CallingConvention = CallingConvention.Cdecl)]
         private static extern void setspent();
 
-        [DllImport("libc", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr getspent();
 
         #endregion
 
     }
 }
+
 #endif

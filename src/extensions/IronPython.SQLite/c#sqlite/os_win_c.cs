@@ -21,6 +21,9 @@ using System.Runtime.InteropServices.WindowsRuntime;
 #elif WINDOWS_PHONE || SQLITE_SILVERLIGHT  
 using System.IO.IsolatedStorage;
 #endif
+#if !FEATURE_RUNTIMEINFORMATION
+using IronPython;
+#endif
 namespace Community.CsharpSqlite
 {
   public partial class Sqlite3
@@ -3713,27 +3716,53 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
 
       const int LOCKFILE_FAIL_IMMEDIATELY = 1;
 #endif
-        public virtual void LockFile( sqlite3_file pFile, long offset, long length )
+
+      private int LockUnix( sqlite3_file pFile, long offset, long length, bool locking, bool shared = false)
+      {
+        int fd = pFile.fs.Handle.ToInt32();
+        Mono.Unix.Native.Flock flock = new() {
+            l_whence = Mono.Unix.Native.SeekFlags.SEEK_SET,
+            l_start = offset,
+            l_len = length,
+            l_type = !locking ? Mono.Unix.Native.LockType.F_UNLCK
+                     : shared ? Mono.Unix.Native.LockType.F_RDLCK
+                     : Mono.Unix.Native.LockType.F_WRLCK,
+        };
+
+        int result = Mono.Unix.Native.Syscall.fcntl(fd, Mono.Unix.Native.FcntlCommand.F_SETLK, ref flock);
+        return result != -1 ? 1 : 0;
+      }
+
+      public virtual void LockFile( sqlite3_file pFile, long offset, long length )
+      {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-#pragma warning disable CA1416 // Validate platform compatibility
-            pFile.fs.Lock( offset, length );
-#pragma warning restore CA1416 // Validate platform compatibility
+          LockUnix( pFile, offset, length, locking: true );
         }
+        else
+        {
+          pFile.fs.Lock( offset, length );
+        }
+      }
 
       public virtual int SharedLockFile( sqlite3_file pFile, long offset, long length )
-        {
+      {
 #if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
-#if FEATURE_RUNTIMEINFORMATION
-        Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-#endif
-        Debug.Assert( length == SHARED_SIZE );
-        Debug.Assert( offset == SHARED_FIRST );
-        NativeOverlapped ovlp = new NativeOverlapped();
-        ovlp.OffsetLow = (int)offset;
-        ovlp.OffsetHigh = 0;
-        ovlp.EventHandle = IntPtr.Zero;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+          Debug.Assert( length == SHARED_SIZE );
+          Debug.Assert( offset == SHARED_FIRST );
+          NativeOverlapped ovlp = new NativeOverlapped();
+          ovlp.OffsetLow = (int)offset;
+          ovlp.OffsetHigh = 0;
+          ovlp.EventHandle = IntPtr.Zero;
 
-        return LockFileEx( pFile.fs.Handle, LOCKFILE_FAIL_IMMEDIATELY, 0, (uint)length, 0, ref ovlp ) ? 1 : 0;
+          return LockFileEx( pFile.fs.Handle, LOCKFILE_FAIL_IMMEDIATELY, 0, (uint)length, 0, ref ovlp ) ? 1 : 0;
+        }
+        else
+        {
+          return LockUnix( pFile, offset, length, locking: true, shared: true );
+        }
 #else
             return 1;
 #endif
@@ -3742,9 +3771,14 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
       public virtual void UnlockFile( sqlite3_file pFile, long offset, long length )
       {
 #if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
-#pragma warning disable CA1416 // Validate platform compatibility
-        pFile.fs.Unlock( offset, length );
-#pragma warning restore CA1416 // Validate platform compatibility
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+          LockUnix( pFile, offset, length, locking: false );
+        }
+        else
+        {
+          pFile.fs.Unlock( offset, length );
+        }
 #endif
       }
     }
@@ -3762,9 +3796,10 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
         Debug.Assert( offset == SHARED_FIRST );
         try
         {
-#pragma warning disable CA1416 // Validate platform compatibility
-          pFile.fs.Lock( offset + pFile.sharedLockByte, 1 );
-#pragma warning restore CA1416 // Validate platform compatibility
+          if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+          {
+            pFile.fs.Lock( offset + pFile.sharedLockByte, 1 );
+          }
         }
         catch ( IOException )
         {
@@ -3781,7 +3816,7 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
           // placeholder method
           // this is where it needs to check if it's running in an ASP.Net MediumTrust or lower environment
           // in order to pick the appropriate locking strategy
-          return Environment.OSVersion.Platform == PlatformID.Unix;
+          return false;
       }
 
 #if SQLITE_WINRT

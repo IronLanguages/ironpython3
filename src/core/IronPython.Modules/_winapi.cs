@@ -15,6 +15,8 @@ using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
+using Microsoft.Win32.SafeHandles;
+
 [assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     [SupportedOSPlatform("windows")]
@@ -232,6 +234,16 @@ namespace IronPython.Modules {
 
         public static int WaitForSingleObject(BigInteger handle, int dwMilliseconds) {
             return WaitForSingleObjectPI(new IntPtr((long)handle), dwMilliseconds);
+        }
+
+        public static void SetNamedPipeHandleState(BigInteger named_pipe, object? mode, object? max_collection_count, object? collect_data_timeout) {
+            if (max_collection_count is not null) throw new NotImplementedException();
+            if (collect_data_timeout is not null) throw new NotImplementedException();
+            var pipeHandle = new SafePipeHandle(new IntPtr((long)named_pipe), false);
+            int m = Converter.ConvertToInt32(mode);
+            var result = Interop.Kernel32.SetNamedPipeHandleState(pipeHandle, ref m, IntPtr.Zero, IntPtr.Zero);
+
+            if (!result) throw PythonNT.GetLastWin32Error();
         }
 
         #endregion

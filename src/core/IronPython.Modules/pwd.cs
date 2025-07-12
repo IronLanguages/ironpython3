@@ -2,22 +2,22 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 #if FEATURE_NATIVE
 
 using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
-using Microsoft.Scripting.Runtime;
-
-using IronPython;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using System.Numerics;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("pwd", typeof(IronPython.Modules.PythonPwd), PlatformsAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules {
-    
+
     public static class PythonPwd {
         public const string __doc__ = @"This module provides access to the Unix password database.
 It is available on all Unix versions.
@@ -78,25 +78,25 @@ or via the object attributes as named in the above tuple.")]
             }
 
             [Documentation("user name")]
-            public string pw_name => (string)_data[0];
+            public string pw_name => (string)_data[0]!;
 
             [Documentation("password")]
-            public string pw_passwd => (string)_data[1];
+            public string pw_passwd => (string)_data[1]!;
 
             [Documentation("user id")]
-            public int pw_uid => (int)_data[2];
+            public int pw_uid => (int)_data[2]!;
 
             [Documentation("group id")]
-            public int pw_gid => (int)_data[3];
+            public int pw_gid => (int)_data[3]!;
 
             [Documentation("real name")]
-            public string pw_gecos => (string)_data[4];
+            public string pw_gecos => (string)_data[4]!;
 
             [Documentation("home directory")]
-            public string pw_dir => (string)_data[5];
+            public string pw_dir => (string)_data[5]!;
 
             [Documentation("shell program")]
-            public string pw_shell => (string)_data[6];
+            public string pw_shell => (string)_data[6]!;
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return $"pwd.struct_passwd(pw_name='{pw_name}', pw_passwd='{pw_passwd}', pw_uid={pw_uid}, pw_gid={pw_gid}, pw_gecos='{pw_gecos}', pw_dir='{pw_dir}', pw_shell='{pw_shell}')";
@@ -104,7 +104,7 @@ or via the object attributes as named in the above tuple.")]
         }
 
         private static struct_passwd Make(IntPtr pwd) {
-            struct_passwd res = null;
+            struct_passwd? res = null;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 passwd_osx p = Marshal.PtrToStructure<passwd_osx>(pwd);
                 res = new struct_passwd(p.pw_name, p.pw_passwd, p.pw_uid, p.pw_gid, p.pw_gecos, p.pw_dir, p.pw_shell);
@@ -117,7 +117,7 @@ or via the object attributes as named in the above tuple.")]
         }
 
         [Documentation("Return the password database entry for the given numeric user ID.")]
-        public static struct_passwd getpwuid(object uid) {
+        public static struct_passwd getpwuid(object? uid) {
             uid = PythonOps.Index(uid);
 
             if (uid is BigInteger bi) {
@@ -130,20 +130,20 @@ or via the object attributes as named in the above tuple.")]
 
             if (uid is int id) {
                 var pwd = _getpwuid(id);
-                if(pwd == IntPtr.Zero) {
+                if (pwd == IntPtr.Zero) {
                     throw PythonOps.KeyError($"getpwuid(): uid not found: {id}");
                 }
 
-                return Make(pwd);                
+                return Make(pwd);
             }
 
             throw PythonOps.TypeError($"integer argument expected, got {PythonOps.GetPythonTypeName(uid)}");
         }
 
         [Documentation("Return the password database entry for the given user name.")]
-        public static struct_passwd getpwnam(string name) {
+        public static struct_passwd getpwnam([NotNone] string name) {
             var pwd = _getpwnam(name);
-            if(pwd == IntPtr.Zero) {
+            if (pwd == IntPtr.Zero) {
                 throw PythonOps.KeyError($"getpwname(): name not found: {name}");
             }
 
@@ -155,31 +155,32 @@ or via the object attributes as named in the above tuple.")]
             var res = new PythonList();
             setpwent();
             IntPtr val = getpwent();
-            while(val != IntPtr.Zero) {
+            while (val != IntPtr.Zero) {
                 res.Add(Make(val));
                 val = getpwent();
             }
-            
+
             return res;
         }
 
 
         #region P/Invoke Declarations
 
-        [DllImport("libc", EntryPoint="getpwuid", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", EntryPoint = "getpwuid", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr _getpwuid(int uid);
 
-        [DllImport("libc", EntryPoint="getpwnam", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", EntryPoint = "getpwnam", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr _getpwnam([MarshalAs(UnmanagedType.LPStr)] string name);
 
-        [DllImport("libc", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", CallingConvention = CallingConvention.Cdecl)]
         private static extern void setpwent();
 
-        [DllImport("libc", CallingConvention=CallingConvention.Cdecl)]
+        [DllImport("libc", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr getpwent();
 
         #endregion
 
     }
 }
+
 #endif

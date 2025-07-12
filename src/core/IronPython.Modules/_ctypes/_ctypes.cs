@@ -361,40 +361,44 @@ namespace IronPython.Modules {
             return new NativeArgument(instance, "P");
         }
 
-        public static object call_cdeclfunction(CodeContext context, int address, PythonTuple args) {
+#nullable enable
+
+        public static object? call_cdeclfunction(CodeContext context, int address, [NotNone] PythonTuple args) {
             return call_cdeclfunction(context, new IntPtr(address), args);
         }
 
-        public static object call_cdeclfunction(CodeContext context, BigInteger address, PythonTuple args) {
+        public static object? call_cdeclfunction(CodeContext context, BigInteger address, [NotNone] PythonTuple args) {
             return call_cdeclfunction(context, new IntPtr((long)address), args);
         }
 
-        public static object call_cdeclfunction(CodeContext context, IntPtr address, PythonTuple args) {
+        public static object? call_cdeclfunction(CodeContext context, IntPtr address, [NotNone] PythonTuple args) {
             CFuncPtrType funcType = GetFunctionType(context, FUNCFLAG_CDECL);
 
             _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
 
-            return PythonOps.CallWithArgsTuple(func, System.Array.Empty<object>(), args);
+            return PythonCalls.Call(context, func, args.ToArray());
         }
 
         public static void call_commethod() {
         }
 
-        public static object call_function(CodeContext context, int address, PythonTuple args) {
+        public static object? call_function(CodeContext context, int address, [NotNone] PythonTuple args) {
             return call_function(context, new IntPtr(address), args);
         }
 
-        public static object call_function(CodeContext context, BigInteger address, PythonTuple args) {
+        public static object? call_function(CodeContext context, BigInteger address, [NotNone] PythonTuple args) {
             return call_function(context, new IntPtr((long)address), args);
         }
 
-        public static object call_function(CodeContext context, IntPtr address, PythonTuple args) {
+        public static object? call_function(CodeContext context, IntPtr address, [NotNone] PythonTuple args) {
             CFuncPtrType funcType = GetFunctionType(context, FUNCFLAG_STDCALL);
 
             _CFuncPtr func = (_CFuncPtr)funcType.CreateInstance(context, address);
 
-            return PythonOps.CallWithArgsTuple(func, System.Array.Empty<object>(), args);
+            return PythonCalls.Call(context, func, args.ToArray());
         }
+
+#nullable restore
 
         private static CFuncPtrType GetFunctionType(CodeContext context, int flags) {
             // Ideally we should cache these...
@@ -465,7 +469,7 @@ namespace IronPython.Modules {
         }
 
         public static int @sizeof(PythonType/*!*/ type) {
-            if (!(type is INativeType simpleType)) {
+            if (type is not INativeType simpleType) {
                 throw PythonOps.TypeError("this type has no size");
             }
 
@@ -597,21 +601,17 @@ namespace IronPython.Modules {
             if (pt.Count != 3) {
                 bitCount = null;
             } else {
-                bitCount = CheckBits(cdata, pt);
+                bitCount = Converter.ConvertToInt32(pt[2]);
+                CheckBits(fieldName, cdata, bitCount.Value);
             }
         }
 
         /// <summary>
         /// Verifies that the provided bit field settings are valid for this type.
         /// </summary>
-        private static int CheckBits(INativeType cdata, PythonTuple pt) {
-            int bitCount = Converter.ConvertToInt32(pt[2]);
-
-            if (!(cdata is SimpleType simpType)) {
-                throw PythonOps.TypeError("bit fields not allowed for type {0}", ((PythonType)cdata).Name);
-            }
-
-            switch (simpType._type) {
+        private static void CheckBits(string fieldName, INativeType cdata, int bitCount) {
+            switch ((cdata as SimpleType)?._type) {
+                case null:
                 case SimpleTypeKind.Object:
                 case SimpleTypeKind.Pointer:
                 case SimpleTypeKind.Single:
@@ -620,21 +620,21 @@ namespace IronPython.Modules {
                 case SimpleTypeKind.CharPointer:
                 case SimpleTypeKind.WChar:
                 case SimpleTypeKind.WCharPointer:
+                case SimpleTypeKind.BStr:
                     throw PythonOps.TypeError("bit fields not allowed for type {0}", ((PythonType)cdata).Name);
             }
 
             if (bitCount <= 0 || bitCount > cdata.Size * 8) {
-                throw PythonOps.ValueError("number of bits invalid for bit field");
+                throw PythonOps.ValueError("number of bits invalid for bit field '{0}'", fieldName);
             }
-            return bitCount;
         }
 
         /// <summary>
         /// Shared helper to get the _fields_ list for struct/union and validate it.
         /// </summary>
         private static IList<object>/*!*/ GetFieldsList(object fields) {
-            if (!(fields is IList<object> list)) {
-                throw PythonOps.TypeError("class must be a sequence of pairs");
+            if (fields is not IList<object> list) {
+                throw PythonOps.TypeError("'_fields_' must be a sequence of (name, C type) pairs");
             }
             return list;
         }
@@ -770,7 +770,7 @@ namespace IronPython.Modules {
 
             public _COMError(PythonType cls) : base(cls) { }
 
-            public override void __init__(params object[] args) {
+            public override void __init__([NotNone] params object[] args) {
                 base.__init__(args);
                 if (args.Length < 3) {
                     throw PythonOps.TypeError($"COMError() takes exactly 4 arguments({args.Length} given)");

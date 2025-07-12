@@ -7,6 +7,8 @@
 #if FEATURE_MMAP
 
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -278,7 +280,7 @@ namespace IronPython.Modules {
         }
 
         [PythonHidden]
-        public class MmapDefault : IWeakReferenceable {
+        public class MmapDefault : IWeakReferenceable, IBufferProtocol {
             private MemoryMappedFile _file;
             private MemoryMappedViewAccessor _view;
             private long _position;
@@ -599,6 +601,11 @@ namespace IronPython.Modules {
                         reason = StateBits.Exporting;
                         return false;
                     }
+                    if (exclusive && ((oldState & StateBits.RefCount) > StateBits.RefCountOne)) {
+                        // mmap in non-exclusive use, temporarily no exclusive use allowed
+                        reason = StateBits.Exclusive;
+                        return false;
+                    }
                     Debug.Assert((oldState & StateBits.RefCount) > 0, "resurrecting disposed mmap object (disposed without being closed)");
 
                     newState = oldState + StateBits.RefCountOne;
@@ -635,6 +642,9 @@ namespace IronPython.Modules {
                     if (exclusive) {
                         newState &= ~StateBits.Exclusive;
                     }
+                    if ((newState & StateBits.RefCount) == StateBits.RefCountOne) {
+                        newState &= ~StateBits.Exporting;
+                    }
                 } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
 
                 if (performDispose) {
@@ -648,25 +658,28 @@ namespace IronPython.Modules {
                 }
             }
 
+            private int InterlockedOrState(int value) {
+#if NET5_0_OR_GREATER
+                return Interlocked.Or(ref _state, value);
+#else
+                int current = _state;
+                while (true) {
+                    int newValue = current | value;
+                    int oldValue = Interlocked.CompareExchange(ref _state, newValue, current);
+                    if (oldValue == current) {
+                        return oldValue;
+                    }
+                    current = oldValue;
+                }
+#endif
+            }
 
             public void close() {
                 // close is idempotent; it must never block
-#if NET5_0_OR_GREATER
-                if ((Interlocked.Or(ref _state, StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
+                if ((InterlockedOrState(StateBits.Closed) & StateBits.Closed) != StateBits.Closed) {
                     // freshly closed, release the construction time reference
                     Release(exclusive: false);
                 }
-#else
-                int oldState, newState;
-                do {
-                    oldState = _state;
-                    newState = oldState | StateBits.Closed;
-                } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
-                if ((oldState & StateBits.Closed) != StateBits.Closed) {
-                    // freshly closed, release the construction time reference
-                    Release(exclusive: false);
-                }
-#endif
             }
 
 
@@ -897,7 +910,6 @@ namespace IronPython.Modules {
                 }
             }
 
-
             public void resize(long newsize) {
                 using (new MmapLocker(this, exclusive: true)) {
                     if (_fileAccess is not MemoryMappedFileAccess.ReadWrite and not MemoryMappedFileAccess.ReadWriteExecute) {
@@ -907,6 +919,8 @@ namespace IronPython.Modules {
                     if (newsize < 0) {
                         throw PythonOps.ValueError("new size out of range");
                     }
+
+                    long capacity = checked(_offset + newsize);
 
                     if (_handle is not null
                         && (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))) {
@@ -929,15 +943,15 @@ namespace IronPython.Modules {
 
                             // Resize the underlying file as needed.
                             int fd = unchecked((int)_handle.DangerousGetHandle());
-                            PythonNT.ftruncateUnix(fd, newsize);
+                            PythonNT.ftruncateUnix(fd, capacity);
 
-    #if NET8_0_OR_GREATER
-                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
-    #else
+#if NET8_0_OR_GREATER
+                            _file = MemoryMappedFile.CreateFromFile(_handle, _mapName, capacity, _fileAccess, HandleInheritability.None, leaveOpen: true);
+#else
                             _sourceStream?.Dispose();
                             _sourceStream = new FileStream(new SafeFileHandle((IntPtr)fd, ownsHandle: false), FileAccess.ReadWrite);
-                            _file = CreateFromFile(_sourceStream, _mapName, newsize, _fileAccess, HandleInheritability.None, leaveOpen: true);
-    #endif
+                            _file = CreateFromFile(_sourceStream, _mapName, capacity, _fileAccess, HandleInheritability.None, leaveOpen: true);
+#endif
                             _view = _file.CreateViewAccessor(_offset, newsize, _fileAccess);
                             return;
                         } catch {
@@ -955,8 +969,6 @@ namespace IronPython.Modules {
                         // resizing to the same size
                         return;
                     }
-
-                    long capacity = checked(_offset + newsize);
 
                     try {
                         if (newsize == 0) {
@@ -1168,8 +1180,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            private bool IsReadOnly => _fileAccess is MemoryMappedFileAccess.Read or MemoryMappedFileAccess.ReadExecute;
+
             private void EnsureWritable() {
-                if (_fileAccess is MemoryMappedFileAccess.Read or MemoryMappedFileAccess.ReadExecute) {
+                if (IsReadOnly) {
                     throw PythonOps.TypeError("mmap can't modify a read-only memory map.");
                 }
             }
@@ -1299,8 +1313,80 @@ namespace IronPython.Modules {
             }
 
             #endregion
-        }
 
+            public IPythonBuffer? GetBuffer(BufferFlags flags, bool throwOnError) {
+                if (flags.HasFlag(BufferFlags.Writable) && IsReadOnly) {
+                    if (throwOnError) {
+                        throw PythonOps.BufferError("Object is not writable.");
+                    }
+                    return null;
+                }
+                return new MmapBuffer(this, flags);
+            }
+
+            private sealed unsafe class MmapBuffer : IPythonBuffer {
+                private readonly MmapDefault _mmap;
+                private readonly MmapLocker _locker;
+                private readonly BufferFlags _flags;
+                private SafeMemoryMappedViewHandle? _handle;
+                private byte* _pointer = null;
+
+                public MmapBuffer(MmapDefault mmap, BufferFlags flags) {
+                    _mmap = mmap;
+                    _flags = flags;
+                    _locker = new MmapLocker(mmap);
+                    mmap.InterlockedOrState(StateBits.Exporting);
+                    _handle = _mmap._view.SafeMemoryMappedViewHandle;
+                    ItemCount = _mmap.__len__() is int i ? i : throw new NotImplementedException();
+                }
+
+                public object Object => _mmap;
+
+                public bool IsReadOnly => _mmap.IsReadOnly;
+
+                public int Offset => 0;
+
+                public string? Format => _flags.HasFlag(BufferFlags.Format) ? "B" : null;
+
+                public int ItemCount { get; }
+
+                public int ItemSize => 1;
+
+                public int NumOfDims => 1;
+
+                public IReadOnlyList<int>? Shape => null;
+
+                public IReadOnlyList<int>? Strides => null;
+
+                public IReadOnlyList<int>? SubOffsets => null;
+
+                public unsafe ReadOnlySpan<byte> AsReadOnlySpan() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new ReadOnlySpan<byte>(_pointer, ItemCount);
+                }
+
+                public unsafe Span<byte> AsSpan() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (IsReadOnly) throw new InvalidOperationException("object is not writable");
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new Span<byte>(_pointer, ItemCount);
+                }
+
+                public unsafe MemoryHandle Pin() {
+                    if (_handle is null) throw new ObjectDisposedException(nameof(MmapBuffer));
+                    if (_pointer is null) _handle.AcquirePointer(ref _pointer);
+                    return new MemoryHandle(_pointer);
+                }
+
+                public void Dispose() {
+                    var handle = Interlocked.Exchange(ref _handle, null);
+                    if (handle is null) return;
+                    if (_pointer is not null) handle.ReleasePointer();
+                    _locker.Dispose();
+                }
+            }
+        }
 
         #region P/Invoke for allocation granularity
 
@@ -1318,17 +1404,18 @@ namespace IronPython.Modules {
             internal short wProcessorRevision;
         }
 
+        [SupportedOSPlatform("windows")]
         [DllImport("kernel32", SetLastError = true)]
         private static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
 
         private static int GetAllocationGranularity() {
-            try {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 return GetAllocationGranularityWorker();
-            } catch {
-                return System.Environment.SystemPageSize;
             }
+            return System.Environment.SystemPageSize;
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int GetAllocationGranularityWorker() {
             SYSTEM_INFO info = new SYSTEM_INFO();

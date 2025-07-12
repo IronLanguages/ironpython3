@@ -1682,7 +1682,7 @@ range = range
         [Test]
         public void ScenarioObjectOperations() {
             var ops = _pe.Operations;
-            Assert.That(ops.Format(new PythonTuple(new object[] { 1, 2, 3 })), Is.EqualTo("(1, 2, 3)"));
+            Assert.That(ops.Format(PythonTuple.Make(new object[] { 1, 2, 3 })), Is.EqualTo("(1, 2, 3)"));
 
             var scope = _pe.CreateScope();
             scope.SetVariable("ops", ops);

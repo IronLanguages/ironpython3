@@ -23,6 +23,20 @@
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
   </PropertyGroup>
 
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
+    <Reference Include="Mono.Posix" Version="4.0.0">
+      <Private>True</Private>
+      <HintPath>$(UtilsDir)\References\Mono.Posix.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(IsFullFramework)' != 'true' ">
+    <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../core/IronPython/FakeInteropServices.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" Private="false" />
     <ProjectReference Include="..\..\dlr\Src\Microsoft.Scripting\Microsoft.Scripting.csproj" Private="false" />

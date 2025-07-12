@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-using Microsoft.Scripting;
-
 using IronPython.Compiler;
-using IronPython.Runtime.Operations;
+
+using Microsoft.Scripting;
 
 namespace IronPython.Runtime {
     public class CompiledLoader {
@@ -30,11 +31,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ModuleLoader find_module(CodeContext/*!*/ context, string fullname, PythonList path = null) {
-            if (_codes.TryGetValue(fullname, out OnDiskScriptCode sc)) {
+        public ModuleLoader? find_module(CodeContext/*!*/ context, string fullname, PythonList? path = null) {
+            if (_codes.TryGetValue(fullname, out OnDiskScriptCode? sc)) {
                 int sep = fullname.LastIndexOf('.');
                 string name = fullname;
-                string parentName = null;
+                string? parentName = null;
                 if (sep != -1) {
                     parentName = fullname.Substring(0, sep);
                     name = fullname.Substring(sep + 1);

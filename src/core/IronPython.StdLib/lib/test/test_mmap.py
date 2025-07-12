@@ -102,7 +102,7 @@ class MmapTests(unittest.TestCase):
             # resize() not supported
             # No messages are printed, since the output of this test suite
             # would then be different across platforms.
-            pass
+            raise # ironpython: all our runners currently support resize
         else:
             # resize() is supported
             self.assertEqual(len(m), 512)
@@ -168,7 +168,7 @@ class MmapTests(unittest.TestCase):
             try:
                 m.resize(2*mapsize)
             except SystemError:   # resize is not universally supported
-                pass
+                raise # ironpython: all our runners currently support resize
             except TypeError:
                 pass
             else:
@@ -541,7 +541,7 @@ class MmapTests(unittest.TestCase):
             try:
                 m.resize(512)
             except SystemError:
-                pass
+                raise # ironpython: all our runners currently support resize
             else:
                 # resize() is supported
                 self.assertEqual(len(m), 512)

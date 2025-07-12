@@ -10,16 +10,15 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_collections", typeof(IronPython.Modules.PythonCollections))]
 namespace IronPython.Modules {
@@ -42,7 +41,7 @@ namespace IronPython.Modules {
                 _data = _maxLen < 0 ? new object[8] : new object[Math.Min(_maxLen, 8)];
             }
 
-            public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) {
                 if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(deque))) return new deque();
                 return cls.CreateInstance(context);
             }
@@ -52,29 +51,29 @@ namespace IronPython.Modules {
                 clear();
             }
 
-            public void __init__([ParamDictionary]IDictionary<object, object> dict) {
+            public void __init__([ParamDictionary] IDictionary<object, object> dict) {
                 _maxLen = VerifyMaxLen(dict);
                 clear();
             }
 
-            public void __init__(object iterable) {
+            public void __init__(CodeContext context, object iterable) {
                 _maxLen = -1;
                 clear();
-                extend(iterable);
+                extend(context, iterable);
             }
 
-            public void __init__(object iterable, object maxlen) {
+            public void __init__(CodeContext context, object iterable, object maxlen) {
                 _maxLen = VerifyMaxLenValue(maxlen);
-                
+
                 clear();
-                extend(iterable);
+                extend(context, iterable);
             }
 
-            public void __init__(object iterable, [ParamDictionary]IDictionary<object, object> dict) {
+            public void __init__(CodeContext context, object iterable, [ParamDictionary] IDictionary<object, object> dict) {
                 if (VerifyMaxLen(dict) < 0) {
-                    __init__(iterable);
+                    __init__(context, iterable);
                 } else {
-                    __init__(iterable, VerifyMaxLen(dict));
+                    __init__(context, iterable, VerifyMaxLen(dict));
                 }
             }
 
@@ -82,7 +81,7 @@ namespace IronPython.Modules {
                 if (dict.Count != 1) {
                     throw PythonOps.TypeError("deque() takes at most 1 keyword argument ({0} given)", dict.Count);
                 }
-                
+
                 object value;
                 if (!dict.TryGetValue("maxlen", out value)) {
                     IEnumerator<object> e = dict.Keys.GetEnumerator();
@@ -105,7 +104,7 @@ namespace IronPython.Modules {
                     Extensible<BigInteger> ebi => (int)ebi.Value,
                     _ => throw PythonOps.TypeError("an integer is required")
                 };
-                
+
                 if (res < 0) throw PythonOps.ValueError("maxlen must be non-negative");
 
                 return res;
@@ -188,7 +187,7 @@ namespace IronPython.Modules {
             public object copy(CodeContext context)
                 => __copy__(context);
 
-            public void extend(object iterable) {
+            public void extend(CodeContext context, object iterable) {
                 // d.extend(d)
                 if (ReferenceEquals(iterable, this)) {
                     WalkDeque(idx => {
@@ -198,13 +197,13 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                IEnumerator e = PythonOps.GetEnumerator(iterable);
+                IEnumerator e = PythonOps.GetEnumerator(context, iterable);
                 while (e.MoveNext()) {
                     append(e.Current);
                 }
             }
 
-            public void extendleft(object iterable) {
+            public void extendleft(CodeContext context, object iterable) {
                 // d.extendleft(d)
                 if (ReferenceEquals(iterable, this)) {
                     WalkDeque(idx => {
@@ -214,7 +213,7 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                IEnumerator e = PythonOps.GetEnumerator(iterable);
+                IEnumerator e = PythonOps.GetEnumerator(context, iterable);
                 while (e.MoveNext()) {
                     appendleft(e.Current);
                 }
@@ -425,7 +424,7 @@ namespace IronPython.Modules {
                         // too bad, we got gaps, looks like we'll be doing some real work.
                         object[] newData = new object[_itemCnt]; // we re-size to itemCnt so that future rotates don't require work
                         int curWriteIndex = rot;
-                        WalkDeque(delegate(int curIndex) {
+                        WalkDeque(delegate (int curIndex) {
                             newData[curWriteIndex] = _data[curIndex];
                             curWriteIndex = (curWriteIndex + 1) % _itemCnt;
                             return true;
@@ -512,7 +511,7 @@ namespace IronPython.Modules {
             public object __copy__(CodeContext/*!*/ context) {
                 if (GetType() == typeof(deque)) {
                     deque res = new deque(_maxLen);
-                    res.extend(((IEnumerable)this).GetEnumerator());
+                    res.extend(context, ((IEnumerable)this).GetEnumerator());
                     return res;
                 } else {
                     return PythonCalls.Call(context, DynamicHelpers.GetPythonType(this), ((IEnumerable)this).GetEnumerator());
@@ -534,7 +533,7 @@ namespace IronPython.Modules {
                         // we'll just recreate our data by walking the data once.
                         object[] newData = new object[_data.Length];
                         int writeIndex = 0;
-                        WalkDeque(delegate(int curIndex) {
+                        WalkDeque(delegate (int curIndex) {
                             if (curIndex != realIndex) {
                                 newData[writeIndex++] = _data[curIndex];
                             }
@@ -565,30 +564,36 @@ namespace IronPython.Modules {
             }
 
             [SpecialName]
-            public deque InPlaceAdd(object other) {
-                extend(other);
+            public deque InPlaceAdd(CodeContext context, object other) {
+                extend(context, other);
                 return this;
             }
 
 
             #region binary operators
 
-            public static deque operator +([NotNone] deque x, object y) {
-                if (y is deque t) return x + t;
+            [SpecialName]
+            public static deque Add(CodeContext context, [NotNone] deque x, object y) {
+                if (y is deque t) return Add(context, x, t);
                 throw PythonOps.TypeError($"can only concatenate deque (not \"{PythonOps.GetPythonTypeName(y)}\") to deque");
             }
 
-            public static deque operator +([NotNone] deque x, [NotNone] deque y) {
-                var d = new deque(x._maxLen);
-                d.extend(x);
-                d.extend(y);
+            [SpecialName]
+            public static deque Add(CodeContext context, [NotNone] deque x, [NotNone] deque y) {
+                var d = (deque)__new__(context, DynamicHelpers.GetPythonType(x), null, null);
+                if (x._maxLen > 0) {
+                    d.__init__(context, x, x._maxLen);
+                } else {
+                    d.__init__(context, x);
+                }
+                d.extend(context, y);
                 return d;
             }
 
             private static deque MultiplyWorker(deque self, int count) {
                 var d = new deque(self._maxLen);
                 if (count <= 0 || self._itemCnt == 0) return d;
-                d.extend(self);
+                d.extend(DefaultContext.Default, self); // TODO: context
                 if (count == 1) return d;
 
                 if (d._maxLen < 0 || d._itemCnt * count <= d._maxLen) {
@@ -813,6 +818,27 @@ namespace IronPython.Modules {
 
             #region private members
 
+            private object[] GetObjectArray() {
+                lock (_lockObj) {
+                    if (_itemCnt == 0) return [];
+
+                    object[] arr = new object[_itemCnt];
+                    int cnt1, cnt2;
+                    if (_head >= _tail) {
+                        cnt1 = _data.Length - _head;
+                        cnt2 = _itemCnt - cnt1;
+                    } else {
+                        cnt1 = _itemCnt;
+                        cnt2 = 0;
+                    }
+
+                    Array.Copy(_data, _head, arr, 0, cnt1);
+                    Array.Copy(_data, 0, arr, cnt1, cnt2);
+                    return arr;
+                }
+            }
+
+
             private void GrowArray() {
                 // do nothing if array is already at its max length
                 if (_data.Length == _maxLen) return;
@@ -921,11 +947,12 @@ namespace IronPython.Modules {
                 infinite.Add(this);
                 try {
                     StringBuilder sb = new StringBuilder();
-                    sb.Append("deque([");
+                    sb.Append(PythonOps.GetPythonTypeName(this));
+                    sb.Append("([");
                     string comma = "";
 
                     lock (_lockObj) {
-                        WalkDeque(delegate(int index) {
+                        WalkDeque(delegate (int index) {
                             sb.Append(comma);
                             sb.Append(PythonOps.Repr(context, _data[index]));
                             comma = ", ";
@@ -962,7 +989,7 @@ namespace IronPython.Modules {
                 int res;
                 CompareUtil.Push(this);
                 try {
-                    res = ((IStructuralEquatable)new PythonTuple(this)).GetHashCode(comparer);
+                    res = ((IStructuralEquatable)PythonTuple.MakeTuple(GetObjectArray())).GetHashCode(comparer);
                 } finally {
                     CompareUtil.Pop(this);
                 }
@@ -1157,10 +1184,10 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary, NotNone] IDictionary<object, object> dict, [NotNone] params object[] args) {
+            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary] IDictionary<object, object> dict, [NotNone] params object[] args) {
                 __init__(context, default_factory, args);
 
-                foreach (KeyValuePair<object , object> kvp in dict) {
+                foreach (KeyValuePair<object, object> kvp in dict) {
                     this[kvp.Key] = kvp.Value;
                 }
             }
@@ -1189,7 +1216,7 @@ namespace IronPython.Modules {
             }
 
             public override string __repr__(CodeContext context) {
-                return string.Format("defaultdict({0}, {1})", ReprFactory(context, default_factory), base.__repr__(context));
+                return string.Format("{0}({1}, {2})", PythonOps.GetPythonTypeName(this), ReprFactory(context, default_factory), base.__repr__(context));
 
                 static string ReprFactory(CodeContext context, object factory) {
                     var infinite = PythonOps.GetAndCheckInfinite(factory);

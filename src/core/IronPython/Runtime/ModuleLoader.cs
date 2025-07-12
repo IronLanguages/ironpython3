@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using Microsoft.Scripting;
+#nullable enable
+
 using IronPython.Compiler;
 
 namespace IronPython.Runtime {
     public sealed class ModuleLoader {
         private readonly OnDiskScriptCode _sc;
-        private readonly string _parentName, _name;
+        private readonly string? _parentName;
+        private readonly string _name;
 
 
-        internal ModuleLoader(OnDiskScriptCode sc, string parentName, string name) {
+        internal ModuleLoader(OnDiskScriptCode sc, string? parentName, string name) {
             _sc = sc;
             _parentName = parentName;
             _name = name;
@@ -27,7 +28,7 @@ namespace IronPython.Runtime {
 
             if (_parentName != null) {
                 // if we are a module in a package update the parent package w/ our scope.
-                object parent;
+                object? parent;
                 if (pc.SystemStateModules.TryGetValue(_parentName, out parent)) {
                     if (parent is PythonModule s) {
                         s.__dict__[_name] = newContext.ModuleContext.Module;
@@ -38,5 +39,4 @@ namespace IronPython.Runtime {
             return newContext.ModuleContext.Module;
         }
     }
-
 }

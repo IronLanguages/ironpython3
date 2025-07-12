@@ -2,19 +2,12 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Numerics;
-using System.Text;
+#nullable enable
 
-using Microsoft.Scripting.Utils;
+using System.Numerics;
 
 using IronPython.Runtime;
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_opcode", typeof(IronPython.Modules.PythonOpcode))]
 namespace IronPython.Modules {
@@ -156,7 +149,7 @@ namespace IronPython.Modules {
         private const int FVS_MASK = 0x4;
         private const int FVS_HAVE_SPEC = 0x4;
 
-        public static int stack_effect(CodeContext context, int opcode, object oparg=null) {
+        public static int stack_effect(CodeContext context, int opcode, object? oparg = null) {
             int ioparg = 0;
 
             if (opcode >= HAVE_ARGUMENT) {
@@ -164,10 +157,10 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("stack_effect: opcode requires oparg but oparg was not specified");
                 }
 
-                if (!Converter.TryConvertToIndex(oparg, out ioparg)) { // supported since CPython 3.8
-                    ioparg = Converter.ImplicitConvertToInt32(oparg) ?? // warning since CPython 3.8, unsupported in 3.10
-                        throw PythonOps.TypeError($"an integer is required (got type {PythonOps.GetPythonTypeName(oparg)})");
+                if (!PythonOps.TryToInt(oparg, out BigInteger bioparg)) {
+                    throw PythonOps.TypeError($"an integer is required (got type {PythonOps.GetPythonTypeName(oparg)})");
                 }
+                ioparg = (int)bioparg;
             } else if (oparg != null) {
                 throw PythonOps.ValueError("stack_effect: opcode does not permit oparg but oparg was specified");
             }

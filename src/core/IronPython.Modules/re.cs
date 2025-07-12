@@ -34,7 +34,6 @@ namespace IronPython.Modules {
     public static class PythonRegex {
         private static CacheDict<PatternKey, Pattern> _cachedPatterns = new CacheDict<PatternKey, Pattern>(100);
 
-#pragma warning disable IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("reerror", dict, "error", "re");
@@ -44,7 +43,6 @@ namespace IronPython.Modules {
                 PythonOps.CallWithContext(context.SharedContext, pickle, DynamicHelpers.GetPythonTypeFromType(typeof(Pattern)), dict["_pickle"]);
             }
         }
-#pragma warning restore IPY01 // Parameter which is marked not nullable does not have the NotNullAttribute
 
         private static readonly Random r = new Random(DateTime.Now.Millisecond);
 
@@ -515,11 +513,6 @@ namespace IronPython.Modules {
                         case IList<byte> b:
                             str = b.MakeString();
                             break;
-#if FEATURE_MMAP
-                        case MmapModule.MmapDefault mmapFile:
-                            str = mmapFile.GetSearchString().MakeString();
-                            break;
-#endif
                         case string _:
                         case ExtensibleString _:
                             throw PythonOps.TypeError("cannot use a bytes pattern on a string-like object");
@@ -536,9 +529,6 @@ namespace IronPython.Modules {
                             break;
                         case IBufferProtocol _:
                         case IList<byte> _:
-#if FEATURE_MMAP
-                        case MmapModule.MmapDefault _:
-#endif
                             throw PythonOps.TypeError("cannot use a string pattern on a bytes-like object");
                         default:
                             throw PythonOps.TypeError("expected string or bytes-like object");

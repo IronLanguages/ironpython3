@@ -456,8 +456,8 @@ namespace IronPython.Runtime {
         /// in the sequence seq. The separator between elements is the
         /// string providing this method
         /// </summary>
-        public Bytes join(object? iterable) {
-            IEnumerator seq = PythonOps.GetEnumerator(iterable);
+        public Bytes join(CodeContext context, object? iterable) {
+            IEnumerator seq = PythonOps.GetEnumerator(context, iterable);
             if (!seq.MoveNext()) {
                 return Empty;
             }
@@ -1241,10 +1241,13 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Support
 
-        IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags) {
-            if (flags.HasFlag(BufferFlags.Writable))
-                throw PythonOps.BufferError("Object is not writable.");
-
+        IPythonBuffer? IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError) {
+            if (flags.HasFlag(BufferFlags.Writable)) {
+                if (throwOnError) {
+                    throw PythonOps.BufferError("bytes object is not writable");
+                }
+                return null;
+            }
             return new BytesView(this, flags);
         }
 

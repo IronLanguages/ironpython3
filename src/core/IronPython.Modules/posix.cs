@@ -206,14 +206,16 @@ namespace IronPython.Modules {
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         private static void utimeUnix(string path, long atime_ns, long utime_ns) {
-            var atime = new Timespec();
-            atime.tv_sec = atime_ns / 1_000_000_000;
-            atime.tv_nsec = atime_ns % 1_000_000_000;
-            var utime = new Timespec();
-            utime.tv_sec = utime_ns / 1_000_000_000;
-            utime.tv_nsec = utime_ns % 1_000_000_000;
+            var atime = new Timespec {
+                tv_sec = atime_ns / 1_000_000_000,
+                tv_nsec = atime_ns % 1_000_000_000
+            };
+            var utime = new Timespec {
+                tv_sec = utime_ns / 1_000_000_000,
+                tv_nsec = utime_ns % 1_000_000_000
+            };
 
-            if (Syscall.utimensat(Syscall.AT_FDCWD, path, new[] { atime, utime }, 0) == 0) return;
+            if (Syscall.utimensat(Syscall.AT_FDCWD, path, [atime, utime], 0) == 0) return;
             throw GetLastUnixError(path);
         }
 
@@ -223,6 +225,13 @@ namespace IronPython.Modules {
         private static void killUnix(int pid, int sig) {
             if (Syscall.kill(pid, NativeConvert.ToSignum(sig)) == 0) return;
             throw GetLastUnixError();
+        }
+
+
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        private static bool isattyUnix(int fd) {
+            return Syscall.isatty(fd);
         }
 
 #endif

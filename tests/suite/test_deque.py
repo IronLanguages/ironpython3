@@ -52,4 +52,40 @@ class DequeTest(IronPythonTestCase):
         self.assertRaises(OverflowError, deque, [], -1<<64)
         self.assertRaisesMessage(ValueError, "maxlen must be non-negative", deque, [], -1)
 
+
+    def test_add(self):
+        d1 = deque([1, 2, 3], maxlen=6)
+        d2 = deque([4, 5, 6], maxlen=4)
+        d2 = deque([4, 5, 6])
+        d3 = d1 + d2
+        self.assertEqual(d3, deque([1, 2, 3, 4, 5, 6]))
+        self.assertIsInstance(d3, deque)
+        self.assertEqual(d3.maxlen, 6)
+
+        class Deque(deque): pass
+        sd1 = Deque([1, 2, 3])
+        sd2 = Deque([4, 5, 6])
+        sd3 = sd1 + sd2
+        self.assertEqual(sd3, deque([1, 2, 3, 4, 5, 6]))
+        self.assertIsInstance(sd3, Deque)
+
+
+    def test_multiply(self):
+        class Deque(deque): pass
+        d1 = Deque([1, 2, 3], maxlen=6)
+        d2 = d1 * 2
+        self.assertEqual(d2, deque([1, 2, 3, 1, 2, 3]))
+        self.assertIsInstance(d2, deque)
+
+
+    def test_copy(self):
+        import copy
+        class Deque(deque): pass
+        original = Deque([1, 2, 3], 6)
+        copy_instance = copy.copy(original)
+        self.assertEqual(original, copy_instance)
+        self.assertIsNot(original, copy_instance)
+        self.assertIsInstance(copy_instance, deque)
+
+
 run_test(__name__)

@@ -220,9 +220,9 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
             "cpython"    { $tasks += createTask "cpython" "TestCategory=CPython" }
             default      {
                 if ($filter.ToLower().StartsWith('ironpython')) {
-                    $tasks += createTask "query" "TestCategory=IronPython&$filter"
+                    $tasks += createTask "query" "TestCategory=IronPython&Name=$framework.$filter"
                 } elseif ($filter.ToLower().StartsWith('cpython')) {
-                    $tasks += createTask "query" "TestCategory=CPython&$filter"
+                    $tasks += createTask "query" "TestCategory=CPython&Name=$framework.$filter"
                 } else {
                     $tasks += createTask "query" $filter
                 }

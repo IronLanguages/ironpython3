@@ -3,20 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_warnings", typeof(IronPython.Modules.PythonWarnings))]
 namespace IronPython.Modules {

@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
@@ -33,7 +37,7 @@ namespace IronPython.Hosting {
         public PythonCommandLine() {
         }
 
-        protected override string Logo => PythonContext.PythonOptions.Quiet ? null : GetLogoDisplay();
+        protected override string? Logo => PythonContext.PythonOptions.Quiet ? null : GetLogoDisplay();
 
         /// <summary>
         /// Returns the display look for IronPython.
@@ -47,7 +51,7 @@ namespace IronPython.Hosting {
         }
 
         private int GetEffectiveExitCode(SystemExitException/*!*/ e) {
-            object nonIntegerCode;
+            object? nonIntegerCode;
             int exitCode = e.GetExitCode(out nonIntegerCode);
             if (nonIntegerCode != null) {
                 Console.WriteLine(nonIntegerCode.ToString(), Style.Error);
@@ -119,8 +123,8 @@ namespace IronPython.Hosting {
             int result = base.Run();
 
             // Check if IRONPYTHONINSPECT was set during execution
-            string inspectLine = Environment.GetEnvironmentVariable("IRONPYTHONINSPECT");
-            if (inspectLine != null && !Options.Introspection)
+            string? inspectLine = Environment.GetEnvironmentVariable("IRONPYTHONINSPECT");
+            if (!string.IsNullOrEmpty(inspectLine) && !Options.Introspection)
                 result = RunInteractiveLoop();
 
             return result;
@@ -137,12 +141,11 @@ namespace IronPython.Hosting {
         #region Initialization
 
         protected override void Initialize() {
-            Debug.Assert(Language != null);
-
             base.Initialize();
 
             Console.Output = new OutputWriter(PythonContext, false);
             Console.ErrorOutput = new OutputWriter(PythonContext, true);
+            Language.Console = Console;
 
             // TODO: must precede path initialization! (??? - test test_importpkg.py)
             int pathIndex = PythonContext.PythonOptions.SearchPaths.Count;
@@ -165,8 +168,8 @@ namespace IronPython.Hosting {
 
             // Equivalent to -i command line option
             // Check if IRONPYTHONINSPECT was set before execution
-            string inspectLine = Environment.GetEnvironmentVariable("IRONPYTHONINSPECT");
-            if (inspectLine != null)
+            string? inspectLine = Environment.GetEnvironmentVariable("IRONPYTHONINSPECT");
+            if (!string.IsNullOrEmpty(inspectLine))
                 Options.Introspection = true;
 
             // If running in console mode (including with -c), the current working directory should be
@@ -195,7 +198,7 @@ namespace IronPython.Hosting {
 
                     fullPath = Path.GetDirectoryName(
                         Language.DomainManager.Platform.GetFullPath(Options.FileName)
-                    );
+                    )!;
                 }
             }
 
@@ -221,8 +224,8 @@ namespace IronPython.Hosting {
         private void InitializePath(ref int pathIndex) {
             // paths, environment vars
             if (!Options.IgnoreEnvironmentVariables) {
-                string path = Environment.GetEnvironmentVariable("IRONPYTHONPATH");
-                if (path != null && path.Length > 0) {
+                string? path = Environment.GetEnvironmentVariable("IRONPYTHONPATH");
+                if (!string.IsNullOrEmpty(path)) {
                     string[] paths = path.Split(Path.PathSeparator);
                     foreach (string p in paths) {
                         PythonContext.InsertIntoPath(pathIndex++, p);
@@ -233,7 +236,7 @@ namespace IronPython.Hosting {
 
         private void InitializeEnvironmentVariables() {
             if (!Options.IgnoreEnvironmentVariables) {
-                string warnings = Environment.GetEnvironmentVariable("IRONPYTHONWARNINGS");
+                string? warnings = Environment.GetEnvironmentVariable("IRONPYTHONWARNINGS");
                 object o = PythonContext.GetSystemStateValue("warnoptions");
                 if (o == null) {
                     o = new PythonList();
@@ -251,27 +254,28 @@ namespace IronPython.Hosting {
 
         private void InitializeModules() {
             string executable = "";
-            string prefix = null;
+            string? prefix = null;
 
-            Assembly entryAssembly = Assembly.GetEntryAssembly();
+            Assembly? entryAssembly = Assembly.GetEntryAssembly();
             // Can be null if called from unmanaged code (VS integration scenario)
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
-                prefix = Path.GetDirectoryName(executable);
+                prefix = Path.GetDirectoryName(executable)!;
 
                 var name = Path.GetFileNameWithoutExtension(executable);
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    var runner = Path.Combine(prefix, name + ".exe");
-                    if (File.Exists(runner)) {
+                    var exename = name + ".exe";
+                    var runner = Path.Combine(prefix, exename);
+                    if (File.Exists(runner) || FindRunner(prefix, exename, executable, out runner)) {
                         executable = runner;
                     } else {
-                        // TODO: was for .NET Core 2.1, can we drop this?
+                        // ipy.bat is created Install-IronPython.ps1, which installs from a zip file
                         runner = Path.Combine(prefix, name + ".bat");
                         if (File.Exists(runner)) executable = runner;
                     }
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     var runner = Path.Combine(prefix, name);
-                    if (File.Exists(runner)) {
+                    if (File.Exists(runner) || FindRunner(prefix, name, executable, out runner)) {
                         executable = runner;
                     } else {
                         runner = Path.Combine(prefix, name + ".sh");
@@ -281,7 +285,7 @@ namespace IronPython.Hosting {
             }
 
             if (prefix is not null) {
-                string pyvenv_prefix = null;
+                string? pyvenv_prefix = null;
 
                 // look for pyvenv.cfg in the current folder and then the parent folder
                 var path = Path.Combine(prefix, "pyvenv.cfg");
@@ -289,7 +293,7 @@ namespace IronPython.Hosting {
                     if (File.Exists(path)) {
                         foreach (var line in File.ReadAllLines(path, Encoding.UTF8)) { // TODO: this actually needs to be decoded with surrogateescape
                             if (line.StartsWith('#')) continue;
-                            var split = line.Split(new[] { '=' }, 2);
+                            var split = line.Split(['='], 2);
                             if (split.Length != 2) continue;
                             if (split[0].Trim() == "home") {
                                 pyvenv_prefix = split[1].Trim();
@@ -298,7 +302,9 @@ namespace IronPython.Hosting {
                         }
                         break;
                     }
-                    path = Path.Combine(Path.GetDirectoryName(prefix), "pyvenv.cfg");
+                    var parent = Path.GetDirectoryName(prefix);
+                    if (parent is null) break;
+                    path = Path.Combine(parent, "pyvenv.cfg");
                 }
 
                 prefix = pyvenv_prefix ?? prefix;
@@ -309,6 +315,60 @@ namespace IronPython.Hosting {
             }
 
             PythonContext.SetHostVariables(prefix ?? "", executable, null);
+
+
+            // --- Local functions -------
+
+            static bool FindRunner([DisallowNull] string? prefix, string name, string assembly, [NotNullWhen(true)] out string? runner) {
+                runner = string.Empty;
+#if NET
+                while (prefix != null) {
+                    runner = Path.Combine(prefix, name);
+                    if (File.Exists(runner)) {
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || IsExecutable(runner)) {
+                            break;
+                        }
+                    }
+                    prefix = Path.GetDirectoryName(prefix);
+                }
+                if (prefix != null && Path.GetExtension(assembly).Equals(".dll", StringComparison.OrdinalIgnoreCase)) {
+                    // make sure that the runner refers to this DLL
+                    var relativeAssemblyPath = assembly.Substring(prefix.Length + 1); // skip over the path separator
+                    byte[] fsAssemblyPath = Encoding.UTF8.GetBytes(relativeAssemblyPath);
+                    byte fsap0 = fsAssemblyPath[0];
+
+                    try {
+                        using var mmf = MemoryMappedFile.CreateFromFile(runner, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+                        using var accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+
+                        for (long i = accessor.Capacity - fsAssemblyPath.Length; i >= 0; i--) { // the path should be close to the end of the file
+                            if (accessor.ReadByte(i) != fsap0) continue;
+
+                            bool found = true;
+                            for (int j = 1; j < fsAssemblyPath.Length; j++) {
+                                if (accessor.ReadByte(i + j) != fsAssemblyPath[j]) {
+                                    found = false;
+                                    break;
+                                }
+                            }
+                            if (found) return true;
+                        }
+                    } catch { }  // if reading the file fails, it is not our runner
+                }
+#endif
+                runner = null;
+                return false;
+            }
+
+#if NET
+            [UnsupportedOSPlatform("windows")]
+            static bool IsExecutable(string filePath) {
+                var fileInfo = new Mono.Unix.UnixFileInfo(filePath);
+                var fileMode = fileInfo.FileAccessPermissions;
+
+                return (fileMode & (Mono.Unix.FileAccessPermissions.UserExecute | Mono.Unix.FileAccessPermissions.GroupExecute | Mono.Unix.FileAccessPermissions.OtherExecute)) != 0;
+            }
+#endif
         }
 
         /// <summary>
@@ -401,8 +461,8 @@ namespace IronPython.Hosting {
             if (Options.IgnoreEnvironmentVariables)
                 return;
 
-            string startup = Environment.GetEnvironmentVariable("IRONPYTHONSTARTUP");
-            if (startup != null && startup.Length > 0) {
+            string? startup = Environment.GetEnvironmentVariable("IRONPYTHONSTARTUP");
+            if (!string.IsNullOrEmpty(startup)) {
                 if (Options.HandleExceptions) {
                     try {
                         ExecuteCommand(Engine.CreateScriptSourceFromFile(startup));

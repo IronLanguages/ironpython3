@@ -588,7 +588,7 @@ namespace IronPython.Runtime {
             Assert.NotNull(context, scope, name);
             if (scope.__dict__.TryGetValue(name, out nested)) {
                 if (nested is PythonModule pm) {
-                    var fullPath = ".".join(SubArray(parts, current));
+                    var fullPath = string.Join(".", SubArray(parts, current));
                     // double check, some packages mess with package namespace
                     // see cp35116
                     if (pm.GetName() == fullPath) {

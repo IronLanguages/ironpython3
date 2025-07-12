@@ -8,6 +8,7 @@ Tests for CPython's array module.
 
 import array
 import sys
+import pickle
 
 from iptest import IronPythonTestCase, is_cli, is_mono, big, run_test
 
@@ -162,9 +163,14 @@ class ArrayTest(IronPythonTestCase):
         self.assertEqual(a, b)
 
         #--L
-        a = array.array('L', b"\x12\x34\x45\x67")
-        self.assertEqual(1, len(a))
-        self.assertEqual(1732588562, a[0])
+        a = array.array('L', b"\x12\x34\x45\x67" * 2)
+        self.assertTrue(a.itemsize == 4 or a.itemsize == 8)
+        if a.itemsize == 4:
+            self.assertEqual(2, len(a))
+            self.assertEqual(1732588562, a[0])
+        else:
+            self.assertEqual(1, len(a))
+            self.assertEqual(7441411212946256914, a[0])
 
         #--B
         a = array.array('B', [0]) * big(2)
@@ -247,6 +253,17 @@ class ArrayTest(IronPythonTestCase):
         self.assertEqual(repr(x.__reduce_ex__(1)), "(<class 'array.array'>, ('i', [1, 2, 3]), None)")
         with self.assertRaises(TypeError):
             x.__reduce_ex__()
+
+    def test_array_pickle(self):
+        int_codes = 'BHILQ'
+        for code in int_codes + int_codes.lower() + 'fd':
+            with self.subTest(code=code):
+                a = array.array(code, [1,2,3])
+                pickled = pickle.dumps(a)
+                b = pickle.loads(pickled)
+                self.assertEqual(a, b)
+                self.assertEqual(a.typecode, b.typecode)
+                self.assertEqual(a.itemsize, b.itemsize)
 
     def test_array___repr__(self):
         '''
@@ -454,9 +471,16 @@ class ArrayTest(IronPythonTestCase):
                         ('i', b"\x12\x34\x45\x67") : "array('i', [1732588562])",
                         ('I', b"\x12\x34\x45\x67") : "array('I', [1732588562])",
                         ('I', b"\x01\x00\x00\x00") : "array('I', [1])",
-                        ('l', b"\x12\x34\x45\x67") : "array('l', [1732588562])",
-                        ('L', b"\x12\x34\x45\x67") : "array('L', [1732588562])",
+                        ('q', b"\x12\x34\x45\x67\x89\xab\xcd\xef") : "array('q', [-1167088121787632622])",
+                        ('Q', b"\x12\x34\x45\x67\x89\xab\xcd\xef") : "array('Q', [17279655951921918994])",
                     }
+        if array.array('L').itemsize == 4:
+            test_cases[('l', b"\x12\x34\x45\x67")] = "array('l', [1732588562])"
+            test_cases[('L', b"\x12\x34\x45\x67")] = "array('L', [1732588562])"
+        else:
+            test_cases[('l', b"\x12\x34\x45\x67\x89\xab\xcd\xef")] = "array('l', [-1167088121787632622])"
+            test_cases[('L', b"\x12\x34\x45\x67\x89\xab\xcd\xef")] = "array('L', [17279655951921918994])"
+
         if is_cli: # https://github.com/IronLanguages/ironpython2/issues/102
             test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.9522485325887698e+189])"
             test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.3126672485384569e+23])"

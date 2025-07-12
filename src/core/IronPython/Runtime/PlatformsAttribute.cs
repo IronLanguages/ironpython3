@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
@@ -23,9 +26,9 @@ namespace IronPython.Runtime {
         public static readonly PlatformID[] WindowsFamily = { PlatformID.Win32NT, PlatformID.Win32S, PlatformID.Win32Windows, PlatformID.WinCE, PlatformID.Xbox };
         public static readonly PlatformID[] UnixFamily = { PlatformID.MacOSX, PlatformID.Unix };
 
-        public PlatformID[] ValidPlatforms { get; protected set; }
+        public PlatformID[] ValidPlatforms { get; protected set; } = [];
 
-        public bool IsPlatformValid => ValidPlatforms == null || ValidPlatforms.Length == 0 || Array.IndexOf(ValidPlatforms, ActualPlatform) >= 0;
+        public bool IsPlatformValid => ValidPlatforms.Length == 0 || Array.IndexOf(ValidPlatforms, ActualPlatform) >= 0;
 
         private static PlatformID ActualPlatform
             => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? PlatformID.Unix :

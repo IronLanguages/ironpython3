@@ -54,13 +54,15 @@ namespace IronPython.Modules {
             }
 
             public timedelta(double days, double seconds, double microseconds, double milliseconds, double minutes, double hours, double weeks) {
-                double totalDays = weeks * 7 + days;
-                double totalSeconds = ((totalDays * 24 + hours) * 60 + minutes) * 60 + seconds;
+                double totalSeconds = (((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds;
+                CheckDouble(totalSeconds);
 
                 double totalSecondsSharp = Math.Floor(totalSeconds);
                 double totalSecondsFloat = totalSeconds - totalSecondsSharp;
 
                 double totalMicroseconds = Math.Round(totalSecondsFloat * 1e6 + milliseconds * 1000 + microseconds);
+                CheckDouble(totalMicroseconds);
+
                 double otherSecondsFromMicroseconds = Math.Floor(totalMicroseconds / 1e6);
 
                 totalSecondsSharp += otherSecondsFromMicroseconds;
@@ -71,28 +73,45 @@ namespace IronPython.Modules {
                     totalMicroseconds += 1e6;
                 }
 
-                _days = (int)(totalSecondsSharp / SECONDSPERDAY);
-                _seconds = (int)(totalSecondsSharp - _days * SECONDSPERDAY);
+                _days = ToInt(totalSecondsSharp / SECONDSPERDAY);
+                _seconds = ToInt(totalSecondsSharp - _days * SECONDSPERDAY);
 
                 if (_seconds < 0) {
                     _days--;
                     _seconds += (int)SECONDSPERDAY;
                 }
-                _microseconds = (int)(totalMicroseconds);
+                _microseconds = ToInt(totalMicroseconds);
 
                 if (Math.Abs(_days) > MAXDAYS) {
                     throw PythonOps.OverflowError("days={0}; must have magnitude <= 999999999", _days);
                 }
+
+                static void CheckDouble(double d) {
+                    if (double.IsInfinity(d)) {
+                        throw PythonOps.OverflowError("cannot convert float infinity to integer");
+                    } else if (double.IsNaN(d)) {
+                        throw PythonOps.ValueError("cannot convert float NaN to integer");
+                    }
+                }
+
+                static int ToInt(double d) {
+                    if (Int32.MinValue <= d && d <= Int32.MaxValue) {
+                        return (int)d;
+                    } else {
+                        CheckDouble(d);
+                        return checked((int)d);
+                    }
+                }
             }
 
             public static timedelta __new__(CodeContext context, [NotNone] PythonType cls,
-                double days = 0D,
-                double seconds = 0D,
-                double microseconds = 0D,
-                double milliseconds = 0D,
-                double minutes = 0D,
-                double hours = 0D,
-                double weeks = 0D) {
+                double days = 0,
+                double seconds = 0,
+                double microseconds = 0,
+                double milliseconds = 0,
+                double minutes = 0,
+                double hours = 0,
+                double weeks = 0) {
                 if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(timedelta))) {
                     return new timedelta(days, seconds, microseconds, milliseconds, minutes, hours, weeks);
                 } else {

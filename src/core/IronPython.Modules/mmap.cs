@@ -338,6 +338,10 @@ namespace IronPython.Modules {
                     _offset = 0; // offset is ignored without an underlying file
                     _sourceStream = null;
 
+                    if (length == 0) {
+                        throw PythonNT.GetOsError(PythonErrno.EINVAL);
+                    }
+
                     // work around the .NET bug whereby CreateOrOpen throws on a null mapName
                     if (_mapName is null) {
                         _file = MemoryMappedFile.CreateNew(null, length, _fileAccess);
@@ -859,7 +863,7 @@ namespace IronPython.Modules {
                         len = checked((int)(_view.Capacity - pos));
                     }
 
-                    if (len == 0) {
+                    if (len <= 0) {
                         return Bytes.Empty;
                     }
 
@@ -960,11 +964,6 @@ namespace IronPython.Modules {
                         }
                     }
 
-                    if (_sourceStream == null) {
-                        // resizing is not supported without an underlying file
-                        throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_PARAMETER);
-                    }
-
                     if (_view.Capacity == newsize) {
                         // resizing to the same size
                         return;
@@ -977,6 +976,33 @@ namespace IronPython.Modules {
                                 ? PythonExceptions._OSError.ERROR_ACCESS_DENIED
                                 : PythonExceptions._OSError.ERROR_FILE_INVALID
                             );
+                        }
+
+                        if (_sourceStream is null) {
+                            // resizing of anonymous map
+                            // TODO: non-copying implementation?
+
+                            MemoryMappedFile file;
+                            // work around the .NET bug whereby CreateOrOpen throws on a null mapName
+                            if (_mapName is null) {
+                                file = MemoryMappedFile.CreateNew(null, newsize, _fileAccess);
+                            } else {
+                                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+                                file = MemoryMappedFile.CreateOrOpen(_mapName, newsize, _fileAccess);
+                            }
+
+                            using (var oldStream = _file.CreateViewStream(0, Math.Min(_view.Capacity, newsize))) {
+                                using var newStream = file.CreateViewStream();
+                                oldStream.CopyTo(newStream);
+                            }
+
+                            _view.Flush();
+                            _view.Dispose();
+                            _file.Dispose();
+
+                            _file = file;
+                            _view = _file.CreateViewAccessor(_offset, newsize, _fileAccess);
+                            return;
                         }
 
                         _view.Flush();

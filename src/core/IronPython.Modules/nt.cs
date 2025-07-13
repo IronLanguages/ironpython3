@@ -849,6 +849,8 @@ namespace IronPython.Modules {
                 }
             }
 
+            VerifyPath(path, functionName: nameof(open), argName: nameof(path));
+
             if ((RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && !ClrModule.IsMono) {
                 // Use PosixFileStream to operate on fd directly
                 // On Mono, we must use FileStream due to limitations in MemoryMappedFile

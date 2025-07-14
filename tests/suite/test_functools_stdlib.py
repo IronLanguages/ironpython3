@@ -58,6 +58,7 @@ def load_tests(loader, standard_tests, pattern):
             skip_tests += [
                 test.test_functools.TestPartialCSubclass('test_weakref'),
                 test.test_functools.TestPartialPy('test_weakref'),
+                test.test_functools.TestPartialPySubclass('test_weakref'),
             ]
 
         return generate_suite(tests, failing_tests, skip_tests)

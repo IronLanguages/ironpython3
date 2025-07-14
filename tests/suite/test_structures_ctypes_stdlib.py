@@ -18,10 +18,6 @@ def load_tests(loader, standard_tests, pattern):
             ctypes.test.test_structures.StructureTestCase('test_conflicting_initializers'), # AssertionError
             ctypes.test.test_structures.StructureTestCase('test_pass_by_value_in_register'), # NotImplementedError: in dll
         ]
-        if is_osx:
-            failing_tests += [
-                ctypes.test.test_structures.StructureTestCase('test_pass_by_value'),
-            ]
 
         return generate_suite(tests, failing_tests)
 

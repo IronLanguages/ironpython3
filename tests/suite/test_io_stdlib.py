@@ -118,11 +118,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.PyTextIOWrapperTest('test_read_byteslike'),
         ]
 
-        if is_mono:
-            failing_tests += [
-                test.test_io.PyMiscIOTest('test_create_fail'),
-            ]
-
         if is_mono or is_windows:
             failing_tests += [
                 test.test_io.PyTextIOWrapperTest('test_seek_append_bom'), # OSError: [Errno -2146232800] Unable seek backward to overwrite data that previously existed in a file opened in Append mode.

@@ -2764,13 +2764,23 @@ def disable_faulthandler():
 def fd_count():
     """Count the number of open file descriptors.
     """
-    if sys.platform.startswith(('linux', 'freebsd')):
+    # ironpython: backported from Python 3.12
+    if sys.platform.startswith(('linux', 'freebsd', 'emscripten')):
+        fd_path = "/proc/self/fd"
+    elif sys.platform == "darwin":
+        fd_path = "/dev/fd"
+    else:
+        fd_path = None
+
+    if fd_path is not None:
         try:
-            names = os.listdir("/proc/self/fd")
-            # Substract one because listdir() opens internally a file
-            # descriptor to list the content of the /proc/self/fd/ directory.
+            names = os.listdir(fd_path)
+            # Subtract one because listdir() internally opens a file
+            # descriptor to list the content of the directory.
             return len(names) - 1
         except FileNotFoundError:
+            pass
+        except PermissionError: # ironpython: bug in .NET 6 on macOS
             pass
 
     MAXFD = 256

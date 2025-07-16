@@ -1,37 +1,164 @@
 jobs:
+  - job: build
+    strategy:
+      matrix:
+        linux:
+          osName: 'Linux'
+          imageName: 'ubuntu-22.04'
+        mac:
+          osName: 'macOS'
+          imageName: 'macOS-latest'
+        windows:
+          osName: 'Windows'
+          imageName: 'windows-latest'
 
-################################################################################
-- job: Windows
-################################################################################
-  displayName: Windows
-  timeoutInMinutes: 180
-  pool:
-    vmImage: windows-latest
-  steps:
-  - template: eng/steps.yml
-    parameters:
-      os: 'Windows'
+    displayName: Build
+    timeoutInMinutes: 180
+    pool:
+      vmImage: $(imageName)
 
-################################################################################
-- job: Linux
-################################################################################
-  displayName: Linux (Ubuntu)
-  timeoutInMinutes: 180
-  pool:
-    vmImage: ubuntu-22.04
-  steps:
-  - template: eng/steps.yml
-    parameters:
-      os: 'Linux'
+    steps:
+      # Prerequisites
+      - checkout: self
+        submodules: true
 
-################################################################################
-- job: macOS
-################################################################################
-  displayName: macOS
-  timeoutInMinutes: 180
-  pool:
-    vmImage: macOS-latest
-  steps:
-  - template: eng/steps.yml
-    parameters:
-      os: 'macOS'
+      - task: Bash@3
+        displayName: Install tools
+        inputs:
+          targetType: inline
+          script: |
+            sudo apt-get -yq install dos2unix
+        condition: eq(variables.osName, 'Linux')
+
+      # Setup .NET
+      - task: UseDotNet@2
+        displayName: Install .NET 9.0 SDK for build
+        inputs:
+          packageType: 'sdk'
+          version: '9.0.x'
+
+      # Display version info
+      - task: PowerShell@2
+        displayName: Version Information
+        inputs:
+          targetType: inline
+          script: |
+            dotnet --info
+            try { msbuild -version } catch { }
+            try { mono --version } catch { }
+
+      # Build & Package
+      - powershell: ./make.ps1
+        displayName: Build
+
+      - powershell: ./make.ps1 package
+        displayName: Package
+
+      - task: CopyFiles@2
+        displayName: Copy Build Logs
+        inputs:
+          Contents: '*.binlog'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+
+      - task: CopyFiles@2
+        displayName: Copy Packages
+        inputs:
+          SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+          Contents: |
+            **/*.nupkg
+            **/*.snupkg
+            **/*.zip
+            **/*.msi
+            **/*.deb
+            **/*.pkg
+          TargetFolder: '$(Build.ArtifactStagingDirectory)'
+        condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+
+      - task: PublishBuildArtifacts@1
+        displayName: Publish Artifacts
+        inputs:
+          ArtifactName: '$(osName) Artifacts'
+        condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+
+  - job: test
+    strategy:
+      matrix:
+        linux_net462:
+          osName: Linux
+          imageName: ubuntu-22.04
+          framework: net462
+        linux_net6_0:
+          osName: Linux
+          imageName: ubuntu-22.04
+          framework: net6.0
+        linux_net8_0:
+          osName: Linux
+          imageName: ubuntu-22.04
+          framework: net8.0
+        macos_net462:
+          osName: macOS
+          imageName: macOS-latest
+          framework: net462
+        macos_net6_0:
+          osName: macOS
+          imageName: macOS-latest
+          framework: net6.0
+        macos_net8_0:
+          osName: macOS
+          imageName: macOS-latest
+          framework: net8.0
+        windows_net462:
+          osName: Windows
+          imageName: windows-latest
+          framework: net462
+        windows_net6_0:
+          osName: Windows
+          imageName: windows-latest
+          framework: net6.0
+        windows_net8_0:
+          osName: Windows
+          imageName: windows-latest
+          framework: net8.0
+
+    displayName: Test
+    timeoutInMinutes: 180
+    pool:
+      vmImage: $(imageName)
+
+    steps:
+      # Prerequisites
+      - checkout: self
+        submodules: true
+
+      # Setup .NET
+      - task: UseDotNet@2
+        displayName: Install .NET 6.0 runtime for testing
+        inputs:
+          packageType: 'runtime'
+          version: '6.0.x'
+      - task: UseDotNet@2
+        displayName: Install .NET 8.0 runtime for testing
+        inputs:
+          packageType: 'runtime'
+          version: '8.0.x'
+      - task: UseDotNet@2
+        displayName: Install .NET 9.0 SDK for build
+        inputs:
+          packageType: 'sdk'
+          version: '9.0.x'
+
+      # Build & Test
+      - powershell: ./make.ps1
+        displayName: Build
+      - powershell: ./make.ps1 -frameworks $(framework) test-all
+        displayName: Test ($(framework))
+
+      - task: PublishTestResults@2
+        displayName: Publish Test Results
+        inputs:
+          testRunner: VSTest
+          testResultsFiles: '**/*.trx'
+          mergeTestResults: true
+          testRunTitle: $(osName) - $(framework)
+        condition: succeededOrFailed()

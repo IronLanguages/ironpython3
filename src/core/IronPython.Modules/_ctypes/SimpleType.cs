@@ -60,11 +60,15 @@ namespace IronPython.Modules {
                     case 'I': _type = SimpleTypeKind.UnsignedInt; break;
                     case 'l':
                         _type = SimpleTypeKind.SignedLong;
+#if !PYTHON_34
                         _charType = TypecodeOps.IsCLong32Bit ? _charType : 'q';
+#endif
                         break;
                     case 'L':
                         _type = SimpleTypeKind.UnsignedLong;
+#if !PYTHON_34
                         _charType = TypecodeOps.IsCLong32Bit ? _charType : 'Q';
+#endif
                         break;
                     case 'f': _type = SimpleTypeKind.Single; break;
                     case 'g': // long double, new in 2.6

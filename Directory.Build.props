@@ -27,6 +27,8 @@
     <FileVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</FileVersion>
     <InformationalVersion>$(MSBuildProjectName) $(MajorVersion).$(MinorVersion).$(MicroVersion) $(ReleaseLevel) $(ReleaseSerial)</InformationalVersion>
 
+    <DefineConstants>PYTHON_$(MajorVersion)$(MinorVersion)</DefineConstants>
+
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
@@ -125,7 +127,7 @@
     <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants);$(Features);$(SignedSym);TRACE</DefineConstants>
   </PropertyGroup>
 
   <!-- Debug -->
@@ -135,6 +137,6 @@
     <Optimize>false</Optimize>
     <!-- TODO: Python & zlib.net need some work -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants);$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 </Project>

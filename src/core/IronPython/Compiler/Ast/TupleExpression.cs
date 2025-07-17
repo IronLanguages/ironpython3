@@ -17,17 +17,20 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override string? CheckAssign() {
+#if !PYTHON_36_OR_GREATER
             if (Items.Count == 0) {
-                //  TODO: remove this when we get to 3.6
                 return "can't assign to ()";
             }
+#endif
 
             return base.CheckAssign();
         }
 
         internal override string? CheckDelete() {
+#if !PYTHON_36_OR_GREATER
             if (Items.Count == 0)
-                return "can't delete ()"; //  TODO: remove this when we get to 3.6
+                return "can't delete ()";
+#endif
             return base.CheckDelete();
         }
 

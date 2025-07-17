@@ -1237,7 +1237,7 @@ namespace IronPython.Modules {
                 );
             }
 
-#if PYTHON_34
+#if PYTHON_34 // removed in 3.5
             public bool __bool__() {
                 return this.UtcTime.TimeSpan.Ticks != 0 || this.UtcTime.LostMicroseconds != 0;
             }

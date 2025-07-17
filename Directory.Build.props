@@ -27,7 +27,8 @@
     <FileVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</FileVersion>
     <InformationalVersion>$(MSBuildProjectName) $(MajorVersion).$(MinorVersion).$(MicroVersion) $(ReleaseLevel) $(ReleaseSerial)</InformationalVersion>
 
-    <DefineConstants>PYTHON_$(MajorVersion)$(MinorVersion)</DefineConstants>
+    <PythonSymbols>PYTHON_$(MajorVersion)$(MinorVersion)</PythonSymbols>
+    <PythonSymbols Condition="'$(MajorVersion)$(MinorVersion)' >= '36'">$(PythonSymbols);PYTHON_36_OR_GREATER</PythonSymbols>
 
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 
@@ -127,7 +128,7 @@
     <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(DefineConstants);$(Features);$(SignedSym);TRACE</DefineConstants>
+    <DefineConstants>$(PythonSymbols);$(Features);$(SignedSym);TRACE</DefineConstants>
   </PropertyGroup>
 
   <!-- Debug -->
@@ -137,6 +138,6 @@
     <Optimize>false</Optimize>
     <!-- TODO: Python & zlib.net need some work -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(DefineConstants);$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(PythonSymbols);$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 </Project>

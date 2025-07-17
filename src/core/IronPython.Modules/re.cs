@@ -165,8 +165,9 @@ namespace IronPython.Modules {
             internal Pattern(CodeContext/*!*/ context, object pattern, ReFlags flags = 0, bool compiled = false) {
                 _prePattern = PreParseRegex(context, PatternAsString(pattern, ref flags), verbose: flags.HasFlag(ReFlags.VERBOSE), isBytes: !flags.HasFlag(ReFlags.UNICODE), out ReFlags options);
                 flags |= options;
-                // TODO: re-enable in 3.6
-                // if (flags.HasFlag(ReFlags.UNICODE | ReFlags.LOCALE)) throw PythonOps.ValueError("cannot use LOCALE flag with a str pattern");
+#if PYTHON_36_OR_GREATER
+                if (flags.HasFlag(ReFlags.UNICODE | ReFlags.LOCALE)) throw PythonOps.ValueError("cannot use LOCALE flag with a str pattern");
+#endif
                 if (flags.HasFlag(ReFlags.ASCII | ReFlags.LOCALE)) throw PythonOps.ValueError("ASCII and LOCALE flags are incompatible");
                 _re = GenRegex(context, _prePattern, flags, compiled, false);
                 this.pattern = pattern;
@@ -418,7 +419,7 @@ namespace IronPython.Modules {
                         //  only when not adjacent to a previous match
                         if (string.IsNullOrEmpty(match.Value) && match.Index == prevEnd) {
                             return "";
-                        };
+                        }
                         prevEnd = match.Index + match.Length;
 
                         if (replacement != null) return UnescapeGroups(context, match, replacement);
@@ -445,7 +446,7 @@ namespace IronPython.Modules {
                         //  only when not adjacent to a previous match
                         if (string.IsNullOrEmpty(match.Value) && match.Index == prevEnd) {
                             return "";
-                        };
+                        }
                         prevEnd = match.Index + match.Length;
 
                         totalCount++;

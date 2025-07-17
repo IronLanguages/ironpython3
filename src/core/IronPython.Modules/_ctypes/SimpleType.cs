@@ -60,13 +60,13 @@ namespace IronPython.Modules {
                     case 'I': _type = SimpleTypeKind.UnsignedInt; break;
                     case 'l':
                         _type = SimpleTypeKind.SignedLong;
-#if !PYTHON_34
+#if PYTHON_36_OR_GREATER
                         _charType = TypecodeOps.IsCLong32Bit ? _charType : 'q';
 #endif
                         break;
                     case 'L':
                         _type = SimpleTypeKind.UnsignedLong;
-#if !PYTHON_34
+#if PYTHON_36_OR_GREATER
                         _charType = TypecodeOps.IsCLong32Bit ? _charType : 'Q';
 #endif
                         break;

@@ -1219,8 +1219,11 @@ namespace IronPython.Runtime.Operations {
                     return;
                 case int mappedInt:
                     if (mappedInt > 0xFFFF) {
-                        // TODO: change to a ValueError in Python 3.5
+#if PYTHON_34
                         throw PythonOps.TypeError("character mapping must be in range(0x10000)");
+#else
+                        throw PythonOps.ValueError("character mapping must be in range(0x10000)");
+#endif
                     }
                     ret.Append((char)mappedInt);
                     break;

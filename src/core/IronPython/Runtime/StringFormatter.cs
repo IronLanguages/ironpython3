@@ -387,8 +387,11 @@ namespace IronPython.Runtime {
 
         private object GetIntegerValue(char format, out bool fPos, bool allowDouble = true) {
             if (!allowDouble && (_opts.Value is float || _opts.Value is double || _opts.Value is Extensible<double>)) {
-                // TODO: this should fail in 3.5
+#if PYTHON_34
                 PythonOps.Warn(_context, PythonExceptions.DeprecationWarning, "automatic int conversions have been deprecated");
+#else
+                throw PythonOps.TypeError($"an integer is required, not {PythonOps.GetPythonTypeName(_opts.Value)}");
+#endif
             }
 
             switch (_opts.Value) {

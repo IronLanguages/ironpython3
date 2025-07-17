@@ -299,7 +299,9 @@ namespace IronPython.Runtime {
 
                 try {
                     var _frozen_importlib = LoadModuleFromResource("_frozen_importlib", "IronPython.Modules._bootstrap.py");
-
+#if PYTHON_36_OR_GREATER
+                    LoadModuleFromResource("_frozen_importlib_external", "IronPython.Modules._bootstrap_external.py");
+#endif
                     PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install", SystemState, GetBuiltinModule("_imp"));
                 } catch { }
 

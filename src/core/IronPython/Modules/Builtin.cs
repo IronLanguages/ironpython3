@@ -58,7 +58,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
             object ret = Importer.ImportModule(context, globals, name, from != null && from.Count > 0, level);
             if (ret == null) {
+#if PYTHON_36_OR_GREATER // ModuleNotFoundError since Python 3.6
+                var err = PythonOps.ModuleNotFoundError("No module named {0}", PythonOps.Repr(context, name));
+#else
                 var err = PythonOps.ImportError("No module named '{0}'", name);
+#endif
                 ((PythonExceptions._ImportError)err.GetPythonException()!).name = name;
                 return LightExceptions.Throw(err);
             }

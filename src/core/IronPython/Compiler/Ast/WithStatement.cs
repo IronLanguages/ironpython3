@@ -206,8 +206,8 @@ namespace IronPython.Compiler.Ast {
                                         UpdateLineUpdated(true),
                                         Ast.Throw(
                                             Ast.Call(
-                                                AstMethods.MakeRethrowExceptionWorker,
-                                                exception
+                                                AstMethods.MakeRethrownException,
+                                                Parent.LocalContext
                                             )
                                         )
                                     )

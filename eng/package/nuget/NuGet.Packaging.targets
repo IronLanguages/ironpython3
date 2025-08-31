@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <ItemGroup>
+    <Package Include="IronPython">
+      <NuSpecDir>$(MSBuildThisFileDirectory)</NuSpecDir>
+      <NuspecProperties></NuspecProperties>
+    </Package>
+    <Package Include="IronPython.StdLib">
+      <NuSpecDir>$(MSBuildThisFileDirectory)</NuSpecDir>
+      <NuspecProperties>IncludeSymbols=false</NuspecProperties>
+    </Package>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <NuSpecInputs>@(Package->'%(NuSpecDir)/%(Identity).nuspec')</NuSpecInputs>
+    <NuPkgOutputs>@(Package->'$(PackageDir)/%(Identity).$(PackageVersion).nupkg')</NuPkgOutputs>
+  </PropertyGroup>
+
+  <Target Name="NuGetPackage" DependsOnTargets="Stage" AfterTargets="Package" Inputs="$(NuSpecInputs)" Outputs="$(NuPkgOutputs)">
+    <ItemGroup>
+      <DLLsFiles Include="**\DLLs\IronPython.*.dll" />
+      <DLLsFiles Include="**\DLLs\IronPython.*.pdb" />
+      <DLLsFiles Include="**\DLLs\IronPython.*.xml" />
+    </ItemGroup>
+
+    <!-- Copy the files from DLLs into the main directory for nuget packaging -->
+    <Copy SourceFiles="@(DLLsFiles)" CopiedFiles="@(CopiedFiles)" DestinationFolder="$([System.IO.Path]::GetFullPath('%(DLLsFiles.RecursiveDir)\..'))">
+      <Output TaskParameter="CopiedFiles" ItemName="TempCopied" />
+    </Copy>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\NuGet.Packaging.csproj" Targets="Restore" Properties="$(BuildProperties);RestoreUseStaticGraphEvaluation=false" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\NuGet.Packaging.csproj" Targets="Pack" Properties="$(BuildProperties);%(NuspecProperties);NuspecFile=%(Package.Identity).nuspec" />
+    <!-- Delete the copied files -->
+    <Delete Files="@(TempCopied)" />
+  </Target>
+</Project>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Target Name="PkgPackage" Condition="'$(MacOS)' == 'true'" DependsOnTargets="Stage" AfterTargets="Package"
+          Outputs="$(PackageDir)\IronPython-$(PackageVersion).pkg">
+    <!-- We need to create the directory structure we want to package -->
+    <PropertyGroup>
+      <TempFolder>temp</TempFolder>
+      <PackageDebFolder>eng/package/pkg</PackageDebFolder>
+      <PackageTempFolder>$(PackageDebFolder)/$(TempFolder)</PackageTempFolder>
+      <PackageLayoutRootDir>$(PackageTempFolder)/Library/Frameworks/IronPython.framework/Versions/$(PackageVersion)</PackageLayoutRootDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <StdLibFiles Include="$(StageDir)/$(StdLibDirName)/**/*.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ApplicationFiles Include="$(StageDir)/net462/*.exe" />
+      <ApplicationFiles Include="$(StageDir)/net462/*.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <DLLFiles Include="$(StageDir)/net462/DLLs/*.dll" />
+    </ItemGroup>
+
+    <Exec Command="chmod 777 $(StageDir)/net462/*.exe" />
+    <Exec Command="rm -rf $(PackageTempFolder)" />
+    <Exec Command="mkdir -p $(PackageTempFolder)" />
+
+    <ItemGroup>
+      <StdLibOutputFiles Include="$(StageDir)/$(StdLibDirName)/**/*.py" />
+    </ItemGroup>
+
+    <!-- Change line endings of the .py files -->
+    <Exec Command="$(MSBuildThisFileDirectory)dos2unix.sh %(StdLibOutputFiles.Identity)" />
+
+    <Copy SourceFiles="@(ApplicationFiles)" DestinationFolder="$(PackageLayoutRootDir)/bin/%(ApplicationFiles.RecursiveDir)"/>
+    <Copy SourceFiles="@(StdLibFiles)" DestinationFolder="$(PackageLayoutRootDir)/lib/%(StdLibFiles.RecursiveDir)"/>
+    <Copy SourceFiles="@(DLLFiles)" DestinationFolder="$(PackageLayoutRootDir)/DLLs" />
+
+    <Exec Command="pkgbuild --root $(PackageTempFolder) --identifier 'org.dotnet.ironpython34' --version '$(PackageVersion)' $(PackageDir)/IronPython-$(PackageVersion).pkg" />
+
+    <!-- cleanup the directory -->
+    <Exec Command="rm -rf $(PackageTempFolder)" />
+
+  </Target>
+</Project>

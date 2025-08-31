@@ -5,8 +5,8 @@
   <PropertyGroup>
     <!-- These are normally set by Build.proj, except when building from VS. -->
     <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)</RootDir>
-    <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)Build</BuildSysDir>
-    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)Util\References</ReferenceDir>
+    <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)eng</BuildSysDir>
+    <UtilsDir Condition=" '$(UtilsDir)' == '' ">$(RootDir)eng\utils</UtilsDir>
 
     <Mono Condition=" '$(Mono)' == '' AND '$(MSBuildRuntimeType)' == 'Mono' ">true</Mono>
     
@@ -21,11 +21,14 @@
     <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'final'">1000</AssemblyFileRevision>
 
     <Product>IronPython</Product>
-    <Company>IronPython Team</Company>
-    <Copyright>© IronPython Contributors</Copyright>
+    <Company>.NET Foundation</Company>
+    <Copyright>© .NET Foundation and Contributors</Copyright>
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyRevision)</AssemblyVersion>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</FileVersion>
     <InformationalVersion>$(MSBuildProjectName) $(MajorVersion).$(MinorVersion).$(MicroVersion) $(ReleaseLevel) $(ReleaseSerial)</InformationalVersion>
+
+    <PythonSymbols>PYTHON_$(MajorVersion)$(MinorVersion)</PythonSymbols>
+    <PythonSymbols Condition="'$(MajorVersion)$(MinorVersion)' >= '36'">$(PythonSymbols);PYTHON_36_OR_GREATER</PythonSymbols>
 
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 
@@ -121,11 +124,11 @@
 
   <!-- Release -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols>false</DebugSymbols>
+    <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);TRACE</DefineConstants>
+    <DefineConstants>$(PythonSymbols);$(Features);$(SignedSym);TRACE</DefineConstants>
   </PropertyGroup>
 
   <!-- Debug -->
@@ -135,6 +138,6 @@
     <Optimize>false</Optimize>
     <!-- TODO: Python & zlib.net need some work -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(PythonSymbols);$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 </Project>

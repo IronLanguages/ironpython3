@@ -4,7 +4,7 @@ https://docs.python.org/3/whatsnew/3.4.html
 
 PEPs
 ====
-- [ ] [PEP 453][]: Explicit Bootstrapping of PIP in Python Installations
+- [x] [PEP 453][]: Explicit Bootstrapping of PIP in Python Installations
 - [ ] [PEP 446][]: Newly created file descriptors are non-inheritable
 - [ ] [PEP 451][]:  A `ModuleSpec` Type for the Import System
 
@@ -21,7 +21,7 @@ Other Language Changes
 - [ ] All the UTF-* codecs (except UTF-7) now reject surrogates during both encoding and decoding unless the surrogatepass error handler is used, with the exception of the UTF-16 decoder and the UTF-16 encoder
 - [ ] New German EBCDIC codec `cp273`.
 - [ ] New Ukrainian codec `cp1125`.
-- [ ] `bytes.join()` and `bytearray.join()` now accept arbitrary buffer objects as arguments.
+- [x] `bytes.join()` and `bytearray.join()` now accept arbitrary buffer objects as arguments.
 - [ ] The `int` constructor now accepts any object that has an `__index__` method for its base argument.
 - [ ] Frame objects now have a `clear()` method that clears all references to local variables from the frame.
 - [ ] `memoryview` is now registered as a `Sequence`, and supports the `reversed()` builtin.

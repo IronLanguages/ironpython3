@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>IronPython.Compiler</RootNamespace>
+    <AssemblyName>ipyc</AssemblyName>
+    <StartupObject>IronPython.Compiler.Program</StartupObject>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <StageItem Include="$(TargetDir)\IKVM.Reflection.dll" />
+    <StageItem Include="$(UtilsDir)\References\IKVM\IKVM.Reflection.License.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="IKVM.Reflection" CopyLocal="true">
+      <HintPath>$(UtilsDir)\References\IKVM\IKVM.Reflection.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+
+</Project>

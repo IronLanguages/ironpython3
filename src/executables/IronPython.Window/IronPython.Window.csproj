@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462</TargetFrameworks>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>IronPython.Window</RootNamespace>
+    <AssemblyName>ipyw</AssemblyName>
+    <ApplicationIcon>ipyw.ico</ApplicationIcon>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+
+</Project>

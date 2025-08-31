@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462;net6.0-windows;net8.0-windows</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <StoreInDLLs>true</StoreInDLLs>
+    <UseWPF>true</UseWPF>
+
+    <!-- output to DLLs folder -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(BaseOutputPath)\$(TargetFramework.Replace('-windows', ''))\DLLs</OutputPath>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" Private="false" />
+    <ProjectReference Include="..\..\dlr\Src\Microsoft.Scripting\Microsoft.Scripting.csproj" Private="false" />
+    <ProjectReference Include="..\..\dlr\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
+    <Reference Include="PresentationCore" Condition=" '$(Mono)' != 'true' " />
+    <Reference Include="PresentationFramework" Condition=" '$(Mono)' != 'true' " />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+  </ItemGroup>
+
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+
+  <ItemGroup>
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WPF" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WindowsForms" IsWindowsOnly="false" />
+  </ItemGroup>
+
+</Project>

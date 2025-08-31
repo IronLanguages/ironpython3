@@ -206,11 +206,7 @@ namespace IronPython.Compiler {
                 gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
                 gen.Emit(OpCodes.Ldloc, strVar);
                 gen.EmitCall(OpCodes.Call, typeof(string).GetMethod(nameof(string.Format), new[] { typeof(string), typeof(string) }), Type.EmptyTypes);
-                gen.Emit(OpCodes.Ldstr, "Error");
-                gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxButtons.OK);
-                gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxIcon.Error);
-                gen.EmitCall(OpCodes.Call, typeof(System.Windows.Forms.MessageBox).GetMethod(nameof(System.Windows.Forms.MessageBox.Show), new[] { typeof(string), typeof(string), typeof(System.Windows.Forms.MessageBoxButtons), typeof(System.Windows.Forms.MessageBoxIcon) }), Type.EmptyTypes);
-                gen.Emit(OpCodes.Pop);
+                gen.EmitCall(OpCodes.Call, typeof(Debug).GetMethod(nameof(Debug.WriteLine), new[] { typeof(string) }), Type.EmptyTypes);
             }
 
             gen.Emit(OpCodes.Ldc_I4, -1); // return code is -1 to show failure

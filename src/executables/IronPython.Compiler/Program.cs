@@ -17,7 +17,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
 
-namespace IronPythonCompiler {
+namespace IronPython.Compiler {
 
     public class Program {
 

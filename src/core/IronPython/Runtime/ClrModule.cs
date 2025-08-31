@@ -947,7 +947,7 @@ import Namespace.")]
             SavableScriptCode.SaveToAssembly(assemblyName, kwArgs, code.ToArray());
         }
 
-        public static AssemblyGen CreateAssemblyGen(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
+        public static AssemblyGen CreateAssemblyGen(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, [NotNone] params string/*!*/[]/*!*/ filenames) {
             ContractUtils.RequiresNotNull(assemblyName, nameof(assemblyName));
             ContractUtils.RequiresNotNullItems(filenames, nameof(filenames));
 

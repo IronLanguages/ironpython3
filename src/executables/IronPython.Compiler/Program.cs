@@ -4,10 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 
 using IronPython.Hosting;
 using IronPython.Runtime;
@@ -65,7 +65,7 @@ namespace IronPython.Compiler {
                 }
 
                 // we currently do no error checking on what is passed in to the assemblyresolve event handler
-                assemblyResolveMethod = tb.DefineMethod("AssemblyResolve", MethodAttributes.Public | MethodAttributes.Static, typeof(Assembly), new Type[] { typeof(object), typeof(ResolveEventArgs) });
+                assemblyResolveMethod = tb.DefineMethod("AssemblyResolve", MethodAttributes.Public | MethodAttributes.Static, typeof(Assembly), new[] { typeof(object), typeof(ResolveEventArgs) });
                 gen = assemblyResolveMethod.GetILGenerator();
 
                 gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod(nameof(Assembly.GetEntryAssembly)), Type.EmptyTypes);
@@ -74,10 +74,10 @@ namespace IronPython.Compiler {
                 gen.EmitCall(OpCodes.Callvirt, typeof(ResolveEventArgs).GetProperty(nameof(ResolveEventArgs.Name)).GetGetMethod(), Type.EmptyTypes);
 
                 var s = gen.DeclareLocal(typeof(Stream)); // resource stream
-                gen.Emit(OpCodes.Newobj, typeof(AssemblyName).GetConstructor(new Type[] { typeof(string) }));
+                gen.Emit(OpCodes.Newobj, typeof(AssemblyName).GetConstructor(new[] { typeof(string) }));
                 gen.EmitCall(OpCodes.Call, typeof(AssemblyName).GetProperty(nameof(AssemblyName.Name)).GetGetMethod(), Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
-                gen.EmitCall(OpCodes.Callvirt, typeof(Assembly).GetMethod(nameof(Assembly.GetManifestResourceStream), new Type[] { typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod(nameof(string.Concat), new[] { typeof(string), typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(Assembly).GetMethod(nameof(Assembly.GetManifestResourceStream), new[] { typeof(string) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, s);
 
                 gen.BeginExceptionBlock();
@@ -94,12 +94,12 @@ namespace IronPython.Compiler {
                 gen.Emit(OpCodes.Ldloc, s);
                 gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetProperty(nameof(Stream.Length)).GetGetMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Conv_I4);
-                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetMethod(nameof(Stream.Read), new Type[] { typeof(byte[]), typeof(int), typeof(int) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Callvirt, typeof(Stream).GetMethod(nameof(Stream.Read), new[] { typeof(byte[]), typeof(int), typeof(int) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Pop);
 
                 var aa = gen.DeclareLocal(typeof(Assembly));
                 gen.Emit(OpCodes.Ldloc, d);
-                gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod(nameof(Assembly.Load), new Type[] { typeof(byte[]) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(Assembly).GetMethod(nameof(Assembly.Load), new[] { typeof(byte[]) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Stloc, aa);
 
                 gen.BeginFinallyBlock();
@@ -124,7 +124,7 @@ namespace IronPython.Compiler {
                 gen.EmitCall(OpCodes.Call, typeof(AppDomain).GetProperty(nameof(AppDomain.CurrentDomain)).GetGetMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldnull);
                 gen.Emit(OpCodes.Ldftn, assemblyResolveMethod);
-                gen.Emit(OpCodes.Newobj, typeof(ResolveEventHandler).GetConstructor(new Type[] { typeof(object), typeof(nint) }));
+                gen.Emit(OpCodes.Newobj, typeof(ResolveEventHandler).GetConstructor(new[] { typeof(object), typeof(nint) }));
                 gen.EmitCall(OpCodes.Callvirt, typeof(AppDomain).GetEvent(nameof(AppDomain.AssemblyResolve)).GetAddMethod(), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ret);
             }
@@ -164,7 +164,7 @@ namespace IronPython.Compiler {
                     } else if (option.Value.Equals(ScriptingRuntimeHelpers.False)) {
                         gen.Emit(OpCodes.Ldsfld, False);
                     }
-                    gen.EmitCall(OpCodes.Callvirt, typeof(Dictionary<string, object>).GetMethod(nameof(Dictionary<string, object>.Add), new Type[] { typeof(string), typeof(object) }), Type.EmptyTypes);
+                    gen.EmitCall(OpCodes.Callvirt, typeof(Dictionary<string, object>).GetMethod(nameof(Dictionary<string, object>.Add), new[] { typeof(string), typeof(object) }), Type.EmptyTypes);
                 }
             }
 
@@ -172,7 +172,7 @@ namespace IronPython.Compiler {
 
             // get the ScriptCode assembly...
             gen.Emit(OpCodes.Ldtoken, tb);
-            gen.EmitCall(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)), new Type[] { typeof(RuntimeTypeHandle) });
+            gen.EmitCall(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)), new[] { typeof(RuntimeTypeHandle) });
             gen.EmitCall(OpCodes.Callvirt, typeof(Type).GetProperty(nameof(Type.Assembly)).GetGetMethod(), Type.EmptyTypes);
 
             // emit module name
@@ -189,7 +189,7 @@ namespace IronPython.Compiler {
             // (this will also run the script)
             // and put the return code on the stack
             gen.EmitCall(OpCodes.Call, typeof(PythonOps).GetMethod(nameof(PythonOps.InitializeModuleEx),
-                new Type[] { typeof(Assembly), typeof(string), typeof(string[]), typeof(bool), typeof(Dictionary<string, object>) }),
+                new[] { typeof(Assembly), typeof(string), typeof(string[]), typeof(bool), typeof(Dictionary<string, object>) }),
                 Type.EmptyTypes);
             gen.Emit(OpCodes.Stloc, intVar);
             gen.BeginCatchBlock(typeof(Exception));
@@ -201,15 +201,15 @@ namespace IronPython.Compiler {
             if (config.Target == PEFileKinds.ConsoleApplication) {
                 gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
                 gen.Emit(OpCodes.Ldloc, strVar);
-                gen.EmitCall(OpCodes.Call, typeof(Console).GetMethod(nameof(Console.WriteLine), new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(Console).GetMethod(nameof(Console.WriteLine), new[] { typeof(string), typeof(string) }), Type.EmptyTypes);
             } else {
                 gen.Emit(OpCodes.Ldstr, config.ErrorMessageFormat);
                 gen.Emit(OpCodes.Ldloc, strVar);
-                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod(nameof(string.Format), new Type[] { typeof(string), typeof(string) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(string).GetMethod(nameof(string.Format), new[] { typeof(string), typeof(string) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Ldstr, "Error");
                 gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxButtons.OK);
                 gen.Emit(OpCodes.Ldc_I4, (int)System.Windows.Forms.MessageBoxIcon.Error);
-                gen.EmitCall(OpCodes.Call, typeof(System.Windows.Forms.MessageBox).GetMethod(nameof(System.Windows.Forms.MessageBox.Show), new Type[] { typeof(string), typeof(string), typeof(System.Windows.Forms.MessageBoxButtons), typeof(System.Windows.Forms.MessageBoxIcon) }), Type.EmptyTypes);
+                gen.EmitCall(OpCodes.Call, typeof(System.Windows.Forms.MessageBox).GetMethod(nameof(System.Windows.Forms.MessageBox.Show), new[] { typeof(string), typeof(string), typeof(System.Windows.Forms.MessageBoxButtons), typeof(System.Windows.Forms.MessageBoxIcon) }), Type.EmptyTypes);
                 gen.Emit(OpCodes.Pop);
             }
 
@@ -269,11 +269,7 @@ namespace IronPython.Compiler {
                 ag.AssemblyBuilder.Save(Path.GetFileName(outputFileName), config.Platform, config.Machine);
 
                 if (config.Target != PEFileKinds.Dll && !string.IsNullOrEmpty(config.Win32Icon)) {
-                    byte[] data = File.ReadAllBytes(config.Win32Icon);
-                    nint hUpdate = BeginUpdateResource(outputFileName, false);
-                    UpdateResource(hUpdate, RT_ICON, 1, LANG_SYSTEM_DEFAULT,
-                                   data, data.Length);
-                    EndUpdateResource(hUpdate, false);
+                    IconInjector.InjectIcon(outputFileName, config.Win32Icon);
                 }
 
                 ConsoleOps.Info($"Saved to {outputFileName}");
@@ -283,21 +279,5 @@ namespace IronPython.Compiler {
             }
             return 0;
         }
-
-        private const nint RT_ICON = 3;
-        private const short LANG_SYSTEM_DEFAULT = unchecked((0x02 << 10) | 0x00);
-
-        private static nint MAKEINTRESOURCE(int i) => i & 0xFFFF;
-
-        [DllImport("kernel32", CharSet = CharSet.Unicode)]
-        private static extern nint BeginUpdateResource(string fileName, [MarshalAs(UnmanagedType.Bool)] bool deleteExistingResources);
-
-        [DllImport("kernel32")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool UpdateResource(nint hUpdate, nint type, nint name, short language, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 5)] byte[] data, int dataSize);
-
-        [DllImport("kernel32")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool EndUpdateResource(nint hUpdate, [MarshalAs(UnmanagedType.Bool)] bool discard);
     }
 }

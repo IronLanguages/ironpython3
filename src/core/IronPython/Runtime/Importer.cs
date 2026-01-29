@@ -769,9 +769,9 @@ namespace IronPython.Runtime {
 
         private static string CreateFullName(string/*!*/ baseName, ArraySegment<string> parts) {
             if (baseName == null || baseName.Length == 0 || baseName == "__main__") {
-                return string.Join(".", parts);
+                return string.Join(".", (IEnumerable<string>)parts);
             }
-            return baseName + "." + string.Join(".", parts);
+            return baseName + "." + string.Join(".", (IEnumerable<string>)parts);
         }
 
         #endregion

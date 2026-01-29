@@ -117,11 +117,11 @@ public static class PythonFcntl {
     //
     //      int ioctl(int, unsigned long, ...)
     //
-    // but .NET, as of Jan 2025, still does not support varargs in P/Invoke [1]
+    // but .NET, as of Jan 2026, still does not support varargs in P/Invoke [1]
     // so as a workaround, nonvararg prototypes are defined for each architecture.
     // [1]: https://github.com/dotnet/runtime/issues/48796
 
-#if NET10_0_OR_GREATER
+#if NET11_0_OR_GREATER
 #error Check if this version of .NET supports P/Invoke of variadic functions; if not, change the condition to recheck at next major .NET version
 #endif
 

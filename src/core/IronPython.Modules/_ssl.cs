@@ -252,7 +252,9 @@ namespace IronPython.Modules {
                         using IPythonBuffer buf = cabuf.GetBuffer();
                         var contents = buf.AsReadOnlySpan();
                         while (contents.Length > 0) {
-#if NET
+#if NET10_0_OR_GREATER
+                            var cert = X509CertificateLoader.LoadCertificate(contents);
+#elif NET
                             var cert = new X509Certificate2(contents);
 #else
                             var cert = new X509Certificate2(contents.ToArray());
@@ -449,7 +451,12 @@ namespace IronPython.Modules {
                     if (_serverSide) {
                         var _cert = context._cert;
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                            _cert = new X509Certificate2(_cert.Export(X509ContentType.Pkcs12));
+                            byte[] certData = _cert.Export(X509ContentType.Pkcs12);
+#if NET10_0_OR_GREATER
+                            _cert = X509CertificateLoader.LoadCertificate(certData);
+#else
+                            _cert = new X509Certificate2(certData);
+#endif
                         }
                         _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, enabledSslProtocols, false);
                     } else {
@@ -527,6 +534,8 @@ namespace IronPython.Modules {
 #pragma warning restore CS0618 // Type or member is obsolete
 #pragma warning restore CA5397 // Do not use deprecated SslProtocols values
 
+#pragma warning disable SYSLIB0058 // Certain SslStream properties are obsolete
+
             public PythonTuple cipher() {
                 if (_sslStream != null && _sslStream.IsAuthenticated) {
                     return PythonTuple.MakeTuple(
@@ -539,6 +548,8 @@ namespace IronPython.Modules {
             }
 
             public object compression() => null; // TODO
+
+#pragma warning restore SYSLIB0058 // Certain SslStream properties are obsolete
 
 #pragma warning disable CA5397 // Do not use deprecated SslProtocols values
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -876,7 +887,14 @@ Returns the number of bytes written.")]
         private static PythonDictionary CertificateToPython(CodeContext context, X509Certificate cert) {
             if (cert is X509Certificate2 cert2)
                 return CertificateToPython(context, cert2);
-            return CertificateToPython(context, new X509Certificate2(cert.GetRawCertData()));
+
+            byte[] certData = cert.GetRawCertData();
+#if NET10_0_OR_GREATER
+            cert2 = X509CertificateLoader.LoadCertificate(certData);
+#else
+            cert2 = new X509Certificate2(certData);
+#endif
+            return CertificateToPython(context, cert2);
         }
 
         private static PythonDictionary CertificateToPython(CodeContext context, X509Certificate2 cert) {
@@ -1030,7 +1048,12 @@ Returns the number of bytes written.")]
                         var certStr = ReadToEnd(lines, ref i, "-----END CERTIFICATE-----");
 
                         try {
-                            cert = new X509Certificate2(Convert.FromBase64String(certStr.ToString()));
+                            byte[] certData = Convert.FromBase64String(certStr.ToString());
+#if NET10_0_OR_GREATER
+                            cert = X509CertificateLoader.LoadCertificate(certData);
+#else
+                            cert = new X509Certificate2(certData);
+#endif
                         } catch (Exception e) {
                             throw ErrorDecoding(context, filename, e);
                         }

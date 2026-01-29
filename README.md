@@ -152,4 +152,4 @@ See the [building document](https://github.com/IronLanguages/ironpython3/wiki/Bu
 
 ## Supported Platforms
 
-IronPython 3 targets .NET Framework 4.6.2, .NET Standard 2.0, .NET 6.0 and .NET 8.0. The support for .NET and .NET Core follow the lifecycle defined on [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core).
+IronPython 3 targets .NET Framework 4.6.2, .NET Standard 2.0, .NET 6.0, .NET 8.0, and .NET 10.0. The support for .NET and .NET Core follow the lifecycle defined on [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/platform/support/policy/dotnet-core).

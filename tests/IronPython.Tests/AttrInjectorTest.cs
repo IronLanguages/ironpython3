@@ -49,7 +49,6 @@ namespace IronPythonTest {
                             } else {
                                 return n;
                             }
-
                         }
                     }
                 }

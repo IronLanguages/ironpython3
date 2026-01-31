@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -42,7 +43,7 @@ namespace IronPythonTest {
 
                 if (xml != null) {
                     for (XmlNode n = xml.FirstChild; n != null; n = n.NextSibling) {
-                        if (n is XmlElement && string.CompareOrdinal(n.Name, name) == 0) {
+                        if (n is XmlElement && string.Equals(n.Name, name, StringComparison.Ordinal)) {
                             if (n.HasChildNodes && n.FirstChild == n.LastChild && n.FirstChild is XmlText) {
                                 return n.InnerText;
                             } else {

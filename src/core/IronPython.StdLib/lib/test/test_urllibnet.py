@@ -172,7 +172,7 @@ class urlretrieveNetworkTests(unittest.TestCase):
             self.assertIsInstance(info, email.message.Message,
                                   "info is not an instance of email.message.Message")
 
-    logo = "http://www.example.com/"
+    logo = "http://www.pythontest.net/"
 
     def test_data_header(self):
         with self.urlretrieve(self.logo) as (file_location, fileheaders):

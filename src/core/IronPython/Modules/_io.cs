@@ -2912,6 +2912,9 @@ namespace IronPython.Modules {
             return res;
         }
 
+        // new in Python 3.8
+        public static _IOBase open_code(CodeContext/*!*/ context, string path) => open(context, path, "rb");
+
         internal static TextIOWrapper CreateConsole(PythonContext context, SharedIO io, ConsoleStreamType type, string name, out StreamBox sio) {
             var cc = context.SharedContext;
             if (type == ConsoleStreamType.Input) {

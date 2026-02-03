@@ -73,6 +73,8 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
+        public override string NodeName => "tuple";
+
         public bool IsExpandable { get; }
 
         internal override bool IsConstant {

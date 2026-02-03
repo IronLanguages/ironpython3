@@ -7,7 +7,7 @@ jobs:
           imageName: 'ubuntu-22.04'
         mac:
           osName: 'macOS'
-          imageName: 'macOS-latest'
+          imageName: 'macOS-14'
         windows:
           osName: 'Windows'
           imageName: 'windows-latest'
@@ -98,15 +98,15 @@ jobs:
           framework: net8.0
         macos_net462:
           osName: macOS
-          imageName: macOS-latest
+          imageName: macOS-14
           framework: net462
         macos_net6_0:
           osName: macOS
-          imageName: macOS-latest
+          imageName: macOS-14
           framework: net6.0
         macos_net8_0:
           osName: macOS
-          imageName: macOS-latest
+          imageName: macOS-14
           framework: net8.0
         windows_net462:
           osName: Windows

@@ -32,10 +32,10 @@ jobs:
 
       # Setup .NET
       - task: UseDotNet@2
-        displayName: Install .NET 9.0 SDK for build
+        displayName: Install .NET 10.0 SDK for build
         inputs:
           packageType: 'sdk'
-          version: '9.0.x'
+          version: '10.0.x'
 
       # Display version info
       - task: PowerShell@2

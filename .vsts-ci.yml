@@ -120,6 +120,18 @@ jobs:
           osName: Windows
           imageName: windows-latest
           framework: net8.0
+        linux_net10_0:
+          osName: Linux
+          imageName: ubuntu-22.04
+          framework: net10.0
+        macos_net10_0:
+          osName: macOS
+          imageName: macOS-14
+          framework: net10.0
+        windows_net10_0:
+          osName: Windows
+          imageName: windows-latest
+          framework: net10.0
 
     displayName: Test
     timeoutInMinutes: 180

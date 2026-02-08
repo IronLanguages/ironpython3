@@ -7,7 +7,7 @@
 x = dir(dict)
 x = dir(dict.fromkeys)
 
-import collections
+import collections.abc
 import os
 import sys
 
@@ -624,7 +624,7 @@ class DictTest(IronPythonTestCase):
     def test_module_dict(self):
         me = sys.modules[__name__]
         moduleDict = me.__dict__
-        self.assertTrue(isinstance(moduleDict, collections.Mapping))
+        self.assertTrue(isinstance(moduleDict, collections.abc.Mapping))
         self.assertTrue(moduleDict.__contains__("DictTest"))
         self.assertEqual(moduleDict["DictTest"], DictTest)
         self.assertTrue(moduleDict.keys().__contains__("DictTest"))

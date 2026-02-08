@@ -2185,6 +2185,17 @@ the 'status' value."),
         public const int W_OK = 2;
         public const int R_OK = 4;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public const int _LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x0100;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public const int _LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x1000;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public const int _LOAD_LIBRARY_SEARCH_APPLICATION_DIR = 0x0200;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public const int _LOAD_LIBRARY_SEARCH_USER_DIRS = 0x0400;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public const int _LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x0800;
+
         private static void addBase(IEnumerable<string> files, PythonList ret) {
             foreach (string file in files) {
                 ret.AddNoLock(Path.GetFileName(file));

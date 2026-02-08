@@ -392,6 +392,51 @@ namespace IronPython.Runtime {
             }
         }
 
+        // new in CPython 3.8
+        public string hex([NotNone] string sep, int bytes_per_sep = 1) {
+            if (sep.Length != 1) throw PythonOps.ValueError($"{nameof(sep)} must be length 1");
+            return ToHex(_bytes.AsSpan(), sep[0], bytes_per_sep);
+        }
+
+        // new in CPython 3.8
+        public string hex([BytesLike, NotNone] IList<byte> sep, int bytes_per_sep = 1) {
+            if (sep.Count != 1) throw PythonOps.ValueError($"{nameof(sep)} must be length 1");
+            return ToHex(_bytes.AsSpan(), (char)sep[0], bytes_per_sep);
+        }
+
+        internal static string ToHex(ReadOnlySpan<byte> bytes, char sep, int bytes_per_sep) {
+            if (sep >= 0x80) throw PythonOps.ValueError($"{nameof(sep)} must be ASCII");
+            if (bytes.Length == 0) return string.Empty;
+            if (bytes_per_sep == 0) return ToHex(bytes);
+
+            int sepLoc;
+            if (bytes_per_sep < 0) {
+                bytes_per_sep = -bytes_per_sep;
+                sepLoc = 0;
+            } else {
+                sepLoc = bytes_per_sep - bytes.Length % bytes_per_sep;
+                if (sepLoc == bytes_per_sep) sepLoc = 0;
+            }
+
+            var builder = new StringBuilder(bytes.Length * 2 + (bytes.Length - 1) / bytes_per_sep);
+            foreach (var b in bytes) {
+                if (sepLoc == bytes_per_sep) {
+                    builder.Append(sep);
+                    sepLoc = 1;
+                } else {
+                    sepLoc++;
+                }
+                builder.Append(ToAscii(b >> 4));
+                builder.Append(ToAscii(b & 0xf));
+            }
+            Debug.Assert(builder.Length == bytes.Length * 2 + (bytes.Length - 1) / bytes_per_sep);
+            return builder.ToString();
+
+            static char ToAscii(int b) {
+                return (char)(b < 10 ? '0' + b : 'a' + (b - 10));
+            }
+        }
+
         public int index([BytesLike, NotNone] IList<byte> sub)
             => index(sub, 0, _bytes.Length);
 
@@ -434,6 +479,9 @@ namespace IronPython.Runtime {
         public bool isalnum() => _bytes.IsAlphaNumeric();
 
         public bool isalpha() => _bytes.IsLetter();
+
+        // new in Python 3.7
+        public bool isascii() => _bytes.IsAscii();
 
         public bool isdigit() => _bytes.IsDigit();
 

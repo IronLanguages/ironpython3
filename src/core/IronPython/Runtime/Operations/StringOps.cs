@@ -623,6 +623,13 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
+        public static bool isascii([NotNone] this string self) {
+            foreach (char c in self) {
+                if (c > 0x7f) return false;
+            }
+            return true;
+        }
+
         public static bool isdigit([NotNone] this string self) {
             if (self.Length == 0) return false;
             string v = self;

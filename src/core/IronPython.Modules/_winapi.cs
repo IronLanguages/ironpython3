@@ -408,6 +408,16 @@ namespace IronPython.Modules {
         public const int WAIT_ABANDONED_0 = 0x80;
         public const int WAIT_OBJECT_0 = 0x0;
         public const int WAIT_TIMEOUT = 0x102;
+        public const int ABOVE_NORMAL_PRIORITY_CLASS = 0x8000;
+        public const int BELOW_NORMAL_PRIORITY_CLASS = 0x4000;
+        public const int HIGH_PRIORITY_CLASS = 0x80;
+        public const int IDLE_PRIORITY_CLASS = 0x40;
+        public const int NORMAL_PRIORITY_CLASS = 0x20;
+        public const int REALTIME_PRIORITY_CLASS = 0x100;
+        public const int CREATE_NO_WINDOW = 0x8000000;
+        public const int DETACHED_PROCESS = 8;
+        public const int CREATE_DEFAULT_ERROR_MODE = 0x4000000;
+        public const int CREATE_BREAKAWAY_FROM_JOB = 0x1000000;
 
         #endregion
     }

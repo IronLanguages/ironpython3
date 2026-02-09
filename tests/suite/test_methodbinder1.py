@@ -8,7 +8,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_mono, is_net70, is_net80, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_mono, is_net60, net_version, is_netcoreapp, run_test, skipUnlessIronPython
 from iptest.type_util import *
 
 from System import Int32
@@ -176,7 +176,7 @@ class MethodBinder1Test(IronPythonTestCase):
 
 
 
-        ch2bi = True if is_net70 or is_net80 else TypeE # .NET 7 adds an implicit cast from Char to BigInteger
+        ch2bi = True if net_version >= (7, 0) else TypeE # .NET 7 adds an implicit cast from Char to BigInteger
         ##################################################  pass in char    #########################################################
         ####                                     M201   M680   M202   M203   M681   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
         ####                                     int    int?   double bigint bigint? bool  str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
@@ -212,7 +212,6 @@ class MethodBinder1Test(IronPythonTestCase):
                         print("TypeE,", end=' ')
                     except OverflowError:
                         print("OverF,", end=' ')
-                    print("),")
                 else:
                     try:
                         func(value)
@@ -230,6 +229,8 @@ class MethodBinder1Test(IronPythonTestCase):
                         right = int(funcname[1:])
                         if left != right:
                             self.fail("left %s != right %s when func %s on arg %s (%s)\n%s" % (left, right, funcname, scenario[0], type(value), func.__doc__))
+            if print_the_matrix:
+                print("),")
 
         # these funcs should behavior same as M201(Int32)
         # should have NullableInt too ?

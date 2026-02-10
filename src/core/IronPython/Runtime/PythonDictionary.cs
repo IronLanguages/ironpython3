@@ -758,7 +758,7 @@ namespace IronPython.Runtime {
             bool res = _storage.Remove(key);
 
             if (key is string s) {
-                Environment.SetEnvironmentVariable(s, string.Empty);
+                Environment.SetEnvironmentVariable(s, null);
             }
 
             return res;
@@ -786,7 +786,7 @@ namespace IronPython.Runtime {
         public override void Clear(ref DictionaryStorage storage) {
             foreach (var x in GetItems()) {
                 if (x.Key is string key) {
-                    Environment.SetEnvironmentVariable(key, string.Empty);
+                    Environment.SetEnvironmentVariable(key, null);
                 }
             }
 

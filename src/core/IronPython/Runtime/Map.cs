@@ -23,6 +23,7 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
     public class Map : IEnumerator {
         private readonly CodeContext _context;
         private readonly object? _func;
+        private readonly IEnumerator? _enumerator;
         private readonly IEnumerator[] _enumerators;
 
         public Map(CodeContext context, object? func, [NotNone] params object[] iterables) {
@@ -39,6 +40,11 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
                 _enumerators[i] = enumerator;
             }
 
+            // fast path for single iterable
+            if (_enumerators.Length == 1) {
+                _enumerator = _enumerators[0];
+            }
+
             _context = context;
             _func = func;
         }
@@ -48,8 +54,13 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
 
         [PythonHidden]
         public bool MoveNext() {
-            if (_enumerators.Length > 0 && _enumerators.All(x => x.MoveNext())) {
-                Current = PythonOps.CallWithContext(_context, _func, _enumerators.Select(x => x.Current).ToArray());
+            if (_enumerator is null) {
+                if (_enumerators.All(x => x.MoveNext())) {
+                    Current = PythonOps.CallWithContext(_context, _func, _enumerators.Select(x => x.Current).ToArray());
+                    return true;
+                }
+            } else if (_enumerator.MoveNext()) {
+                Current = PythonCalls.Call(_context, _func, _enumerator.Current);
                 return true;
             }
             Current = default;

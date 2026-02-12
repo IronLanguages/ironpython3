@@ -4,7 +4,7 @@ Param(
     [Parameter(Position=1)]
     [String] $target = "build",
     [String] $configuration = "Release",
-    [String[]] $frameworks=@('net462','net6.0','net8.0'),
+    [String[]] $frameworks=@('net462','net6.0','net8.0','net10.0'),
     [String] $platform = $null,  # auto-detect
     [switch] $runIgnored,
     [int] $jobs = [System.Environment]::ProcessorCount

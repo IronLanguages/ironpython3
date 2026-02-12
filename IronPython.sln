@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		eng\net8.0.props = eng\net8.0.props
 		eng\net9.0-windows.props = eng\net9.0-windows.props
 		eng\net9.0.props = eng\net9.0.props
+		eng\net10.0-windows.props = eng\net10.0-windows.props
+		eng\net10.0.props = eng\net10.0.props
 		eng\netstandard2.0.props = eng\netstandard2.0.props
 		eng\Tasks.Targets = eng\Tasks.Targets
 	EndProjectSection

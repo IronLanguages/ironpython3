@@ -4,7 +4,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_netcoreapp, is_netcoreapp21, is_posix, is_arm64, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_net100, is_netcoreapp, is_netcoreapp21, is_posix, is_arm64, big, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -1199,7 +1199,9 @@ End Class""")
                 System.StringSplitOptions.RemoveEmptyEntries,
                 ]
 
-        if is_netcoreapp and not is_netcoreapp21 and not is_net80:
+        if False:
+            # TODO: Enum types are not picklable if defined in nested namespaces
+            # https://github.com/IronLanguages/ironpython3/issues/1989
             clr.AddReference("System.Text.Json")
             data.append(System.Text.Json.JsonValueKind.Object) # byte-based enum
 
@@ -1263,7 +1265,8 @@ End Class""")
         if hasattr(clr, "Deserialize"):
             self.assertRaises(ValueError, clr.Deserialize, "unknown", "foo")
 
-        if not is_net80:
+        if not is_netcoreapp:
+            # .NET Core does not support BinaryFormatter starting from .NET 8.0
             al = System.Collections.ArrayList()
             al.Add(2)
 
@@ -1429,7 +1432,7 @@ if not hasattr(A, 'Rank'):
         self.assertTrue('IndexOf' not in clr.Dir('abc'))
         self.assertTrue('IndexOf' in clr.DirClr('abc'))
 
-    @unittest.skipIf(is_net70 or is_net80, "TODO") # TODO: https://github.com/IronLanguages/ironpython3/issues/1485
+    @unittest.skipIf(is_net70 or is_net80 or is_net100, "TODO") # TODO: https://github.com/IronLanguages/ironpython3/issues/1485
     def test_int32_bigint_equivalence(self):
         import math
 

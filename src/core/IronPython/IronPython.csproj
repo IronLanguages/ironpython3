@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net462;netstandard2.0;net6.0;net8.0;net10.0</TargetFrameworks>
     <BaseAddress>879755264</BaseAddress>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -30,7 +30,7 @@
     <PackageReference Include="Mono.Unix" Version="7.1.0-final.1.21458.1" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsFullFramework)' == 'true' OR '$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
 

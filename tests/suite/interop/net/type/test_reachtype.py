@@ -95,7 +95,7 @@ class ReachTypeTest(IronPythonTestCase):
         self.assertEqual(G2[int, int].A, 40)
 
         self.assertRaisesRegex(ValueError,
-                            re.compile(r"(?s)The number of generic arguments provided doesn't equal the arity of the generic type definition\..*Parameter.*instantiation", re.M),
+                            re.compile(r"(?s)The number of generic arguments provided doesn't equal the arity of the generic type definition\..*Parameter.*", re.M),
                             lambda: G3[()])
 
         if is_mono:

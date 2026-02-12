@@ -6,7 +6,7 @@
 ## Run selected tests from test_socket from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_linux, is_mono, is_posix
+from iptest import is_ironpython, generate_suite, run_test, is_linux, is_osx, net_version, is_mono, is_posix
 
 import test.test_socket
 
@@ -37,9 +37,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_socket.UnbufferedFileObjectClassTestCase('testSmallReadNonBlocking'), # TODO: figure out
 
         ]
-        if is_posix:
+        if is_linux or (is_osx and net_version < (10, 0)):
             failing_tests += [
-                test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
+               test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
             ]
         if not is_mono:
             failing_tests += [

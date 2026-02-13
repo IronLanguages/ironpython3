@@ -127,7 +127,11 @@ namespace IronPython.Runtime {
             string name = parts.Array[parts.Offset + parts.Count - 1];
             if (from is NamespaceTracker ns) {
                 if (ns.TryGetValue(name, out object val)) {
-                    return MemberTrackerToPython(context, val);
+                    object ret = MemberTrackerToPython(context, val);
+                    if (ret != null && val is NamespaceTracker retns && !context.LanguageContext.SystemStateModules.ContainsKey(retns.Name)) {
+                        context.LanguageContext.SystemStateModules[retns.Name] = ret;
+                    }
+                    return ret;
                 }
             }
 

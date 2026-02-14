@@ -1199,11 +1199,14 @@ End Class""")
                 System.StringSplitOptions.RemoveEmptyEntries,
                 ]
 
-        if False:
-            # TODO: Enum types are not picklable if defined in nested namespaces
-            # https://github.com/IronLanguages/ironpython3/issues/1989
-            clr.AddReference("System.Text.Json")
-            data.append(System.Text.Json.JsonValueKind.Object) # byte-based enum
+        if is_cli:
+            # enum types
+            clr.AddReference("Microsoft.Scripting")
+            import Microsoft.Scripting
+            data.append(Microsoft.Scripting.Severity.Warning)  # different namespace than System
+            if is_netcoreapp:
+                clr.AddReference("System.Text.Json")
+                data.append(System.Text.Json.JsonValueKind.Object) # byte-based enum
 
         data.append(list(data))     # list of all the data..
         data.append(tuple(data))    # tuple of all the data...

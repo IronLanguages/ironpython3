@@ -33,10 +33,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-    - name: Setup .NET 6.0
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '6.0.x'
 
       # CI debug information
     - name: Version Information
@@ -65,7 +61,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-22.04, macos-14]
-        framework: ['net462', 'net6.0', 'net8.0', 'net10.0']
+        framework: ['net462', 'net8.0', 'net10.0']
 
     steps:
       # Prerequisites
@@ -86,10 +82,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-    - name: Setup .NET 6.0
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '6.0.x'
 
       # Build & Test
     - name: Build

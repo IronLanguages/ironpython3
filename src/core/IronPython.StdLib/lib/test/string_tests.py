@@ -720,7 +720,8 @@ class CommonTest(BaseTest):
         self.checkequal('\u2160\u2171\u2172',
                         '\u2170\u2171\u2172', 'capitalize')
         # check with Ll chars with no upper - nothing changes here
-        self.checkequal('\u019b\u1d00\u1d86\u0221\u1fb7',
+        if sys.implementation.name != "ironpython": # https://github.com/IronLanguages/ironpython3/issues/839
+            self.checkequal('\u019b\u1d00\u1d86\u0221\u1fb7',
                         '\u019b\u1d00\u1d86\u0221\u1fb7', 'capitalize')
 
         self.checkraises(TypeError, 'hello', 'capitalize', 42)

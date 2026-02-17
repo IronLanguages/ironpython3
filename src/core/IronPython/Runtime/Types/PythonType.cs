@@ -3127,7 +3127,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 object res;
                 if (_slot.TryGetValue(_context, self, ipo.PythonType, out res)) {
-                    return PythonOps.CallWithContext(_context, res, _name, value);
+                    return PythonCalls.Call(_context, res, _name, value);
                 }
 
                 return TypeError(ipo);

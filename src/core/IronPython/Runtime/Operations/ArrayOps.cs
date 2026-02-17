@@ -60,7 +60,7 @@ namespace IronPython.Runtime.Operations {
             if (!PythonOps.TryGetBoundAttr(items, "__len__", out object? lenFunc))
                 throw PythonOps.TypeErrorForBadInstance("expected object with __len__ function, got {0}", items);
 
-            int len = context.LanguageContext.ConvertToInt32(PythonOps.CallWithContext(context, lenFunc));
+            int len = context.LanguageContext.ConvertToInt32(PythonCalls.Call(context, lenFunc));
 
             Array res = @base == 0 ?
                 Array.CreateInstance(type, len) : Array.CreateInstance(type, [len], [@base]);

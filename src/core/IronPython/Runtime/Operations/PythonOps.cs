@@ -969,6 +969,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
+        [Obsolete("Use PythonCalls.Call")]
         public static object? CallWithContext(CodeContext/*!*/ context, object? func, params object?[] args) {
             return PythonCalls.Call(context, func, args);
         }
@@ -979,9 +980,10 @@ namespace IronPython.Runtime.Operations {
         /// that supports calling with 'this'. If not, the 'this' object is dropped
         /// and a normal call is made.
         /// </summary>
+        [Obsolete("Use PythonCalls.Call")]
         public static object? CallWithContextAndThis(CodeContext/*!*/ context, object? func, object? instance, params object?[] args) {
             // drop the 'this' and make the call
-            return CallWithContext(context, func, args);
+            return PythonCalls.Call(context, func, args);
         }
 
         [Obsolete("Use ObjectOperations instead")]
@@ -995,7 +997,7 @@ namespace IronPython.Runtime.Operations {
                     foreach (object? arg in PythonOps.GetCollection(argsTuple))
                         largs.Add(arg);
                 }
-                return CallWithContext(context, func, largs.ToArray());
+                return PythonCalls.Call(context, func, largs.ToArray());
             } else {
                 List<object?> largs;
 
@@ -1195,8 +1197,16 @@ namespace IronPython.Runtime.Operations {
                 out _);
         }
 
+        public static object? Invoke(CodeContext/*!*/ context, object? target, string name) {
+            return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name));
+        }
+
         public static object? Invoke(CodeContext/*!*/ context, object? target, string name, object? arg0) {
             return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), arg0);
+        }
+
+        public static object? Invoke(CodeContext/*!*/ context, object? target, string name, object? arg0, object? arg1) {
+            return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), arg0, arg1);
         }
 
         public static object? Invoke(CodeContext/*!*/ context, object? target, string name, params object?[] args) {
@@ -3420,7 +3430,7 @@ namespace IronPython.Runtime.Operations {
             if (warn == null) {
                 PythonOps.PrintWithDest(context, pc.SystemStandardError, $"warning: {category.Name}: {message}");
             } else {
-                PythonOps.CallWithContext(context, warn, message, category);
+                PythonCalls.Call(context, warn, message, category);
             }
         }
 
@@ -3436,7 +3446,7 @@ namespace IronPython.Runtime.Operations {
             if (warn == null) {
                 PythonOps.PrintWithDest(context, pc.SystemStandardError, $"{filename}:{lineNo}: {category.Name}: {message}");
             } else {
-                PythonOps.CallWithContext(context, warn, message, category, filename ?? "", lineNo);
+                PythonCalls.Call(context, warn, message, category, filename ?? "", lineNo);
             }
         }
 

@@ -140,7 +140,7 @@ namespace IronPython.Runtime.Operations {
                     // A derived class overrode __reduce__ but not __reduce_ex__, so call
                     // specialized __reduce__ instead of generic __reduce_ex__.
                     // (see the "The __reduce_ex__ API" section of PEP 307)
-                    return PythonOps.CallWithContext(context, myReduce, self)!;
+                    return PythonCalls.Call(context, myReduce, self)!;
                 }
             }
 
@@ -325,7 +325,7 @@ namespace IronPython.Runtime.Operations {
         internal static object? ReduceProtocol0(CodeContext/*!*/ context, object self) {
             var copyreg = context.LanguageContext.GetCopyRegModule();
             var _reduce_ex = PythonOps.GetBoundAttr(context, copyreg, "_reduce_ex");
-            return PythonOps.CallWithContext(context, _reduce_ex, self, 0);
+            return PythonCalls.Call(context, _reduce_ex, self, 0);
         }
 
         /// <summary>
@@ -347,7 +347,7 @@ namespace IronPython.Runtime.Operations {
 
             if (PythonOps.TryGetBoundAttr(context, myType, "__getnewargs__", out object? getNewArgsCallable)) {
                 // TypeError will bubble up if __getnewargs__ isn't callable
-                if (!(PythonOps.CallWithContext(context, getNewArgsCallable, self) is PythonTuple newArgs)) {
+                if (!(PythonCalls.Call(context, getNewArgsCallable, self) is PythonTuple newArgs)) {
                     throw PythonOps.TypeError("__getnewargs__ should return a tuple");
                 }
                 funcArgs = new object[1 + newArgs.Count];

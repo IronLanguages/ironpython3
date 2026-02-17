@@ -40,7 +40,7 @@ namespace IronPython.Modules {
             var module = context.GetCopyRegModule();
             if (module != null) {
                 var pickle = PythonOps.GetBoundAttr(context.SharedContext, module, "pickle");
-                PythonOps.CallWithContext(context.SharedContext, pickle, DynamicHelpers.GetPythonTypeFromType(typeof(Pattern)), dict["_pickle"]);
+                PythonCalls.Call(context.SharedContext, pickle, DynamicHelpers.GetPythonTypeFromType(typeof(Pattern)), dict["_pickle"]);
             }
         }
 

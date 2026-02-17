@@ -678,9 +678,9 @@ import Namespace.")]
                 ValidateArgs(args);
 
                 if (_inst != null) {
-                    return PythonOps.CallWithContext(context, _func, ArrayUtils.Insert(_inst, args));
+                    return PythonCalls.Call(context, _func, ArrayUtils.Insert(_inst, args));
                 } else {
-                    return PythonOps.CallWithContext(context, _func, args);
+                    return PythonCalls.Call(context, _func, args);
                 }
             }
 
@@ -762,7 +762,7 @@ import Namespace.")]
             #region ICallableWithCodeContext Members
             [SpecialName]
             public object Call(CodeContext context, params object[] args) {
-                object ret = PythonOps.CallWithContext(
+                object ret = PythonCalls.Call(
                     context,
                     _func,
                     _inst != null ? ArrayUtils.Insert(_inst, args) : args);

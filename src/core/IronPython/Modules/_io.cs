@@ -544,7 +544,7 @@ namespace IronPython.Modules {
                 object setter;
                 if (PythonOps.TryGetBoundAttr(buf, "__setitem__", out setter)) {
                     for (int i = 0; i < data.Count; i++) {
-                        PythonOps.CallWithContext(context, setter, i, data[i]);
+                        PythonCalls.Call(context, setter, i, data[i]);
                     }
                     GC.KeepAlive(this);
                     return data.Count;
@@ -2707,7 +2707,7 @@ namespace IronPython.Modules {
                     throw PythonOps.LookupError(_encoding);
                 }
 
-                _encoder = PythonOps.CallWithContext(context, factory, _errors);
+                _encoder = PythonCalls.Call(context, factory, _errors);
                 return _encoder;
             }
 
@@ -2718,7 +2718,7 @@ namespace IronPython.Modules {
                     throw PythonOps.LookupError(_encoding);
                 }
 
-                _decoder = PythonOps.CallWithContext(context, factory, _errors);
+                _decoder = PythonCalls.Call(context, factory, _errors);
                 if (_readUniversal) {
                     _decoder = new IncrementalNewlineDecoder(_decoder, _readTranslate, "strict");
                 }

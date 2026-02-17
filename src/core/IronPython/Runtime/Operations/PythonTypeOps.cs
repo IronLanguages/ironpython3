@@ -64,10 +64,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object CallWorker(CodeContext/*!*/ context, PythonType dt, object[] args) {
-            object newObject = PythonOps.CallWithContext(context, GetTypeNew(context, dt), ArrayUtils.Insert<object>(dt, args));
+            object newObject = PythonCalls.Call(context, GetTypeNew(context, dt), ArrayUtils.Insert<object>(dt, args));
 
             if (ShouldInvokeInit(dt, DynamicHelpers.GetPythonType(newObject), args.Length)) {
-                PythonOps.CallWithContext(context, GetInitMethod(context, dt, newObject), args);
+                PythonCalls.Call(context, GetInitMethod(context, dt, newObject), args);
 
                 AddFinalizer(context, dt, newObject);
             }

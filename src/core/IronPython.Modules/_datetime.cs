@@ -1065,7 +1065,7 @@ namespace IronPython.Modules {
             public static datetime strptime(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] string date_string, [NotNone] string format) {
                 var module = context.LanguageContext.GetStrptimeModule();
                 var _strptime_datetime = PythonOps.GetBoundAttr(context, module, "_strptime_datetime");
-                return (datetime)PythonOps.CallWithContext(context, _strptime_datetime, cls, date_string, format)!;
+                return (datetime)PythonCalls.Call(context, _strptime_datetime, cls, date_string, format)!;
             }
 
             #region IRichComparable Members
@@ -1503,7 +1503,7 @@ namespace IronPython.Modules {
             public PythonTuple __reduce__(CodeContext/*!*/ context) {
                 object? args = PythonTuple.EMPTY;
                 if (PythonOps.TryGetBoundAttr(context, this, "__getinitargs__", out var getinitargs)) {
-                    args = PythonOps.CallWithContext(context, getinitargs);
+                    args = PythonCalls.Call(context, getinitargs);
                 }
 
                 if (GetType() == typeof(tzinfo) ||

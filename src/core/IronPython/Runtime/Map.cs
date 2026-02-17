@@ -56,7 +56,7 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
         public bool MoveNext() {
             if (_enumerator is null) {
                 if (_enumerators.All(x => x.MoveNext())) {
-                    Current = PythonOps.CallWithContext(_context, _func, _enumerators.Select(x => x.Current).ToArray());
+                    Current = PythonCalls.Call(_context, _func, _enumerators.Select(x => x.Current).ToArray());
                     return true;
                 }
             } else if (_enumerator.MoveNext()) {

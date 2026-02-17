@@ -639,7 +639,7 @@ namespace IronPython.Modules {
                 if (!PythonOps.TryGetBoundAttr(context, file, "read", out object _readMethod))
                     throw PythonOps.TypeError("argument must have 'read' attribute");
 
-                object readResult = PythonOps.CallWithContext(context, _readMethod);
+                object readResult = PythonCalls.Call(context, _readMethod);
                 if (readResult is Bytes b) {
                     using (var stream = new MemoryStream(b.UnsafeByteArray, writable: false)) {
                         var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };

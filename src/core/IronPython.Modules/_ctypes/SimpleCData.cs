@@ -89,7 +89,7 @@ namespace IronPython.Modules {
                             }
 
                             if (__float__ != null) {
-                                value = PythonOps.CallWithContext(context, __float__);
+                                value = PythonCalls.Call(context, __float__);
                             }
                         }
                         break;

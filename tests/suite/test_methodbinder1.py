@@ -8,7 +8,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_mono, is_net60, net_version, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_mono, net_version, is_netcoreapp, run_test, skipUnlessIronPython
 from iptest.type_util import *
 
 from System import Int32

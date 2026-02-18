@@ -824,8 +824,16 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
+        static StringOps() {
+            try {
+                CasingCultureInfo = new CultureInfo("en");
+            } catch (CultureNotFoundException) {
+                CasingCultureInfo = CultureInfo.InvariantCulture;
+            }
+        }
+
         // required for better match with cpython upper/lower
-        private static readonly CultureInfo CasingCultureInfo = new CultureInfo("en");
+        private static readonly CultureInfo CasingCultureInfo;
 
         public static string lower([NotNone] this string self) {
             return self.ToLower(CasingCultureInfo);

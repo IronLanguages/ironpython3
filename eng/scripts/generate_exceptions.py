@@ -265,9 +265,9 @@ def get_clr_name(e):
     return e.replace('Error', '') + 'Exception'
 
 FACTORY = """
-public static Exception %(name)s(string format, params object?[] args) {
-    return new %(clrname)s(string.Format(format, args));
-}"""
+internal static Exception %(name)s(string message) => new %(clrname)s(message);
+public static Exception %(name)s(string format, params object?[] args) => new %(clrname)s(string.Format(format, args));
+""".rstrip()
 
 def factory_gen(cw):
     for e in pythonExcs:

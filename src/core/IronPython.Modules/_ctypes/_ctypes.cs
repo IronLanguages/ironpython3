@@ -317,7 +317,7 @@ namespace IronPython.Modules {
 
         public static void _check_HRESULT(int hresult) {
             if (hresult < 0) {
-                throw PythonOps.WindowsError("ctypes function returned failed HRESULT: {0:x}", (uint)hresult);
+                throw PythonOps.OSError("ctypes function returned failed HRESULT: {0:x}", (uint)hresult);
             }
         }
 

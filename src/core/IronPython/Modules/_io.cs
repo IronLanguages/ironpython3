@@ -439,7 +439,7 @@ namespace IronPython.Modules {
             }
 
             internal Exception InvalidPosition(BigInteger pos) {
-                return PythonOps.IOError("Raw stream returned invalid position {0}", pos);
+                return PythonOps.OSError("Raw stream returned invalid position {0}", pos);
             }
 
             #endregion
@@ -648,11 +648,11 @@ namespace IronPython.Modules {
 
                 if (_rawIO != null) {
                     if (!_rawIO.readable(context)) {
-                        throw PythonOps.IOError("\"raw\" argument must be readable.");
+                        throw PythonOps.OSError("\"raw\" argument must be readable.");
                     }
                 } else {
                     if (PythonOps.Not(PythonOps.Invoke(context, _raw, "readable"))) {
-                        throw PythonOps.IOError("\"raw\" argument must be readable.");
+                        throw PythonOps.OSError("\"raw\" argument must be readable.");
                     }
                 }
                 if (buffer_size <= 0) {
@@ -1125,11 +1125,11 @@ namespace IronPython.Modules {
                 this.raw = raw;
                 if (_rawIO != null) {
                     if (!_rawIO.writable(context)) {
-                        throw PythonOps.IOError("\"raw\" argument must be writable.");
+                        throw PythonOps.OSError("\"raw\" argument must be writable.");
                     }
                 } else {
                     if (PythonOps.Not(PythonOps.Invoke(context, _raw, "writable"))) {
-                        throw PythonOps.IOError("\"raw\" argument must be writable.");
+                        throw PythonOps.OSError("\"raw\" argument must be writable.");
                     }
                 }
                 if (buffer_size <= 0) {
@@ -1332,7 +1332,7 @@ namespace IronPython.Modules {
 
                         int written = GetInt(writtenObj, "write() should return integer");
                         if (written > _writeBuf.Count || written < 0) {
-                            throw PythonOps.IOError("write() returned incorrect number of bytes");
+                            throw PythonOps.OSError("write() returned incorrect number of bytes");
                         }
                         _writeBuf.RemoveRange(0, written);
                         count += written;
@@ -1450,9 +1450,9 @@ namespace IronPython.Modules {
                 if (buffer_size <= 0) {
                     throw PythonOps.ValueError("invalid buffer size (must be positive)");
                 } else if (!raw.readable(context)) {
-                    throw PythonOps.IOError("\"raw\" argument must be readable.");
+                    throw PythonOps.OSError("\"raw\" argument must be readable.");
                 } else if (!raw.writable(context)) {
-                    throw PythonOps.IOError("\"raw\" argument must be writable.");
+                    throw PythonOps.OSError("\"raw\" argument must be writable.");
                 }
 
                 _bufSize = buffer_size;
@@ -1744,7 +1744,7 @@ namespace IronPython.Modules {
                         var bytes = Bytes.Make(_writeBuf.ToArray());
                         int written = (int)_inner.write(context, bytes);
                         if (written > _writeBuf.Count || written < 0) {
-                            throw PythonOps.IOError("write() returned incorrect number of bytes");
+                            throw PythonOps.OSError("write() returned incorrect number of bytes");
                         }
                         _writeBuf.RemoveRange(0, written);
                         count += written;
@@ -1792,7 +1792,7 @@ namespace IronPython.Modules {
                     pos = _inner.seek(context, pos, whence);
                     ResetReadBuf();
                     if (pos < 0) {
-                        throw PythonOps.IOError("seek() returned invalid position");
+                        throw PythonOps.OSError("seek() returned invalid position");
                     }
                     GC.KeepAlive(this);
                     return pos;
@@ -1863,10 +1863,10 @@ namespace IronPython.Modules {
                 this.writer = writer;
 
                 if (!_reader.readable(context)) {
-                    throw PythonOps.IOError("\"reader\" object must be readable.");
+                    throw PythonOps.OSError("\"reader\" object must be readable.");
                 }
                 if (!_writer.writable(context)) {
-                    throw PythonOps.IOError("\"writer\" object must be writable.");
+                    throw PythonOps.OSError("\"writer\" object must be writable.");
                 }
             }
 
@@ -2193,10 +2193,10 @@ namespace IronPython.Modules {
 
             public override BigInteger tell(CodeContext/*!*/ context) {
                 if (!_seekable) {
-                    throw PythonOps.IOError("underlying stream is not seekable");
+                    throw PythonOps.OSError("underlying stream is not seekable");
                 }
                 if (!_telling) {
-                    throw PythonOps.IOError("telling position disabled by next() call");
+                    throw PythonOps.OSError("telling position disabled by next() call");
                 }
 
                 flush(context);
@@ -2285,7 +2285,7 @@ namespace IronPython.Modules {
                             }
 
                             if (charsDecoded < skip) {
-                                throw PythonOps.IOError("can't reconstruct logical file position");
+                                throw PythonOps.OSError("can't reconstruct logical file position");
                             }
                             break;
                         }
@@ -2347,21 +2347,21 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("tell on closed file");
                 }
                 if (!_seekable) {
-                    throw PythonOps.IOError("underlying stream is not seekable");
+                    throw PythonOps.OSError("underlying stream is not seekable");
                 }
 
                 IncrementalNewlineDecoder typedDecoder;
                 if (whenceInt == 1) {
                     // seek relative to the current position
                     if (cookie != 0) {
-                        throw PythonOps.IOError("can't do nonzero cur-relative seeks");
+                        throw PythonOps.OSError("can't do nonzero cur-relative seeks");
                     }
                     whenceInt = 0;
                     cookie = tell(context);
                 } else if (whenceInt == 2) {
                     // seek relative to the end of the stream
                     if (cookie != 0) {
-                        throw PythonOps.IOError("can't do nonzero end-relative seeks");
+                        throw PythonOps.OSError("can't do nonzero end-relative seeks");
                     }
                     flush(context);
                     BigInteger pos = _bufferTyped != null ?
@@ -2452,7 +2452,7 @@ namespace IronPython.Modules {
 
                     // skip appropriate number of decoded chars
                     if (_decodedChars.Length < skip) {
-                        throw PythonOps.IOError("can't restore logical file position");
+                        throw PythonOps.OSError("can't restore logical file position");
                     }
                     _decodedCharsUsed = skip;
                 }

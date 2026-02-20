@@ -292,7 +292,7 @@ the file wasn't found.")]
 
                 path = path.Replace(_archive, string.Empty).TrimStart(Path.DirectorySeparatorChar);
                 if (!__files.ContainsKey(path)) {
-                    throw PythonOps.IOError(path);
+                    throw PythonOps.OSError(path);
                 }
 
                 var data = GetData(context, _archive, __files[path] as PythonTuple);
@@ -394,7 +394,7 @@ contain the module, but has no source for it.")]
                     try {
                         fp = new BinaryReader(new FileStream(archive, FileMode.Open, FileAccess.Read));
                     } catch {
-                        throw PythonOps.IOError("zipimport: can not open file {0}", archive);
+                        throw PythonOps.OSError("zipimport: can not open file {0}", archive);
                     }
 
                     // Check to make sure the local file header is correct
@@ -412,7 +412,7 @@ contain the module, but has no source for it.")]
                     try {
                         raw_data = fp.ReadBytes(compress == 0 ? data_size : data_size + 1);
                     } catch {
-                        throw PythonOps.IOError("zipimport: can't read data");
+                        throw PythonOps.OSError("zipimport: can't read data");
                     }
 
                     if (compress != 0) {

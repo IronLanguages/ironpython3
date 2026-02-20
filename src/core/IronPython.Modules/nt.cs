@@ -2233,7 +2233,7 @@ the 'status' value."),
             if (!TryGetExecutableCommand(command, out baseCommand, out args)) {
                 if (!TryGetShellCommand(command, out baseCommand, out args)) {
                     if (throwException) {
-                        throw PythonOps.WindowsError("The system can not find command '{0}'", command);
+                        throw PythonOps.OSError("The system can not find command '{0}'", command);
                     } else {
                         return null;
                     }

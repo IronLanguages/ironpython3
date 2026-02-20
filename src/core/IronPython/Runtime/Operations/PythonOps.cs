@@ -3973,13 +3973,11 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static Exception IOError(Exception inner) {
-            return OSError(inner.Message, inner);
-        }
+        [Obsolete("Use OSError instead")]
+        public static Exception IOError(Exception inner) => new OSException(inner.Message, inner);
 
-        public static Exception IOError(string format, params object?[] args) {
-            return OSError(format, args);
-        }
+        [Obsolete("Use OSError instead")]
+        public static Exception IOError(string format, params object[] args) => OSError(format, args);
 
         internal static Exception OSError(int errno, string strerror, string? filename = null, int? winerror = null, string? filename2 = null) {
             if (filename2 != null) {
@@ -4035,9 +4033,8 @@ namespace IronPython.Runtime.Operations {
             return new OverflowException(string.Format(format, args));
         }
 
-        public static Exception WindowsError(string format, params object[] args) {
-            return OSError(format, args);
-        }
+        [Obsolete("Use OSError instead")]
+        public static Exception WindowsError(string format, params object[] args) => OSError(format, args);
 
         public static Exception TimeoutError(string format, params object[] args) {
             return new TimeoutException(string.Format(format, args));

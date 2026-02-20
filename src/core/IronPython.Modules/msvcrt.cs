@@ -49,7 +49,7 @@ Force the malloc() heap to clean itself up and return unused blocks
 to the operating system. On failure, this raises IOError.")]
         public static void heapmin() {
             if (_heapmin() != 0) {
-                throw PythonOps.IOError(new Win32Exception());
+                throw PythonOps.OSError(0, "Error");
             }
         }
 
@@ -178,7 +178,7 @@ Cause the character char to be ""pushed back"" into the console buffer;
 it will be the next character read by getch() or getche().")]
         public static void ungetch(char @char) {
             if (_ungetch(@char) == EOF) {
-                throw PythonOps.IOError(new Win32Exception());
+                throw PythonOps.OSError(0, "Error");
             }
         }
 
@@ -187,7 +187,7 @@ it will be the next character read by getch() or getche().")]
 Wide char variant of ungetch(), accepting a Unicode value.")]
         public static void ungetwch(char @char) {
             if (_ungetwch(@char) == WEOF) {
-                throw PythonOps.IOError(new Win32Exception());
+                throw PythonOps.OSError(0, "Error");
             }
         }
 

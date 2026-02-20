@@ -435,7 +435,7 @@ namespace IronPython.Modules {
                 => PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState(_unsupportedOperationKey), msg);
 
             internal Exception AttributeError(string attrName) {
-                throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonOps.GetPythonTypeName(this), attrName);
+                return PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonOps.GetPythonTypeName(this), attrName);
             }
 
             internal Exception InvalidPosition(BigInteger pos) {
@@ -550,7 +550,7 @@ namespace IronPython.Modules {
                     return data.Count;
                 }
 
-                throw PythonOps.TypeError("must be read-write buffer, not " + PythonOps.GetPythonTypeName(buf));
+                throw PythonOps.TypeError("must be read-write buffer, not {0}", PythonOps.GetPythonTypeName(buf));
             }
 
             public override BigInteger write(CodeContext/*!*/ context, object buf) {
@@ -2027,7 +2027,7 @@ namespace IronPython.Modules {
                     case "\r\n":
                         break;
                     default:
-                        throw PythonOps.ValueError(string.Format("illegal newline value: " + newline));
+                        throw PythonOps.ValueError("illegal newline value: {0}", newline);
                 }
 
                 encoding ??= context.LanguageContext.PythonOptions.Utf8Mode ? "UTF-8" : PythonLocale.PreferredEncoding;
@@ -3218,7 +3218,7 @@ namespace IronPython.Modules {
                 return Bytes.Make(s.MakeByteArray());
             }
 
-            throw PythonOps.TypeError("'" + name + "' should have returned bytes");
+            throw PythonOps.TypeError($"'{name}' should have returned bytes");
         }
 
 #nullable restore

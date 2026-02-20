@@ -504,7 +504,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Power(BigInteger x, int y, BigInteger z) {
             if (y < 0) {
-                throw PythonOps.TypeError("power", y, "power must be >= 0");
+                throw PythonOps.TypeError("power must be >= 0");
             }
             if (z == BigInteger.Zero) {
                 throw PythonOps.ZeroDivisionError();
@@ -523,7 +523,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Power(BigInteger x, BigInteger y, BigInteger z) {
             if (y < BigInteger.Zero) {
-                throw PythonOps.TypeError("power", y, "power must be >= 0");
+                throw PythonOps.TypeError("power must be >= 0");
             }
             if (z == BigInteger.Zero) {
                 throw PythonOps.ZeroDivisionError();

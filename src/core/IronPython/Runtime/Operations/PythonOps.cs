@@ -4138,8 +4138,7 @@ namespace IronPython.Runtime.Operations {
         // When a generator first starts, before it gets to the first yield point, you can't call generator.Send(x) where x != null.
         // See Pep342 for details.
         public static Exception TypeErrorForIllegalSend() {
-            string message = "can't send non-None value to a just-started generator";
-            return TypeError(message);
+            return TypeError("can't send non-None value to a just-started generator");
         }
 
         // If a method is called with an incorrect number of arguments

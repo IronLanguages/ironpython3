@@ -149,7 +149,7 @@ namespace IronPython.Runtime {
             if (level < 0) throw PythonOps.ValueError("level must be >= 0");
 
             if (modName.IndexOf(Path.DirectorySeparatorChar) != -1) {
-                throw PythonOps.ImportError("Import by filename is not supported.", modName);
+                throw PythonOps.ImportError("Import by filename is not supported.");
             }
 
             string package = null;
@@ -745,8 +745,8 @@ namespace IronPython.Runtime {
 
                     if (context.DomainManager.Platform.FileExists(fullPath)) {
                         if (candidatePath != null) {
-                            throw PythonOps.ImportError(String.Format("Found multiple modules of the same name '{0}': '{1}' and '{2}'",
-                                name, candidatePath, fullPath));
+                            throw PythonOps.ImportError("Found multiple modules of the same name '{0}': '{1}' and '{2}'",
+                                name, candidatePath, fullPath);
                         }
 
                         candidatePath = fullPath;

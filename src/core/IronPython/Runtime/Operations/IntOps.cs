@@ -102,7 +102,7 @@ namespace IronPython.Runtime.Operations {
             if (qmod == null) return Power(x, power);
             int mod = (int)qmod;
 
-            if (power < 0) throw PythonOps.TypeError("power must be >= 0");
+            if (power < 0) throw PythonOps.ValueError("power must be >= 0");
 
             if (mod == 0) {
                 throw PythonOps.ZeroDivisionError();

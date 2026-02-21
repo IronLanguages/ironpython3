@@ -50,7 +50,7 @@ class Enum34Test(IronPythonTestCase):
             self.assertEqual(EnumType['Weekend'], EnumType.Weekend)
 
             self.assertRaises(SystemError, lambda: EnumType[DaysInt])
-            self.assertRaises(TypeError, lambda: EnumType[None])
+            self.assertRaises(KeyError, lambda: EnumType[None])
             self.assertRaises(TypeError, lambda: EnumType[self])
             self.assertRaises(KeyError, lambda: EnumType['invalid'])
 

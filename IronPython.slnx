@@ -1,0 +1,71 @@
+<Solution>
+  <Folder Name="/DLR/">
+    <Project Path="src/dlr/Src/Microsoft.Dynamic/Microsoft.Dynamic.csproj" />
+    <Project Path="src/dlr/Src/Microsoft.Scripting.Metadata/Microsoft.Scripting.Metadata.csproj" />
+    <Project Path="src/dlr/Src/Microsoft.Scripting/Microsoft.Scripting.csproj" />
+  </Folder>
+  <Folder Name="/DLR/Tests/">
+    <Project Path="src/dlr/Tests/ClrAssembly/ClrAssembly.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Build.proj" />
+    <File Path="CurrentVersion.props" />
+    <File Path="Directory.Build.props" />
+    <File Path="IronPython.ruleset" />
+    <File Path="LICENSE" />
+    <File Path="make.ps1" />
+    <File Path="NuGet.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/Build/">
+    <File Path="eng/After.targets" />
+    <File Path="eng/net10.0-windows.props" />
+    <File Path="eng/net10.0.props" />
+    <File Path="eng/net462.props" />
+    <File Path="eng/net8.0-windows.props" />
+    <File Path="eng/net8.0.props" />
+    <File Path="eng/net9.0-windows.props" />
+    <File Path="eng/net9.0.props" />
+    <File Path="eng/netstandard2.0.props" />
+    <File Path="eng/Tasks.Targets" />
+  </Folder>
+  <Folder Name="/Solution Items/Package/" />
+  <Folder Name="/Solution Items/Package/choco/">
+    <File Path="eng/package/choco/Choco.Packaging.targets" />
+    <File Path="eng/package/choco/IronPython.nuspec" />
+  </Folder>
+  <Folder Name="/Solution Items/Package/deb/">
+    <File Path="eng/package/deb/Deb.Packaging.targets" />
+  </Folder>
+  <Folder Name="/Solution Items/Package/msi/">
+    <File Path="eng/package/msi/Dlr.wxs" />
+    <File Path="eng/package/msi/IronPython.Installer.wixproj" />
+    <File Path="eng/package/msi/IronPython.wxs" />
+    <File Path="eng/package/msi/Msi.Packaging.targets" />
+    <File Path="eng/package/msi/Product.wxs" />
+    <File Path="eng/package/msi/Version.wxi" />
+  </Folder>
+  <Folder Name="/Solution Items/Package/nuget/">
+    <File Path="eng/package/nuget/IronPython.nuspec" />
+    <File Path="eng/package/nuget/IronPython.StdLib.nuspec" />
+  </Folder>
+  <Folder Name="/Solution Items/Package/pkg/">
+    <File Path="eng/package/pkg/Pkg.Packaging.targets" />
+  </Folder>
+  <Folder Name="/Solution Items/Package/zip/">
+    <File Path="eng/package/zip/Zip.Packaging.targets" />
+  </Folder>
+  <Project Path="src/core/IronPython.Modules/IronPython.Modules.csproj" />
+  <Project Path="src/core/IronPython/IronPython.csproj" />
+  <Project Path="src/executables/IronPython.Compiler/IronPython.Compiler.csproj" />
+  <Project Path="src/executables/IronPython.Console/IronPython.Console.csproj" />
+  <Project Path="src/executables/IronPython.Console32/IronPython.Console32.csproj" />
+  <Project Path="src/executables/IronPython.Window/IronPython.Window.csproj" />
+  <Project Path="src/executables/IronPython.Window32/IronPython.Window32.csproj" />
+  <Project Path="src/extensions/IronPython.SQLite/IronPython.SQLite.csproj" />
+  <Project Path="src/extensions/IronPython.Wpf/IronPython.Wpf.csproj" />
+  <Project Path="src/roslyn/IronPython.Analyzer/IronPython.Analyzer.csproj" />
+  <Project Path="tests/IronPython.Tests/IronPython.Tests.csproj" />
+</Solution>

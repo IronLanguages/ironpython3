@@ -282,8 +282,14 @@ class Python25Test(unittest.TestCase):
 
 
     def test_with_open(self):
-        with open('abc.txt', 'w'):
-            pass
+        import tempfile, os
+        fd, path = tempfile.mkstemp(suffix='.txt', prefix='ipy_test_')
+        os.close(fd)
+        try:
+            with open(path, 'w'):
+                pass
+        finally:
+            os.remove(path)
 
     def test_try_catch_finally(self):
         # test try-catch-finally syntax

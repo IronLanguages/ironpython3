@@ -1726,5 +1726,13 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
         # ensure out is the expected value and not empty
         self.assertEqual(out, b"aaa")
 
+    def test_errors_string_format(self):
+        # error formatting regressions were introduced causing SystemError instead of the expected exceptions
+        self.assertRaises(TypeError, lambda: ImportError(**{"{0}": 1}))
+        self.assertRaises(ValueError, int, "{0}")
+
+        if is_cli:
+            import System
+            self.assertRaises(KeyError, lambda: System.DayOfWeek["{0}"])
 
 run_test(__name__)

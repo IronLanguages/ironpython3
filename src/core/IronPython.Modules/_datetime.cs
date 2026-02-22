@@ -1571,7 +1571,7 @@ namespace IronPython.Modules {
             private bool IsUtc => ReferenceEquals(this, utc);
 
             public override string tzname(object? dt) {
-                if (dt is not null && dt is not datetime) throw PythonOps.TypeError($"tzname(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError("tzname(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
                 if (_name is not null) return _name;
 
                 if (IsUtc) return "UTC";

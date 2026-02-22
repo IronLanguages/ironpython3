@@ -561,7 +561,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     throw PythonOps.TypeError("'type' object is not subscriptable");
                 }
                 if (member == null) {
-                    throw PythonOps.KeyError(member);
+                    throw PythonOps.KeyError((object)member);
                 }
                 try {
                     return Enum.Parse(UnderlyingSystemType, member);

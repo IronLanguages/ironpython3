@@ -8,7 +8,7 @@
     <MacOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">true</MacOS>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
-    <Solution>$(RootDir)IronPython.sln</Solution>
+    <Solution>$(RootDir)IronPython.slnx</Solution>
     <UtilsDir>$(RootDir)eng\utils</UtilsDir>
     <BinDir>$(RootDir)bin</BinDir>
     <BuildSysDir>$(RootDir)eng</BuildSysDir>

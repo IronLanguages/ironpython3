@@ -1065,7 +1065,7 @@ namespace IronPython.Modules {
             public static datetime strptime(CodeContext/*!*/ context, [NotNone] PythonType cls, [NotNone] string date_string, [NotNone] string format) {
                 var module = context.LanguageContext.GetStrptimeModule();
                 var _strptime_datetime = PythonOps.GetBoundAttr(context, module, "_strptime_datetime");
-                return (datetime)PythonOps.CallWithContext(context, _strptime_datetime, cls, date_string, format)!;
+                return (datetime)PythonCalls.Call(context, _strptime_datetime, cls, date_string, format)!;
             }
 
             #region IRichComparable Members
@@ -1236,6 +1236,16 @@ namespace IronPython.Modules {
                     )
                 );
             }
+
+#if PYTHON_34 // removed in 3.5
+            public bool __bool__() {
+                return this.UtcTime.TimeSpan.Ticks != 0 || this.UtcTime.LostMicroseconds != 0;
+            }
+
+            public static explicit operator bool([NotNone] time time) {
+                return time.__bool__();
+            }
+#endif
 
             // instance methods
             public object replace() {
@@ -1493,7 +1503,7 @@ namespace IronPython.Modules {
             public PythonTuple __reduce__(CodeContext/*!*/ context) {
                 object? args = PythonTuple.EMPTY;
                 if (PythonOps.TryGetBoundAttr(context, this, "__getinitargs__", out var getinitargs)) {
-                    args = PythonOps.CallWithContext(context, getinitargs);
+                    args = PythonCalls.Call(context, getinitargs);
                 }
 
                 if (GetType() == typeof(tzinfo) ||
@@ -1561,7 +1571,7 @@ namespace IronPython.Modules {
             private bool IsUtc => ReferenceEquals(this, utc);
 
             public override string tzname(object? dt) {
-                if (dt is not null && dt is not datetime) throw PythonOps.TypeError($"tzname(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
+                if (dt is not null && dt is not datetime) throw PythonOps.TypeError("tzname(dt) argument must be a datetime instance or None, not {0}", PythonOps.GetPythonTypeName(dt));
                 if (_name is not null) return _name;
 
                 if (IsUtc) return "UTC";

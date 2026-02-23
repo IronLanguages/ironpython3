@@ -913,33 +913,34 @@ called = 3.14
         import time
 
     def test_file_coding(self):
+        tmpdir = self.temporary_dir
         try:
             import os
-            with open('test_coding_mod.py', 'wb+') as f:
+            with open(os.path.join(tmpdir, 'test_coding_mod.py'), 'wb+') as f:
                 f.write(b"# coding: utf-8\nx = '\xc3\xa6ble'\n")
-            with path_modifier('.'):
+            with path_modifier(tmpdir):
                 import test_coding_mod
                 self.assertEqual(test_coding_mod.x[0], '\xe6')
         finally:
-            os.unlink('test_coding_mod.py')
+            os.unlink(os.path.join(tmpdir, 'test_coding_mod.py'))
 
         try:
-            with open('test_coding_2.py', 'wb+') as f:
+            with open(os.path.join(tmpdir, 'test_coding_2.py'), 'wb+') as f:
                 f.write(b"\xef\xbb\xbf# -*- coding: utf-8 -*-\n")
                 f.write(b"x = u'ABCDE'\n")
-            with path_modifier('.'):
+            with path_modifier(tmpdir):
                 import test_coding_2
                 self.assertEqual(test_coding_2.x, 'ABCDE')
         finally:
-            os.unlink('test_coding_2.py')
+            os.unlink(os.path.join(tmpdir, 'test_coding_2.py'))
 
         try:
-            with open('test_coding_3.py', 'wb+') as f:
+            with open(os.path.join(tmpdir, 'test_coding_3.py'), 'wb+') as f:
                 f.write(b"# -*- coding: utf-8 -*-\n")
                 f.write(b"raise Exception()")
             f.close()
             try:
-                with path_modifier('.'):
+                with path_modifier(tmpdir):
                     import test_coding_3
             except Exception as e:
                 tb = sys.exc_info()[2].tb_next
@@ -947,7 +948,7 @@ called = 3.14
                     while tb.tb_next is not None: tb = tb.tb_next # importlib has a longer traceback
                 self.assertEqual(tb.tb_lineno, 2)
         finally:
-            os.unlink('test_coding_3.py')
+            os.unlink(os.path.join(tmpdir, 'test_coding_3.py'))
 
     def test_module_subtype(self):
         class x(type(sys)):
@@ -1225,14 +1226,15 @@ X = 3.14
         mod.__file__ = 'does_not_exist.py'
         sys.modules['my_module_test'] = mod
 
-        with open('test.py', 'w+') as f:
+        tmpfile = os.path.join(self.temporary_dir, 'test_%d.py' % os.getpid())
+        with open(tmpfile, 'w+') as f:
             f.write('x = 42')
 
         try:
-            with open('test.py') as inp_file:
+            with open(tmpfile) as inp_file:
                 imp.load_module('my_module_test', inp_file, 'does_not_exist.py', ('', 'U', 1))
         finally:
-            os.unlink('test.py')
+            os.unlink(tmpfile)
 
         self.assertEqual(mod.x, 42)
 

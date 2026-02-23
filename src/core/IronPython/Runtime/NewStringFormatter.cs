@@ -195,14 +195,14 @@ namespace IronPython.Runtime {
                     // report the text w/ a single } at the end
                     _index++;
                     if (_index == _str.Length || _str[_index] != '}') {
-                        throw PythonOps.ValueError("Single '}}' encountered in format string");
+                        throw PythonOps.ValueError("Single '}' encountered in format string");
                     }
 
                     text = _str.Substring(lastTextStart, _index - lastTextStart);
                     _index++;
                     return true;
                 } else if (_index == _str.Length - 1) {
-                    throw PythonOps.ValueError("Single '{{' encountered in format string");
+                    throw PythonOps.ValueError("Single '{' encountered in format string");
                 } else if (_str[_index + 1] == '{') {
                     // report the text w/ a single { at the end
                     text = _str.Substring(lastTextStart, ++_index - lastTextStart);
@@ -233,7 +233,7 @@ namespace IronPython.Runtime {
             /// </summary>
             private bool CheckEnd() {
                 if (_index == _str.Length) {
-                    throw PythonOps.ValueError("unmatched '{{' in format spec");
+                    throw PythonOps.ValueError("unmatched '{' in format spec");
                 } else if (_str[_index] == '}') {
                     _index++;
                     return true;
@@ -272,7 +272,7 @@ namespace IronPython.Runtime {
                     end = _str.IndexOfAny(ends, end + 1);
 
                     if (end == -1) {
-                        throw PythonOps.ValueError("unmatched '{{' in format spec");
+                        throw PythonOps.ValueError("unmatched '{' in format spec");
                     }
 
                     switch (_str[end]) {

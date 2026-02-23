@@ -66,7 +66,7 @@ namespace IronPython.Modules {
                 stmt = _ast.stmt.RevertStmts(interactive.body);
                 printExpression = true;
             } else
-                throw PythonOps.TypeError("unsupported type of AST: {0}", (source.GetType()));
+                throw PythonOps.TypeError("unsupported type of AST: {0}", source.GetType());
 
             return new PythonAst(stmt, false, ModuleOptions.ExecOrEvalCode, printExpression, compilerContext, Array.Empty<int>());
         }

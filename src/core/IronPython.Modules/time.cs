@@ -177,13 +177,13 @@ namespace IronPython.Modules {
         public static object? strptime(CodeContext/*!*/ context, [NotNone] string @string) {
             var module = context.LanguageContext.GetStrptimeModule();
             var _strptime_time = PythonOps.GetBoundAttr(context, module, "_strptime_time");
-            return PythonOps.CallWithContext(context, _strptime_time, @string);
+            return PythonCalls.Call(context, _strptime_time, @string);
         }
 
         public static object? strptime(CodeContext/*!*/ context, [NotNone] string @string, [NotNone] string format) {
             var module = context.LanguageContext.GetStrptimeModule();
             var _strptime_time = PythonOps.GetBoundAttr(context, module, "_strptime_time");
-            return PythonOps.CallWithContext(context, _strptime_time, @string, format);
+            return PythonCalls.Call(context, _strptime_time, @string, format);
         }
 
         internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt, int? microseconds, TimeZoneInfo? tzinfo = null, bool errorOnF = false) {

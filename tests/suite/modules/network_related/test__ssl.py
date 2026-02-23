@@ -15,7 +15,7 @@ import unittest
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, retryOnFailure, run_test, skipUnlessIronPython
 
 SSL_URL      = "www.python.org"
-SSL_ISSUER   = "CN=GlobalSign Atlas R3 DV TLS CA 2025 Q1, O=GlobalSign nv-sa, C=BE"
+SSL_ISSUER   = r"CN=GlobalSign Atlas R3 DV TLS CA 20\d\d Q?\d, O=GlobalSign nv-sa, C=BE"
 SSL_SERVER   = "www.python.org"
 SSL_PORT     = 443
 SSL_REQUEST  = b"GET /en-us HTTP/1.0\r\nHost: www.python.org\r\n\r\n"
@@ -158,7 +158,7 @@ for documentation."""
         issuer = ssl_s.issuer()
         #If we can get the issuer once, we should be able to do it again
         self.assertEqual(issuer, ssl_s.issuer())
-        self.assertIn(SSL_ISSUER, issuer)
+        self.assertRegex(issuer, SSL_ISSUER)
 
         #--Negative
         self.assertRaisesMessage(TypeError, "issuer() takes no arguments (1 given)",

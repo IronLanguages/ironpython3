@@ -108,15 +108,16 @@ class MarshalTest(IronPythonTestCase):
             l.append(marshal.dumps({i:i}))
 
         data = b''.join(l)
-        with open('tempfile.txt', 'wb') as f:
+        tmpfile = os.path.join(self.temporary_dir, 'tempfile_%d.txt' % os.getpid())
+        with open(tmpfile, 'wb') as f:
             f.write(data)
 
-        with open('tempfile.txt', 'rb') as f:
+        with open(tmpfile, 'rb') as f:
             for i in range(10):
                 obj = marshal.load(f)
                 self.assertEqual(obj, {i:i})
 
-        self.delete_files('tempfile.txt')
+        self.delete_files(tmpfile)
 
     def test_string_interning(self):
         self.assertEqual(marshal.dumps(['abc', 'abc'], 0), b'[\x02\x00\x00\x00u\x03\x00\x00\x00abcu\x03\x00\x00\x00abc')

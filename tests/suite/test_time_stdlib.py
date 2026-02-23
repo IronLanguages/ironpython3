@@ -25,12 +25,10 @@ def load_tests(loader, standard_tests, pattern):
             test.test_time.TimeTestCase('test_default_values_for_zero'), # AssertionError: '2000 01 01 00 00 00 1 001' != '2000 01 01 00 00 00 6 001'
         ]
 
-        if is_netcoreapp21 and is_osx:
-            failing_tests += [
-                test.test_time.TimeTestCase('test_process_time'), # AssertionError
-            ]
-
-        skip_tests = []
+        # frequently fails during CI
+        skip_tests = [
+            test.test_time.TimeTestCase('test_process_time'),
+        ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

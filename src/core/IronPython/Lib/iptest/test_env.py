@@ -25,6 +25,7 @@ is_net60 = False
 is_net70 = False
 is_net80 = False
 is_net90 = False
+is_net100 = False
 is_mono = False
 is_netstandard = False
 if is_ironpython:
@@ -36,6 +37,7 @@ if is_ironpython:
     is_net70 = clr.FrameworkDescription.startswith(".NET 7.0")
     is_net80 = clr.FrameworkDescription.startswith(".NET 8.0")
     is_net90 = clr.FrameworkDescription.startswith(".NET 9.0")
+    is_net100 = clr.FrameworkDescription.startswith(".NET 10.0")
     is_mono = clr.IsMono
     is_netstandard = clr.TargetFramework.startswith(".NETStandard")
 
@@ -57,13 +59,17 @@ is_net40 = False
 is_net45 = False
 is_net45Or46 = False
 is_net46 = False
+net_version = ()
 if is_cli:
     if is_netcoreapp: clr.AddReference("System.Runtime.Extensions")
     version = System.Environment.Version
+    net_version = (version.Major, version.Minor)
     is_net40 = version.Major == 4
     is_net45 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision < 42000
     is_net45Or46 = is_net40 and version.Minor == 0 and version.Build == 30319
     is_net46 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision == 42000
+    if is_net45: net_version = (4, 5)
+    if is_net46: net_version = (4, 6)
 
 #--Newlines
 if is_ironpython:

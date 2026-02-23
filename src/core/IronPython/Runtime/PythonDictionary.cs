@@ -758,7 +758,7 @@ namespace IronPython.Runtime {
             bool res = _storage.Remove(key);
 
             if (key is string s) {
-                Environment.SetEnvironmentVariable(s, string.Empty);
+                Environment.SetEnvironmentVariable(s, null);
             }
 
             return res;
@@ -786,7 +786,7 @@ namespace IronPython.Runtime {
         public override void Clear(ref DictionaryStorage storage) {
             foreach (var x in GetItems()) {
                 if (x.Key is string key) {
-                    Environment.SetEnvironmentVariable(key, string.Empty);
+                    Environment.SetEnvironmentVariable(key, null);
                 }
             }
 
@@ -1053,6 +1053,24 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public string __repr__(CodeContext context) {
+#if PYTHON_34
+            StringBuilder res = new StringBuilder(20);
+            res.Append("dict_values([");
+            string comma = "";
+            foreach (object value in this) {
+                res.Append(comma);
+                comma = ", ";
+                try {
+                    PythonOps.FunctionPushFrame(context.LanguageContext);
+                    res.Append(PythonOps.Repr(context, value));
+                } finally {
+                    PythonOps.FunctionPopFrame();
+                }
+            }
+            res.Append("])");
+
+            return res.ToString();
+#else
             List<object> infinite = PythonOps.GetAndCheckInfinite(this);
             if (infinite == null) {
                 return "...";
@@ -1081,6 +1099,7 @@ namespace IronPython.Runtime {
                 Debug.Assert(index == infinite.Count - 1);
                 infinite.RemoveAt(index);
             }
+#endif
         }
 
         #endregion
@@ -1784,6 +1803,24 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public string __repr__(CodeContext context) {
+#if PYTHON_34
+            StringBuilder res = new StringBuilder(20);
+            res.Append("dict_items([");
+            string comma = "";
+            foreach (object item in this) {
+                res.Append(comma);
+                comma = ", ";
+                try {
+                    PythonOps.FunctionPushFrame(context.LanguageContext);
+                    res.Append(PythonOps.Repr(context, item));
+                } finally {
+                    PythonOps.FunctionPopFrame();
+                }
+            }
+            res.Append("])");
+
+            return res.ToString();
+#else
             List<object> infinite = PythonOps.GetAndCheckInfinite(this);
             if (infinite == null) {
                 return "...";
@@ -1812,6 +1849,7 @@ namespace IronPython.Runtime {
                 Debug.Assert(index == infinite.Count - 1);
                 infinite.RemoveAt(index);
             }
+#endif
         }
 
         #endregion

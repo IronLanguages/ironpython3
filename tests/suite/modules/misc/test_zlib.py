@@ -11,11 +11,11 @@ import zlib
 
 from iptest import IronPythonTestCase, run_test
 
-def create_gzip(text):
+def create_gzip(text, path):
     import gzip
-    with gzip.open('test_data.gz', 'wb') as f:
+    with gzip.open(path, 'wb') as f:
         f.write(text)
-    with open('test_data.gz', 'rb') as f:
+    with open(path, 'rb') as f:
         gzip_compress = f.read()
     return gzip_compress
 
@@ -48,11 +48,12 @@ Curabitur non eros. Nullam hendrerit bibendum justo. Fusce iaculis, est quis lac
         zlib_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS)
         self.deflate_data = deflate_compress.compress(self.text) + deflate_compress.flush()
         self.zlib_data = zlib_compress.compress(self.text) + zlib_compress.flush()
-        self.gzip_data = create_gzip(self.text)
+        self.gzip_file = os.path.join(self.temporary_dir, "test_data_%d.gz" % os.getpid())
+        self.gzip_data = create_gzip(self.text, self.gzip_file)
 
     def tearDown(self):
         super(ZlibTest, self).tearDown()
-        os.remove("test_data.gz")
+        os.remove(self.gzip_file)
 
     def test_gzip(self):
         """decompression with gzip header"""

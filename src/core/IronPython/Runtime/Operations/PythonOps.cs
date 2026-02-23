@@ -969,6 +969,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
+        [Obsolete("Use PythonCalls.Call")]
         public static object? CallWithContext(CodeContext/*!*/ context, object? func, params object?[] args) {
             return PythonCalls.Call(context, func, args);
         }
@@ -979,9 +980,10 @@ namespace IronPython.Runtime.Operations {
         /// that supports calling with 'this'. If not, the 'this' object is dropped
         /// and a normal call is made.
         /// </summary>
+        [Obsolete("Use PythonCalls.Call")]
         public static object? CallWithContextAndThis(CodeContext/*!*/ context, object? func, object? instance, params object?[] args) {
             // drop the 'this' and make the call
-            return CallWithContext(context, func, args);
+            return PythonCalls.Call(context, func, args);
         }
 
         [Obsolete("Use ObjectOperations instead")]
@@ -995,7 +997,7 @@ namespace IronPython.Runtime.Operations {
                     foreach (object? arg in PythonOps.GetCollection(argsTuple))
                         largs.Add(arg);
                 }
-                return CallWithContext(context, func, largs.ToArray());
+                return PythonCalls.Call(context, func, largs.ToArray());
             } else {
                 List<object?> largs;
 
@@ -1195,8 +1197,16 @@ namespace IronPython.Runtime.Operations {
                 out _);
         }
 
+        public static object? Invoke(CodeContext/*!*/ context, object? target, string name) {
+            return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name));
+        }
+
         public static object? Invoke(CodeContext/*!*/ context, object? target, string name, object? arg0) {
             return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), arg0);
+        }
+
+        public static object? Invoke(CodeContext/*!*/ context, object? target, string name, object? arg0, object? arg1) {
+            return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), arg0, arg1);
         }
 
         public static object? Invoke(CodeContext/*!*/ context, object? target, string name, params object?[] args) {
@@ -3420,7 +3430,7 @@ namespace IronPython.Runtime.Operations {
             if (warn == null) {
                 PythonOps.PrintWithDest(context, pc.SystemStandardError, $"warning: {category.Name}: {message}");
             } else {
-                PythonOps.CallWithContext(context, warn, message, category);
+                PythonCalls.Call(context, warn, message, category);
             }
         }
 
@@ -3436,7 +3446,7 @@ namespace IronPython.Runtime.Operations {
             if (warn == null) {
                 PythonOps.PrintWithDest(context, pc.SystemStandardError, $"{filename}:{lineNo}: {category.Name}: {message}");
             } else {
-                PythonOps.CallWithContext(context, warn, message, category, filename ?? "", lineNo);
+                PythonCalls.Call(context, warn, message, category, filename ?? "", lineNo);
             }
         }
 
@@ -3920,18 +3930,13 @@ namespace IronPython.Runtime.Operations {
             return AttributeErrorForReadonlyAttribute(PythonOps.GetPythonTypeName(o), name);
         }
 
+        internal static Exception ValueError(string message) => new ValueErrorException(message);
+        public static Exception ValueError(string format, params object?[] args) => new ValueErrorException(string.Format(format, args));
 
-        public static Exception ValueError(string format, params object?[] args) {
-            return new ValueErrorException(string.Format(format, args));
-        }
+        public static Exception KeyError(object? key) => PythonExceptions.CreateThrowable(PythonExceptions.KeyError, key);
 
-        public static Exception KeyError(object? key) {
-            return PythonExceptions.CreateThrowable(PythonExceptions.KeyError, key);
-        }
-
-        public static Exception KeyError(string format, params object?[] args) {
-            return new KeyNotFoundException(string.Format(format, args));
-        }
+        internal static Exception KeyError(string message) => new KeyNotFoundException(message);
+        public static Exception KeyError(string format, params object?[] args) => new KeyNotFoundException(string.Format(format, args));
 
         public static Exception UnicodeDecodeError(string message, byte[] bytesUnknown, int index) {
             return new DecoderFallbackException(message, bytesUnknown, index);
@@ -3963,13 +3968,11 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static Exception IOError(Exception inner) {
-            return OSError(inner.Message, inner);
-        }
+        [Obsolete("Use OSError instead")]
+        public static Exception IOError(Exception inner) => new OSException(inner.Message, inner);
 
-        public static Exception IOError(string format, params object?[] args) {
-            return OSError(format, args);
-        }
+        [Obsolete("Use OSError instead")]
+        public static Exception IOError(string format, params object?[] args) => OSError(format, args);
 
         internal static Exception OSError(int errno, string strerror, string? filename = null, int? winerror = null, string? filename2 = null) {
             if (filename2 != null) {
@@ -3983,59 +3986,44 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static Exception EofError(string format, params object?[] args) {
-            return new EndOfStreamException(string.Format(format, args));
-        }
+        internal static Exception EofError(string message) => new EndOfStreamException(message);
+        public static Exception EofError(string format, params object?[] args) => new EndOfStreamException(string.Format(format, args));
 
-        public static Exception ZeroDivisionError(string format, params object?[] args) {
-            return new DivideByZeroException(string.Format(format, args));
-        }
+        internal static Exception ZeroDivisionError(string message) => new DivideByZeroException(message);
+        public static Exception ZeroDivisionError(string format, params object?[] args) => new DivideByZeroException(string.Format(format, args));
 
-        public static Exception SystemError(string format, params object?[] args) {
-            return new SystemException(string.Format(format, args));
-        }
+        internal static Exception SystemError(string message) => new SystemException(message);
+        public static Exception SystemError(string format, params object?[] args) => new SystemException(string.Format(format, args));
 
-        public static Exception TypeError(string format, params object?[] args) {
-            return new TypeErrorException(string.Format(format, args));
-        }
+        internal static Exception TypeError(string message) => new TypeErrorException(message);
+        public static Exception TypeError(string format, params object?[] args) => new TypeErrorException(string.Format(format, args));
 
-        public static Exception IndexError(string format, params object?[] args) {
-            return new IndexOutOfRangeException(string.Format(format, args));
-        }
+        internal static Exception IndexError(string message) => new IndexOutOfRangeException(message);
+        public static Exception IndexError(string format, params object?[] args) => new IndexOutOfRangeException(string.Format(format, args));
 
         public static Exception MemoryError() => new OutOfMemoryException();
-
         public static Exception MemoryError(string message) => new OutOfMemoryException(message);
+        public static Exception MemoryError(string format, params object?[] args) => new OutOfMemoryException(string.Format(format, args));
 
-        public static Exception MemoryError(string format, params object[] args) => new OutOfMemoryException(string.Format(format, args));
+        internal static Exception ArithmeticError(string message) => new ArithmeticException(message);
+        public static Exception ArithmeticError(string format, params object?[] args) => new ArithmeticException(string.Format(format, args));
 
-        public static Exception ArithmeticError(string format, params object[] args) {
-            return new ArithmeticException(string.Format(format, args));
-        }
+        internal static Exception NotImplementedError(string message) => new NotImplementedException(message);
+        public static Exception NotImplementedError(string format, params object?[] args) => new NotImplementedException(string.Format(format, args));
 
-        public static Exception NotImplementedError(string format, params object[] args) {
-            return new NotImplementedException(string.Format(format, args));
-        }
+        internal static Exception AttributeError(string message) => new MissingMemberException(message);
+        public static Exception AttributeError(string format, params object?[] args) => new MissingMemberException(string.Format(format, args));
 
-        public static Exception AttributeError(string format, params object[] args) {
-            return new MissingMemberException(string.Format(format, args));
-        }
+        internal static Exception OverflowError(string message) => new OverflowException(message);
+        public static Exception OverflowError(string format, params object?[] args) => new OverflowException(string.Format(format, args));
 
-        public static Exception OverflowError(string format, params object[] args) {
-            return new OverflowException(string.Format(format, args));
-        }
+        [Obsolete("Use OSError instead")]
+        public static Exception WindowsError(string format, params object?[] args) => OSError(format, args);
 
-        public static Exception WindowsError(string format, params object[] args) {
-            return OSError(format, args);
-        }
+        internal static Exception TimeoutError(string message) => new TimeoutException(message);
+        public static Exception TimeoutError(string format, params object?[] args) => new TimeoutException(string.Format(format, args));
 
-        public static Exception TimeoutError(string format, params object[] args) {
-            return new TimeoutException(string.Format(format, args));
-        }
-
-        public static Exception SystemExit() {
-            return new SystemExitException();
-        }
+        public static Exception SystemExit() => new SystemExitException();
 
         public static void SyntaxWarning(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode) {
             PythonContext pc = (PythonContext)sourceUnit.LanguageContext;
@@ -4044,9 +4032,8 @@ namespace IronPython.Runtime.Operations {
             ShowWarning(context, PythonExceptions.SyntaxWarning, message, sourceUnit.Path, span.Start.Line);
         }
 
-        public static SyntaxErrorException SyntaxError(string format, params object[] args) {
-            return new SyntaxErrorException(string.Format(format, args));
-        }
+        internal static Exception SyntaxError(string message) => new SyntaxErrorException(message);
+        public static SyntaxErrorException SyntaxError(string format, params object?[] args) => new SyntaxErrorException(string.Format(format, args));
 
         public static SyntaxErrorException SyntaxError(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode) {
             switch (errorCode & ErrorCodes.ErrorMask) {
@@ -4128,8 +4115,7 @@ namespace IronPython.Runtime.Operations {
         // When a generator first starts, before it gets to the first yield point, you can't call generator.Send(x) where x != null.
         // See Pep342 for details.
         public static Exception TypeErrorForIllegalSend() {
-            string message = "can't send non-None value to a just-started generator";
-            return TypeError(message);
+            return TypeError("can't send non-None value to a just-started generator");
         }
 
         // If a method is called with an incorrect number of arguments
@@ -4259,9 +4245,8 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.AttributeError("undeletable attribute");
         }
 
-        public static Exception Warning(string format, params object[] args) {
-            return new WarningException(string.Format(format, args));
-        }
+        internal static Exception Warning(string message) => new WarningException(message);
+        public static Exception Warning(string format, params object?[] args) => new WarningException(string.Format(format, args));
 
         #endregion
 

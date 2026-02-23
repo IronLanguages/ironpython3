@@ -286,10 +286,10 @@ namespace IronPython.Runtime.Exceptions {
         private static Exception BadForOrFinallyJump(int newLineNum, Dictionary<int, bool> jumpIntoLoopIds) {
             foreach (bool isFinally in jumpIntoLoopIds.Values) {
                 if (isFinally) {
-                    return PythonOps.ValueError("can't jump into 'finally block'", newLineNum);
+                    return PythonOps.ValueError("can't jump into 'finally block'");
                 }
             }
-            return PythonOps.ValueError("can't jump into 'for loop'", newLineNum);
+            return PythonOps.ValueError("can't jump into 'for loop'");
         }
     }
 

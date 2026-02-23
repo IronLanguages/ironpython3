@@ -540,7 +540,7 @@ import Namespace.")]
             list.append(path);
 
             Assembly asm = pc.LoadAssemblyFromFile(file);
-            if (asm == null) throw PythonOps.IOError("file does not exist: {0}", file);
+            if (asm == null) throw PythonOps.OSError("file does not exist: {0}", file);
             AddReference(context, asm);
         }
 
@@ -678,9 +678,9 @@ import Namespace.")]
                 ValidateArgs(args);
 
                 if (_inst != null) {
-                    return PythonOps.CallWithContext(context, _func, ArrayUtils.Insert(_inst, args));
+                    return PythonCalls.Call(context, _func, ArrayUtils.Insert(_inst, args));
                 } else {
-                    return PythonOps.CallWithContext(context, _func, args);
+                    return PythonCalls.Call(context, _func, args);
                 }
             }
 
@@ -762,7 +762,7 @@ import Namespace.")]
             #region ICallableWithCodeContext Members
             [SpecialName]
             public object Call(CodeContext context, params object[] args) {
-                object ret = PythonOps.CallWithContext(
+                object ret = PythonCalls.Call(
                     context,
                     _func,
                     _inst != null ? ArrayUtils.Insert(_inst, args) : args);
@@ -885,7 +885,7 @@ import Namespace.")]
             List<SavableScriptCode> code = new List<SavableScriptCode>();
             foreach (string filename in filenames) {
                 if (!pc.DomainManager.Platform.FileExists(filename)) {
-                    throw PythonOps.IOError($"Couldn't find file for compilation: {filename}");
+                    throw PythonOps.OSError($"Couldn't find file for compilation: {filename}");
                 }
 
                 ScriptCode sc;
@@ -932,7 +932,7 @@ import Namespace.")]
             if (kwArgs != null && kwArgs.TryGetValue("mainModule", out object mainModule)) {
                 if (mainModule is string strModule) {
                     if (!pc.DomainManager.Platform.FileExists(strModule)) {
-                        throw PythonOps.IOError("Couldn't find main file for compilation: {0}", strModule);
+                        throw PythonOps.OSError("Couldn't find main file for compilation: {0}", strModule);
                     }
 
                     SourceUnit su = pc.CreateFileUnit(strModule, pc.DefaultEncoding, SourceCodeKind.File);

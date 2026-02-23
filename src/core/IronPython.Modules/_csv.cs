@@ -943,7 +943,7 @@ elements will be converted to string.")]
 
                 _rec.Append(_dialect.lineterminator);
 
-                PythonOps.CallWithContext(context, _writeline, _rec.ToString());
+                PythonCalls.Call(context, _writeline, _rec.ToString());
             }
 
             [Documentation(@"writerows(sequence of sequences)

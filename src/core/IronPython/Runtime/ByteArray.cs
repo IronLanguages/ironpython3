@@ -483,6 +483,18 @@ namespace IronPython.Runtime {
 
         public string hex() => Bytes.ToHex(_bytes.AsByteSpan()); // new in CPython 3.5
 
+        // new in CPython 3.8
+        public string hex([NotNone] string sep, int bytes_per_sep = 1) {
+            if (sep.Length != 1) throw PythonOps.ValueError($"{nameof(sep)} must be length 1");
+            return Bytes.ToHex(_bytes.AsByteSpan(), sep[0], bytes_per_sep);
+        }
+
+        // new in CPython 3.8
+        public string hex([BytesLike, NotNone] IList<byte> sep, int bytes_per_sep = 1) {
+            if (sep.Count != 1) throw PythonOps.ValueError($"{nameof(sep)} must be length 1");
+            return Bytes.ToHex(_bytes.AsByteSpan(), (char)sep[0], bytes_per_sep);
+        }
+
         public int index([BytesLike, NotNone] IList<byte> sub) {
             lock (this) {
                 return index(sub, 0, _bytes.Count);
@@ -541,6 +553,13 @@ namespace IronPython.Runtime {
         public bool isalpha() {
             lock (this) {
                 return _bytes.IsLetter();
+            }
+        }
+
+        // new in Python 3.7
+        public bool isascii() {
+            lock (this) {
+                return _bytes.IsAscii();
             }
         }
 

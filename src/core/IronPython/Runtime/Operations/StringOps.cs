@@ -623,6 +623,13 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
+        public static bool isascii([NotNone] this string self) {
+            foreach (char c in self) {
+                if (c > 0x7f) return false;
+            }
+            return true;
+        }
+
         public static bool isdigit([NotNone] this string self) {
             if (self.Length == 0) return false;
             string v = self;
@@ -817,8 +824,16 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
+        static StringOps() {
+            try {
+                CasingCultureInfo = new CultureInfo("en");
+            } catch (CultureNotFoundException) {
+                CasingCultureInfo = CultureInfo.InvariantCulture;
+            }
+        }
+
         // required for better match with cpython upper/lower
-        private static readonly CultureInfo CasingCultureInfo = new CultureInfo("en");
+        private static readonly CultureInfo CasingCultureInfo;
 
         public static string lower([NotNone] this string self) {
             return self.ToLower(CasingCultureInfo);
@@ -1219,7 +1234,11 @@ namespace IronPython.Runtime.Operations {
                     return;
                 case int mappedInt:
                     if (mappedInt > 0xFFFF) {
+#if PYTHON_34
+                        throw PythonOps.TypeError("character mapping must be in range(0x10000)");
+#else
                         throw PythonOps.ValueError("character mapping must be in range(0x10000)");
+#endif
                     }
                     ret.Append((char)mappedInt);
                     break;

@@ -1201,6 +1201,7 @@ namespace IronPython.Compiler {
             HashSet<string> names = new HashSet<string>(StringComparer.Ordinal);
             bool needDefault = false;
             bool readMultiply = false;
+            bool readTrueDivide = false;
             bool hasKeywordOnlyParameter = false;
             // we want these to be the last two parameters
             Parameter listParameter = null;
@@ -1221,7 +1222,14 @@ namespace IronPython.Compiler {
                     break;
                 }
 
-                if (MaybeEat(TokenKind.Multiply)) {
+                if (MaybeEat(TokenKind.TrueDivide)) { // accept syntax for positional-only parameters from Python 3.8
+                    if (position == 0 || readMultiply || readTrueDivide) {
+                        ReportSyntaxError(_lookahead);
+                        return null;
+                    }
+
+                    readTrueDivide = true;
+                } else if (MaybeEat(TokenKind.Multiply)) {
                     if (readMultiply) {
                         ReportSyntaxError(_lookahead);
                         return null;

@@ -149,7 +149,7 @@ namespace IronPython.Modules {
             public object? Call(CodeContext/*!*/ context, object? param) {
                 object method = PythonOps.GetBoundAttr(context, param, _name);
                 if (_dict == null) {
-                    return PythonOps.CallWithContext(context, method, _args);
+                    return PythonCalls.Call(context, method, _args);
                 } else {
                     return PythonCalls.CallWithKeywordArgs(context, method, _args, _dict);
                 }

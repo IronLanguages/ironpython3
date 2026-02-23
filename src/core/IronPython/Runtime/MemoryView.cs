@@ -829,7 +829,7 @@ namespace IronPython.Runtime {
             }
 
             if (firstOutOfRangeIndex != -1) {
-                PythonOps.IndexError("index out of bounds on dimension {0}", firstOutOfRangeIndex + 1);
+                throw PythonOps.IndexError("index out of bounds on dimension {0}", firstOutOfRangeIndex + 1);
             }
 
             return flatIndex;

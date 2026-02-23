@@ -127,7 +127,11 @@ namespace IronPython.Runtime {
             string name = parts.Array[parts.Offset + parts.Count - 1];
             if (from is NamespaceTracker ns) {
                 if (ns.TryGetValue(name, out object val)) {
-                    return MemberTrackerToPython(context, val);
+                    object ret = MemberTrackerToPython(context, val);
+                    if (ret != null && val is NamespaceTracker retns && !context.LanguageContext.SystemStateModules.ContainsKey(retns.Name)) {
+                        context.LanguageContext.SystemStateModules[retns.Name] = ret;
+                    }
+                    return ret;
                 }
             }
 
@@ -145,7 +149,7 @@ namespace IronPython.Runtime {
             if (level < 0) throw PythonOps.ValueError("level must be >= 0");
 
             if (modName.IndexOf(Path.DirectorySeparatorChar) != -1) {
-                throw PythonOps.ImportError("Import by filename is not supported.", modName);
+                throw PythonOps.ImportError("Import by filename is not supported.");
             }
 
             string package = null;
@@ -741,8 +745,8 @@ namespace IronPython.Runtime {
 
                     if (context.DomainManager.Platform.FileExists(fullPath)) {
                         if (candidatePath != null) {
-                            throw PythonOps.ImportError(String.Format("Found multiple modules of the same name '{0}': '{1}' and '{2}'",
-                                name, candidatePath, fullPath));
+                            throw PythonOps.ImportError("Found multiple modules of the same name '{0}': '{1}' and '{2}'",
+                                name, candidatePath, fullPath);
                         }
 
                         candidatePath = fullPath;
@@ -769,9 +773,9 @@ namespace IronPython.Runtime {
 
         private static string CreateFullName(string/*!*/ baseName, ArraySegment<string> parts) {
             if (baseName == null || baseName.Length == 0 || baseName == "__main__") {
-                return string.Join(".", parts);
+                return string.Join(".", (IEnumerable<string>)parts);
             }
-            return baseName + "." + string.Join(".", parts);
+            return baseName + "." + string.Join(".", (IEnumerable<string>)parts);
         }
 
         #endregion

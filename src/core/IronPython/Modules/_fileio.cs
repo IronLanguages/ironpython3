@@ -166,7 +166,7 @@ namespace IronPython.Modules {
                         }
                     }
                 } else {  // opener is not null
-                    object? fdobj = PythonOps.CallWithContext(context, opener, name, flags);
+                    object? fdobj = PythonCalls.Call(context, opener, name, flags);
                     if (fdobj is int fd) {
                         if (fd < 0) {
                             throw PythonOps.ValueError("opener returned {0}", fd);

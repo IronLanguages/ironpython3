@@ -309,7 +309,7 @@ namespace IronPython.Modules {
                     null => null,
                     string s => s,
                     Extensible<string> es => es.Value,
-                    _ => throw PythonOps.TypeError($"newline must be str or None, not {0}", PythonOps.GetPythonTypeName(tuple[1])),
+                    _ => throw PythonOps.TypeError($"newline must be str or None, not {PythonOps.GetPythonTypeName(tuple[1])}"),
                 };
                 CheckNewline(context, newline);
 

@@ -984,6 +984,15 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
+        internal static bool IsAscii(this IList<byte> bytes) {
+            foreach (byte b in bytes) {
+                if (b > 0x7f) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         internal static int Find(this IList<byte> bytes, IList<byte> sub, int start, int end) {
             if (!PythonOps.TryFixSubsequenceIndices(bytes.Count, ref start, ref end)) {
                 return -1;
@@ -1017,7 +1026,7 @@ namespace IronPython.Runtime.Operations {
                     iVal = (c - 'A' + 10) * 16;
                 } else if (c >= 'a' && c <= 'f') {
                     iVal = (c - 'a' + 10) * 16;
-                } else if (c == ' ') {
+                } else if (c < 0x80 && char.IsWhiteSpace(c)) {
                     continue;
                 } else {
                     throw PythonOps.ValueError("non-hexadecimal number found in fromhex() arg at position {0}", i);

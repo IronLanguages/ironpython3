@@ -24,26 +24,29 @@ class NtTest(IronPythonTestCase):
         self.assertTrue('COMPUTERNAME' in nt.environ or 'computername' in nt.environ)
 
     def test_mkdir(self):
-        nt.mkdir('dir_create_test')
-        self.assertEqual(nt.listdir(nt.getcwd()).count('dir_create_test'), 1)
+        dirname = 'dir_create_test_%d' % os.getpid()
+        dirpath = os.path.join(self.temporary_dir, dirname)
+        nt.mkdir(dirpath)
+        self.assertEqual(nt.listdir(self.temporary_dir).count(dirname), 1)
 
-        nt.rmdir('dir_create_test')
-        self.assertEqual(nt.listdir(nt.getcwd()).count('dir_create_test'), 0)
+        nt.rmdir(dirpath)
+        self.assertEqual(nt.listdir(self.temporary_dir).count(dirname), 0)
 
     def test_mkdir_negative(self):
-        nt.mkdir("dir_create_test")
+        dirpath = os.path.join(self.temporary_dir, 'dir_create_test_%d' % os.getpid())
+        nt.mkdir(dirpath)
         try:
-            nt.mkdir("dir_create_test")
+            nt.mkdir(dirpath)
             self.assertUnreachabale("Cannot create the same directory twice")
         except WindowsError as e:
             self.assertEqual(e.errno, 17)
 
         #if it fails once...it should fail again
-        self.assertRaises(WindowsError, nt.mkdir, "dir_create_test")
-        nt.rmdir('dir_create_test')
-        nt.mkdir("dir_create_test")
-        self.assertRaises(WindowsError, nt.mkdir, "dir_create_test")
-        nt.rmdir('dir_create_test')
+        self.assertRaises(WindowsError, nt.mkdir, dirpath)
+        nt.rmdir(dirpath)
+        nt.mkdir(dirpath)
+        self.assertRaises(WindowsError, nt.mkdir, dirpath)
+        nt.rmdir(dirpath)
 
     def test_listdir(self):
         self.assertEqual(nt.listdir(nt.getcwd()), nt.listdir())
@@ -208,7 +211,7 @@ class NtTest(IronPythonTestCase):
         self.assertRaises(ValueError,os.fdopen,0,"p")
 
         stuff = b"\x00a\x01\x02b\x03 \x04  \x05\n\x06_\0xFE\0xFFxyz"
-        name = "cp5633.txt"
+        name = os.path.join(self.temporary_dir, "cp5633_%d.txt" % os.getpid())
         fd = nt.open(name, nt.O_CREAT | nt.O_BINARY | nt.O_TRUNC | nt.O_WRONLY)
         f = os.fdopen(fd, 'wb')
         f.write(stuff)
@@ -225,7 +228,7 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(result!=0,"0,The file stat object was not returned correctly")
 
         result = None
-        tmpfile = "tmpfile1.tmp"
+        tmpfile = os.path.join(self.temporary_dir, "tmpfile1_%d.tmp" % os.getpid())
         f = open(tmpfile, "w")
         result = nt.fstat(f.fileno())
         self.assertFalse(result is None,"0,The file stat object was not returned correctly")
@@ -244,11 +247,12 @@ class NtTest(IronPythonTestCase):
     def test_chmod(self):
         # chmod tests:
         # BUG 828,830
-        nt.mkdir('tmp2')
-        nt.chmod('tmp2', 256) # NOTE: change to flag when stat is implemented
-        self.assertRaises(OSError, lambda:nt.rmdir('tmp2'))
-        nt.chmod('tmp2', 128)
-        nt.rmdir('tmp2')
+        tmp2 = os.path.join(self.temporary_dir, 'tmp2_%d' % os.getpid())
+        nt.mkdir(tmp2)
+        nt.chmod(tmp2, 256) # NOTE: change to flag when stat is implemented
+        self.assertRaises(OSError, lambda:nt.rmdir(tmp2))
+        nt.chmod(tmp2, 128)
+        nt.rmdir(tmp2)
         # /BUG
 
     ################################################################################################
@@ -283,62 +287,63 @@ class NtTest(IronPythonTestCase):
         dir_pipe.read()
         dir_pipe.close()
 
-        tmpfile = 'tmpfile.tmp'
+        tmpfile = os.path.join(self.temporary_dir, 'tmpfile_%d.tmp' % os.getpid())
         f = open(tmpfile, 'w')
         f.close()
         nt.unlink(tmpfile)
         try:
-            nt.chmod('tmpfile.tmp', 256)
+            nt.chmod(tmpfile, 256)
         except Exception:
             pass #should throw when trying to access file deleted by unlink
         else:
             self.assertTrue(False,"Error! Trying to access file deleted by unlink should have thrown.")
 
         try:
-            tmpfile = "tmpfile2.tmp"
-            f = open(tmpfile, "w")
+            tmpfile2 = os.path.join(self.temporary_dir, 'tmpfile2_%d.tmp' % os.getpid())
+            f = open(tmpfile2, "w")
             f.write("testing chmod")
             f.close()
-            nt.chmod(tmpfile, 256)
-            self.assertRaises(OSError, nt.unlink, tmpfile)
-            nt.chmod(tmpfile, 128)
-            nt.unlink(tmpfile)
-            self.assertRaises(IOError, open, tmpfile)
+            nt.chmod(tmpfile2, 256)
+            self.assertRaises(OSError, nt.unlink, tmpfile2)
+            nt.chmod(tmpfile2, 128)
+            nt.unlink(tmpfile2)
+            self.assertRaises(IOError, open, tmpfile2)
         finally:
             try:
-                nt.chmod(tmpfile, 128)
-                nt.unlink(tmpfile)
+                nt.chmod(tmpfile2, 128)
+                nt.unlink(tmpfile2)
             except Exception as e:
                 print("exc", e)
 
         # verify that nt.stat reports times in seconds, not ticks...
 
         import time
-        tmpfile = 'tmpfile.tmp'
-        f = open(tmpfile, 'w')
+        tmpfile3 = os.path.join(self.temporary_dir, 'tmpfile3_%d.tmp' % os.getpid())
+        f = open(tmpfile3, 'w')
         f.close()
         t = time.time()
-        mt = nt.stat(tmpfile).st_mtime
-        nt.unlink(tmpfile) # this deletes the file
+        mt = nt.stat(tmpfile3).st_mtime
+        nt.unlink(tmpfile3) # this deletes the file
         self.assertTrue(abs(t-mt) < 60, "time differs by too much " + str(abs(t-mt)))
 
-        tmpfile = 'tmpfile.tmp' # need to open it again since we deleted it with 'unlink'
-        f = open(tmpfile, 'w')
+        tmpfile3 = os.path.join(self.temporary_dir, 'tmpfile3_%d.tmp' % os.getpid()) # need to open it again since we deleted it with 'unlink'
+        f = open(tmpfile3, 'w')
         f.close()
-        nt.chmod('tmpfile.tmp', 256)
-        nt.chmod('tmpfile.tmp', 128)
-        nt.unlink('tmpfile.tmp')
+        nt.chmod(tmpfile3, 256)
+        nt.chmod(tmpfile3, 128)
+        nt.unlink(tmpfile3)
 
     # utime tests
     def test_utime(self):
-        open('temp_file_does_not_exist.txt', 'w').close()
+        tmpfile = os.path.join(self.temporary_dir, 'temp_utime_%d.txt' % os.getpid())
+        open(tmpfile, 'w').close()
         import nt
         x = nt.stat('.')
-        nt.utime('temp_file_does_not_exist.txt', (x[7], x[8]))
-        y = nt.stat('temp_file_does_not_exist.txt')
+        nt.utime(tmpfile, (x[7], x[8]))
+        y = nt.stat(tmpfile)
         self.assertEqual(x[7], y[7])
         self.assertEqual(x[8], y[8])
-        nt.unlink('temp_file_does_not_exist.txt')
+        nt.unlink(tmpfile)
 
     # times test
     def test_times(self):
@@ -380,16 +385,16 @@ class NtTest(IronPythonTestCase):
     # remove tests
     def test_remove(self):
         # remove an existing file
-        handler = open("create_test_file.txt","w")
+        tmpfile = os.path.join(self.temporary_dir, 'create_test_file_%d.txt' % os.getpid())
+        handler = open(tmpfile, "w")
         handler.close()
-        path1 = nt.getcwd()
-        nt.remove(path1+'\\create_test_file.txt')
-        self.assertEqual(nt.listdir(nt.getcwd()).count('create_test_file.txt'), 0)
+        nt.remove(tmpfile)
+        self.assertFalse(os.path.exists(tmpfile))
 
-        self.assertRaisesNumber(OSError, 2, nt.remove, path1+'\\create_test_file2.txt')
-        self.assertRaisesNumber(OSError, 2, nt.unlink, path1+'\\create_test_file2.txt')
-        self.assertRaisesNumber(OSError, 22, nt.remove, path1+'\\create_test_file?.txt')
-        self.assertRaisesNumber(OSError, 22, nt.unlink, path1+'\\create_test_file?.txt')
+        self.assertRaisesNumber(OSError, 2, nt.remove, tmpfile)
+        self.assertRaisesNumber(OSError, 2, nt.unlink, tmpfile)
+        self.assertRaisesNumber(OSError, 22, nt.remove, os.path.join(self.temporary_dir, 'create_test_file?.txt'))
+        self.assertRaisesNumber(OSError, 22, nt.unlink, os.path.join(self.temporary_dir, 'create_test_file?.txt'))
 
         # the path is a type other than string
         self.assertRaises(TypeError, nt.remove, 1)
@@ -399,55 +404,51 @@ class NtTest(IronPythonTestCase):
     def test_remove_negative(self):
         import stat
         self.assertRaisesNumber(WindowsError, errno.ENOENT, lambda : nt.remove('some_file_that_does_not_exist'))
+        tmpfile = os.path.join(self.temporary_dir, 'some_test_file_%d.txt' % os.getpid())
         try:
-            open('some_test_file.txt', 'w').close()
-            nt.chmod('some_test_file.txt', stat.S_IREAD)
-            self.assertRaisesNumber(WindowsError, errno.EACCES, lambda : nt.remove('some_test_file.txt'))
-            nt.chmod('some_test_file.txt', stat.S_IWRITE)
+            open(tmpfile, 'w').close()
+            nt.chmod(tmpfile, stat.S_IREAD)
+            self.assertRaisesNumber(WindowsError, errno.EACCES, lambda : nt.remove(tmpfile))
+            nt.chmod(tmpfile, stat.S_IWRITE)
 
-            with open('some_test_file.txt', 'w+'):
-                self.assertRaisesNumber(WindowsError, errno.EACCES, lambda : nt.remove('some_test_file.txt'))
+            with open(tmpfile, 'w+'):
+                self.assertRaisesNumber(WindowsError, errno.EACCES, lambda : nt.remove(tmpfile))
         finally:
-            nt.chmod('some_test_file.txt', stat.S_IWRITE)
-            nt.unlink('some_test_file.txt')
+            nt.chmod(tmpfile, stat.S_IWRITE)
+            nt.unlink(tmpfile)
 
     # rename tests
     def test_rename(self):
         # normal test
-        handler = open("oldnamefile.txt","w")
+        oldname = os.path.join(self.temporary_dir, 'oldnamefile_%d.txt' % os.getpid())
+        newname = os.path.join(self.temporary_dir, 'newnamefile_%d.txt' % os.getpid())
+
+        handler = open(oldname, "w")
         handler.close()
-        str_old = "oldnamefile.txt"
-        dst = "newnamefile.txt"
-        nt.rename(str_old,dst)
-        self.assertEqual(nt.listdir(nt.getcwd()).count(dst), 1)
-        self.assertEqual(nt.listdir(nt.getcwd()).count(str_old), 0)
-        nt.remove(dst)
+        nt.rename(oldname, newname)
+        self.assertTrue(os.path.exists(newname))
+        self.assertFalse(os.path.exists(oldname))
+        nt.remove(newname)
 
         # the destination name is a directory
-        handler = open("oldnamefile.txt","w")
+        handler = open(oldname, "w")
         handler.close()
-        str_old = "oldnamefile.txt"
-        dst = "newnamefile.txt"
-        nt.mkdir(dst)
-        self.assertRaises(OSError, nt.rename,str_old,dst)
-        nt.rmdir(dst)
-        nt.remove(str_old)
+        nt.mkdir(newname)
+        self.assertRaises(OSError, nt.rename, oldname, newname)
+        nt.rmdir(newname)
+        nt.remove(oldname)
 
         # the dst already exists
-        handler1 = open("oldnamefile.txt","w")
+        handler1 = open(oldname, "w")
         handler1.close()
-        handler2 = open("newnamefile.txt","w")
+        handler2 = open(newname, "w")
         handler2.close()
-        str_old = "oldnamefile.txt"
-        dst = "newnamefile.txt"
-        self.assertRaises(OSError, nt.rename,str_old,dst)
-        nt.remove(str_old)
-        nt.remove(dst)
+        self.assertRaises(OSError, nt.rename, oldname, newname)
+        nt.remove(oldname)
+        nt.remove(newname)
 
         # the source file specified does not exist
-        str_old = "oldnamefile.txt"
-        dst = "newnamefile.txt"
-        self.assertRaises(OSError, nt.rename,str_old,dst)
+        self.assertRaises(OSError, nt.rename, oldname, newname)
 
     @unittest.skipUnless(sys.platform == "win32", 'windir is Windows specific')
     def test_spawnle(self):
@@ -743,7 +744,7 @@ class NtTest(IronPythonTestCase):
     # write/read tests
     def test_write(self):
         # write the file
-        tempfilename = "temp.txt"
+        tempfilename = os.path.join(self.temporary_dir, "temp_%d.txt" % os.getpid())
         file = open(tempfilename,"w")
         nt.write(file.fileno(), b"Hello,here is the value of test string")
         file.close()
@@ -757,7 +758,7 @@ class NtTest(IronPythonTestCase):
 
         # BUG 8783 the argument buffersize in nt.read(fd, buffersize) is less than zero
         # the string written to the file is empty string
-        tempfilename = "temp.txt"
+        tempfilename = os.path.join(self.temporary_dir, "temp2_%d.txt" % os.getpid())
         file = open(tempfilename,"w")
         nt.write(file.fileno(), b"bug test")
         file.close()
@@ -768,45 +769,45 @@ class NtTest(IronPythonTestCase):
 
     # open test
     def test_open(self):
-        open('temp.txt', 'w+').close()
+        tmpfile = os.path.join(self.temporary_dir, 'temp_open_%d.txt' % os.getpid())
+        open(tmpfile, 'w+').close()
         try:
-            fd = nt.open('temp.txt', nt.O_WRONLY | nt.O_CREAT)
+            fd = nt.open(tmpfile, nt.O_WRONLY | nt.O_CREAT)
             nt.close(fd)
 
-            self.assertRaisesNumber(OSError, 17, nt.open, 'temp.txt', nt.O_CREAT | nt.O_EXCL)
+            self.assertRaisesNumber(OSError, 17, nt.open, tmpfile, nt.O_CREAT | nt.O_EXCL)
             for flag in [nt.O_EXCL, nt.O_APPEND]:
-                fd = nt.open('temp.txt', nt.O_RDONLY | flag)
+                fd = nt.open(tmpfile, nt.O_RDONLY | flag)
                 nt.close(fd)
 
-                fd = nt.open('temp.txt', nt.O_WRONLY | flag)
+                fd = nt.open(tmpfile, nt.O_WRONLY | flag)
                 nt.close(fd)
 
-                fd = nt.open('temp.txt', nt.O_RDWR | flag)
+                fd = nt.open(tmpfile, nt.O_RDWR | flag)
                 nt.close(fd)
 
             # sanity test
-            tempfilename = "temp.txt"
-            fd = nt.open(tempfilename,256,1)
+            fd = nt.open(tmpfile,256,1)
             nt.close(fd)
 
-            nt.unlink('temp.txt')
+            nt.unlink(tmpfile)
 
-            f = nt.open('temp.txt', nt.O_TEMPORARY | nt.O_CREAT)
+            f = nt.open(tmpfile, nt.O_TEMPORARY | nt.O_CREAT)
             nt.close(f)
-            self.assertRaises(OSError, nt.stat, 'temp.txt')
+            self.assertRaises(OSError, nt.stat, tmpfile)
 
             # TODO: These tests should probably test more functionality regarding O_SEQUENTIAL/O_RANDOM
-            f = nt.open('temp.txt', nt.O_TEMPORARY | nt.O_CREAT | nt.O_SEQUENTIAL | nt.O_RDWR)
+            f = nt.open(tmpfile, nt.O_TEMPORARY | nt.O_CREAT | nt.O_SEQUENTIAL | nt.O_RDWR)
             nt.close(f)
-            self.assertRaises(OSError, nt.stat, 'temp.txt')
+            self.assertRaises(OSError, nt.stat, tmpfile)
 
-            f = nt.open('temp.txt', nt.O_TEMPORARY | nt.O_CREAT | nt.O_RANDOM | nt.O_RDWR)
+            f = nt.open(tmpfile, nt.O_TEMPORARY | nt.O_CREAT | nt.O_RANDOM | nt.O_RDWR)
             nt.close(f)
-            self.assertRaises(OSError, nt.stat, 'temp.txt')
+            self.assertRaises(OSError, nt.stat, tmpfile)
         finally:
             try:
                 # should fail if the file doesn't exist
-                nt.unlink('temp.txt')
+                nt.unlink(tmpfile)
             except:
                 pass
 
@@ -841,22 +842,24 @@ class NtTest(IronPythonTestCase):
         self.assertEqual(nt.O_TEXT,16384)
 
     def test_access(self):
-        open('new_file_name', 'w').close()
+        tmpfile = os.path.join(self.temporary_dir, 'new_file_name_%d' % os.getpid())
+        open(tmpfile, 'w').close()
 
-        self.assertEqual(nt.access('new_file_name', nt.F_OK), True)
-        self.assertEqual(nt.access('new_file_name', nt.R_OK), True)
+        self.assertEqual(nt.access(tmpfile, nt.F_OK), True)
+        self.assertEqual(nt.access(tmpfile, nt.R_OK), True)
         self.assertEqual(nt.access('does_not_exist.py', nt.F_OK), False)
         self.assertEqual(nt.access('does_not_exist.py', nt.R_OK), False)
 
-        nt.chmod('new_file_name', 0x100) # S_IREAD
-        self.assertEqual(nt.access('new_file_name', nt.W_OK), False)
-        nt.chmod('new_file_name', 0x80)  # S_IWRITE
+        nt.chmod(tmpfile, 0x100) # S_IREAD
+        self.assertEqual(nt.access(tmpfile, nt.W_OK), False)
+        nt.chmod(tmpfile, 0x80)  # S_IWRITE
 
-        nt.unlink('new_file_name')
+        nt.unlink(tmpfile)
 
-        nt.mkdir('new_dir_name')
-        self.assertEqual(nt.access('new_dir_name', nt.R_OK), True)
-        nt.rmdir('new_dir_name')
+        tmpdir = os.path.join(self.temporary_dir, 'new_dir_name_%d' % os.getpid())
+        nt.mkdir(tmpdir)
+        self.assertEqual(nt.access(tmpdir, nt.R_OK), True)
+        nt.rmdir(tmpdir)
 
         self.assertRaises(TypeError, nt.access, None, 1)
 
@@ -876,7 +879,7 @@ class NtTest(IronPythonTestCase):
             nt.umask(orig)
 
     def test_cp16413(self):
-        tmpfile = 'tmpfile.tmp'
+        tmpfile = os.path.join(self.temporary_dir, 'tmpfile_%d.tmp' % os.getpid())
         f = open(tmpfile, 'w')
         f.close()
         nt.chmod(tmpfile, 0o777)
@@ -962,7 +965,7 @@ class NtTest(IronPythonTestCase):
         p.wait()
 
     def test_fsync(self):
-        fsync_file_name = 'text_fsync.txt'
+        fsync_file_name = os.path.join(self.temporary_dir, 'text_fsync_%d.txt' % os.getpid())
         fd = nt.open(fsync_file_name, nt.O_WRONLY | nt.O_CREAT)
 
         # negative test, make sure it raises on invalid (closed) fd

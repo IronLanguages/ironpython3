@@ -79,15 +79,17 @@ class IsInstanceTest(IronPythonTestCase):
     def test_redirect(self):
         """stdin, stdout redirect and input, raw_input tests"""
 
+        tmpfile = os.path.join(self.temporary_dir, "testfile_%d.tmp" % os.getpid())
+
         old_stdin = sys.stdin
         old_stdout = sys.stdout
-        sys.stdout = open("testfile.tmp", "w")
+        sys.stdout = open(tmpfile, "w")
         print("Into the file")
         print("2+2")
         sys.stdout.close()
         sys.stdout = old_stdout
 
-        sys.stdin = open("testfile.tmp", "r")
+        sys.stdin = open(tmpfile, "r")
         s = input()
         self.assertTrue(s == "Into the file")
         s = eval(input())
@@ -95,8 +97,8 @@ class IsInstanceTest(IronPythonTestCase):
         sys.stdin.close()
         sys.stdin = old_stdin
 
-        f = open("testfile.tmp", "r")
-        g = open("testfile.tmp", "r")
+        f = open(tmpfile, "r")
+        g = open(tmpfile, "r")
         s = f.readline()
         t = g.readline()
         self.assertTrue(s == t)
@@ -105,16 +107,15 @@ class IsInstanceTest(IronPythonTestCase):
         f.close()
         g.close()
 
-        f = open("testfile.tmp", "w")
+        f = open(tmpfile, "w")
         f.writelines(["1\n", "2\n", "2\n", "3\n", "4\n", "5\n", "6\n", "7\n", "8\n", "9\n", "0\n"])
         f.close()
-        f = open("testfile.tmp", "r")
+        f = open(tmpfile, "r")
         l = f.readlines()
         self.assertTrue(l == ["1\n", "2\n", "2\n", "3\n", "4\n", "5\n", "6\n", "7\n", "8\n", "9\n", "0\n"])
         f.close()
 
-        import os
-        os.remove("testfile.tmp")
+        os.remove(tmpfile)
 
     def test_conversions(self):
         success=False

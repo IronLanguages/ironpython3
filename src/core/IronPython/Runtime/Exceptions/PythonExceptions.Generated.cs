@@ -119,7 +119,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType CancelledError {
             get {
                 if (CancelledErrorStorage == null) {
-                    Interlocked.CompareExchange(ref CancelledErrorStorage, CreateSubType(Exception, "CancelledError", (msg, innerException) => new System.OperationCanceledException(msg, innerException)), null);
+                    Interlocked.CompareExchange(ref CancelledErrorStorage, CreateSubType(Exception, "CancelledError", (msg, innerException) => new OperationCanceledException(msg, innerException)), null);
                 }
                 return CancelledErrorStorage;
             }
@@ -923,6 +923,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is ModuleNotFoundException) return new PythonExceptions._ImportError(PythonExceptions.ModuleNotFoundError);
             if (clrException is NotADirectoryException) return new PythonExceptions._OSError(PythonExceptions.NotADirectoryError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
+            if (clrException is OperationCanceledException) return new PythonExceptions.BaseException(PythonExceptions.CancelledError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
             if (clrException is ProcessLookupException) return new PythonExceptions._OSError(PythonExceptions.ProcessLookupError);
             if (clrException is RecursionException) return new PythonExceptions.BaseException(PythonExceptions.RecursionError);
@@ -946,7 +947,6 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is StopAsyncIterationException) return new PythonExceptions._StopAsyncIteration();
             if (clrException is StopIterationException) return new PythonExceptions._StopIteration();
             if (clrException is SyntaxErrorException) return new PythonExceptions._SyntaxError();
-            if (clrException is OperationCanceledException) return new PythonExceptions.BaseException(PythonExceptions.CancelledError);
             if (clrException is SystemException) return new PythonExceptions.BaseException(PythonExceptions.SystemError);
             if (clrException is SystemExitException) return new PythonExceptions._SystemExit();
             if (clrException is UnboundNameException) return new PythonExceptions.BaseException(PythonExceptions.NameError);

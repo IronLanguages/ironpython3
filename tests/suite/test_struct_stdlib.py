@@ -6,7 +6,7 @@
 ## Run selected tests from test_struct from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_net60, is_net80
+from iptest import is_ironpython, generate_suite, run_test, net_version
 
 import test.test_struct
 
@@ -19,7 +19,7 @@ def load_tests(loader, standard_tests, pattern):
             test.test_struct.StructTest('test_calcsize'), # AssertionError: 4 not greater than or equal to 8
             test.test_struct.StructTest('test_count_overflow'), # AssertionError: error not raised by calcsize
         ]
-        if not is_net60 and not is_net80:
+        if net_version < (6, 0):
             failing_tests += [
                 test.test_struct.UnpackIteratorTest('test_half_float'), # https://github.com/IronLanguages/ironpython3/issues/1458
             ]

@@ -1151,7 +1151,8 @@ namespace IronPython.Modules {
 
             string host = Converter.ConvertToString(socketAddr[0]);
             if (host == null) throw PythonOps.TypeError("argument 1 must be string");
-            int port = 0;
+
+            int port;
             try {
                 port = (int)socketAddr[1]!;
             } catch (InvalidCastException) {
@@ -1167,60 +1168,45 @@ namespace IronPython.Modules {
                 }
             }
 
-            string resultHost;
-            string resultPort;
-
             // Host
-            IList<IPAddress> addrs;
-            try {
-                addrs = HostToAddresses(context, host, AddressFamily.InterNetwork, getHostEntry: false);
-            } catch (IndexOutOfRangeException) {
+            if (!IPAddress.TryParse(host, out IPAddress? addr)) {
                 throw MakeGaiException(context, EAI_NODATA);
             }
 
-            if (addrs.Count > 1) {
-                // ignore non-IPV4 addresses
-                List<IPAddress> newAddrs = new List<IPAddress>(addrs.Count);
-                foreach (IPAddress addr in addrs) {
-                    if (addr.AddressFamily == AddressFamily.InterNetwork) {
-                        newAddrs.Add(addr);
+            string resultHost;
+            if ((flags & NI_NUMERICHOST) != 0) {
+                resultHost = addr.ToString();
+            } else {
+                string hostName;
+                if (addr.Equals(IPAddress.Any) || addr.Equals(IPAddress.IPv6Any)) {
+                    hostName = Dns.GetHostName();
+                } else {
+                    try {
+                        hostName = Dns.GetHostEntry(addr).HostName;
+                    } catch (SocketException ex) {
+                        throw MakeGaiException(context, ex);
                     }
                 }
-                if (newAddrs.Count > 1) {
-                    throw PythonExceptions.CreateThrowable(error, "sockaddr resolved to multiple addresses");
+
+                if ((flags & NI_NOFQDN) != 0) {
+                    resultHost = RemoveLocalDomain(hostName);
+                } else {
+                    resultHost = hostName;
                 }
-                addrs = newAddrs;
-            }
-
-            if (addrs.Count < 1) {
-                throw MakeGaiException(context, EAI_NODATA);
-            }
-
-            IPHostEntry hostEntry;
-            try {
-                hostEntry = Dns.GetHostEntry(addrs[0]);
-            } catch (SocketException ex) {
-                throw MakeGaiException(context, ex);
-            }
-            if ((flags & (int)NI_NUMERICHOST) != 0) {
-                resultHost = addrs[0].ToString();
-            } else if ((flags & (int)NI_NOFQDN) != 0) {
-                resultHost = RemoveLocalDomain(hostEntry.HostName);
-            } else {
-                resultHost = hostEntry.HostName;
             }
 
             // Port
-            if ((flags & (int)NI_NUMERICSERV) == 0) {
+            string resultPort;
+            if ((flags & NI_NUMERICSERV) == 0) {
                 //call the servbyport to translate port if not just use the port.ToString as the result
                 try {
                     resultPort = getservbyport(context, port);
                 } catch {
                     resultPort = port.ToString();
                 }
-                flags = flags | (int)NI_NUMERICSERV;
-            } else
+            } else {
                 resultPort = port.ToString();
+            }
 
             return PythonTuple.MakeTuple(resultHost, resultPort);
         }
@@ -2002,7 +1988,7 @@ namespace IronPython.Modules {
         /// not the same as the specified family. gaierror is also raised if the hostname cannot be
         /// converted to an IP address (e.g. through a name lookup failure).
         /// </summary>
-        private static IPAddress[] HostToAddresses(CodeContext/*!*/ context, string host, AddressFamily family, bool getHostEntry = true) {
+        private static IPAddress[] HostToAddresses(CodeContext/*!*/ context, string host, AddressFamily family) {
             host = ConvertSpecialAddresses(host);
             try {
                 bool numeric = true;
@@ -2022,9 +2008,6 @@ namespace IronPython.Modules {
                     }
                     // Incorrect family will raise EAI_NODATA exception below
                 } else {
-                    if (!getHostEntry) {
-                        throw MakeGaiException(context, EAI_NONAME);
-                    }
                     IPHostEntry hostEntry = Dns.GetHostEntry(host);
                     List<IPAddress> addrs = new List<IPAddress>();
                     foreach (IPAddress ip in hostEntry.AddressList) {

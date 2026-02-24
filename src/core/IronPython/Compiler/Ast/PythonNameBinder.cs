@@ -516,6 +516,36 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
+        // AwaitExpression
+        public override bool Walk(AwaitExpression node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
+        // AsyncForStatement
+        public override bool Walk(AsyncForStatement node) {
+            node.Parent = _currentScope;
+            if (_currentScope is FunctionDefinition) {
+                _currentScope.ShouldInterpret = false;
+            }
+
+            node.Left.Walk(_define);
+
+            return true;
+        }
+        // AsyncWithStatement
+        public override bool Walk(AsyncWithStatement node) {
+            node.Parent = _currentScope;
+            _currentScope.ContainsExceptionHandling = true;
+
+            if (node.Variable != null) {
+                var assignError = node.Variable.CheckAssign();
+                if (assignError != null) {
+                    ReportSyntaxError(assignError, node);
+                }
+                node.Variable.Walk(_define);
+            }
+            return true;
+        }
 
         // *** END GENERATED CODE ***
 

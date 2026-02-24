@@ -1457,15 +1457,63 @@ namespace IronPython.Compiler {
 
         // async_stmt: 'async' (funcdef | with_stmt | for_stmt)
         private Statement ParseAsyncStmt() {
+            var start = GetStart();
             Eat(TokenKind.KeywordAsync);
-            ReportSyntaxError("invalid syntax");
 
-            if (PeekToken().Kind == TokenKind.KeywordDef) {
-                FunctionDefinition def = ParseFuncDef(true);
-                return def;
+            switch (PeekToken().Kind) {
+                case TokenKind.KeywordDef:
+                    return ParseFuncDef(true);
+                case TokenKind.KeywordWith:
+                    return ParseAsyncWithStmt(start);
+                case TokenKind.KeywordFor:
+                    return ParseAsyncForStmt(start);
+                default:
+                    ReportSyntaxError("invalid syntax");
+                    return null;
+            }
+        }
+
+        private AsyncWithStatement ParseAsyncWithStmt(int asyncStart) {
+            FunctionDefinition current = CurrentFunction;
+            if (current == null || !current.IsAsync) {
+                ReportSyntaxError("'async with' outside async function");
             }
 
-            return null;
+            Eat(TokenKind.KeywordWith);
+            var withItem = ParseWithItem();
+            var header = GetEnd();
+            Statement body = ParseSuite();
+            AsyncWithStatement ret = new AsyncWithStatement(withItem.ContextManager, withItem.Variable, body);
+            ret.HeaderIndex = header;
+            ret.SetLoc(_globalParent, asyncStart, GetEnd());
+            return ret;
+        }
+
+        private AsyncForStatement ParseAsyncForStmt(int asyncStart) {
+            FunctionDefinition current = CurrentFunction;
+            if (current == null || !current.IsAsync) {
+                ReportSyntaxError("'async for' outside async function");
+            }
+
+            Eat(TokenKind.KeywordFor);
+            var start = GetStart();
+
+            bool trailingComma;
+            List<Expression> l = ParseExprList(out trailingComma);
+
+            Expression lhs = MakeTupleOrExpr(l, trailingComma);
+            Eat(TokenKind.KeywordIn);
+            Expression list = ParseTestList();
+            var header = GetEnd();
+            Statement body = ParseLoopSuite();
+            Statement else_ = null;
+            if (MaybeEat(TokenKind.KeywordElse)) {
+                else_ = ParseSuite();
+            }
+            AsyncForStatement ret = new AsyncForStatement(lhs, list, body, else_);
+            ret.HeaderIndex = header;
+            ret.SetLoc(_globalParent, asyncStart, GetEnd());
+            return ret;
         }
 
         // for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
@@ -1910,8 +1958,11 @@ namespace IronPython.Compiler {
             return new UnaryExpression(PythonOperator.Negate, ParseFactor());
         }
 
-        // power: atom trailer* ['**' factor]
+        // power: ['await'] atom trailer* ['**' factor]
         private Expression ParsePower() {
+            if (MaybeEat(TokenKind.KeywordAwait)) {
+                return ParseAwaitExpression();
+            }
             Expression ret = ParseAtom();
             ret = AddTrailers(ret);
             if (MaybeEat(TokenKind.Power)) {
@@ -1919,6 +1970,28 @@ namespace IronPython.Compiler {
                 ret = new BinaryExpression(PythonOperator.Power, ret, ParseFactor());
                 ret.SetLoc(_globalParent, start, GetEnd());
             }
+            return ret;
+        }
+
+        // await_expr: 'await' unary_expr (essentially power level)
+        private Expression ParseAwaitExpression() {
+            FunctionDefinition current = CurrentFunction;
+            if (current == null || !current.IsAsync) {
+                ReportSyntaxError("'await' outside async function");
+            }
+
+            if (current != null) {
+                current.IsGenerator = true;
+                current.GeneratorStop = GeneratorStop;
+            }
+
+            var start = GetStart();
+
+            // Parse the awaitable expression at the unary level
+            Expression expr = ParsePower();
+
+            var ret = new AwaitExpression(expr);
+            ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
 

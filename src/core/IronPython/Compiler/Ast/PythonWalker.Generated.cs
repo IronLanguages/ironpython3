@@ -124,6 +124,10 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(YieldFromExpression node) { return true; }
         public virtual void PostWalk(YieldFromExpression node) { }
 
+        // AwaitExpression
+        public virtual bool Walk(AwaitExpression node) { return true; }
+        public virtual void PostWalk(AwaitExpression node) { }
+
         // AnnotatedAssignStatement
         public virtual bool Walk(AnnotatedAssignStatement node) { return true; }
         public virtual void PostWalk(AnnotatedAssignStatement node) { }
@@ -139,6 +143,14 @@ namespace IronPython.Compiler.Ast {
         // AsyncStatement
         public virtual bool Walk(AsyncStatement node) { return true; }
         public virtual void PostWalk(AsyncStatement node) { }
+
+        // AsyncForStatement
+        public virtual bool Walk(AsyncForStatement node) { return true; }
+        public virtual void PostWalk(AsyncForStatement node) { }
+
+        // AsyncWithStatement
+        public virtual bool Walk(AsyncWithStatement node) { return true; }
+        public virtual void PostWalk(AsyncWithStatement node) { }
 
         // AugmentedAssignStatement
         public virtual bool Walk(AugmentedAssignStatement node) { return true; }
@@ -383,6 +395,10 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(YieldFromExpression node) { return false; }
         public override void PostWalk(YieldFromExpression node) { }
 
+        // AwaitExpression
+        public override bool Walk(AwaitExpression node) { return false; }
+        public override void PostWalk(AwaitExpression node) { }
+
         // AnnotatedAssignStatement
         public override bool Walk(AnnotatedAssignStatement node) { return false; }
         public override void PostWalk(AnnotatedAssignStatement node) { }
@@ -398,6 +414,14 @@ namespace IronPython.Compiler.Ast {
         // AsyncStatement
         public override bool Walk(AsyncStatement node) { return false; }
         public override void PostWalk(AsyncStatement node) { }
+
+        // AsyncForStatement
+        public override bool Walk(AsyncForStatement node) { return false; }
+        public override void PostWalk(AsyncForStatement node) { }
+
+        // AsyncWithStatement
+        public override bool Walk(AsyncWithStatement node) { return false; }
+        public override void PostWalk(AsyncWithStatement node) { }
 
         // AugmentedAssignStatement
         public override bool Walk(AugmentedAssignStatement node) { return false; }

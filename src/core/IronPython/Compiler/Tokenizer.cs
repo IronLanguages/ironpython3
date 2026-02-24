@@ -1042,6 +1042,11 @@ namespace IronPython.Compiler {
                         MarkTokenEnd();
                         return Tokens.KeywordAndToken;
                     }
+                } else if (ch == 'w') {
+                    if (NextChar() == 'a' && NextChar() == 'i' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordAwaitToken;
+                    }
                 } else if (ch == 's') {
                     if (!IsNamePart(Peek())) {
                         MarkTokenEnd();

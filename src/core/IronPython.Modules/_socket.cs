@@ -1173,7 +1173,7 @@ namespace IronPython.Modules {
             // Host
             IList<IPAddress> addrs;
             try {
-                addrs = HostToAddresses(context, host, AddressFamily.InterNetwork);
+                addrs = HostToAddresses(context, host, AddressFamily.InterNetwork, getHostEntry: false);
             } catch (IndexOutOfRangeException) {
                 throw MakeGaiException(context, EAI_NODATA);
             }
@@ -2002,7 +2002,7 @@ namespace IronPython.Modules {
         /// not the same as the specified family. gaierror is also raised if the hostname cannot be
         /// converted to an IP address (e.g. through a name lookup failure).
         /// </summary>
-        private static IPAddress[] HostToAddresses(CodeContext/*!*/ context, string host, AddressFamily family) {
+        private static IPAddress[] HostToAddresses(CodeContext/*!*/ context, string host, AddressFamily family, bool getHostEntry = true) {
             host = ConvertSpecialAddresses(host);
             try {
                 bool numeric = true;
@@ -2022,6 +2022,9 @@ namespace IronPython.Modules {
                     }
                     // Incorrect family will raise EAI_NODATA exception below
                 } else {
+                    if (!getHostEntry) {
+                        throw MakeGaiException(context, EAI_NONAME);
+                    }
                     IPHostEntry hostEntry = Dns.GetHostEntry(host);
                     List<IPAddress> addrs = new List<IPAddress>();
                     foreach (IPAddress ip in hostEntry.AddressList) {
@@ -2032,7 +2035,7 @@ namespace IronPython.Modules {
                     if (addrs.Count > 0) return addrs.ToArray();
                 }
                 throw MakeGaiException(context, EAI_NODATA);
-            } catch  (SocketException ex) {
+            } catch (SocketException ex) {
                 throw MakeGaiException(context, ex);
             }
         }

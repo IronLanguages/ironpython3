@@ -352,8 +352,8 @@ class SocketTest(IronPythonTestCase):
         host, service = _socket.getnameinfo( ("127.0.0.1", 80), 0)
         self.assertEqual(service, "http")
         #IP gives a TypeError
-        #self.assertRaises(SystemError, _socket.getnameinfo, ("127.0.0.1"), 8)
-        #self.assertRaises(SystemError, _socket.getnameinfo, (321), 8)
+        self.assertRaises(TypeError, _socket.getnameinfo, ("127.0.0.1"), 8)
+        self.assertRaises(TypeError, _socket.getnameinfo, (321), 8)
         self.assertRaises(TypeError, _socket.getnameinfo, ("127.0.0.1"), '0')
         self.assertRaises(TypeError, _socket.getnameinfo, ("127.0.0.1", 80, 0, 0, 0), 8)
         self.assertRaises(_socket.gaierror, _socket.getnameinfo, ('no such host will ever exist', 80), 8)

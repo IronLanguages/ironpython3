@@ -205,6 +205,47 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
+        #region Async Interop
+
+        /// <summary>
+        /// Provides the implementation of __await__ for <see cref="System.Threading.Tasks.Task"/>.
+        /// </summary>
+        public static object TaskAwaitMethod(System.Threading.Tasks.Task self) {
+            return new TaskAwaitable(self);
+        }
+
+        /// <summary>
+        /// Provides the implementation of __await__ for <see cref="System.Threading.Tasks.Task{T}"/>.
+        /// </summary>
+        public static object TaskAwaitMethodGeneric<T>(System.Threading.Tasks.Task<T> self) {
+            return new TaskAwaitable<T>(self);
+        }
+
+#if NET
+        /// <summary>
+        /// Provides the implementation of __await__ for <see cref="System.Threading.Tasks.ValueTask"/>.
+        /// </summary>
+        public static object ValueTaskAwaitMethod(System.Threading.Tasks.ValueTask self) {
+            return new ValueTaskAwaitable(self);
+        }
+
+        /// <summary>
+        /// Provides the implementation of __await__ for <see cref="System.Threading.Tasks.ValueTask{T}"/>.
+        /// </summary>
+        public static object ValueTaskAwaitMethodGeneric<T>(System.Threading.Tasks.ValueTask<T> self) {
+            return new ValueTaskAwaitable<T>(self);
+        }
+
+        /// <summary>
+        /// Provides the implementation of __aiter__ for <see cref="IAsyncEnumerable{T}"/>.
+        /// </summary>
+        public static object AsyncIterMethod<T>(System.Collections.Generic.IAsyncEnumerable<T> self) {
+            return new AsyncEnumeratorWrapper<T>(self.GetAsyncEnumerator());
+        }
+#endif
+
+        #endregion
+
         /// <summary>
         /// __dir__(self) -> Returns the list of members defined on a foreign IDynamicMetaObjectProvider.
         /// </summary>

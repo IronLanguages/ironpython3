@@ -10,6 +10,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Threading.Tasks;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -672,6 +673,9 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__len__", LengthResolver),
                 new OneOffResolver("__format__", FormatResolver),
                 new OneOffResolver("__next__", NextResolver),
+                new OneOffResolver("__await__", AwaitResolver),
+                new OneOffResolver("__aiter__", AsyncIterResolver),
+                new OneOffResolver("__anext__", AsyncNextResolver),
 
                 new OneOffResolver("__complex__", ComplexResolver),
                 new OneOffResolver("__float__", FloatResolver),
@@ -962,6 +966,83 @@ namespace IronPython.Runtime.Types {
                 return GetInstanceOpsMethod(type, nameof(InstanceOps.NextMethod));
             }
 
+            return MemberGroup.EmptyGroup;
+        }
+
+        /// <summary>
+        /// Provides a resolution for __await__ on Task, Task&lt;T&gt;, ValueTask and ValueTask&lt;T&gt;.
+        /// </summary>
+        private static MemberGroup/*!*/ AwaitResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
+            foreach (Type t in binder.GetContributingTypes(type)) {
+                if (t.GetMember("__await__").Length > 0) {
+                    return MemberGroup.EmptyGroup;
+                }
+            }
+
+            if (typeof(Task).IsAssignableFrom(type)) {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>)) {
+                    // Only use the generic TaskAwaitable<T> if the result type is visible
+                    // (e.g. Task.CompletedTask is Task<VoidTaskResult> at runtime where
+                    // VoidTaskResult is internal — fall back to non-generic TaskAwaitable)
+                    Type resultType = type.GetGenericArguments()[0];
+                    if (resultType.IsVisible) {
+                        MethodInfo genMeth = typeof(InstanceOps).GetMethod(nameof(InstanceOps.TaskAwaitMethodGeneric));
+                        return new MemberGroup(
+                            MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(type.GetGenericArguments()), type)
+                        );
+                    }
+                }
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.TaskAwaitMethod));
+            }
+
+#if NET
+            if (type.IsGenericType) {
+                Type genDef = type.GetGenericTypeDefinition();
+                if (genDef == typeof(ValueTask<>)) {
+                    MethodInfo genMeth = typeof(InstanceOps).GetMethod(nameof(InstanceOps.ValueTaskAwaitMethodGeneric));
+                    return new MemberGroup(
+                        MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(type.GetGenericArguments()), type)
+                    );
+                }
+            }
+
+            if (type == typeof(ValueTask)) {
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.ValueTaskAwaitMethod));
+            }
+#endif
+
+            return MemberGroup.EmptyGroup;
+        }
+
+        /// <summary>
+        /// Provides a resolution for __aiter__ on IAsyncEnumerable&lt;T&gt;.
+        /// </summary>
+        private static MemberGroup/*!*/ AsyncIterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
+#if NET
+            foreach (Type t in binder.GetContributingTypes(type)) {
+                if (t.GetMember("__aiter__").Length > 0) {
+                    return MemberGroup.EmptyGroup;
+                }
+            }
+
+            foreach (Type t in binder.GetInterfaces(type)) {
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>)) {
+                    MethodInfo genMeth = typeof(InstanceOps).GetMethod(nameof(InstanceOps.AsyncIterMethod));
+                    return new MemberGroup(
+                        MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(t.GetGenericArguments()), type)
+                    );
+                }
+            }
+#endif
+
+            return MemberGroup.EmptyGroup;
+        }
+
+        /// <summary>
+        /// Provides a resolution for __anext__ on AsyncEnumeratorWrapper&lt;T&gt;.
+        /// Not auto-mapped from interfaces; the wrapper class provides __anext__ directly.
+        /// </summary>
+        private static MemberGroup/*!*/ AsyncNextResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             return MemberGroup.EmptyGroup;
         }
 

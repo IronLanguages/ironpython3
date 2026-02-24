@@ -85,6 +85,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
         ExceptionInfo('Exception', 'IronPython.Runtime.Exceptions.PythonException', None, (), (
                 ExceptionInfo('StopIteration', 'IronPython.Runtime.Exceptions.StopIterationException', None, ('value',), ()),
                 ExceptionInfo('StopAsyncIteration', 'IronPython.Runtime.Exceptions.StopAsyncIterationException', None, ('value',), ()),
+                ExceptionInfo('CancelledError', 'System.OperationCanceledException', None, (), ()),
                 ExceptionInfo('ArithmeticError', 'System.ArithmeticException', None, (), (
                         ExceptionInfo('FloatingPointError', 'IronPython.Runtime.Exceptions.FloatingPointException', None, (), ()),
                         ExceptionInfo('OverflowError', 'System.OverflowException', None, (), ()),

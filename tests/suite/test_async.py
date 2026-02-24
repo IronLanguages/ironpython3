@@ -315,4 +315,207 @@ class AsyncCombinedTest(unittest.TestCase):
         self.assertEqual(run_coro(test()), ['enter', 1, 2, 'exit'])
 
 
+class DotNetAsyncInteropTest(unittest.TestCase):
+    """Tests for .NET async interop (await Task, async for IAsyncEnumerable, CancelledError)."""
+
+    def test_await_completed_task(self):
+        """await a Task that is already completed (Task.CompletedTask)."""
+        from System.Threading.Tasks import Task
+        async def test():
+            await Task.CompletedTask
+            return 'done'
+        self.assertEqual(run_coro(test()), 'done')
+
+    def test_await_task_delay(self):
+        """await Task.Delay -a real async .NET operation."""
+        from System.Threading.Tasks import Task
+        async def test():
+            await Task.Delay(10)
+            return 'delayed'
+        self.assertEqual(run_coro(test()), 'delayed')
+
+    def test_await_task_from_result(self):
+        """await Task<T>.FromResult should return the value."""
+        from System.Threading.Tasks import Task
+        async def test():
+            result = await Task.FromResult(42)
+            return result
+        self.assertEqual(run_coro(test()), 42)
+
+    def test_await_task_from_result_string(self):
+        """await Task<string>.FromResult should return the string."""
+        from System.Threading.Tasks import Task
+        async def test():
+            result = await Task.FromResult("hello")
+            return result
+        self.assertEqual(run_coro(test()), "hello")
+
+    def test_await_multiple_tasks(self):
+        """Multiple awaits in sequence."""
+        from System.Threading.Tasks import Task
+        async def test():
+            a = await Task.FromResult(10)
+            b = await Task.FromResult(20)
+            c = await Task.FromResult(30)
+            return a + b + c
+        self.assertEqual(run_coro(test()), 60)
+
+    def test_task_has_await(self):
+        """Task objects should have __await__ method."""
+        from System.Threading.Tasks import Task
+        task = Task.FromResult(99)
+        self.assertTrue(hasattr(task, '__await__'))
+
+    def test_task_awaitable_protocol(self):
+        """Task.__await__() should return an iterable that raises StopIteration(value)."""
+        from System.Threading.Tasks import Task
+        task = Task.FromResult(42)
+        awaitable = task.__await__()
+        it = iter(awaitable)
+        try:
+            next(it)
+            self.fail("Expected StopIteration")
+        except StopIteration as e:
+            self.assertEqual(e.value, 42)
+
+    def test_await_faulted_task(self):
+        """Awaiting a faulted task should propagate the exception."""
+        from System import Exception as DotNetException
+        from System.Threading.Tasks import Task
+        async def test():
+            await Task.FromException(DotNetException("boom"))
+        with self.assertRaises(DotNetException):
+            run_coro(test())
+
+    def test_cancelled_error_from_cancelled_task(self):
+        """Awaiting a cancelled task should raise CancelledError."""
+        from System.Threading import CancellationTokenSource
+        from System.Threading.Tasks import Task
+        cts = CancellationTokenSource()
+        cts.Cancel()
+        async def test():
+            await Task.FromCanceled(cts.Token)
+        with self.assertRaises(CancelledError):
+            run_coro(test())
+
+    def test_cancelled_error_type(self):
+        """CancelledError should be a subclass of Exception."""
+        self.assertTrue(issubclass(CancelledError, Exception))
+
+    def test_operation_cancelled_maps_to_cancelled_error(self):
+        """System.OperationCanceledException should map to CancelledError."""
+        from System import OperationCanceledException
+        try:
+            raise OperationCanceledException("test cancel")
+        except CancelledError:
+            pass  # expected
+
+    def test_cancellation_token_cancel(self):
+        """CancellationToken can be used with .NET async APIs."""
+        from System.Threading import CancellationTokenSource
+        cts = CancellationTokenSource()
+        token = cts.Token
+        self.assertFalse(token.IsCancellationRequested)
+        cts.Cancel()
+        self.assertTrue(token.IsCancellationRequested)
+
+    def test_await_valuetask(self):
+        """await a ValueTask (non-generic)."""
+        from System.Threading.Tasks import ValueTask
+        async def test():
+            await ValueTask.CompletedTask
+            return 'done'
+        self.assertEqual(run_coro(test()), 'done')
+
+    def test_await_valuetask_generic(self):
+        """await a ValueTask<T> should return the value."""
+        from System.Threading.Tasks import ValueTask
+        async def test():
+            vt = ValueTask[int](42)
+            result = await vt
+            return result
+        self.assertEqual(run_coro(test()), 42)
+
+    def test_valuetask_has_await(self):
+        """ValueTask should have __await__ method."""
+        from System.Threading.Tasks import ValueTask
+        vt = ValueTask.CompletedTask
+        self.assertTrue(hasattr(vt, '__await__'))
+
+    def test_valuetask_generic_has_await(self):
+        """ValueTask<T> should have __await__ method."""
+        from System.Threading.Tasks import ValueTask
+        vt = ValueTask[str]("hello")
+        self.assertTrue(hasattr(vt, '__await__'))
+
+    def test_await_valuetask_string(self):
+        """await a ValueTask<string>."""
+        from System.Threading.Tasks import ValueTask
+        async def test():
+            vt = ValueTask[str]("world")
+            return await vt
+        self.assertEqual(run_coro(test()), "world")
+
+
+import sys
+if sys.implementation.name == 'ironpython':
+    import clr
+    try:
+        clr.AddReference('IronPythonTest')
+        from IronPythonTest import AsyncInteropHelpers
+        _has_async_helpers = True
+    except Exception:
+        _has_async_helpers = False
+else:
+    _has_async_helpers = False
+
+
+@unittest.skipUnless(_has_async_helpers, "requires IronPythonTest with AsyncInteropHelpers")
+class DotNetAsyncEnumerableTest(unittest.TestCase):
+    """Tests for async for over .NET IAsyncEnumerable<T>."""
+
+    def test_async_for_ints(self):
+        """async for over IAsyncEnumerable<int>."""
+        async def test():
+            result = []
+            async for x in AsyncInteropHelpers.GetAsyncInts(1, 2, 3):
+                result.append(x)
+            return result
+        self.assertEqual(run_coro(test()), [1, 2, 3])
+
+    def test_async_for_strings(self):
+        """async for over IAsyncEnumerable<string>."""
+        async def test():
+            result = []
+            async for s in AsyncInteropHelpers.GetAsyncStrings("a", "b", "c"):
+                result.append(s)
+            return result
+        self.assertEqual(run_coro(test()), ["a", "b", "c"])
+
+    def test_async_for_empty(self):
+        """async for over empty IAsyncEnumerable."""
+        async def test():
+            result = []
+            async for x in AsyncInteropHelpers.GetEmptyAsyncInts():
+                result.append(x)
+            return result
+        self.assertEqual(run_coro(test()), [])
+
+    def test_async_for_break(self):
+        """break inside async for over IAsyncEnumerable."""
+        async def test():
+            result = []
+            async for x in AsyncInteropHelpers.GetAsyncInts(10, 20, 30, 40, 50):
+                if x == 30:
+                    break
+                result.append(x)
+            return result
+        self.assertEqual(run_coro(test()), [10, 20])
+
+    def test_async_for_has_aiter(self):
+        """IAsyncEnumerable<T> objects should have __aiter__."""
+        stream = AsyncInteropHelpers.GetAsyncInts(1)
+        self.assertTrue(hasattr(stream, '__aiter__'))
+
+
 run_test(__name__)

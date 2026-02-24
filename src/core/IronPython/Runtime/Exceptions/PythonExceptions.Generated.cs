@@ -115,6 +115,17 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType CancelledErrorStorage;
+        public static PythonType CancelledError {
+            get {
+                if (CancelledErrorStorage == null) {
+                    Interlocked.CompareExchange(ref CancelledErrorStorage, CreateSubType(Exception, "CancelledError", (msg, innerException) => new System.OperationCanceledException(msg, innerException)), null);
+                }
+                return CancelledErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType ArithmeticErrorStorage;
         public static PythonType ArithmeticError {
             get {
@@ -935,6 +946,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is StopAsyncIterationException) return new PythonExceptions._StopAsyncIteration();
             if (clrException is StopIterationException) return new PythonExceptions._StopIteration();
             if (clrException is SyntaxErrorException) return new PythonExceptions._SyntaxError();
+            if (clrException is OperationCanceledException) return new PythonExceptions.BaseException(PythonExceptions.CancelledError);
             if (clrException is SystemException) return new PythonExceptions.BaseException(PythonExceptions.SystemError);
             if (clrException is SystemExitException) return new PythonExceptions._SystemExit();
             if (clrException is UnboundNameException) return new PythonExceptions.BaseException(PythonExceptions.NameError);

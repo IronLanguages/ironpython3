@@ -980,15 +980,21 @@ namespace IronPython.Runtime.Types {
             }
 
             if (typeof(Task).IsAssignableFrom(type)) {
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>)) {
+                // Walk up the type hierarchy to find Task<T> (the runtime type may be
+                // a subclass such as AsyncStateMachineBox<TResult, TStateMachine>).
+                Type taskType = type;
+                while (taskType != null && !(taskType.IsGenericType && taskType.GetGenericTypeDefinition() == typeof(Task<>))) {
+                    taskType = taskType.BaseType;
+                }
+                if (taskType != null) {
                     // Only use the generic TaskAwaitable<T> if the result type is visible
                     // (e.g. Task.CompletedTask is Task<VoidTaskResult> at runtime where
                     // VoidTaskResult is internal — fall back to non-generic TaskAwaitable)
-                    Type resultType = type.GetGenericArguments()[0];
+                    Type resultType = taskType.GetGenericArguments()[0];
                     if (resultType.IsVisible) {
                         MethodInfo genMeth = typeof(InstanceOps).GetMethod(nameof(InstanceOps.TaskAwaitMethodGeneric));
                         return new MemberGroup(
-                            MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(type.GetGenericArguments()), type)
+                            MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(taskType.GetGenericArguments()), type)
                         );
                     }
                 }

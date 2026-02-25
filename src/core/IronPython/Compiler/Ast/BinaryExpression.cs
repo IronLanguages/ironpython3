@@ -190,7 +190,7 @@ namespace IronPython.Compiler.Ast {
             public static readonly IsInstruction Instance = new IsInstruction();
 
             public override int Run(InterpretedFrame frame) {
-                // it’s okay to pop the args in this order due to commutativity of referential equality
+                // it's okay to pop the args in this order due to commutativity of referential equality
                 frame.Push(PythonOps.Is(frame.Pop(), frame.Pop()));
                 return +1;
             }
@@ -200,7 +200,7 @@ namespace IronPython.Compiler.Ast {
             public static readonly IsNotInstruction Instance = new IsNotInstruction();
 
             public override int Run(InterpretedFrame frame) {
-                // it’s okay to pop the args in this order due to commutativity of referential equality
+                // it's okay to pop the args in this order due to commutativity of referential equality
                 frame.Push(PythonOps.IsNot(frame.Pop(), frame.Pop()));
                 return +1;
             }

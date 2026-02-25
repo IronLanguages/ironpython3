@@ -13,10 +13,8 @@
     <File Path="Build.proj" />
     <File Path="CurrentVersion.props" />
     <File Path="Directory.Build.props" />
-    <File Path="IronPython.ruleset" />
     <File Path="LICENSE" />
     <File Path="make.ps1" />
-    <File Path="NuGet.config" />
     <File Path="README.md" />
   </Folder>
   <Folder Name="/Solution Items/Build/">

@@ -358,6 +358,28 @@ class SocketTest(IronPythonTestCase):
         self.assertRaises(TypeError, _socket.getnameinfo, ("127.0.0.1", 80, 0, 0, 0), 8)
         self.assertRaises(_socket.gaierror, _socket.getnameinfo, ('no such host will ever exist', 80), 8)
 
+        # try some IPv6 cases
+        host, service = _socket.getnameinfo(("::1", 80), 0)
+        self.assertEqual(service, "http")
+
+        ports = {
+            80: "http",
+            443: "https",
+        }
+
+        addresses = ["::1", "::", "::0"]
+        address_num = {"::0": "::"}
+
+        cases = []
+
+        for address in addresses:
+            for port, port_name in ports.items():
+                cases.append((((address, port), 0), (host, port_name)))
+                cases.append((((address, port), _socket.NI_NUMERICHOST | _socket.NI_NUMERICSERV), (address_num.get(address, address), str(port))))
+
+        for args, result in cases:
+            self.assertEqual(_socket.getnameinfo(*args), result)
+
     def test_gethostbyaddr(self):
         '''Tests _socket.gethostbyaddr'''
         _socket.gethostbyaddr("localhost")

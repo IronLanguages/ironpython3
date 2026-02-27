@@ -4,6 +4,9 @@
 
 #nullable enable
 
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Exceptions;
@@ -61,6 +64,38 @@ namespace IronPython.Runtime {
         public string __qualname__ {
             get => _generator.__name__;
         }
+
+        /// <summary>
+        /// Converts this coroutine into a .NET <see cref="Task{Object}"/>,
+        /// allowing C# code to <c>await</c> an IronPython async method.
+        /// The coroutine is driven on a single thread to avoid issues with
+        /// thread-local state in the Python generator runtime.
+        /// </summary>
+        public Task<object?> AsTask() {
+            return Task.Run(() => {
+                while (true) {
+                    object result = send(null);
+
+                    if (LightExceptions.IsLightException(result)) {
+                        var clrExc = LightExceptions.GetLightException(result);
+                        if (clrExc is StopIterationException) {
+                            var pyExc = ((IPythonAwareException)clrExc).PythonException;
+                            return pyExc is PythonExceptions._StopIteration si ? si.value : null;
+                        }
+                        throw clrExc;
+                    }
+
+                    if (result is Task task) {
+                        task.Wait();
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Enables <c>await coroutine</c> from C# code.
+        /// </summary>
+        public TaskAwaiter<object?> GetAwaiter() => AsTask().GetAwaiter();
 
         internal PythonGenerator Generator => _generator;
 

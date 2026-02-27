@@ -623,6 +623,7 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
+        // new in Python 3.7
         public static bool isascii([NotNone] this string self) {
             foreach (char c in self) {
                 if (c > 0x7f) return false;

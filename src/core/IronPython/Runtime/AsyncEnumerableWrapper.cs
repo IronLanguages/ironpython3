@@ -43,12 +43,13 @@ namespace IronPython.Runtime {
 
     /// <summary>
     /// The awaitable object returned by <see cref="AsyncEnumeratorWrapper{T}.__anext__"/>.
-    /// Implements both __await__ and __iter__/__next__ (the yield-from protocol) to
-    /// block on MoveNextAsync and return the current value via StopIteration.
+    /// Implements both __await__ and __iter__/__next__ (the yield-from protocol).
+    /// Non-blocking: yields the Task back to the runner if MoveNextAsync is not yet completed.
     /// </summary>
     [PythonType("async_enumerator_awaitable")]
     public sealed class AsyncEnumeratorAwaitable<T> {
         private readonly IAsyncEnumerator<T> _enumerator;
+        private Task<bool>? _moveNextTask;
 
         internal AsyncEnumeratorAwaitable(IAsyncEnumerator<T> enumerator) {
             _enumerator = enumerator;
@@ -60,7 +61,10 @@ namespace IronPython.Runtime {
 
         [LightThrowing]
         public object __next__() {
-            bool hasNext = _enumerator.MoveNextAsync().AsTask().GetAwaiter().GetResult();
+            var task = _moveNextTask ??= _enumerator.MoveNextAsync().AsTask();
+            if (!task.IsCompleted) return (Task)task;  // yield Task to runner
+            bool hasNext = task.GetAwaiter().GetResult();
+            _moveNextTask = null;  // reset for next call
             if (!hasNext) {
                 return LightExceptions.Throw(
                     new PythonExceptions._StopAsyncIteration().InitAndGetClrException());

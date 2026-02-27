@@ -10,12 +10,16 @@ from iptest import run_test
 
 
 def run_coro(coro):
-    """Run a coroutine to completion and return its result."""
-    try:
-        coro.send(None)
-        raise AssertionError("Coroutine did not raise StopIteration")
-    except StopIteration as e:
-        return e.value
+    """Run a coroutine to completion, blocking on yielded .NET Tasks."""
+    value = None
+    while True:
+        try:
+            task = coro.send(value)
+            # .NET Task yielded — block on it (test runner is synchronous)
+            task.Wait()
+            value = None
+        except StopIteration as e:
+            return e.value
 
 
 class AsyncIter:
@@ -516,6 +520,119 @@ class DotNetAsyncEnumerableTest(unittest.TestCase):
         """IAsyncEnumerable<T> objects should have __aiter__."""
         stream = AsyncInteropHelpers.GetAsyncInts(1)
         self.assertTrue(hasattr(stream, '__aiter__'))
+
+
+@unittest.skipUnless(_has_async_helpers, "requires IronPythonTest with AsyncInteropHelpers")
+class DotNetRealAsyncTaskTest(unittest.TestCase):
+    """Tests for await on real async Task<T> methods.
+
+    These test real .NET async methods where the runtime type is
+    AsyncStateMachineBox<TResult, TStateMachine>, not Task<T> directly.
+    All methods include real delays (Task.Delay) to ensure truly async behavior.
+    """
+
+    def test_await_real_async_int(self):
+        """await a real async Task<int> with delay."""
+        async def test():
+            return await AsyncInteropHelpers.GetAsyncInt(42)
+        self.assertEqual(run_coro(test()), 42)
+
+    def test_await_real_async_string(self):
+        """await a real async Task<string> with delay."""
+        async def test():
+            return await AsyncInteropHelpers.GetAsyncString("hello")
+        self.assertEqual(run_coro(test()), "hello")
+
+    def test_await_real_async_void(self):
+        """await a real async Task (void) with delay."""
+        async def test():
+            await AsyncInteropHelpers.DoAsync()
+            return 'done'
+        self.assertEqual(run_coro(test()), 'done')
+
+    def test_await_real_async_multiple(self):
+        """Multiple awaits on real async Task<T> in sequence."""
+        async def test():
+            a = await AsyncInteropHelpers.GetAsyncInt(10)
+            b = await AsyncInteropHelpers.GetAsyncInt(20)
+            s = await AsyncInteropHelpers.GetAsyncString("!")
+            return str(a + b) + s
+        self.assertEqual(run_coro(test()), "30!")
+
+    def test_await_real_async_mixed_with_python(self):
+        """Mix real .NET async with Python coroutines."""
+        async def py_double(x):
+            return x * 2
+
+        async def test():
+            val = await AsyncInteropHelpers.GetAsyncInt(5)
+            doubled = await py_double(val)
+            return doubled
+        self.assertEqual(run_coro(test()), 10)
+
+
+@unittest.skipUnless(_has_async_helpers, "requires IronPythonTest with AsyncInteropHelpers")
+class DotNetCancellationTest(unittest.TestCase):
+    """Tests for CancellationToken and CancelledError with .NET async methods."""
+
+    def test_cancel_async_task_int(self):
+        """Cancelling a Task<int> should raise CancelledError."""
+        from System.Threading import CancellationTokenSource
+        cts = CancellationTokenSource()
+        cts.Cancel()
+        async def test():
+            return await AsyncInteropHelpers.GetAsyncIntWithCancellation(42, cts.Token)
+        with self.assertRaises(CancelledError):
+            run_coro(test())
+
+    def test_cancel_async_task_void(self):
+        """Cancelling a Task (void) should raise CancelledError."""
+        from System.Threading import CancellationTokenSource
+        cts = CancellationTokenSource()
+        cts.Cancel()
+        async def test():
+            await AsyncInteropHelpers.DoAsyncWithCancellation(cts.Token)
+        with self.assertRaises(CancelledError):
+            run_coro(test())
+
+    def test_cancel_async_enumerable(self):
+        """Cancelling during async for over IAsyncEnumerable should raise CancelledError."""
+        from System.Threading import CancellationTokenSource
+        cts = CancellationTokenSource()
+        cts.Cancel()
+        async def test():
+            result = []
+            async for x in AsyncInteropHelpers.GetAsyncIntsWithCancellation(cts.Token, 1, 2, 3):
+                result.append(x)
+            return result
+        with self.assertRaises(CancelledError):
+            run_coro(test())
+
+    def test_cancelled_error_is_exception_subclass(self):
+        """CancelledError should be a subclass of Exception."""
+        self.assertTrue(issubclass(CancelledError, Exception))
+
+    def test_cancelled_error_catch_as_exception(self):
+        """CancelledError should be catchable as Exception."""
+        from System.Threading import CancellationTokenSource
+        cts = CancellationTokenSource()
+        cts.Cancel()
+        async def test():
+            try:
+                await AsyncInteropHelpers.GetAsyncIntWithCancellation(99, cts.Token)
+            except Exception:
+                return 'caught'
+        self.assertEqual(run_coro(test()), 'caught')
+
+    def test_operation_cancelled_maps_to_cancelled_error(self):
+        """System.OperationCanceledException raised directly should be catchable as CancelledError."""
+        from System import OperationCanceledException
+        caught = False
+        try:
+            raise OperationCanceledException("test")
+        except CancelledError:
+            caught = True
+        self.assertTrue(caught)
 
 
 run_test(__name__)

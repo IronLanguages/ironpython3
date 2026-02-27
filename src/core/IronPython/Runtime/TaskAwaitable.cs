@@ -15,7 +15,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Provides an __await__ protocol wrapper for <see cref="Task"/>,
     /// enabling <c>await task</c> from Python async code.
-    /// Blocks on the task and returns None via StopIteration.
+    /// Non-blocking: yields the Task back to the runner if not yet completed.
     /// </summary>
     [PythonType("task_awaitable")]
     public sealed class TaskAwaitable {
@@ -31,7 +31,9 @@ namespace IronPython.Runtime {
 
         [LightThrowing]
         public object __next__() {
-            _task.GetAwaiter().GetResult();
+            var task = _task;
+            if (!task.IsCompleted) return task;  // yield Task to runner
+            task.GetAwaiter().GetResult();       // propagate exceptions
             return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException());
         }
     }
@@ -39,7 +41,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Provides an __await__ protocol wrapper for <see cref="Task{T}"/>,
     /// enabling <c>result = await task</c> from Python async code.
-    /// Blocks on the task and returns the result via StopIteration.value.
+    /// Non-blocking: yields the Task back to the runner if not yet completed.
     /// </summary>
     [PythonType("task_awaitable")]
     public sealed class TaskAwaitable<T> {
@@ -55,7 +57,9 @@ namespace IronPython.Runtime {
 
         [LightThrowing]
         public object __next__() {
-            T result = _task.GetAwaiter().GetResult();
+            var task = _task;
+            if (!task.IsCompleted) return task;  // yield Task to runner
+            T result = task.GetAwaiter().GetResult();
             return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException(result!));
         }
     }
@@ -64,10 +68,12 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Provides an __await__ protocol wrapper for <see cref="ValueTask"/>,
     /// enabling <c>await valuetask</c> from Python async code.
+    /// Non-blocking: yields the Task back to the runner if not yet completed.
     /// </summary>
     [PythonType("task_awaitable")]
     public sealed class ValueTaskAwaitable {
         private readonly ValueTask _task;
+        private Task? _asTask;
 
         internal ValueTaskAwaitable(ValueTask task) {
             _task = task;
@@ -79,7 +85,9 @@ namespace IronPython.Runtime {
 
         [LightThrowing]
         public object __next__() {
-            _task.AsTask().GetAwaiter().GetResult();
+            var task = _asTask ??= _task.AsTask();
+            if (!task.IsCompleted) return task;  // yield Task to runner
+            task.GetAwaiter().GetResult();       // propagate exceptions
             return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException());
         }
     }
@@ -87,10 +95,12 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Provides an __await__ protocol wrapper for <see cref="ValueTask{T}"/>,
     /// enabling <c>result = await valuetask</c> from Python async code.
+    /// Non-blocking: yields the Task back to the runner if not yet completed.
     /// </summary>
     [PythonType("task_awaitable")]
     public sealed class ValueTaskAwaitable<T> {
         private readonly ValueTask<T> _task;
+        private Task<T>? _asTask;
 
         internal ValueTaskAwaitable(ValueTask<T> task) {
             _task = task;
@@ -102,7 +112,9 @@ namespace IronPython.Runtime {
 
         [LightThrowing]
         public object __next__() {
-            T result = _task.AsTask().GetAwaiter().GetResult();
+            var task = _asTask ??= _task.AsTask();
+            if (!task.IsCompleted) return (Task)task;  // yield Task to runner
+            T result = task.GetAwaiter().GetResult();
             return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException(result!));
         }
     }

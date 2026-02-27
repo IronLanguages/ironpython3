@@ -48,6 +48,64 @@ namespace IronPythonTest {
         }
 
         /// <summary>
+        /// Returns a real async Task&lt;int&gt; with a delay.
+        /// The runtime type will be AsyncStateMachineBox, not Task&lt;int&gt; directly.
+        /// </summary>
+        public static async Task<int> GetAsyncInt(int value, int delayMs = 50) {
+            await Task.Delay(delayMs);
+            return value;
+        }
+
+        /// <summary>
+        /// Returns a real async Task&lt;string&gt; with a delay.
+        /// </summary>
+        public static async Task<string> GetAsyncString(string value, int delayMs = 50) {
+            await Task.Delay(delayMs);
+            return value;
+        }
+
+        /// <summary>
+        /// Returns a real async Task (void result) with a delay.
+        /// </summary>
+        public static async Task DoAsync(int delayMs = 50) {
+            await Task.Delay(delayMs);
+        }
+
+        /// <summary>
+        /// Async Task&lt;int&gt; that respects a CancellationToken.
+        /// Throws OperationCanceledException if token is cancelled during the delay.
+        /// </summary>
+        public static async Task<int> GetAsyncIntWithCancellation(int value, CancellationToken token, int delayMs = 5000) {
+            await Task.Delay(delayMs, token);
+            return value;
+        }
+
+        /// <summary>
+        /// Async Task that respects a CancellationToken.
+        /// </summary>
+        public static async Task DoAsyncWithCancellation(CancellationToken token, int delayMs = 5000) {
+            await Task.Delay(delayMs, token);
+        }
+
+        /// <summary>
+        /// IAsyncEnumerable&lt;int&gt; that yields values with delay and respects cancellation.
+        /// </summary>
+        public static IAsyncEnumerable<int> GetAsyncIntsWithCancellation(CancellationToken token, params int[] values) {
+            return YieldIntsWithCancellation(values, token);
+        }
+
+        private static async IAsyncEnumerable<int> YieldIntsWithCancellation(
+            int[] values,
+            CancellationToken token,
+            [EnumeratorCancellation] CancellationToken ct = default) {
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, ct);
+            foreach (var v in values) {
+                await Task.Delay(50, linked.Token);
+                yield return v;
+            }
+        }
+
+        /// <summary>
         /// Returns an empty IAsyncEnumerable&lt;int&gt;.
         /// </summary>
         public static IAsyncEnumerable<int> GetEmptyAsyncInts() {

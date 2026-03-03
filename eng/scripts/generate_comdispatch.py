@@ -187,7 +187,7 @@ variantTypes = [
                 "return null;"
         ],
         setStatements=[
-                "if (value != null) {",
+                "if (value is not null) {",
                 "    Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));",
                 "}"
         ],
@@ -202,7 +202,7 @@ variantTypes = [
                 "return null;"
         ],
         setStatements=[
-                "if (value != null) {",
+                "if (value is not null) {",
                 "    _typeUnion._unionTypes._unknown = Marshal.GetIUnknownForObject(value);",
                 "}"
         ],
@@ -217,7 +217,7 @@ variantTypes = [
                 "return null;"
         ],
         setStatements=[
-                "if (value != null) {",
+                "if (value is not null) {",
                 "    _typeUnion._unionTypes._unknown = GetIDispatchForObject(value);",
                 "}"
         ],

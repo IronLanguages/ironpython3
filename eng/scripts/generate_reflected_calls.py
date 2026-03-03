@@ -26,7 +26,7 @@ def get_func_type_names(i):
     return get_type_names(i - 1) + ['TRet']
 
 def get_cast_args(i):
-    return ['%s != null ? (%s)%s : default(%s)' % (x[0], x[1], x[0], x[1]) for x in zip(get_args(i), get_type_names(i))]
+    return ['%s is not null ? (%s)%s : default(%s)' % (x[0], x[1], x[0], x[1]) for x in zip(get_args(i), get_type_names(i))]
 
 def get_type_params(i):
     if i == 0: return ''
@@ -84,7 +84,7 @@ def gen_fast_creation(cw):
         cw.enter_block('private static CallInstruction FastCreate%s(MethodInfo target, ParameterInfo[] pi)' % get_type_params(i))
         
         cw.write('Type t = TryGetParameterOrReturnType(target, pi, %d);' % (i, ))
-        cw.enter_block('if (t == null)')
+        cw.enter_block('if (t is null)')
         
         typeArgs = ', '.join(get_type_names(i))
         if i == 0:           

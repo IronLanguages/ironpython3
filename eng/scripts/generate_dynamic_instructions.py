@@ -116,7 +116,7 @@ def gen_run_method(cw, n, is_void):
                                                 types, 
                                                 ','.join(param_names)))
         
-    cw.enter_block('if (_compiled != null || TryGetCompiled())')
+    cw.enter_block('if (_compiled is not null || TryGetCompiled())')
     args = ', '.join(['arg%d' % i for i in range(n)])
     if is_void:
         cw.write('((Action%s)_compiled)(%s);' % (types, args))

@@ -82,7 +82,7 @@ def mark_cls_compliance(cw, t):
 def generate_type_cast(cw, t):
     mark_cls_compliance(cw, t)
     cw.enter_block("public static %(type)s ExplicitCastTo%(type)s(object o)", type = t)
-    cw.enter_block("if (o != null)")
+    cw.enter_block("if (o is not null)")
     cw.write("Type type = o.GetType();");
 
     cond = cw.conditions()
@@ -112,7 +112,7 @@ def generate_type_cast(cw, t):
 def generate_nullable_type_cast(cw, t):
     mark_cls_compliance(cw, t)
     cw.enter_block("public static Nullable<%(type)s> ExplicitCastToNullable%(type)s(object o)", type = t)
-    cw.enter_block("if (o == null)")
+    cw.enter_block("if (o is null)")
     cw.write("return new Nullable<%(type)s>();", type = t);
     cw.exit_block()
     cw.write("Type type = o.GetType();");

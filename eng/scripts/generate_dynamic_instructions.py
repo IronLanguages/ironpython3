@@ -41,7 +41,7 @@ def gen_instruction(cw, n):
     func_type_params = ','.join(['CallSite'] + type_names + ['TRet'])
     func_type = 'Func<%s>' % func_type_params
   
-    cw.enter_block('internal class DynamicInstruction<%s> : Instruction' % class_type_params)
+    cw.enter_block('internal sealed class DynamicInstruction<%s> : Instruction' % class_type_params)
     cw.write('private CallSite<%s> _site;' % func_type)
     cw.write('')    
     cw.enter_block('public static Instruction Factory(CallSiteBinder binder)')

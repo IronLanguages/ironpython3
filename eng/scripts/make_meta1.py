@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
@@ -151,7 +152,7 @@ class Class:
         self.strings = {}
 
     def get_constant_string(self, s):
-        if not self.strings.has_key(s):
+        if s not in self.strings:
             self.strings[s] = s + "_str"
 
         return self.strings[s]
@@ -235,7 +236,7 @@ for file in os.listdir(src_dir):
     #if c.super_name != 'PyModule':
     #    assert c.super_name == base.name, c.super_name
 
-    print c, c.methods
+    print(c, c.methods)
     code = c.make_any_methods()
     code.insert(0, START)
     code.append(END)

@@ -21,14 +21,14 @@ def compare_dirs(dir1, dir2):
 
 def main():
     if len(sys.argv)!=3:
-        print 'Usage: CompareDirs <dir1> <dir2>'
+        print('Usage: CompareDirs <dir1> <dir2>')
         sys.exit(-1)
         
     if compare_dirs(sys.argv[1],sys.argv[2]):
-        print "The directories are identical"
+        print("The directories are identical")
         sys.exit(0)
     else: #the part that differed is explained via dircmp.report() above
-        print "The directories differ"
+        print("The directories differ")
         sys.exit(1)
 
 if __name__=="__main__":

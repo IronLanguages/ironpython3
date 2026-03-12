@@ -51,18 +51,18 @@ old_py_header = py_header
 def add_header(filename, old_header, new_header):
     text = open(filename, 'r').read()
     if text.startswith(old_header):
-        print "replacing header", filename
+        print("replacing header", filename)
         text = new_header + text[len(old_header):]
         open(filename, 'w').write(text)
     elif not text.startswith(new_header):
-        print 'no old header', filename
+        print('no old header', filename)
         text = new_header + "\n" + text
         open(filename, 'w').write(text)
 
 def do_dir(dirname):
     import os
     for file in os.listdir(dirname):
-        print "Processing:", file
+        print("Processing:", file)
         if file == "ExternalCode": continue
         filename = os.path.join(dirname, file)
         if os.path.isdir(filename):

@@ -111,24 +111,24 @@ def run_interactive_main():
     if testName:
         testsToRun = Directory.GetFiles(Directory.GetCurrentDirectory() , testName)        
     else:
-	    print "No test name provided"
+	    print("No test name provided")
 	    sys.exit(-1)
 	    
     allErrors = []
     for test in testsToRun:
         try:
-            print "\nRunning test in interactive mode - ", test
+            print("\nRunning test in interactive mode - ", test)
             con = FileConsole(test)        
             con.Run()
-        except Exception, e:
-            print e, e.clsException
+        except Exception as e:
+            print(e, e.clsException)
             allErrors.append((test, sys.exc_info()[0], sys.exc_info()[1]))
 
     if(allErrors):
-        print "\n##################################################################################"
-        print "Summary of all errors"
+        print("\n##################################################################################")
+        print("Summary of all errors")
         for file, type, message in allErrors:
-            print file, type, message
+            print(file, type, message)
         sys.exit(len(allErrors))
 
 #--------------------------------------------------------------------------------------

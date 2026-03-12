@@ -6,7 +6,7 @@ import sys
 import os
 newline = os.linesep
 
-pats = [0L, 1L, 42L, 0x7fffffffL, 0x80000000L, 0xabcdef01L, 0xffffffffL]
+pats = [0, 1, 42, 0x7fffffff, 0x80000000, 0xabcdef01, 0xffffffff]
 nums = []
 for p0 in pats:
     for p1 in pats:
@@ -23,7 +23,7 @@ for p0 in pats:
             bignums.append(n)
             bignums.append(-n)
 #!!! should add 2 or 3 larger numbers to check for any issues there
-print len(bignums), len(bignums)**2
+print(len(bignums), len(bignums)**2)
 
 
 
@@ -40,7 +40,7 @@ ops = [
 ]
 
 def buildit(name, nums):
-    print 'expected', (len(nums)**2)*len(ops)
+    print('expected', (len(nums)**2)*len(ops))
     t0 = time.clock()
 
     for sym, op in ops:
@@ -48,7 +48,7 @@ def buildit(name, nums):
             fp = open('%s_%s.txt' % (name, op.__name__), 'w')
         else:
             fp = None
-        print 'computing', sym
+        print('computing', sym)
         for x in nums:
             for y in nums:
                 try:
@@ -63,7 +63,7 @@ def buildit(name, nums):
                         fp.write('ERROR' + newline)
         if fp: fp.close()
     t1 = time.clock()
-    print 'time', (t1-t0)
+    print('time', (t1-t0))
 
 buildit('time1', bignums)
 buildit('short', nums)

@@ -8,16 +8,16 @@ from System.IO import File, Path
 
 def main():
     if len(sys.argv) != 2:
-        print "Usage: ipy run_compiled.py <testfile.py>"
+        print("Usage: ipy run_compiled.py <testfile.py>")
         sys.exit(-1)
     
     testName = sys.argv[1]
     
-    print "Compiling ", testName ,"..."
+    print("Compiling ", testName ,"...")
     clr.CompileModules("compiledTest.dll", testName)    
     File.Move(testName, testName+".bak")    
     try:
-        print "Running test from compiled binary..."    
+        print("Running test from compiled binary...")    
         clr.AddReference("compiledTest")    
         __import__(Path.GetFileNameWithoutExtension(testName))    
     finally:

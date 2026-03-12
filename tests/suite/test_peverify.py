@@ -37,10 +37,10 @@ class PEVerifyTest(IronPythonTestCase):
         process.WaitForExit()
         ret = process.ExitCode
 
-        print "ExitCode:", ret
-        print "Output: ", output1
-        print "Error:  ", output2
-        print
+        print("ExitCode:", ret)
+        print("Output: ", output1)
+        print("Error:  ", output2)
+        print()
 
         self.assertEqual(ret, 1)
         self.assertTrue("Error Verifying" in output1 or "Error(s) Verifying" in output1)

@@ -7,6 +7,7 @@
 import unittest
 
 from iptest import run_test, skipUnlessIronPython, is_netcoreapp
+from iptest.ipunittest import load_ironpython_test
 
 
 def run_coro(coro):
@@ -468,8 +469,8 @@ class ValueTaskInteropTest(unittest.TestCase):
 import sys
 if sys.implementation.name == 'ironpython':
     import clr
+    load_ironpython_test()
     try:
-        clr.AddReference('IronPythonTest')
         from IronPythonTest import AsyncInteropHelpers
         _has_async_helpers = True
     except Exception:

@@ -79,6 +79,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo PushFrame = GetMethod((Func<CodeContext, FunctionCode, List<FunctionStack>>)PythonOps.PushFrame);
         public static readonly MethodInfo FormatString = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatString);
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
+        public static readonly MethodInfo MakeCoroutine = GetMethod((Func<PythonFunction, MutableTuple, object, PythonCoroutine>)PythonOps.MakeCoroutine);
 
         // builtins
         public static readonly MethodInfo Format = GetMethod((Func<CodeContext, object, string, string>)PythonOps.Format);

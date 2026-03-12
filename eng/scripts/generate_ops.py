@@ -10,7 +10,7 @@ import operator
 kwlist = [
     'and', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
     'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or', 'pass',
-    'raise', 'return', 'try', 'while', 'yield', 'as', 'with', 'async', 'nonlocal'
+    'raise', 'return', 'try', 'while', 'yield', 'as', 'with', 'async', 'nonlocal', 'await'
 ]
 
 class Symbol:

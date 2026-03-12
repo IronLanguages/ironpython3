@@ -57,9 +57,12 @@ namespace IronPython.Compiler {
         internal const int Finished = 0;
         internal static ParameterExpression _generatorParam = Expression.Parameter(typeof(PythonGenerator), "$generator");
         
-        internal GeneratorRewriter(string name, Expression body) {
+        private readonly bool _isCoroutine;
+
+        internal GeneratorRewriter(string name, Expression body, bool isCoroutine = false) {
             _body = body;
             _name = name;
+            _isCoroutine = isCoroutine;
             _returnLabels.Push(Expression.Label("retLabel"));
             _gotoRouter = Expression.Variable(typeof(int), "$gotoRouter");
         }
@@ -133,27 +136,47 @@ namespace IronPython.Compiler {
                 new ParameterExpression[] { tupleArg }
             );
             
-            // Generate a call to PythonOps.MakeGeneratorClosure(Tuple data, object generatorCode)
+            // Generate a call to PythonOps.MakeGenerator(Tuple data, object generatorCode)
+            // For coroutines, we wrap the result in PythonOps.MakeCoroutineWrapper after creating the generator
+            Expression generatorExpr = Expression.Call(
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeGenerator)),
+                parameters[0],
+                Expression.Assign(tupleTmp, newTuple),
+                emitDebugSymbols ?
+                    (Expression)bodyConverter(innerLambda) :
+                    (Expression)Expression.Constant(
+                        new LazyCode<Func<MutableTuple, object>>(
+                            bodyConverter(innerLambda),
+                            shouldInterpret,
+                            compilationThreshold
+                        ),
+                        typeof(object)
+                    )
+            );
+
+            if (_isCoroutine) {
+                ParameterExpression coroutineRet = Expression.Parameter(typeof(object), "coroutineRet");
+                return Expression.Block(
+                    new[] { tupleTmp, ret, coroutineRet },
+                    Expression.Assign(ret, generatorExpr),
+                    new DelayedTupleAssign(
+                        new DelayedTupleExpression(liftedGen.Index, new StrongBox<ParameterExpression>(tupleTmp), _tupleType, _tupleSize, typeof(PythonGenerator)),
+                        ret
+                    ),
+                    Expression.Assign(
+                        coroutineRet,
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.MakeCoroutineWrapper)),
+                            ret
+                        )
+                    ),
+                    coroutineRet
+                );
+            }
+
             return Expression.Block(
                 new[] { tupleTmp, ret },
-                Expression.Assign(
-                    ret,
-                    Expression.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeGenerator)),
-                        parameters[0],
-                        Expression.Assign(tupleTmp, newTuple),
-                        emitDebugSymbols ?
-                            (Expression)bodyConverter(innerLambda) :
-                            (Expression)Expression.Constant(
-                                new LazyCode<Func<MutableTuple, object>>(
-                                    bodyConverter(innerLambda),
-                                    shouldInterpret,
-                                    compilationThreshold
-                                ),
-                                typeof(object)
-                            )
-                    )
-                ),
+                Expression.Assign(ret, generatorExpr),
                 new DelayedTupleAssign(
                     new DelayedTupleExpression(liftedGen.Index, new StrongBox<ParameterExpression>(tupleTmp), _tupleType, _tupleSize, typeof(PythonGenerator)),
                     ret
@@ -589,11 +612,15 @@ namespace IronPython.Compiler {
                 return VisitYield(yield);
             }
 
-            if (node is FinallyFlowControlExpression ffc) {
-                return Visit(node.ReduceExtensions());
+            // Reduce one level and re-visit so that extension nodes produced
+            // during reduction (e.g. YieldExpression from ReturnStatement
+            // inside DebugInfoRemovalExpression) are properly intercepted
+            // by this visitor instead of being reduced again by ReduceExtensions().
+            var reduced = node.Reduce();
+            if (reduced == node) {
+                throw new InvalidOperationException("node must be reducible");
             }
-
-            return Visit(node.ReduceExtensions());
+            return Visit(reduced);
         }
 
         private Expression VisitYield(YieldExpression node) {
@@ -1065,14 +1092,16 @@ namespace IronPython.Compiler {
     internal sealed class PythonGeneratorExpression : Expression {
         private readonly LightLambdaExpression _lambda;
         private readonly int _compilationThreshold;
+        private readonly bool _isCoroutine;
 
-        public PythonGeneratorExpression(LightLambdaExpression lambda, int compilationThreshold) {
+        public PythonGeneratorExpression(LightLambdaExpression lambda, int compilationThreshold, bool isCoroutine = false) {
             _lambda = lambda;
             _compilationThreshold = compilationThreshold;
+            _isCoroutine = isCoroutine;
         }
 
         public override Expression Reduce() {
-            return _lambda.ToGenerator(false, true, _compilationThreshold);
+            return _lambda.ToGenerator(false, true, _compilationThreshold, _isCoroutine);
         }
 
         public sealed override ExpressionType NodeType {

@@ -1059,6 +1059,11 @@ namespace IronPython.Compiler {
                             return Tokens.KeywordAsyncToken;
                         }
                     }
+                } else if (ch == 'w') {
+                    if (NextChar() == 'a' && NextChar() == 'i' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordAwaitToken;
+                    }
                 }
             } else if (ch == 'b') {
                 if (NextChar() == 'r' && NextChar() == 'e' && NextChar() == 'a' && NextChar() == 'k' && !IsNamePart(Peek())) {

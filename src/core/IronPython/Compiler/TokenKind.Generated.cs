@@ -73,7 +73,7 @@ namespace IronPython.Compiler {
         ReturnAnnotation = 76,
 
         FirstKeyword = KeywordAnd,
-        LastKeyword = KeywordNonlocal,
+        LastKeyword = KeywordAwait,
         KeywordAnd = 77,
         KeywordAssert = 78,
         KeywordBreak = 79,
@@ -105,6 +105,7 @@ namespace IronPython.Compiler {
         KeywordWith = 105,
         KeywordAsync = 106,
         KeywordNonlocal = 107,
+        KeywordAwait = 108,
 
         // *** END GENERATED CODE ***
 
@@ -193,6 +194,7 @@ namespace IronPython.Compiler {
         public static Token KeywordAsToken { get; } = new SymbolToken(TokenKind.KeywordAs, "as");
         public static Token KeywordAssertToken { get; } = new SymbolToken(TokenKind.KeywordAssert, "assert");
         public static Token KeywordAsyncToken { get; } = new SymbolToken(TokenKind.KeywordAsync, "async");
+        public static Token KeywordAwaitToken { get; } = new SymbolToken(TokenKind.KeywordAwait, "await");
         public static Token KeywordBreakToken { get; } = new SymbolToken(TokenKind.KeywordBreak, "break");
         public static Token KeywordClassToken { get; } = new SymbolToken(TokenKind.KeywordClass, "class");
         public static Token KeywordContinueToken { get; } = new SymbolToken(TokenKind.KeywordContinue, "continue");

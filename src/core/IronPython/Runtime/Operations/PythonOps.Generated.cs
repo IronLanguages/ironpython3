@@ -125,6 +125,9 @@ namespace IronPython.Runtime.Operations {
         internal static Exception ModuleNotFoundError(string message) => new ModuleNotFoundException(message);
         public static Exception ModuleNotFoundError(string format, params object?[] args) => new ModuleNotFoundException(string.Format(format, args));
 
+        internal static Exception CancelledError(string message) => new OperationCanceledException(message);
+        public static Exception CancelledError(string format, params object?[] args) => new OperationCanceledException(string.Format(format, args));
+
         // *** END GENERATED CODE ***
 
         #endregion

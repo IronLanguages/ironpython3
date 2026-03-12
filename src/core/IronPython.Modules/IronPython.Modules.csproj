@@ -21,10 +21,6 @@
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-  </ItemGroup>
-
   <ItemGroup Condition=" $(TargetFrameworkIdentifier) != '.NETFramework' ">
     <ProjectReference Include="..\..\roslyn\IronPython.Analyzer\IronPython.Analyzer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

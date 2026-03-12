@@ -6,7 +6,7 @@
 
 import unittest
 
-from iptest import run_test
+from iptest import run_test, skipUnlessIronPython, is_netcoreapp
 
 
 def run_coro(coro):
@@ -319,6 +319,7 @@ class AsyncCombinedTest(unittest.TestCase):
         self.assertEqual(run_coro(test()), ['enter', 1, 2, 'exit'])
 
 
+@skipUnlessIronPython()
 class DotNetAsyncInteropTest(unittest.TestCase):
     """Tests for .NET async interop (await Task, async for IAsyncEnumerable, CancelledError)."""
 
@@ -423,6 +424,9 @@ class DotNetAsyncInteropTest(unittest.TestCase):
         cts.Cancel()
         self.assertTrue(token.IsCancellationRequested)
 
+
+@unittest.skipUnless(is_netcoreapp, "ValueTask is not available on .NET Framework")
+class ValueTaskInteropTest(unittest.TestCase):
     def test_await_valuetask(self):
         """await a ValueTask (non-generic)."""
         from System.Threading.Tasks import ValueTask

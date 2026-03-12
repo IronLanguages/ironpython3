@@ -22,7 +22,7 @@ def getTestOutput():
         if "ip_session.log" in os.listdir(os.getcwd()):
             tfile = open('ip_session.log', 'r')
             break
-        print "Waiting for ip_session.log to be created..."
+        print("Waiting for ip_session.log to be created...")
         time.sleep(1)
 
     outlines = tfile.readlines()
@@ -56,7 +56,7 @@ class SuperConsoleTest(IronPythonTestCase):
 
             tempMauiDir = Path.GetTempPath()
 
-            print "Copying Maui.Core.dll to %s for peverify..." % (tempMauiDir)
+            print("Copying Maui.Core.dll to %s for peverify..." % (tempMauiDir))
             if not File.Exists(tempMauiDir + '\\Maui.Core.dll'):
                 File.Copy(testpath.rowan_root + '\\Util\\Internal\\Maui_old\\Maui.Core.dll',
                         tempMauiDir + '\\Maui.Core.dll')
@@ -71,7 +71,7 @@ class SuperConsoleTest(IronPythonTestCase):
         try:
             clr.AddReference('Maui.Core.dll')
         except:
-            print "test_superconsole.py failed: cannot load Maui.Core assembly"
+            print("test_superconsole.py failed: cannot load Maui.Core assembly")
             sys.exit(int(is_snap))
 
         from Maui.Core import App
@@ -87,8 +87,8 @@ class SuperConsoleTest(IronPythonTestCase):
         try:
             superConsole = App(proc.Id)
         except Exception as e:
-            print "test_superconsole.py failed: cannot initialize App object (probably running as service, or in minimized remote window)"
-            print "On VSLGO-MAUI machines close all remote desktop sessions using EXIT command on desktop!"
+            print("test_superconsole.py failed: cannot initialize App object (probably running as service, or in minimized remote window)")
+            print("On VSLGO-MAUI machines close all remote desktop sessions using EXIT command on desktop!")
             proc.Kill()
             sys.exit(1)
 
@@ -351,7 +351,7 @@ class SuperConsoleTest(IronPythonTestCase):
         # check that Ctrl-C breaks an infinite loop (the test is that subsequent things actually appear)
         superConsole.SendKeys('while True: pass{ENTER}{ENTER}')
         superConsole.SendKeys('^(c)')
-        print "CodePlex Work Item 12401"
+        print("CodePlex Work Item 12401")
         errors = [
                     "Traceback (most recent call last):", #CodePlex Work Item 12401
                     "  File", #CodePlex Work Item 12401

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Threading;
 
 using NUnit.Framework;
@@ -37,42 +36,6 @@ namespace IronPythonTest.Cases {
                 return -1;
             } finally {
                 m?.ReleaseMutex();
-                CleanupTempFiles(testcase);
-            }
-        }
-
-        /// <summary>
-        /// Removes @test_*_tmp files/directories left behind by test.support.TESTFN.
-        /// </summary>
-        private static void CleanupTempFiles(TestInfo testcase) {
-            var testDir = Path.GetDirectoryName(testcase.Path);
-            if (testDir is null) return;
-
-            // Clean test directory and also the StdLib test directory
-            CleanupTempFilesInDir(testDir);
-            var stdlibTestDir = Path.Combine(CaseExecuter.FindRoot(), "src", "core", "IronPython.StdLib", "lib", "test");
-            if (stdlibTestDir != testDir) {
-                CleanupTempFilesInDir(stdlibTestDir);
-            }
-        }
-
-        private static void CleanupTempFilesInDir(string dir) {
-            if (!Directory.Exists(dir)) return;
-
-            try {
-                foreach (var entry in Directory.EnumerateFileSystemEntries(dir, "@test_*_tmp*")) {
-                    try {
-                        if (File.GetAttributes(entry).HasFlag(FileAttributes.Directory)) {
-                            Directory.Delete(entry, recursive: true);
-                        } else {
-                            File.Delete(entry);
-                        }
-                    } catch {
-                        // ignore locked/in-use files
-                    }
-                }
-            } catch {
-                // ignore enumeration errors
             }
         }
     }

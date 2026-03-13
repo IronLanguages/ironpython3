@@ -115,6 +115,17 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType CancelledErrorStorage;
+        public static PythonType CancelledError {
+            get {
+                if (CancelledErrorStorage == null) {
+                    Interlocked.CompareExchange(ref CancelledErrorStorage, CreateSubType(Exception, "CancelledError", (msg, innerException) => new OperationCanceledException(msg, innerException)), null);
+                }
+                return CancelledErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType ArithmeticErrorStorage;
         public static PythonType ArithmeticError {
             get {
@@ -912,6 +923,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is ModuleNotFoundException) return new PythonExceptions._ImportError(PythonExceptions.ModuleNotFoundError);
             if (clrException is NotADirectoryException) return new PythonExceptions._OSError(PythonExceptions.NotADirectoryError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
+            if (clrException is OperationCanceledException) return new PythonExceptions.BaseException(PythonExceptions.CancelledError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
             if (clrException is ProcessLookupException) return new PythonExceptions._OSError(PythonExceptions.ProcessLookupError);
             if (clrException is RecursionException) return new PythonExceptions.BaseException(PythonExceptions.RecursionError);

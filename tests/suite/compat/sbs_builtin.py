@@ -45,7 +45,7 @@ class test_builtin(object):
         import os
 
         if os.name == 'posix':
-            print 'Skipping the xrange test on posix https://github.com/IronLanguages/main/issues/1607'
+            print('Skipping the xrange test on posix https://github.com/IronLanguages/main/issues/1607')
             return
 
         maxint = sys.maxsize

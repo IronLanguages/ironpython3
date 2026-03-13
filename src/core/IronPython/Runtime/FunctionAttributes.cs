@@ -23,6 +23,10 @@ namespace IronPython.Runtime {
         /// </summary>
         Generator = 0x20,
         /// <summary>
+        /// Set if the function is a coroutine (async def).
+        /// </summary>
+        Coroutine = 0x100,
+        /// <summary>
         /// IronPython specific: Set if the function includes nested exception handling and therefore can alter
         /// sys.exc_info().
         /// </summary>

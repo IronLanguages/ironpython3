@@ -41,7 +41,7 @@ def gen_instruction(cw, n):
     func_type_params = ','.join(['CallSite'] + type_names + ['TRet'])
     func_type = 'Func<%s>' % func_type_params
   
-    cw.enter_block('internal class DynamicInstruction<%s> : Instruction' % class_type_params)
+    cw.enter_block('internal sealed class DynamicInstruction<%s> : Instruction' % class_type_params)
     cw.write('private CallSite<%s> _site;' % func_type)
     cw.write('')    
     cw.enter_block('public static Instruction Factory(CallSiteBinder binder)')
@@ -116,7 +116,7 @@ def gen_run_method(cw, n, is_void):
                                                 types, 
                                                 ','.join(param_names)))
         
-    cw.enter_block('if (_compiled != null || TryGetCompiled())')
+    cw.enter_block('if (_compiled is not null || TryGetCompiled())')
     args = ', '.join(['arg%d' % i for i in range(n)])
     if is_void:
         cw.write('((Action%s)_compiled)(%s);' % (types, args))

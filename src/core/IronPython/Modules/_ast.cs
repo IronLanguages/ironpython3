@@ -231,6 +231,8 @@ namespace IronPython.Modules {
                     GlobalStatement s => new Global(s),
                     NonlocalStatement s => new Nonlocal(s),
                     ClassDefinition s => new ClassDef(s),
+                    AsyncForStatement s => new AsyncFor(s),
+                    AsyncWithStatement s => new AsyncWith(s),
                     BreakStatement _ => new Break(),
                     ContinueStatement _ => new Continue(),
                     EmptyStatement _ => new Pass(),
@@ -295,6 +297,7 @@ namespace IronPython.Modules {
                     MemberExpression x => new Attribute(x, ctx),
                     YieldExpression x => new Yield(x),
                     YieldFromExpression x => new YieldFrom(x),
+                    AwaitExpression x => new Await(x),
                     ConditionalExpression x => new IfExp(x),
                     IndexExpression x => new Subscript(x, ctx),
                     SetExpression x => new Set(x),
@@ -3035,6 +3038,108 @@ namespace IronPython.Modules {
             }
 
             public expr value { get; set; }
+        }
+
+        [PythonType]
+        public class Await : expr {
+            public Await() {
+                _fields = PythonTuple.MakeTuple(new[] { nameof(value), });
+            }
+
+            public Await([Optional] expr value, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.value = value;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal Await(AwaitExpression expr)
+                : this() {
+                value = Convert(expr.Expression);
+            }
+
+            internal override AstExpression Revert() {
+                _containsYield = true;
+                return new AwaitExpression(expr.Revert(value));
+            }
+
+            public expr value { get; set; }
+        }
+
+        [PythonType]
+        public class AsyncFor : stmt {
+            public AsyncFor() {
+                _fields = PythonTuple.MakeTuple(new[] { nameof(target), nameof(iter), nameof(body), nameof(orelse) });
+            }
+
+            public AsyncFor(expr target, expr iter, PythonList body, [Optional] PythonList orelse,
+               [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.target = target;
+                this.iter = iter;
+                this.body = body;
+                if (null == orelse)
+                    this.orelse = new PythonList();
+                else
+                    this.orelse = orelse;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal AsyncFor(AsyncForStatement stmt)
+                : this() {
+                target = Convert(stmt.Left, Store.Instance);
+                iter = Convert(stmt.List);
+                body = ConvertStatements(stmt.Body);
+                orelse = ConvertStatements(stmt.Else, true);
+            }
+
+            internal override Statement Revert() {
+                return new AsyncForStatement(expr.Revert(target), expr.Revert(iter), RevertStmts(body), RevertStmts(orelse));
+            }
+
+            public expr target { get; set; }
+
+            public expr iter { get; set; }
+
+            public PythonList body { get; set; }
+
+            public PythonList orelse { get; set; }
+        }
+
+        [PythonType]
+        public class AsyncWith : stmt {
+            public AsyncWith() {
+                _fields = PythonTuple.MakeTuple(new[] { nameof(items), nameof(body) });
+            }
+
+            public AsyncWith(PythonList items, PythonList body,
+                [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.items = items;
+                this.body = body;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal AsyncWith(AsyncWithStatement with)
+                : this() {
+                items = new PythonList(1);
+                items.AddNoLock(new withitem(Convert(with.ContextManager), with.Variable == null ? null : Convert(with.Variable, Store.Instance)));
+                body = ConvertStatements(with.Body);
+            }
+
+            internal override Statement Revert() {
+                Statement statement = RevertStmts(this.body);
+                foreach (withitem item in items) {
+                    statement = new AsyncWithStatement(expr.Revert(item.context_expr), expr.Revert(item.optional_vars), statement);
+                }
+                return statement;
+            }
+
+            public PythonList items { get; set; }
+
+            public PythonList body { get; set; }
         }
     }
 }

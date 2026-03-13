@@ -41,10 +41,6 @@ def load_tests(loader, standard_tests, pattern):
             failing_tests += [
                 test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
             ]
-        if not is_mono:
-            failing_tests += [
-                test.test_socket.GeneralModuleTests('test_getnameinfo'), # https://github.com/IronLanguages/ironpython3/issues/1222
-            ]
         if is_linux:
             failing_tests += [
                 test.test_socket.GeneralModuleTests('test_idna'), # TODO: figure out

@@ -117,7 +117,7 @@ namespace IronPython.Compiler.Ast {
 
         public Expression ReturnAnnotation { get; internal set; }
 
-        internal override bool IsGeneratorMethod => IsGenerator;
+        internal override bool IsGeneratorMethod => IsGenerator || IsAsync;
 
         /// <summary>
         /// The function is a generator
@@ -182,8 +182,12 @@ namespace IronPython.Compiler.Ast {
                     fa |= FunctionAttributes.ContainsTryFinally;
                 }
 
-                if (IsGenerator) {
+                if (IsGenerator || IsAsync) {
                     fa |= FunctionAttributes.Generator;
+                }
+
+                if (IsAsync) {
+                    fa |= FunctionAttributes.Coroutine;
                 }
 
                 if (GeneratorStop) {
@@ -353,8 +357,8 @@ namespace IronPython.Compiler.Ast {
                                 annotations
                             )
                         ),
-                    IsGenerator ?
-                        (MSAst.Expression)new PythonGeneratorExpression(code, GlobalParent.PyContext.Options.CompilationThreshold) :
+                    (IsGenerator || IsAsync) ?
+                        (MSAst.Expression)new PythonGeneratorExpression(code, GlobalParent.PyContext.Options.CompilationThreshold, IsAsync) :
                         (MSAst.Expression)code
                 );
             } else {
@@ -652,10 +656,10 @@ namespace IronPython.Compiler.Ast {
                 new SourceSpan(new SourceLocation(0, start.Line, start.Column), new SourceLocation(0, start.Line, int.MaxValue))));
 
 
-            // For generators, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
+            // For generators/coroutines, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
             // from inside the generator.
-            if (IsGenerator) {
+            if (IsGenerator || IsAsync) {
                 MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(SourceSpan.None);
                 statements.Add(s1);
             }

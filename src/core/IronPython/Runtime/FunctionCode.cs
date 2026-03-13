@@ -750,15 +750,17 @@ namespace IronPython.Runtime {
                 debugProperties // custom payload
             );
 
-            if ((Flags & FunctionAttributes.Generator) == 0) {
+            if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
                 return context.DebugContext.TransformLambda((LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda()), debugInfo);
             }
 
+            bool isCoroutine = (Flags & FunctionAttributes.Coroutine) != 0;
             return Expression.Lambda(
                 Code.Type,
                 new GeneratorRewriter(
                     _lambda.Name,
-                    Compiler.Ast.Node.RemoveFrame(Code.Body)
+                    Compiler.Ast.Node.RemoveFrame(Code.Body),
+                    isCoroutine
                 ).Reduce(
                     _lambda.ShouldInterpret,
                     _lambda.EmitDebugSymbols,
@@ -779,13 +781,15 @@ namespace IronPython.Runtime {
         /// </summary>
         private LightLambdaExpression GetGeneratorOrNormalLambda() {
             LightLambdaExpression finalCode;
-            if ((Flags & FunctionAttributes.Generator) == 0) {
+            if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
                 finalCode = Code;
             } else {
+                bool isCoroutine = (Flags & FunctionAttributes.Coroutine) != 0;
                 finalCode = Code.ToGenerator(
                     _lambda.ShouldInterpret,
                     _lambda.EmitDebugSymbols,
-                    _lambda.GlobalParent.PyContext.Options.CompilationThreshold
+                    _lambda.GlobalParent.PyContext.Options.CompilationThreshold,
+                    isCoroutine
                 );
             }
             return finalCode;

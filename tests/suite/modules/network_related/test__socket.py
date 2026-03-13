@@ -352,11 +352,28 @@ class SocketTest(IronPythonTestCase):
         host, service = _socket.getnameinfo( ("127.0.0.1", 80), 0)
         self.assertEqual(service, "http")
         #IP gives a TypeError
-        #self.assertRaises(SystemError, _socket.getnameinfo, ("127.0.0.1"), 8)
-        #self.assertRaises(SystemError, _socket.getnameinfo, (321), 8)
+        self.assertRaises(TypeError, _socket.getnameinfo, ("127.0.0.1"), 8)
+        self.assertRaises(TypeError, _socket.getnameinfo, (321), 8)
         self.assertRaises(TypeError, _socket.getnameinfo, ("127.0.0.1"), '0')
         self.assertRaises(TypeError, _socket.getnameinfo, ("127.0.0.1", 80, 0, 0, 0), 8)
         self.assertRaises(_socket.gaierror, _socket.getnameinfo, ('no such host will ever exist', 80), 8)
+
+        # try some IPv6 cases
+        ports = {
+            80: "http",
+            443: "https",
+        }
+
+        addresses = ["::1", "::", "::0"]
+        address_num = {"::0": "::"}
+
+        for address in addresses:
+            for port, port_name in ports.items():
+                res = _socket.getnameinfo((address, port), 0)
+                # don't check the host name, unreliable across platforms
+                self.assertEqual(res[1], port_name)
+                res = _socket.getnameinfo((address, port), _socket.NI_NUMERICHOST | _socket.NI_NUMERICSERV)
+                self.assertEqual(res, (address_num.get(address, address), str(port)))
 
     def test_gethostbyaddr(self):
         '''Tests _socket.gethostbyaddr'''

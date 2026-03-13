@@ -17,7 +17,7 @@ def do_dir(dirname):
         if os.path.isdir(filename):
             do_dir(filename)
         elif is_binary(filename):
-            print 'deleting', filename
+            print('deleting', filename)
             os.remove(filename)
 
 TOP_DIR = "c:\\IronPython-0.7"

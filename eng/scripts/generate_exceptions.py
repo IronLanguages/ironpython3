@@ -85,6 +85,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
         ExceptionInfo('Exception', 'IronPython.Runtime.Exceptions.PythonException', None, (), (
                 ExceptionInfo('StopIteration', 'IronPython.Runtime.Exceptions.StopIterationException', None, ('value',), ()),
                 ExceptionInfo('StopAsyncIteration', 'IronPython.Runtime.Exceptions.StopAsyncIterationException', None, ('value',), ()),
+                ExceptionInfo('CancelledError', 'System.OperationCanceledException', None, (), ()),
                 ExceptionInfo('ArithmeticError', 'System.ArithmeticException', None, (), (
                         ExceptionInfo('FloatingPointError', 'IronPython.Runtime.Exceptions.FloatingPointException', None, (), ()),
                         ExceptionInfo('OverflowError', 'System.OverflowException', None, (), ()),
@@ -261,7 +262,13 @@ def gen_topython_helper(cw):
     cw.exit_block()
 
 
+_clr_name_overrides = {
+    'CancelledError': 'OperationCanceledException',
+}
+
 def get_clr_name(e):
+    if e in _clr_name_overrides:
+        return _clr_name_overrides[e]
     return e.replace('Error', '') + 'Exception'
 
 FACTORY = """
@@ -269,8 +276,12 @@ internal static Exception %(name)s(string message) => new %(clrname)s(message);
 public static Exception %(name)s(string format, params object?[] args) => new %(clrname)s(string.Format(format, args));
 """.rstrip()
 
+# Exceptions that map to existing CLR types (no generated CLR class needed),
+# but still need factory methods in PythonOps.
+_factory_only_exceptions = ['CancelledError']
+
 def factory_gen(cw):
-    for e in pythonExcs:
+    for e in pythonExcs + _factory_only_exceptions:
         cw.write(FACTORY, name=e, clrname=get_clr_name(e))
 
 CLASS1 = """\

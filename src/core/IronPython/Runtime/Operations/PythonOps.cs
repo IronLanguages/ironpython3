@@ -3196,6 +3196,14 @@ namespace IronPython.Runtime.Operations {
             return new PythonGenerator(function, next, data);
         }
 
+        public static PythonCoroutine MakeCoroutine(PythonFunction function, MutableTuple data, object generatorCode) {
+            return new PythonCoroutine(MakeGenerator(function, data, generatorCode));
+        }
+
+        public static object MakeCoroutineWrapper(PythonGenerator generator) {
+            return new PythonCoroutine(generator);
+        }
+
         public static object MakeGeneratorExpression(object function, object input) {
             PythonFunction func = (PythonFunction)function;
             return ((Func<PythonFunction, object, object>)func.__code__.Target)(func, input);
@@ -4267,12 +4275,12 @@ namespace IronPython.Runtime.Operations {
             return stack;
         }
 
-        internal static LightLambdaExpression ToGenerator(this LightLambdaExpression code, bool shouldInterpret, bool debuggable, int compilationThreshold) {
+        internal static LightLambdaExpression ToGenerator(this LightLambdaExpression code, bool shouldInterpret, bool debuggable, int compilationThreshold, bool isCoroutine = false) {
 #pragma warning disable CA2263 // Prefer generic overload when type is known
             return Utils.LightLambda(
                 typeof(object),
                 code.Type,
-                new GeneratorRewriter(code.Name, code.Body).Reduce(shouldInterpret, debuggable, compilationThreshold, code.Parameters, x => x),
+                new GeneratorRewriter(code.Name, code.Body, isCoroutine).Reduce(shouldInterpret, debuggable, compilationThreshold, code.Parameters, x => x),
                 code.Name,
                 code.Parameters
             );

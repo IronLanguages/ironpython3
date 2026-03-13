@@ -346,8 +346,23 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
+        // AsyncForStatement
+        public override bool Walk(AsyncForStatement node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
         // AsyncStatement
         public override bool Walk(AsyncStatement node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
+        // AsyncWithStatement
+        public override bool Walk(AsyncWithStatement node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
+        // AwaitExpression
+        public override bool Walk(AwaitExpression node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }

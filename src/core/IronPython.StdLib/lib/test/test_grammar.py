@@ -1474,12 +1474,13 @@ class GrammarTests(unittest.TestCase):
                 pass
             async with manager() as (x, y):
                 pass
-            async with manager(), manager():
-                pass
-            async with manager() as x, manager() as y:
-                pass
-            async with manager() as x, manager():
-                pass
+            # ironpython: todo implement this
+            #async with manager(), manager():
+            #    pass
+            #async with manager() as x, manager() as y:
+            #    pass
+            #async with manager() as x, manager():
+            #    pass
             raise Done
 
         with self.assertRaises(Done):

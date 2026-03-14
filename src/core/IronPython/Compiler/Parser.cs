@@ -1417,7 +1417,7 @@ namespace IronPython.Compiler {
             var withItem = ParseWithItem();
             List<WithItem> items = null;
             while (MaybeEat(TokenKind.Comma)) {
-                if (items == null) {
+                if (items is null) {
                     items = new List<WithItem>();
                 }
 
@@ -1427,7 +1427,7 @@ namespace IronPython.Compiler {
 
             var header = GetEnd();
             Statement body = ParseSuite();
-            if (items != null) {
+            if (items is not null) {
                 for (int i = items.Count - 1; i >= 0; i--) {
                     var curItem = items[i];
                     var innerWith = new WithStatement(curItem.ContextManager, curItem.Variable, body);
@@ -1480,12 +1480,34 @@ namespace IronPython.Compiler {
             }
 
             Eat(TokenKind.KeywordWith);
+
             var withItem = ParseWithItem();
+            List<WithItem> items = null;
+            while (MaybeEat(TokenKind.Comma)) {
+                if (items is null) {
+                    items = new List<WithItem>();
+                }
+
+                items.Add(ParseWithItem());
+            }
+
+
             var header = GetEnd();
             Statement body = ParseSuite();
+            if (items is not null) {
+                for (int i = items.Count - 1; i >= 0; i--) {
+                    var curItem = items[i];
+                    var innerWith = new AsyncWithStatement(curItem.ContextManager, curItem.Variable, body);
+                    innerWith.HeaderIndex = header;
+                    innerWith.SetLoc(_globalParent, withItem.Start, GetEnd());
+                    body = innerWith;
+                    header = GetEnd();
+                }
+            }
+
             AsyncWithStatement ret = new AsyncWithStatement(withItem.ContextManager, withItem.Variable, body);
             ret.HeaderIndex = header;
-            ret.SetLoc(_globalParent, asyncStart, GetEnd());
+            ret.SetLoc(_globalParent, withItem.Start, GetEnd());
             return ret;
         }
 

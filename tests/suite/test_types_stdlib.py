@@ -6,7 +6,7 @@
 ## Run selected tests from test_types from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_linux, is_netcoreapp21
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_types
 

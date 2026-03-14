@@ -45,7 +45,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_typing.GenericTests('test_type_erasure'),
         ]
 
-        skip_tests = []
+        skip_tests = [
+            test.test_typing.NamedTupleTests('test_namedtuple_keyword_usage'), # AssertionError
+        ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

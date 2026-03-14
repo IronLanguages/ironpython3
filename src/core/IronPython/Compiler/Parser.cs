@@ -2349,7 +2349,7 @@ namespace IronPython.Compiler {
 
                 if (MaybeEat(TokenKind.Assign)) {               //  Keyword argument
                     a = FinishKeywordArgument(e);
-                } else if (PeekToken(Tokens.KeywordForToken)) {    //  Generator expression
+                } else if (PeekToken(TokenKind.KeywordFor)) {    //  Generator expression
                     a = ParseGeneratorExpression(e);
                     Eat(TokenKind.RightParenthesis);
                     a.SetLoc(_globalParent, start, GetEnd());
@@ -2608,7 +2608,7 @@ namespace IronPython.Compiler {
                     if (MaybeEat(TokenKind.Comma)) {
                         // "(" expression "," ...
                         ret = FinishExpressionListAsExpr(expr);
-                    } else if (PeekToken(Tokens.KeywordForToken)) {
+                    } else if (PeekToken(TokenKind.KeywordFor)) {
                         // "(" expression "for" ...
                         if (expr is StarredExpression) ReportSyntaxError(expr.StartIndex, expr.EndIndex, "iterable unpacking cannot be used in comprehension");
                         ret = ParseGeneratorExpression(expr);
@@ -2643,9 +2643,9 @@ namespace IronPython.Compiler {
             Statement current = root;
 
             for (; ; ) {
-                if (PeekToken(Tokens.KeywordForToken)) {
+                if (PeekToken(TokenKind.KeywordFor)) {
                     current = NestGenExpr(current, ParseGenExprFor());
-                } else if (PeekToken(Tokens.KeywordIfToken)) {
+                } else if (PeekToken(TokenKind.KeywordIf)) {
                     current = NestGenExpr(current, ParseGenExprIf());
                 } else {
                     // Generator Expressions have an implicit function definition and yield around their expression.
@@ -2763,7 +2763,7 @@ namespace IronPython.Compiler {
                         }
                         var expr = ParseStarExpr();
 
-                        if (PeekToken(Tokens.KeywordForToken)) {
+                        if (PeekToken(TokenKind.KeywordFor)) {
                             if (!first) ReportSyntaxError("invalid syntax");
                         }
 
@@ -2779,7 +2779,7 @@ namespace IronPython.Compiler {
                             }
                             Expression e2 = ParseTest();
 
-                            if (PeekToken(Tokens.KeywordForToken)) {
+                            if (PeekToken(TokenKind.KeywordFor)) {
                                 if (!first) {
                                     ReportSyntaxError("invalid syntax");
                                 }
@@ -2797,7 +2797,7 @@ namespace IronPython.Compiler {
                                 first = true;
                             }
 
-                            if (PeekToken(Tokens.KeywordForToken)) {
+                            if (PeekToken(TokenKind.KeywordFor)) {
                                 if (!first) {
                                     ReportSyntaxError("invalid syntax");
                                 }
@@ -2885,9 +2885,9 @@ namespace IronPython.Compiler {
             iters.Add(firstFor);
 
             while (true) {
-                if (PeekToken(Tokens.KeywordForToken)) {
+                if (PeekToken(TokenKind.KeywordFor)) {
                     iters.Add(ParseCompFor());
-                } else if (PeekToken(Tokens.KeywordIfToken)) {
+                } else if (PeekToken(TokenKind.KeywordIf)) {
                     iters.Add(ParseCompIf());
                 } else {
                     break;
@@ -2943,7 +2943,7 @@ namespace IronPython.Compiler {
                     // (comp_for | (',' (test|star_expr))* [','] )
 
                     // comp_for
-                    if (PeekToken(Tokens.KeywordForToken)) {
+                    if (PeekToken(TokenKind.KeywordFor)) {
                         // although it's calling ParseCompIter(), because the peek token is a FOR it is going to
                         // do the right thing.
                         if (expr is StarredExpression) ReportSyntaxError(expr.StartIndex, expr.EndIndex, "iterable unpacking cannot be used in comprehension");
@@ -3186,7 +3186,7 @@ namespace IronPython.Compiler {
 
             // from __future__
             if (_fromFutureAllowed) {
-                while (PeekToken(Tokens.KeywordFromToken)) {
+                while (PeekToken(TokenKind.KeywordFrom)) {
                     Statement s = ParseStmt();
                     l.Add(s);
                     if (s is FromImportStatement fis && !fis.IsFromFuture) {
@@ -3427,10 +3427,6 @@ namespace IronPython.Compiler {
 
         private bool PeekToken(TokenKind kind) {
             return PeekToken().Kind == kind;
-        }
-
-        private bool PeekToken(Token check) {
-            return PeekToken() == check;
         }
 
         private bool Eat(TokenKind kind) {

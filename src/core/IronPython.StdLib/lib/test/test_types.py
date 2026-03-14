@@ -1264,8 +1264,7 @@ class CoroutineTests(unittest.TestCase):
         # Test that types.coroutine passes 'async def' coroutines
         # without modification
 
-# https://github.com/IronLanguages/ironpython3/issues/1428
-#        async def foo(): pass
+        async def foo(): pass
         foo_code = foo.__code__
         foo_flags = foo.__code__.co_flags
         decorated_foo = types.coroutine(foo)
@@ -1456,9 +1455,8 @@ class CoroutineTests(unittest.TestCase):
         wrapper = foo()
         self.assertIsInstance(wrapper, types._GeneratorWrapper)
 
-# https://github.com/IronLanguages/ironpython3/issues/1428
-#        async def corofunc():
-#            return await foo() + 100
+        async def corofunc():
+            return await foo() + 100
         coro = corofunc()
 
         self.assertEqual(coro.send(None), 'spam')

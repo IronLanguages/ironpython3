@@ -37,7 +37,7 @@ def load_tests(loader, standard_tests, pattern):
             test.test_socket.TestSocketSharing('testTypes'), # https://github.com/IronLanguages/ironpython3/issues/1226
             test.test_socket.UnbufferedFileObjectClassTestCase('testSmallReadNonBlocking'), # TODO: figure out
         ]
-        if is_linux or (is_osx and net_version < (10, 0)):
+        if is_mono:
             failing_tests += [
                 test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
             ]
@@ -62,10 +62,6 @@ def load_tests(loader, standard_tests, pattern):
         if is_posix: # TODO: figure out - failure in teardown
             skip_tests += [
                 test.test_socket.NonBlockingTCPTests('testAccept')
-            ]
-        if is_osx: # TODO: figure out
-            skip_tests += [
-                test.test_socket.NonBlockingTCPTests('testRecv'),
             ]
 
         return generate_suite(tests, failing_tests, skip_tests)

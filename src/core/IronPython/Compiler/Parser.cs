@@ -1457,8 +1457,8 @@ namespace IronPython.Compiler {
 
         // async_stmt: 'async' (funcdef | with_stmt | for_stmt)
         private Statement ParseAsyncStmt() {
-            var start = GetStart();
             Eat(TokenKind.KeywordAsync);
+            var start = GetStart();
 
             switch (PeekToken().Kind) {
                 case TokenKind.KeywordDef:

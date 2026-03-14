@@ -19,16 +19,15 @@ def _g():
     yield 1
 GeneratorType = type(_g())
 
-# https://github.com/IronLanguages/ironpython3/issues/1428
-# async def _c(): pass
-# _c = _c()
-# CoroutineType = type(_c)
-# _c.close()  # Prevent ResourceWarning
-#
-# async def _ag():
-#     yield
-# _ag = _ag()
-# AsyncGeneratorType = type(_ag)
+async def _c(): pass
+_c = _c()
+CoroutineType = type(_c)
+_c.close()  # Prevent ResourceWarning
+
+async def _ag():
+    yield
+_ag = _ag()
+AsyncGeneratorType = type(_ag)
 
 class _C:
     def _m(self): pass
@@ -51,8 +50,8 @@ except TypeError:
 GetSetDescriptorType = type(FunctionType.__code__)
 MemberDescriptorType = type(ModuleType.__dict__["__dict__"]) # ironpython: type(FunctionType.__globals__) is getset_descriptor
 
-del sys, _f, _g, _C,                            # Not for export
-    #_c, # https://github.com/IronLanguages/ironpython3/issues/1428
+del sys, _f, _g, _C, _c,                           # Not for export
+
 
 # Provide a PEP 3115 compliant mechanism for class creation
 def new_class(name, bases=(), kwds=None, exec_body=None):
@@ -228,6 +227,7 @@ def coroutine(func):
         # Check if 'func' is a generator function.
         # (0x20 == CO_GENERATOR)
         if co_flags & 0x20:
+            return func # ironpython: todo figure this out
             # TODO: Implement this in C.
             co = func.__code__
             func.__code__ = CodeType(

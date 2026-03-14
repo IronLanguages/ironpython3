@@ -6,7 +6,7 @@
 ## Run selected tests from test_types from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_linux, is_netcoreapp21
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_types
 
@@ -17,16 +17,9 @@ def load_tests(loader, standard_tests, pattern):
         failing_tests = [
             test.test_types.ClassCreationTests('test_bad___prepare__'), # AssertionError
             test.test_types.ClassCreationTests('test_one_argument_type'), # AssertionError: TypeError not raised
-            test.test_types.CoroutineTests('test_async_def'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_duck_coro'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_duck_corogen'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_duck_functional_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_duck_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
             test.test_types.CoroutineTests('test_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
             test.test_types.CoroutineTests('test_genfunc'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_non_gen_values'), # https://github.com/IronLanguages/ironpython3/issues/98
             test.test_types.CoroutineTests('test_returning_itercoro'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_wrapper_object'), # https://github.com/IronLanguages/ironpython3/issues/98
             test.test_types.MappingProxyTests('test_chainmap'), # TypeError: expected dict, got Object_1$1
             test.test_types.MappingProxyTests('test_constructor'), # TypeError: expected dict, got Object_1$1
             test.test_types.MappingProxyTests('test_customdict'), # AssertionError: False is not true

@@ -190,6 +190,12 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.GetEnumeratorForIteration:
                     res = MakeEnumeratorOperation(operation, args[0]);
                     break;
+                case PythonOperationKind.AIter:
+                    res = MakeUnaryOperation(operation, args[0], "__aiter__", TypeError(operation, "'async for' requires an object with __aiter__ method, got {0}", args));
+                    break;
+                case PythonOperationKind.ANext:
+                    res = MakeUnaryOperation(operation, args[0], "__anext__", TypeError(operation, "'async for' received an invalid object from __aiter__: {0}", args));
+                    break;
                 default:
                     res = BindingHelpers.AddPythonBoxing(MakeBinaryOperation(operation, args, operation.Operation, null));
                     break;

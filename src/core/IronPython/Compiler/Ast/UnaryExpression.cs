@@ -2,20 +2,25 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
+#nullable enable
 
-using System;
 using System.Diagnostics;
 
 using IronPython.Runtime.Binding;
 
-namespace IronPython.Compiler.Ast {
-    using Ast = MSAst.Expression;
-    using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSAst = System.Linq.Expressions;
 
+namespace IronPython.Compiler.Ast {
     public class UnaryExpression : Expression {
         public UnaryExpression(PythonOperator op, Expression expression) {
             Operator = op;
+            OperationKind = PythonOperatorToOperatorString(op);
+            Expression = expression;
+            EndIndex = expression.EndIndex;
+        }
+
+        internal UnaryExpression(PythonOperationKind op, Expression expression) {
+            OperationKind = op;
             Expression = expression;
             EndIndex = expression.EndIndex;
         }
@@ -24,13 +29,10 @@ namespace IronPython.Compiler.Ast {
 
         public PythonOperator Operator { get; }
 
-        public override MSAst.Expression Reduce() {
-            return GlobalParent.Operation(
-                typeof(object),
-                PythonOperatorToOperatorString(Operator),
-                Expression
-            );
-        }
+        internal PythonOperationKind OperationKind { get; }
+
+        public override MSAst.Expression Reduce()
+            => GlobalParent.Operation(typeof(object), OperationKind, Expression);
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {

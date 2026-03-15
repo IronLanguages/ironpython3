@@ -1980,13 +1980,9 @@ namespace IronPython.Compiler {
             return new UnaryExpression(PythonOperator.Negate, ParseFactor());
         }
 
-        // power: ['await'] atom trailer* ['**' factor]
+        // power: atom_expr ['**' factor]
         private Expression ParsePower() {
-            if (MaybeEat(TokenKind.KeywordAwait)) {
-                return ParseAwaitExpression();
-            }
-            Expression ret = ParseAtom();
-            ret = AddTrailers(ret);
+            Expression ret = ParseAtomExpr();
             if (MaybeEat(TokenKind.Power)) {
                 var start = ret.StartIndex;
                 ret = new BinaryExpression(PythonOperator.Power, ret, ParseFactor());
@@ -1995,25 +1991,27 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        // await_expr: 'await' unary_expr (essentially power level)
-        private Expression ParseAwaitExpression() {
-            FunctionDefinition current = CurrentFunction;
-            if (current == null || !current.IsAsync) {
-                ReportSyntaxError("'await' outside async function");
+        // atom_expr: ['await'] atom trailer*
+        private Expression ParseAtomExpr() {
+            var isAsync = MaybeEat(TokenKind.KeywordAwait);
+            if (isAsync) {
+                FunctionDefinition current = CurrentFunction;
+                if (current is null || !current.IsAsync) {
+                    ReportSyntaxError("'await' outside async function");
+                }
+                if (current is not null) {
+                    current.IsGenerator = true;
+                    current.GeneratorStop = GeneratorStop;
+                }
             }
 
-            if (current != null) {
-                current.IsGenerator = true;
-                current.GeneratorStop = GeneratorStop;
+            Expression ret = ParseAtom();
+            ret = AddTrailers(ret);
+            if (isAsync) {
+                var start = ret.StartIndex;
+                ret = new AwaitExpression(ret);
+                ret.SetLoc(_globalParent, start, GetEnd());
             }
-
-            var start = GetStart();
-
-            // Parse the awaitable expression at the unary level
-            Expression expr = ParsePower();
-
-            var ret = new AwaitExpression(expr);
-            ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
 

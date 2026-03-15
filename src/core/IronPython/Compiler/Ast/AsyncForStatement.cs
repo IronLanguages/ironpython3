@@ -7,6 +7,7 @@
 using System.Threading;
 
 using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
 
 using MSAst = System.Linq.Expressions;
 
@@ -94,7 +95,7 @@ namespace IronPython.Compiler.Ast {
             // except StopAsyncIteration: __running = False
             var falseConst = SetScope(new ConstantExpression(false));
             var stopRunning = SetScope(new AssignmentStatement([SetScope(new NameExpression(runningName))], falseConst));
-            var handler = SetScope(new TryStatementHandler(SetScope(new NameExpression("StopAsyncIteration")), null!, SetScope(new SuiteStatement([stopRunning]))));
+            var handler = SetScope(new TryStatementHandler(SetScope(new NameExpression(nameof(PythonExceptions.StopAsyncIteration))), null!, SetScope(new SuiteStatement([stopRunning]))));
             handler.HeaderIndex = span.End;
 
             // try/except/else block

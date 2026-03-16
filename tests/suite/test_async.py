@@ -296,6 +296,20 @@ class AsyncForTest(unittest.TestCase):
 
         self.assertEqual(run_coro(test()), [110, 120, 210, 220])
 
+    def test_special_method_lookup(self):
+        """Ensure async for looks up __aiter__/__anext__ on the type, not the instance."""
+
+        a = AsyncIter([1, 2, 3])
+        a.__aiter__ = lambda: AsyncIter([98])  # should be ignored
+        a.__anext__ = lambda: 99  # should be ignored
+
+        async def test():
+            result = []
+            async for x in a:
+                result.append(x)
+            return result
+
+        self.assertEqual(run_coro(test()), [1, 2, 3])
 
 class AsyncCombinedTest(unittest.TestCase):
     """Tests combining async with and async for."""

@@ -6,7 +6,9 @@
 
 using System.Threading;
 
-using Microsoft.Scripting;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -78,8 +80,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             // _iter = ITER.__aiter__()
-            var aiterAttr = SetScope(new MemberExpression(List, "__aiter__"));
-            var aiterCall = SetScope(new CallExpression(aiterAttr, null, null));
+            var aiterCall = SetScope(new UnaryExpression(PythonOperationKind.AIter, List));
             var assignIter = SetScope(new AssignmentStatement([SetScope(new NameExpression(iterName))], aiterCall));
 
             // running = True
@@ -87,15 +88,14 @@ namespace IronPython.Compiler.Ast {
             var assignRunning = SetScope(new AssignmentStatement([SetScope(new NameExpression(runningName))], trueConst));
 
             // TARGET = await __aiter.__anext__()
-            var anextAttr = SetScope(new MemberExpression(SetScope(new NameExpression(iterName)), "__anext__"));
-            var anextCall = SetScope(new CallExpression(anextAttr, null, null));
+            var anextCall = SetScope(new UnaryExpression(PythonOperationKind.ANext, SetScope(new NameExpression(iterName))));
             var awaitNext = new AwaitExpression(anextCall);
             var assignTarget = SetScope(new AssignmentStatement([Left], awaitNext));
 
             // except StopAsyncIteration: __running = False
             var falseConst = SetScope(new ConstantExpression(false));
             var stopRunning = SetScope(new AssignmentStatement([SetScope(new NameExpression(runningName))], falseConst));
-            var handler = SetScope(new TryStatementHandler(SetScope(new NameExpression("StopAsyncIteration")), null!, SetScope(new SuiteStatement([stopRunning]))));
+            var handler = SetScope(new TryStatementHandler(SetScope(new NameExpression(nameof(PythonExceptions.StopAsyncIteration))), null!, SetScope(new SuiteStatement([stopRunning]))));
             handler.HeaderIndex = span.End;
 
             // try/except/else block

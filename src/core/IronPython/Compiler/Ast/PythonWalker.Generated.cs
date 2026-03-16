@@ -144,10 +144,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(AsyncForStatement node) { return true; }
         public virtual void PostWalk(AsyncForStatement node) { }
 
-        // AsyncStatement
-        public virtual bool Walk(AsyncStatement node) { return true; }
-        public virtual void PostWalk(AsyncStatement node) { }
-
         // AsyncWithStatement
         public virtual bool Walk(AsyncWithStatement node) { return true; }
         public virtual void PostWalk(AsyncWithStatement node) { }
@@ -414,10 +410,6 @@ namespace IronPython.Compiler.Ast {
         // AsyncForStatement
         public override bool Walk(AsyncForStatement node) { return false; }
         public override void PostWalk(AsyncForStatement node) { }
-
-        // AsyncStatement
-        public override bool Walk(AsyncStatement node) { return false; }
-        public override void PostWalk(AsyncStatement node) { }
 
         // AsyncWithStatement
         public override bool Walk(AsyncWithStatement node) { return false; }

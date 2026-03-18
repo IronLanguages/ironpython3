@@ -234,8 +234,8 @@ def generate_suite(tests, failing_tests, skip_tests=[]):
 #     if not rowan_root:
 #         rowan_root = sys.prefix
 #         if is_cli:
-#             if System.IO.Directory.Exists(path_combine(rowan_root, '../../Src')):
-#                 basePyDir = '../../Src'
+#             if System.IO.Directory.Exists(path_combine(rowan_root, '../../src')):
+#                 basePyDir = '../../src'
 
 #     # get some directories and files
 #     ip_root             = path_combine(rowan_root, basePyDir)

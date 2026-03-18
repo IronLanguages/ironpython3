@@ -16,7 +16,7 @@ root_dir = get_root_dir()
 
 source_directories = [
     os.path.join(root_dir, "src"),
-    os.path.join(root_dir, "src", "dlr", "Src"),
+    os.path.join(root_dir, "src", "dlr", "src"),
 ]
 
 exclude_directories = [

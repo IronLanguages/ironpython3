@@ -6,7 +6,9 @@
 
 using System.Threading;
 
-using Microsoft.Scripting;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -70,60 +72,42 @@ namespace IronPython.Compiler.Ast {
             var iterName = $"__asyncfor_iter{id}";
             var runningName = $"__asyncfor_running{id}";
 
-            // Helper to create nodes with proper parent and span
-            NameExpression MakeName(string name) {
-                var n = new NameExpression(name) { Parent = parent };
-                n.IndexSpan = span;
-                return n;
-            }
-
-            T WithSpan<T>(T node) where T : Node {
+            // Helper to assign proper parent and span to nodes
+            T SetScope<T>(T node) where T : Node {
+                node.Parent = parent;
                 node.IndexSpan = span;
                 return node;
             }
 
             // _iter = ITER.__aiter__()
-            var aiterAttr = WithSpan(new MemberExpression(List, "__aiter__") { Parent = parent });
-            var aiterCall = WithSpan(new CallExpression(aiterAttr, null, null) { Parent = parent });
-            var assignIter = WithSpan(new AssignmentStatement(new Expression[] { MakeName(iterName) }, aiterCall) { Parent = parent });
+            var aiterCall = SetScope(new UnaryExpression(PythonOperationKind.AIter, List));
+            var assignIter = SetScope(new AssignmentStatement([SetScope(new NameExpression(iterName))], aiterCall));
 
             // running = True
-            var trueConst = new ConstantExpression(true) { Parent = parent }; trueConst.IndexSpan = span;
-            var assignRunning = WithSpan(new AssignmentStatement(new Expression[] { MakeName(runningName) }, trueConst) { Parent = parent });
+            var trueConst = SetScope(new ConstantExpression(true));
+            var assignRunning = SetScope(new AssignmentStatement([SetScope(new NameExpression(runningName))], trueConst));
 
             // TARGET = await __aiter.__anext__()
-            var anextAttr = WithSpan(new MemberExpression(MakeName(iterName), "__anext__") { Parent = parent });
-            var anextCall = WithSpan(new CallExpression(anextAttr, null, null) { Parent = parent });
+            var anextCall = SetScope(new UnaryExpression(PythonOperationKind.ANext, SetScope(new NameExpression(iterName))));
             var awaitNext = new AwaitExpression(anextCall);
-            var assignTarget = WithSpan(new AssignmentStatement(new Expression[] { Left }, awaitNext) { Parent = parent });
+            var assignTarget = SetScope(new AssignmentStatement([Left], awaitNext));
 
             // except StopAsyncIteration: __running = False
-            var falseConst = new ConstantExpression(false) { Parent = parent }; falseConst.IndexSpan = span;
-            var stopRunning = WithSpan(new AssignmentStatement(
-                new Expression[] { MakeName(runningName) }, falseConst) { Parent = parent });
-            var handler = WithSpan(new TryStatementHandler(
-                MakeName("StopAsyncIteration"),
-                null!,
-                WithSpan(new SuiteStatement(new Statement[] { stopRunning }) { Parent = parent })
-            ) { Parent = parent });
+            var falseConst = SetScope(new ConstantExpression(false));
+            var stopRunning = SetScope(new AssignmentStatement([SetScope(new NameExpression(runningName))], falseConst));
+            var handler = SetScope(new TryStatementHandler(SetScope(new NameExpression(nameof(PythonExceptions.StopAsyncIteration))), null!, SetScope(new SuiteStatement([stopRunning]))));
             handler.HeaderIndex = span.End;
 
             // try/except/else block
-            var tryExcept = WithSpan(new TryStatement(
-                assignTarget,
-                new[] { handler },
-                WithSpan(new SuiteStatement(new Statement[] { Body }) { Parent = parent }),
-                null!
-            ) { Parent = parent });
+            var tryExcept = SetScope(new TryStatement(assignTarget, [handler], SetScope(new SuiteStatement([Body])), null));
             tryExcept.HeaderIndex = span.End;
 
             // while __running: try/except/else
-            var whileStmt = new WhileStatement(MakeName(runningName), tryExcept, Else);
+            var whileStmt = new WhileStatement(SetScope(new NameExpression(runningName)), tryExcept, Else);
             whileStmt.SetLoc(GlobalParent, span.Start, span.End, span.End);
             whileStmt.Parent = parent;
 
-            var suite = WithSpan(new SuiteStatement(new Statement[] { assignIter, assignRunning, whileStmt }) { Parent = parent });
-            return suite;
+            return SetScope(new SuiteStatement([assignIter, assignRunning, whileStmt]));
         }
 
         public override MSAst.Expression Reduce() {

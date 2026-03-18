@@ -45,7 +45,7 @@ namespace IronPython.Compiler {
         private SourceUnit _sourceUnit;
 
         /// <summary>
-        /// Language features initialized on parser construction and possibly updated during parsing. 
+        /// Language features initialized on parser construction and possibly updated during parsing.
         /// The code can set the language features (e.g. "from __future__ import division").
         /// </summary>
         private ModuleOptions _languageFeatures;
@@ -376,7 +376,7 @@ namespace IronPython.Compiler {
                 Severity.FatalError);
         }
 
-        #endregion        
+        #endregion
 
         #region LL(1) Parsing
 
@@ -403,7 +403,7 @@ namespace IronPython.Compiler {
         }
 
         //stmt: simple_stmt | compound_stmt
-        //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt        
+        //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt
         private Statement ParseStmt() {
             switch (PeekToken().Kind) {
                 case TokenKind.KeywordIf:
@@ -465,7 +465,7 @@ namespace IronPython.Compiler {
 
         /*
         small_stmt: expr_stmt | del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
-        
+
         del_stmt: 'del' exprlist
         pass_stmt: 'pass'
         flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
@@ -557,7 +557,7 @@ namespace IronPython.Compiler {
 
         // yield_stmt: yield_expr
         private Statement ParseYieldStmt() {
-            // For yield statements, continue to enforce that it's currently in a function. 
+            // For yield statements, continue to enforce that it's currently in a function.
             // This gives us better syntax error reporting for yield-statements than for yield-expressions.
             FunctionDefinition current = CurrentFunction;
             if (current == null) {
@@ -577,7 +577,7 @@ namespace IronPython.Compiler {
 
         /// <summary>
         /// Peek if the next token is a 'yield' and parse a yield expression. Else return null.
-        /// 
+        ///
         /// Called w/ yield already eaten.
         /// </summary>
         /// <returns>A yield expression if present, else null. </returns>
@@ -589,7 +589,7 @@ namespace IronPython.Compiler {
             // Mark that this function is actually a generator.
             // If we're in a generator expression, then we don't have a function yet.
             //    g=((yield i) for i in range(5))
-            // In that acse, the genexp will mark IsGenerator. 
+            // In that acse, the genexp will mark IsGenerator.
             FunctionDefinition current = CurrentFunction;
             if (current != null) {
                 current.IsGenerator = true;
@@ -761,7 +761,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        // import_stmt: 'import' module ['as' name"] (',' module ['as' name])*        
+        // import_stmt: 'import' module ['as' name"] (',' module ['as' name])*
         // name: identifier
         private ImportStatement ParseImportStmt() {
             Eat(TokenKind.KeywordImport);
@@ -834,8 +834,8 @@ namespace IronPython.Compiler {
 
 
         // 'from' relative_module 'import' identifier ['as' name] (',' identifier ['as' name]) *
-        // 'from' relative_module 'import' '(' identifier ['as' name] (',' identifier ['as' name])* [','] ')'        
-        // 'from' module 'import' "*"                                        
+        // 'from' relative_module 'import' '(' identifier ['as' name] (',' identifier ['as' name])* [','] ')'
+        // 'from' module 'import' "*"
         private FromImportStatement ParseFromImportStmt() {
             Eat(TokenKind.KeywordFrom);
             var start = GetStart();
@@ -1336,7 +1336,7 @@ namespace IronPython.Compiler {
             return ParseLambdaHelperEnd(func, expr);
         }
 
-        // Helpers for parsing lambda expressions. 
+        // Helpers for parsing lambda expressions.
         // Usage
         //   FunctionDefinition f = ParseLambdaHelperStart(string);
         //   Expression expr = ParseXYZ();
@@ -1357,7 +1357,7 @@ namespace IronPython.Compiler {
         }
 
         private Expression ParseLambdaHelperEnd(FunctionDefinition func, Expression expr) {
-            // Pep 342 in Python 2.5 allows Yield Expressions, which can occur inside a Lambda body. 
+            // Pep 342 in Python 2.5 allows Yield Expressions, which can occur inside a Lambda body.
             // In this case, the lambda is a generator and will yield it's final result instead of just return it.
             Statement body;
             if (func.IsGenerator) {
@@ -1417,17 +1417,16 @@ namespace IronPython.Compiler {
             var withItem = ParseWithItem();
             List<WithItem> items = null;
             while (MaybeEat(TokenKind.Comma)) {
-                if (items == null) {
+                if (items is null) {
                     items = new List<WithItem>();
                 }
 
                 items.Add(ParseWithItem());
             }
 
-
             var header = GetEnd();
             Statement body = ParseSuite();
-            if (items != null) {
+            if (items is not null) {
                 for (int i = items.Count - 1; i >= 0; i--) {
                     var curItem = items[i];
                     var innerWith = new WithStatement(curItem.ContextManager, curItem.Variable, body);
@@ -1456,16 +1455,18 @@ namespace IronPython.Compiler {
         }
 
         // async_stmt: 'async' (funcdef | with_stmt | for_stmt)
-        private Statement ParseAsyncStmt() {
-            var start = GetStart();
+        private Statement ParseAsyncStmt(bool onlyAllowDef = false) {
             Eat(TokenKind.KeywordAsync);
+            var start = GetStart();
 
             switch (PeekToken().Kind) {
                 case TokenKind.KeywordDef:
                     return ParseFuncDef(true);
                 case TokenKind.KeywordWith:
+                    if (onlyAllowDef) goto default;
                     return ParseAsyncWithStmt(start);
                 case TokenKind.KeywordFor:
+                    if (onlyAllowDef) goto default;
                     return ParseAsyncForStmt(start);
                 default:
                     ReportSyntaxError("invalid syntax");
@@ -1480,12 +1481,33 @@ namespace IronPython.Compiler {
             }
 
             Eat(TokenKind.KeywordWith);
+
             var withItem = ParseWithItem();
+            List<WithItem> items = null;
+            while (MaybeEat(TokenKind.Comma)) {
+                if (items is null) {
+                    items = new List<WithItem>();
+                }
+
+                items.Add(ParseWithItem());
+            }
+
             var header = GetEnd();
             Statement body = ParseSuite();
+            if (items is not null) {
+                for (int i = items.Count - 1; i >= 0; i--) {
+                    var curItem = items[i];
+                    var innerWith = new AsyncWithStatement(curItem.ContextManager, curItem.Variable, body);
+                    innerWith.HeaderIndex = header;
+                    innerWith.SetLoc(_globalParent, withItem.Start, GetEnd());
+                    body = innerWith;
+                    header = GetEnd();
+                }
+            }
+
             AsyncWithStatement ret = new AsyncWithStatement(withItem.ContextManager, withItem.Variable, body);
             ret.HeaderIndex = header;
-            ret.SetLoc(_globalParent, asyncStart, GetEnd());
+            ret.SetLoc(_globalParent, withItem.Start, GetEnd());
             return ret;
         }
 
@@ -1958,13 +1980,9 @@ namespace IronPython.Compiler {
             return new UnaryExpression(PythonOperator.Negate, ParseFactor());
         }
 
-        // power: ['await'] atom trailer* ['**' factor]
+        // power: atom_expr ['**' factor]
         private Expression ParsePower() {
-            if (MaybeEat(TokenKind.KeywordAwait)) {
-                return ParseAwaitExpression();
-            }
-            Expression ret = ParseAtom();
-            ret = AddTrailers(ret);
+            Expression ret = ParseAtomExpr();
             if (MaybeEat(TokenKind.Power)) {
                 var start = ret.StartIndex;
                 ret = new BinaryExpression(PythonOperator.Power, ret, ParseFactor());
@@ -1973,25 +1991,27 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        // await_expr: 'await' unary_expr (essentially power level)
-        private Expression ParseAwaitExpression() {
-            FunctionDefinition current = CurrentFunction;
-            if (current == null || !current.IsAsync) {
-                ReportSyntaxError("'await' outside async function");
+        // atom_expr: ['await'] atom trailer*
+        private Expression ParseAtomExpr() {
+            var isAsync = MaybeEat(TokenKind.KeywordAwait);
+            if (isAsync) {
+                FunctionDefinition current = CurrentFunction;
+                if (current is null || !current.IsAsync) {
+                    ReportSyntaxError("'await' outside async function");
+                }
+                if (current is not null) {
+                    current.IsGenerator = true;
+                    current.GeneratorStop = GeneratorStop;
+                }
             }
 
-            if (current != null) {
-                current.IsGenerator = true;
-                current.GeneratorStop = GeneratorStop;
+            Expression ret = ParseAtom();
+            ret = AddTrailers(ret);
+            if (isAsync) {
+                var start = ret.StartIndex;
+                ret = new AwaitExpression(ret);
+                ret.SetLoc(_globalParent, start, GetEnd());
             }
-
-            var start = GetStart();
-
-            // Parse the awaitable expression at the unary level
-            Expression expr = ParsePower();
-
-            var ret = new AwaitExpression(expr);
-            ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
 
@@ -2620,7 +2640,7 @@ namespace IronPython.Compiler {
                     // Generator Expressions have an implicit function definition and yield around their expression.
                     //  (x for i in R)
                     // becomes:
-                    //   def f(): 
+                    //   def f():
                     //     for i in R: yield (x)
                     ExpressionStatement ys = new ExpressionStatement(new YieldExpression(expr));
                     ys.Expression.SetLoc(_globalParent, expr.IndexSpan);
@@ -3129,13 +3149,13 @@ namespace IronPython.Compiler {
             List<Statement> l = new List<Statement>();
 
             //
-            // A future statement must appear near the top of the module. 
-            // The only lines that can appear before a future statement are: 
-            // - the module docstring (if any), 
-            // - comments, 
-            // - blank lines, and 
-            // - other future statements. 
-            // 
+            // A future statement must appear near the top of the module.
+            // The only lines that can appear before a future statement are:
+            // - the module docstring (if any),
+            // - comments,
+            // - blank lines, and
+            // - other future statements.
+            //
 
             MaybeEatNewLine();
 
@@ -3209,6 +3229,12 @@ namespace IronPython.Compiler {
                         }
                         return null;
 
+                    case TokenKind.KeywordAsync:
+                        parsingMultiLineCmpdStmt = true;
+                        s = ParseAsyncStmt(onlyAllowDef: true);
+                        EatEndOfInput();
+                        break;
+
                     case TokenKind.KeywordIf:
                     case TokenKind.KeywordWhile:
                     case TokenKind.KeywordFor:
@@ -3246,11 +3272,11 @@ namespace IronPython.Compiler {
         /// <summary>
         /// Maybe eats a new line token returning true if the token was
         /// eaten.
-        /// 
-        /// Python always tokenizes to have only 1  new line character in a 
-        /// row.  But we also craete NLToken's and ignore them except for 
-        /// error reporting purposes.  This gives us the same errors as 
-        /// CPython and also matches the behavior of the standard library 
+        ///
+        /// Python always tokenizes to have only 1  new line character in a
+        /// row.  But we also craete NLToken's and ignore them except for
+        /// error reporting purposes.  This gives us the same errors as
+        /// CPython and also matches the behavior of the standard library
         /// tokenize module.  This function eats any present NL tokens and throws
         /// them away.
         /// </summary>
@@ -3263,12 +3289,12 @@ namespace IronPython.Compiler {
         }
 
         /// <summary>
-        /// Eats a new line token throwing if the next token isn't a new line.  
-        /// 
-        /// Python always tokenizes to have only 1  new line character in a 
-        /// row.  But we also craete NLToken's and ignore them except for 
-        /// error reporting purposes.  This gives us the same errors as 
-        /// CPython and also matches the behavior of the standard library 
+        /// Eats a new line token throwing if the next token isn't a new line.
+        ///
+        /// Python always tokenizes to have only 1  new line character in a
+        /// row.  But we also craete NLToken's and ignore them except for
+        /// error reporting purposes.  This gives us the same errors as
+        /// CPython and also matches the behavior of the standard library
         /// tokenize module.  This function eats any present NL tokens and throws
         /// them away.
         /// </summary>
@@ -3294,7 +3320,7 @@ namespace IronPython.Compiler {
             if (_sourceReader.BaseReader is StreamReader sr && sr.BaseStream.CanSeek) {
                 // TODO: Convert exception index to proper SourceLocation
             }
-            // BUG: We have some weird stream and we can't accurately track the 
+            // BUG: We have some weird stream and we can't accurately track the
             // position where the exception came from.  There are too many levels
             // of buffering below us to re-wind and calculate the actual line number, so
             // we'll give the last line number the tokenizer was at.

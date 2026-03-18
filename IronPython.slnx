@@ -1,11 +1,11 @@
 <Solution>
   <Folder Name="/DLR/">
-    <Project Path="src/dlr/Src/Microsoft.Dynamic/Microsoft.Dynamic.csproj" />
-    <Project Path="src/dlr/Src/Microsoft.Scripting.Metadata/Microsoft.Scripting.Metadata.csproj" />
-    <Project Path="src/dlr/Src/Microsoft.Scripting/Microsoft.Scripting.csproj" />
+    <Project Path="src/dlr/src/core/Microsoft.Dynamic/Microsoft.Dynamic.csproj" />
+    <Project Path="src/dlr/src/core/Microsoft.Scripting.Metadata/Microsoft.Scripting.Metadata.csproj" />
+    <Project Path="src/dlr/src/core/Microsoft.Scripting/Microsoft.Scripting.csproj" />
   </Folder>
   <Folder Name="/DLR/Tests/">
-    <Project Path="src/dlr/Tests/ClrAssembly/ClrAssembly.csproj" />
+    <Project Path="src/dlr/tests/ClrAssembly/ClrAssembly.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />

@@ -52,6 +52,10 @@
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(ContinuousIntegrationBuild)' == 'true' ">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
   <PropertyGroup>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
@@ -108,7 +112,6 @@
   <Import Project="$(BuildSysDir)\$(TargetFramework).props" Condition="'$(TargetFramework)' != ''" />
 
   <PropertyGroup>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>1573;1591</NoWarn>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

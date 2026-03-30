@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <!-- ensure ClrAssembly is built before IronPythonTest -->
-    <ProjectReference Include="..\..\src\dlr\Tests\ClrAssembly\ClrAssembly.csproj">
+    <ProjectReference Include="..\..\src\dlr\tests\ClrAssembly\ClrAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

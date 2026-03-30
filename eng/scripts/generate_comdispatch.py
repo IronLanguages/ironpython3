@@ -55,7 +55,7 @@ class VariantType:
 
         # Getter
         if not transparent and self.critical: gen_exposed_code_security(cw)
-        cw.enter_block("get")
+        cw.enter_block("readonly get")
         cw.write("Debug.Assert(VariantType == VarEnum.VT_%s);" % self.variantType)
         if self.getStatements == None:
             cw.write("return _typeUnion._unionTypes.%s;" % self.managedFieldName)

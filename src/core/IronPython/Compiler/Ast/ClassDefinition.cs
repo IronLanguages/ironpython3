@@ -407,10 +407,10 @@ namespace IronPython.Compiler.Ast {
 
                 var finder = new SelfNameFinder(function, parameters[0]);
                 function.Body.Walk(finder);
-                return ArrayUtils.ToArray(finder._names.Keys);
+                return [..finder._names];
             }
 
-            private readonly Dictionary<string, bool> _names = new Dictionary<string, bool>(StringComparer.Ordinal);
+            private readonly HashSet<string> _names = new(StringComparer.Ordinal);
 
             private bool IsSelfReference(Expression expr) {
                 return expr is NameExpression ne
@@ -426,7 +426,7 @@ namespace IronPython.Compiler.Ast {
                 foreach (Expression lhs in node.Left) {
                     if (lhs is MemberExpression me) {
                         if (IsSelfReference(me.Target)) {
-                            _names[me.Name] = true;
+                            _names.Add(me.Name);
                         }
                     }
                 }

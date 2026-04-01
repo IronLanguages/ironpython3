@@ -17,21 +17,8 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_functools.TestCmpToKeyC('test_bad_cmp'), # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-            test.test_functools.TestCmpToKeyC('test_cmp_to_key'), # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-            test.test_functools.TestCmpToKeyC('test_cmp_to_key_arguments'), # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-            test.test_functools.TestCmpToKeyC('test_hash'), # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-            test.test_functools.TestCmpToKeyC('test_obj_field'), # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-            test.test_functools.TestCmpToKeyC('test_sort_int'), # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
-            test.test_functools.TestCmpToKeyC('test_sort_int_str'), # TypeError: cmp_to_key() takes exactly 1 argument (2 given)
             test.test_functools.TestPartialCSubclass('test_attributes_unwritable'), # AssertionError: AttributeError not raised by setattr
-            test.test_functools.TestPartialCSubclass('test_repr'), # AssertionError
         ]
-        if sys.version_info < (3, 6):
-            failing_tests += [
-                test.test_functools.TestPartialC('test_setstate_refcount'), # AttributeError: 'partial' object has no attribute '__setstate__'
-                test.test_functools.TestPartialCSubclass('test_setstate_refcount'), # AttributeError: 'PartialSubclass' object has no attribute '__setstate__'
-            ]
         if sys.version_info >= (3, 6):
             failing_tests += [
                 test.test_functools.TestLRUC('test_lru_cache_threaded'), # unittest.expectedFailure(
@@ -46,7 +33,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_functools.TestPartialCSubclass('test_copy'), # AttributeError: 'partial' object has no attribute 'attr'
                 test.test_functools.TestPartialCSubclass('test_deepcopy'), # AttributeError: 'partial' object has no attribute 'attr'
                 test.test_functools.TestPartialCSubclass('test_keystr_replaces_value'), # AssertionError: 'astr' not found in '<CPartialSubclass object at 0x00000000000000A8>'
-                test.test_functools.TestPartialCSubclass('test_recursive_repr'), # AssertionError: 'functools.partial(...)' != 'CPartialSubclass(...)'
                 test.test_functools.TestPartialCSubclass('test_setstate'), # AssertionError: Tuples differ: (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {'attr': []}) != (<function capture at 0x000000000000008D>, (1,), {'a': 10}, {})
                 test.test_functools.TestPartialCSubclass('test_setstate_subclasses'), # AssertionError: <class 'test.test_functools.MyDict'> is not <class 'dict'>
                 test.test_functools.TestTotalOrdering('test_pickle'), # pickle.PicklingError: Can't pickle

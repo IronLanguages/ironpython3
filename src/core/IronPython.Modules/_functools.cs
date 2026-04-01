@@ -160,11 +160,8 @@ namespace IronPython.Modules {
             }
 
             // This exists for subtypes because we don't yet automap DeleteMember onto __delattr__
-            public void __delattr__([NotNone] string name) {
-                if (name == "__dict__") Delete__dict__();
-
-                _dict?.Remove(name);
-            }
+            public void __delattr__(CodeContext context, [NotNone] string name)
+                => DeleteMember(context, name);
 
             public PythonTuple __reduce__() {
                 return PythonTuple.MakeTuple(
@@ -192,6 +189,18 @@ namespace IronPython.Modules {
                 }
             }
 
+            public void __setstate__(CodeContext context, object? state) {
+                if (state is PythonTuple t) {
+                    __setstate__(context, t);
+                    return;
+                }
+#if PYTHON_34
+                throw PythonOps.SystemError("new style getargs format but argument is not a tuple");
+#else
+                throw PythonOps.TypeError("invalid partial state");
+#endif
+            }
+
             public string __repr__(CodeContext context) {
                 var infinite = PythonOps.GetAndCheckInfinite(this);
                 if (infinite == null) {
@@ -202,7 +211,12 @@ namespace IronPython.Modules {
                 infinite.Add(this);
                 try {
                     var builder = new StringBuilder();
-                    builder.Append("functools.partial(");
+                    if (GetType() == typeof(partial)) {
+                        builder.Append("functools.partial(");
+                    } else {
+                        builder.Append(PythonOps.GetPythonTypeName(this));
+                        builder.Append('(');
+                    }
                     builder.Append(PythonOps.Repr(context, func));
                     foreach (var x in _args) {
                         builder.Append(", ");
@@ -350,6 +364,48 @@ namespace IronPython.Modules {
             }
 
             #endregion
+        }
+
+        public static KeyWrapper cmp_to_key(CodeContext/*!*/ context, object? mycmp) {
+            return new KeyWrapper(mycmp, null);
+        }
+
+        [PythonType, PythonHidden]
+        public sealed class KeyWrapper {
+            private readonly object? cmp;
+            public object? obj;
+
+            internal KeyWrapper(object? cmp, object? obj) {
+                this.cmp = cmp;
+                this.obj = obj;
+            }
+
+            public KeyWrapper __call__(object? obj) => new KeyWrapper(cmp, obj);
+
+            private object? CompareTo(CodeContext/*!*/ context, object? other) {
+                if (other is not KeyWrapper kw) throw PythonOps.TypeError("other argument must be K instance");
+                return PythonCalls.Call(context, cmp, obj, kw.obj);
+            }
+
+            public object? __lt__(CodeContext/*!*/ context, object? other)
+                => PythonOps.RichCompare(context, CompareTo(context, other), 0, PythonOperationKind.LessThan);
+
+            public object? __gt__(CodeContext/*!*/ context, object? other)
+                => PythonOps.RichCompare(context, CompareTo(context, other), 0, PythonOperationKind.GreaterThan);
+
+            public object? __eq__(CodeContext/*!*/ context, object? other)
+                => PythonOps.RichCompare(context, CompareTo(context, other), 0, PythonOperationKind.Equal);
+
+            public object? __le__(CodeContext/*!*/ context, object? other)
+                => PythonOps.RichCompare(context, CompareTo(context, other), 0, PythonOperationKind.LessThanOrEqual);
+
+            public object? __ge__(CodeContext/*!*/ context, object? other)
+                => PythonOps.RichCompare(context, CompareTo(context, other), 0, PythonOperationKind.GreaterThanOrEqual);
+
+            public object? __ne__(CodeContext/*!*/ context, object? other)
+                => PythonOps.RichCompare(context, CompareTo(context, other), 0, PythonOperationKind.NotEqual);
+
+            public const object __hash__ = null;
         }
     }
 }

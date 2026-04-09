@@ -74,20 +74,20 @@
       <Using Namespace="System.Text.RegularExpressions" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
-        try {
-          System.Text.RegularExpressions.Regex replaceRegex = new System.Text.RegularExpressions.Regex(Expression);
-          foreach(ITaskItem item in Files) {
-            string fileName = item.ItemSpec;
-            Log.LogMessage(string.Format("Updating File \"{0}\".", fileName));
-            string buffer = File.ReadAllText(fileName);
-            buffer = replaceRegex.Replace(buffer, Replacement);
-            File.WriteAllText(fileName, buffer);
-          }
-          Success = true;
-        } catch(Exception ex) {
-          Success = false;
-          Log.LogErrorFromException(ex);
-        }
+            try {
+                System.Text.RegularExpressions.Regex replaceRegex = new System.Text.RegularExpressions.Regex(Expression);
+                foreach (ITaskItem item in Files) {
+                    string fileName = item.ItemSpec;
+                    Log.LogMessage(string.Format("Updating File \"{0}\".", fileName));
+                    string buffer = File.ReadAllText(fileName);
+                    buffer = replaceRegex.Replace(buffer, Replacement);
+                    File.WriteAllText(fileName, buffer);
+                }
+                Success = true;
+            } catch (Exception ex) {
+                Success = false;
+                Log.LogErrorFromException(ex);
+            }
         ]]>
       </Code>
     </Task>

@@ -74,7 +74,7 @@ if (-not $ZipFile) {
         # Script run from within a checked out code base
         # Locate the zip archive in the standard location of the package target
         $projectRoot = $PSScriptRoot | Split-Path | Split-Path
-        $zipFiles = @(Resolve-Path (Join-Path $projectRoot "Package/Release/Packages/IronPython-*/IronPython.3.*.zip"))
+        $zipFiles = @(Resolve-Path (Join-Path $projectRoot "dist/Release/Packages/IronPython-*/IronPython.3.*.zip"))
         if ($zipFiles.Count -gt 1) {
             Write-Error (@("Ambiguous implicit project zip files:") + $zipFiles -join "`n")
         } elseif ($zipFiles.Count -lt 1) {

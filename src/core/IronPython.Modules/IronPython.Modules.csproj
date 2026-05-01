@@ -5,6 +5,16 @@
     <BaseAddress>885063680</BaseAddress>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EmitCompilerGeneratedFiles>True</EmitCompilerGeneratedFiles>
+    <MeziantouPolyfill_IncludedPolyfills>
+      T:System.Diagnostics.CodeAnalysis.AllowNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.NotNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
+      T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
+      M:System.String.EndsWith(System.Char);
+    </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
@@ -30,6 +40,13 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.120">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

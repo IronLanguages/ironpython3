@@ -611,10 +611,5 @@ namespace IronPython.Modules {
 
             #endregion
         }
-
-#if !NETCOREAPP
-        private static bool Contains(this string str, char value)
-            => str.IndexOf(value) != -1;
-#endif
     }
 }

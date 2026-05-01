@@ -5,6 +5,21 @@
     <BaseAddress>879755264</BaseAddress>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EmitCompilerGeneratedFiles>True</EmitCompilerGeneratedFiles>
+    <MeziantouPolyfill_IncludedPolyfills>
+      T:System.Diagnostics.CodeAnalysis.AllowNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute;
+      T:System.Diagnostics.CodeAnalysis.NotNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
+      T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
+      T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute;
+      M:System.String.StartsWith(System.Char);
+      M:System.String.EndsWith(System.Char);
+      M:System.String.Contains(System.Char);
+    </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>
 
   <ItemGroup>
@@ -50,7 +65,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nullable" Version="1.3.1">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.120">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

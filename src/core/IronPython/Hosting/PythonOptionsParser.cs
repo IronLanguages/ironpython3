@@ -150,12 +150,12 @@ namespace IronPython.Hosting {
             }
 
             if (arg == "/?" || arg == "--help") {
-                HandleOptions("h".AsSpan());
+                HandleOptions("h");
                 return;
             }
 
             if (arg == "--version") {
-                HandleOptions("V".AsSpan());
+                HandleOptions("V");
                 return;
             }
 

@@ -375,7 +375,7 @@ namespace IronPython.Runtime {
             return PythonTypeOps.CallParams(context, cls, new Bytes(hex));
         }
 
-        public string hex() => ToHex(_bytes.AsSpan()); // new in CPython 3.5
+        public string hex() => ToHex(_bytes); // new in CPython 3.5
 
         internal static string ToHex(ReadOnlySpan<byte> bytes) {
             if (bytes.Length == 0) return string.Empty;
@@ -395,13 +395,13 @@ namespace IronPython.Runtime {
         // new in CPython 3.8
         public string hex([NotNone] string sep, int bytes_per_sep = 1) {
             if (sep.Length != 1) throw PythonOps.ValueError($"{nameof(sep)} must be length 1");
-            return ToHex(_bytes.AsSpan(), sep[0], bytes_per_sep);
+            return ToHex(_bytes, sep[0], bytes_per_sep);
         }
 
         // new in CPython 3.8
         public string hex([BytesLike, NotNone] IList<byte> sep, int bytes_per_sep = 1) {
             if (sep.Count != 1) throw PythonOps.ValueError($"{nameof(sep)} must be length 1");
-            return ToHex(_bytes.AsSpan(), (char)sep[0], bytes_per_sep);
+            return ToHex(_bytes, (char)sep[0], bytes_per_sep);
         }
 
         internal static string ToHex(ReadOnlySpan<byte> bytes, char sep, int bytes_per_sep) {
@@ -1077,9 +1077,9 @@ namespace IronPython.Runtime {
 
         #region Implementation Details
 
-        internal ReadOnlyMemory<byte> AsMemory() => _bytes.AsMemory();
+        internal ReadOnlyMemory<byte> AsMemory() => _bytes;
 
-        internal ReadOnlySpan<byte> AsSpan() => _bytes.AsSpan();
+        internal ReadOnlySpan<byte> AsSpan() => _bytes;
 
         internal static bool TryInvokeBytesOperator(CodeContext context, object? obj, [NotNullWhen(true)] out Bytes? bytes) {
             if (PythonTypeOps.TryInvokeUnaryOperator(context, obj, "__bytes__", out object? res)) {

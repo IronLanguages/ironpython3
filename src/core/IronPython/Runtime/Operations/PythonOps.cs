@@ -3689,10 +3689,6 @@ namespace IronPython.Runtime.Operations {
             return StringOps.Latin1Encoding.GetString(byteArr, startIdx, maxBytes);
         }
 
-        internal static string MakeString(this Span<byte> bytes) {
-            return MakeString((ReadOnlySpan<byte>)bytes);
-        }
-
         internal static string MakeString(this ReadOnlySpan<byte> bytes) {
             if (bytes.IsEmpty) {
                 return string.Empty;

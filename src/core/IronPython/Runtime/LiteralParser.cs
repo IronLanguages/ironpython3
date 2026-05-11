@@ -219,7 +219,7 @@ namespace IronPython.Runtime {
 #nullable enable
 
         private static bool TryParseExpression(Parser parser, ReadOnlySpan<char> data, [NotNullWhen(true)] out Expression? expression, [NotNullWhen(false)] out string? error) {
-            if (data.TrimStart(" \t\f\r\n".AsSpan()).Length == 0) {
+            if (data.TrimStart(" \t\f\r\n").Length == 0) {
                 expression = null;
                 error = "f-string: empty expression not allowed";
                 return false;
@@ -649,7 +649,7 @@ namespace IronPython.Runtime {
         }
 
         public static object ParseInteger(string text, int b) {
-            if (TryParseInteger(text.AsSpan(), b, false, out object val)) {
+            if (TryParseInteger(text, b, false, out object val)) {
                 return val;
             }
             throw new ValueErrorException($"invalid literal with base {b}: {text}");

@@ -555,14 +555,14 @@ namespace IronPython.Runtime.Types {
 
             string baseDir = Path.GetDirectoryName(location);
             string baseFile = Path.GetFileNameWithoutExtension(location) + ".xml";
-            string xml = Path.Combine(Path.Combine(baseDir, ci.Name), baseFile);
+            string xml = Path.Combine(baseDir, ci.Name, baseFile);
 
             bool isRef = false;
 
             if (!File.Exists(xml)) {
                 int hyphen = ci.Name.IndexOf('-');
                 if (hyphen != -1) {
-                    xml = Path.Combine(Path.Combine(baseDir, ci.Name.Substring(0, hyphen)), baseFile);
+                    xml = Path.Combine(baseDir, ci.Name.Substring(0, hyphen), baseFile);
                 }
                 if (!File.Exists(xml)) {
                     xml = Path.Combine(baseDir, baseFile);
@@ -571,10 +571,8 @@ namespace IronPython.Runtime.Types {
                         // On .NET 4.0 documentation is in the reference assembly location
                         // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(
-                            Path.Combine(
-                                Environment.GetFolderPath(Environment.Is64BitProcess ? Environment.SpecialFolder.ProgramFilesX86 : Environment.SpecialFolder.ProgramFiles), 
-                                _frameworkReferencePath
-                            ),
+                            Environment.GetFolderPath(Environment.Is64BitProcess ? Environment.SpecialFolder.ProgramFilesX86 : Environment.SpecialFolder.ProgramFiles), 
+                            _frameworkReferencePath,
                             baseFile
                         );
                         isRef = true;

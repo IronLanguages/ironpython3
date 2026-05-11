@@ -422,7 +422,7 @@ x = 42", scope);
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
             // This test file is encoded in Windows codepage 1251 (Cyrilic) but lacks a magic comment (PEP-263)
-            string fileName = Path.Combine(Path.Combine(Common.ScriptTestDirectory, "encoded_files"), "cp20472.py");
+            string fileName = Path.Combine(Common.ScriptTestDirectory, "encoded_files", "cp20472.py");
             try {
                 _pe.CreateScriptSourceFromFile(fileName).Compile();
 

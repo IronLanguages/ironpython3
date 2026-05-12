@@ -16,9 +16,9 @@
       T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
       T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
       T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute;
-      M:System.String.StartsWith(System.Char);
-      M:System.String.EndsWith(System.Char);
       M:System.String.Contains(System.Char);
+      M:System.String.EndsWith(System.Char);
+      M:System.String.StartsWith(System.Char);
     </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>
 

@@ -193,7 +193,7 @@ the assembly object.")]
             if (file.Length == 0) throw new ValueErrorException("assembly name must not be empty string");
             ContractUtils.RequiresNotNull(context, nameof(context));
 
-            if (file.IndexOf(Path.DirectorySeparatorChar) != -1) {
+            if (file.Contains(Path.DirectorySeparatorChar)) {
                 throw new ValueErrorException("filenames must not contain full paths, first add the path to sys.path");
             }
 

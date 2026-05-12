@@ -13,6 +13,7 @@
       T:System.Diagnostics.CodeAnalysis.NotNullAttribute;
       T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
       T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
+      M:System.String.Contains(System.Char);
       M:System.String.EndsWith(System.Char);
     </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>

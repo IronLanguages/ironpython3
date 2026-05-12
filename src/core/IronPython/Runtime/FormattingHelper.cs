@@ -107,9 +107,9 @@ namespace IronPython.Runtime {
                         // that isn't. After all, it would be pretty weird to produce:
                         // 000,xxx,xxx,xxx. So, produce 0,000,xxx,xxx,xxx instead.
                         // (Just like CPython)
-                        if (separator.IndexOf(res[beginningOfMaximumWidth]) != -1) {
+                        if (separator.Contains(res[beginningOfMaximumWidth])) {
                             for (int i = beginningOfMaximumWidth - 1; i >= 0; i--) {
-                                if (separator.IndexOf(res[i]) == -1) {
+                                if (!separator.Contains(res[i])) {
                                     res.Remove(0, i);
                                     break;
                                 }

@@ -97,7 +97,6 @@ dotnet_diagnostic.CA2208.severity = suggestion  # CA2208: Instantiate argument e
 dotnet_diagnostic.CA2211.severity = none        # CA2211: Non-constant fields should not be visible
 dotnet_diagnostic.CA2219.severity = suggestion  # CA2219: Do not raise exceptions in finally clauses
 dotnet_diagnostic.CA2229.severity = suggestion  # CA2229: Implement serialization constructors
-dotnet_diagnostic.CA2249.severity = suggestion  # CA2249: Consider using 'string.Contains' instead of 'string.IndexOf'
 dotnet_diagnostic.CA2263.severity = none        # CA2263: Prefer generic overload when type is known
 dotnet_diagnostic.CA3075.severity = suggestion  # CA3075: Insecure DTD processing in XML
 dotnet_diagnostic.CA5350.severity = suggestion  # CA5350: Do Not Use Weak Cryptographic Algorithms

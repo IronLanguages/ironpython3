@@ -933,7 +933,7 @@ namespace IronPython.Runtime {
 
             text = text.Trim();
 
-            if (string.IsNullOrEmpty(text) || text.IndexOf(' ') != -1) {
+            if (string.IsNullOrEmpty(text) || text.Contains(' ')) {
                 throw ExnMalformed();
             }
 

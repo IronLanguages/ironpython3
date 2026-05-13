@@ -1221,7 +1221,7 @@ namespace IronPython.Modules {
                     if (space) {
                         sb.Append(' ');
                     }
-                    if (strarg.IndexOf(' ') != -1) {
+                    if (strarg.Contains(' ')) {
                         sb.Append('"');
                         // double quote any existing quotes
                         sb.Append(strarg.Replace("\"", "\"\""));
@@ -2398,7 +2398,7 @@ the 'status' value."),
         }
 
         private static void VerifyPath(string path, string functionName, string argName) {
-            if (path.IndexOf((char)0) != -1) throw PythonOps.ValueError($"{functionName}: embedded null character in {argName}");
+            if (path.Contains((char)0)) throw PythonOps.ValueError($"{functionName}: embedded null character in {argName}");
         }
 
         [SupportedOSPlatform("windows")]

@@ -155,7 +155,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static PythonTuple LookupEncoding(CodeContext/*!*/ context, string encoding) {
-            if (encoding.IndexOf('\0') != -1) {
+            if (encoding.Contains('\0')) {
                 throw PythonOps.TypeError("lookup string cannot contain null character");
             }
             //compute encoding.ToLower().Replace(' ', '-') but ToLower only on ASCII letters
@@ -2109,7 +2109,7 @@ namespace IronPython.Runtime.Operations {
         public static object ImportBottom(CodeContext/*!*/ context, string fullName, int level) {
             object module = Importer.ImportLightThrow(context, fullName, null, level);
 
-            if (!LightExceptions.IsLightException(module) && fullName.IndexOf('.') >= 0) {
+            if (!LightExceptions.IsLightException(module) && fullName.Contains('.')) {
                 // Extract bottom from the imported module chain
                 string[] parts = fullName.Split('.');
 

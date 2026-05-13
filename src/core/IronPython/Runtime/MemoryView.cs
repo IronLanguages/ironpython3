@@ -516,7 +516,7 @@ namespace IronPython.Runtime {
         }
 
         private static bool IsSupportedTypecode(char code) {
-            return ValidCodes.IndexOf(code) >= 0;
+            return ValidCodes.Contains(code);
         }
 
         private static void UnpackBytes(char typecode, object o, Span<byte> dest) {

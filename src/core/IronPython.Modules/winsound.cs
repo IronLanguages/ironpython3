@@ -90,7 +90,7 @@ For flag values, ored together, see module documentation.")]
                 if (((flags & SND_ASYNC) == SND_ASYNC) && ((flags & SND_MEMORY) == SND_MEMORY)) throw PythonOps.RuntimeError("Cannot play asynchronously from memory");
                 if ((flags & SND_MEMORY) == SND_MEMORY) throw PythonOps.TypeError($"a bytes-like object is required, not '{PythonOps.GetPythonTypeName(sound)}'");
 
-                if (sound.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null character");
+                if (sound.Contains((char)0)) throw PythonOps.ValueError("embedded null character");
 
                 if (!PlaySound(sound, IntPtr.Zero, flags)) {
                     throw PythonOps.RuntimeError("Failed to play sound");

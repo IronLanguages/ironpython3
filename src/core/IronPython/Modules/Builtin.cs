@@ -206,7 +206,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             string sfilename = PythonOps.FsPathDecoded(context, filename);
             var sourceCodeKind = ValidateCompileMode(mode);
 
-            if (source.IndexOf('\0') != -1) {
+            if (source.Contains('\0')) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 

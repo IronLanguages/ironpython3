@@ -356,8 +356,7 @@ namespace IronPython.Runtime {
             /// spec to compute those values.
             /// </summary>
             private string/*!*/ ReplaceComputedFormats(string/*!*/ formatSpec) {
-                int computeStart = formatSpec.IndexOf('{');
-                if (computeStart != -1) {
+                if (formatSpec.Contains('{')) {
                     _depth++;
                     formatSpec = ReplaceText(formatSpec);
                     _depth--;

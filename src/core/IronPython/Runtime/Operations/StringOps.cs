@@ -297,7 +297,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool __contains__([NotNone] string s, char item) {
-            return s.IndexOf(item) != -1;
+            return s.Contains(item);
         }
 
         public static string __format__(CodeContext/*!*/ context, [NotNone] string self, [NotNone] string formatSpec) {
@@ -1520,7 +1520,7 @@ namespace IronPython.Runtime.Operations {
         internal static string Quote(string s) {
             StringBuilder b = new StringBuilder(s.Length + 5);
             char quote = '\'';
-            if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
+            if (s.Contains('\'') && !s.Contains('\"')) {
                 quote = '\"';
             }
             b.Append(quote);

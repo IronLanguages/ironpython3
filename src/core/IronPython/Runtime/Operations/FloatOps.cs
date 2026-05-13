@@ -760,7 +760,7 @@ namespace IronPython.Runtime.Operations {
 
             // if it's not round trippable though use .NET's round-trip format
             res = self.ToString("R", CultureInfo.InvariantCulture);
-            if (trailingZeroAfterWholeFloat && res.IndexOf('.') == -1) {
+            if (trailingZeroAfterWholeFloat && !res.Contains('.')) {
                 res += ".0";
             }
             return res;

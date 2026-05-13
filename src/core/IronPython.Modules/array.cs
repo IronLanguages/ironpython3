@@ -865,7 +865,7 @@ namespace IronPython.Modules {
                 if (_typeCode == 'u') {
                     char quote = '\'';
                     string s = new string(((ArrayData<char>)_data).Data, 0, _data.Count);
-                    if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
+                    if (s.Contains('\'') && !s.Contains('\"')) {
                         quote = '\"';
                     }
 

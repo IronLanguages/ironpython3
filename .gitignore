@@ -6,6 +6,7 @@
 *.suo
 *.csproj.user
 launchSettings.json
+*.lscache
 
 # Build results
 obj/

@@ -15,6 +15,7 @@
       T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
       M:System.String.Contains(System.Char);
       M:System.String.EndsWith(System.Char);
+      M:System.Text.Encoding.GetString(System.ReadOnlySpan{System.Byte});
     </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>
 

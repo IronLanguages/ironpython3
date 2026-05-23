@@ -3197,12 +3197,136 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static PythonCoroutine MakeCoroutine(PythonFunction function, MutableTuple data, object generatorCode) {
+#if FEATURE_NET_ASYNC
+            // Under runtime-async, async functions never produce a PythonGenerator;
+            // FunctionDefinition compiles them through AsyncExpression and
+            // PythonOps.MakeAsyncCoroutine.  This path is for plain generators
+            // only, kept here for ABI parity with non-FEATURE_NET_ASYNC builds.
+            throw new System.InvalidOperationException("MakeCoroutine is unused under FEATURE_NET_ASYNC");
+#else
             return new PythonCoroutine(MakeGenerator(function, data, generatorCode));
+#endif
         }
 
         public static object MakeCoroutineWrapper(PythonGenerator generator) {
+#if FEATURE_NET_ASYNC
+            throw new System.InvalidOperationException("MakeCoroutineWrapper is unused under FEATURE_NET_ASYNC");
+#else
             return new PythonCoroutine(generator);
+#endif
         }
+
+#if FEATURE_NET_ASYNC
+        /// <summary>
+        /// Converts an arbitrary value yielded into an <c>await</c> expression
+        /// to a <see cref="System.Threading.Tasks.Task{T}"/> of object that the
+        /// DLR runtime-async runner can drive.
+        /// </summary>
+        public static System.Threading.Tasks.Task<object?> AsTaskForAwait(object? value) {
+            if (value is PythonCoroutine coro) return coro.AsTask();
+            if (value is System.Threading.Tasks.Task<object?> typedTask) return typedTask;
+            if (value is System.Threading.Tasks.Task task) return BoxTaskResult(task);
+
+#if NETCOREAPP
+            // TODO : simplify
+            // ValueTask / ValueTask<T>: convert to a regular Task via AsTask() and box through the same path.
+            if (value is System.Threading.Tasks.ValueTask vt) return BoxTaskResult(vt.AsTask());
+
+            System.Type? valueType = value?.GetType();
+            if (valueType is not null
+                && valueType.IsGenericType
+                && valueType.GetGenericTypeDefinition() == typeof(System.Threading.Tasks.ValueTask<>)) {
+
+                if (value is System.Threading.Tasks.ValueTask<object?> vtObj) return vtObj.AsTask();
+                var asTask = (System.Threading.Tasks.Task)valueType.GetMethod("AsTask")!.Invoke(value, null)!;
+                // ValueTask<object?>.AsTask() is already Task<object?> — return it directly (same fast
+                // path as the top-level Task<object?> check); only box when the result type differs.
+                return asTask is System.Threading.Tasks.Task<object?> already ? already : BoxTaskResult(asTask);
+            }
+#endif
+
+            // PEP 492 awaitable protocol fallback: any object exposing __await__ that returns an
+            // iterator (user-defined awaitables, and the AsyncEnumeratorAwaitable produced by
+            // `async for` over IAsyncEnumerable<T>). The native Task/coroutine/ValueTask fast paths
+            // above mean a plain `await Task` never reaches here.
+            if (TryGetBoundAttr(value, "__await__", out object? awaitMethod)) {
+                object? iterator = PythonCalls.Call(DefaultContext.Default, awaitMethod);
+                return DriveAwaitIterator(iterator);
+            }
+
+            throw TypeError("object of type '{0}' can't be used in 'await' expression", PythonOps.GetPythonTypeName(value));
+        }
+
+        /// <summary>
+        /// Drives a Python awaitable's <c>__await__()</c> iterator to completion, returning a
+        /// <see cref="System.Threading.Tasks.Task{T}"/> of object that yields the awaitable's result.
+        /// The iterator follows the generator/yield-from protocol: each step yields an awaitable
+        /// (typically a Task) and the chain terminates with <c>StopIteration</c> whose value is the
+        /// <c>await</c> result. Mirrors the legacy generator-pump <c>AsTask</c>, but async and at the
+        /// Python-iterator level.
+        /// </summary>
+        private static async System.Threading.Tasks.Task<object?> DriveAwaitIterator(object? iterator) {
+            CodeContext context = DefaultContext.Default;
+            // Generators feed the awaited result back via send(); plain iterators (e.g. iter([]))
+            // only support __next__() and ignore sent values.
+            bool hasSend = TryGetBoundAttr(context, iterator, "send", out object? sendMethod);
+            object? sendValue = null;
+            while (true) {
+                object? yielded;
+                try {
+                    yielded = hasSend
+                        ? PythonCalls.Call(context, sendMethod, sendValue)
+                        : Invoke(context, iterator, "__next__");
+                } catch (StopIterationException e) {
+                    return StopIterationValue(e);
+                }
+                // A [LightThrowing] __next__/send may return a light-exception sentinel rather than
+                // throwing — handle both forms.
+                if (LightExceptions.IsLightException(yielded)) {
+                    var clrExc = LightExceptions.GetLightException(yielded!);
+                    if (clrExc is StopIterationException si) return StopIterationValue(si);
+                    throw clrExc;
+                }
+                // The yielded value is itself awaitable — drive it and feed the result back in.
+                sendValue = await AsTaskForAwait(yielded);
+            }
+
+            static object? StopIterationValue(StopIterationException e)
+                => ((IPythonAwareException)e).PythonException is PythonExceptions._StopIteration si ? si.value : null;
+        }
+
+        private static async System.Threading.Tasks.Task<object?> BoxTaskResult(System.Threading.Tasks.Task task) {
+            await task;
+            // Generic Task<T>: pull the result out and box it. The runtime type
+            // may be a Task<T> subclass (e.g. AsyncStateMachineBox<...>), so
+            // walk up to find Task<T>.
+            System.Type? t = task.GetType();
+            while (t is not null) {
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(System.Threading.Tasks.Task<>)) {
+                    if (!t.GenericTypeArguments[0].IsVisible) return null; // VoidTaskResult etc.
+                    return t.GetProperty("Result")!.GetValue(task);
+                }
+                t = t.BaseType;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Wraps a runtime-async function's <see cref="System.Threading.Tasks.Task"/>
+        /// in a <see cref="PythonCoroutine"/> for the caller of <c>async def</c>.
+        /// The supplied <see cref="System.Threading.CancellationTokenSource"/> and exception-override
+        /// box are pre-bound to <see cref="Microsoft.Scripting.Runtime.AsyncHelpers.DriveAsync"/>'s
+        /// cancellation channel — the coroutine uses them to implement <c>coro.throw(exc)</c> on a
+        /// running body (set the box, cancel the CTS).
+        /// </summary>
+        public static PythonCoroutine MakeAsyncCoroutine(
+                PythonFunction function,
+                System.Threading.Tasks.Task<object?> task,
+                System.Threading.CancellationTokenSource cts,
+                System.Runtime.CompilerServices.StrongBox<System.Exception?> cancellationException) {
+            return new PythonCoroutine(task, function.__name__, function.__code__, cts, cancellationException);
+        }
+#endif
 
         public static object MakeGeneratorExpression(object function, object input) {
             PythonFunction func = (PythonFunction)function;

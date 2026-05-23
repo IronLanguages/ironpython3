@@ -6,15 +6,43 @@
 
 using MSAst = System.Linq.Expressions;
 
+using IronPython.Runtime.Operations;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     /// <summary>
-    /// Represents an await expression. Implemented as yield from expr.__await__().
+    /// Represents <c>await expr</c>. Under <c>FEATURE_NET_ASYNC</c> this compiles
+    /// directly to a DLR runtime-async suspension point. Otherwise it is
+    /// desugared into <c>yield from expr.__await__()</c> against the enclosing
+    /// generator-shaped coroutine state machine.
     /// </summary>
     public class AwaitExpression : Expression {
+#if FEATURE_NET_ASYNC
+        public AwaitExpression(Expression expression) {
+            Expression = expression;
+        }
+
+        public Expression Expression { get; }
+
+        public override MSAst.Expression Reduce() {
+            // await x -> AsyncHelpers-driven suspension on the Task produced by
+            // PythonOps.AsTaskForAwait(x).
+            return AstUtils.Await(
+                Ast.Call(
+                    AstMethods.AsTaskForAwait,
+                    AstUtils.Convert(Expression, typeof(object))));
+        }
+
+        public override void Walk(PythonWalker walker) {
+            if (walker.Walk(this)) {
+                Expression?.Walk(walker);
+            }
+            walker.PostWalk(this);
+        }
+#else
         private readonly Statement _statement;
         private readonly NameExpression _result;
 
@@ -60,6 +88,7 @@ namespace IronPython.Compiler.Ast {
             }
             walker.PostWalk(this);
         }
+#endif
 
         public override string NodeName => "await expression";
     }

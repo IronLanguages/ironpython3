@@ -80,6 +80,10 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo FormatString = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatString);
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
         public static readonly MethodInfo MakeCoroutine = GetMethod((Func<PythonFunction, MutableTuple, object, PythonCoroutine>)PythonOps.MakeCoroutine);
+#if FEATURE_NET_ASYNC
+        public static readonly MethodInfo AsTaskForAwait = GetMethod((Func<object, System.Threading.Tasks.Task<object>>)PythonOps.AsTaskForAwait);
+        public static readonly MethodInfo MakeAsyncCoroutine = GetMethod((Func<PythonFunction, System.Threading.Tasks.Task<object>, System.Threading.CancellationTokenSource, System.Runtime.CompilerServices.StrongBox<System.Exception>, PythonCoroutine>)PythonOps.MakeAsyncCoroutine);
+#endif
 
         // builtins
         public static readonly MethodInfo Format = GetMethod((Func<CodeContext, object, string, string>)PythonOps.Format);

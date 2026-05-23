@@ -117,7 +117,15 @@ namespace IronPython.Compiler.Ast {
 
         public Expression ReturnAnnotation { get; internal set; }
 
+#if FEATURE_NET_ASYNC
+        // Under runtime-async, async functions are compiled directly to a
+        // Task<object?> via the DLR's AsyncExpression rather than reused
+        // through the generator state machine, so IsAsync no longer implies
+        // generator-shaped emission.
+        internal override bool IsGeneratorMethod => IsGenerator;
+#else
         internal override bool IsGeneratorMethod => IsGenerator || IsAsync;
+#endif
 
         /// <summary>
         /// The function is a generator
@@ -182,9 +190,15 @@ namespace IronPython.Compiler.Ast {
                     fa |= FunctionAttributes.ContainsTryFinally;
                 }
 
+#if FEATURE_NET_ASYNC
+                if (IsGenerator) {
+                    fa |= FunctionAttributes.Generator;
+                }
+#else
                 if (IsGenerator || IsAsync) {
                     fa |= FunctionAttributes.Generator;
                 }
+#endif
 
                 if (IsAsync) {
                     fa |= FunctionAttributes.Coroutine;
@@ -357,9 +371,15 @@ namespace IronPython.Compiler.Ast {
                                 annotations
                             )
                         ),
+#if FEATURE_NET_ASYNC
+                    IsGenerator ?
+                        (MSAst.Expression)new PythonGeneratorExpression(code, GlobalParent.PyContext.Options.CompilationThreshold, IsAsync) :
+                        (MSAst.Expression)code
+#else
                     (IsGenerator || IsAsync) ?
                         (MSAst.Expression)new PythonGeneratorExpression(code, GlobalParent.PyContext.Options.CompilationThreshold, IsAsync) :
                         (MSAst.Expression)code
+#endif
                 );
             } else {
                 ret = Ast.Call(
@@ -659,10 +679,17 @@ namespace IronPython.Compiler.Ast {
             // For generators/coroutines, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
             // from inside the generator.
+#if FEATURE_NET_ASYNC
+            if (IsGenerator) {
+                MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(SourceSpan.None);
+                statements.Add(s1);
+            }
+#else
             if (IsGenerator || IsAsync) {
                 MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(SourceSpan.None);
                 statements.Add(s1);
             }
+#endif
 
             if (Body.CanThrow && !(Body is SuiteStatement) && Body.StartIndex != -1) {
                 statements.Add(UpdateLineNumber(GlobalParent.IndexToLocation(Body.StartIndex).Line));
@@ -680,6 +707,31 @@ namespace IronPython.Compiler.Ast {
             body = WrapScopeStatements(body, Body.CanThrow);
             body = Ast.Block(body, AstUtils.Empty());
             body = AddReturnTarget(body);
+
+#if FEATURE_NET_ASYNC
+            // Under runtime-async, an `async def` body returns a PythonCoroutine wrapping a
+            // Task<object?>. We pre-allocate a CancellationTokenSource and a StrongBox<Exception?>
+            // here so the same instances are shared with both AsyncExpression (which threads them into
+            // AsyncHelpers.DriveAsync) and PythonCoroutine (which uses them to implement
+            // coro.throw(exc) on a running coroutine: write the exception to the box, cancel the CTS,
+            // and DriveAsync surfaces that exception in place of OperationCanceledException).
+            if (IsAsync) {
+                var cts = MSAst.Expression.Variable(typeof(System.Threading.CancellationTokenSource), "$cts");
+                var excBox = MSAst.Expression.Variable(typeof(System.Runtime.CompilerServices.StrongBox<Exception>), "$cancelExc");
+                body = MSAst.Expression.Block(
+                    new[] { cts, excBox },
+                    MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(System.Threading.CancellationTokenSource))),
+                    MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(System.Runtime.CompilerServices.StrongBox<Exception>))),
+                    Ast.Call(
+                        AstMethods.MakeAsyncCoroutine,
+                        _functionParam,
+                        AstUtils.Async(Name, body,
+                            MSAst.Expression.Property(cts, nameof(System.Threading.CancellationTokenSource.Token)),
+                            excBox),
+                        cts,
+                        excBox));
+            }
+#endif
 
             MSAst.Expression bodyStmt = body;
             if (localContext != null) {

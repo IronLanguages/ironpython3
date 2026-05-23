@@ -750,11 +750,23 @@ namespace IronPython.Runtime {
                 debugProperties // custom payload
             );
 
+#if FEATURE_NET_ASYNC
+            // Under runtime-async, Coroutine is informational (kept for
+            // __code__.co_flags) — async function bodies are already lowered
+            // through AsyncExpression and must not go through the
+            // generator rewriter here.
+            if ((Flags & FunctionAttributes.Generator) == 0) {
+#else
             if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
+#endif
                 return context.DebugContext.TransformLambda((LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda()), debugInfo);
             }
 
+#if FEATURE_NET_ASYNC
+            const bool isCoroutine = false;
+#else
             bool isCoroutine = (Flags & FunctionAttributes.Coroutine) != 0;
+#endif
             return Expression.Lambda(
                 Code.Type,
                 new GeneratorRewriter(
@@ -781,10 +793,18 @@ namespace IronPython.Runtime {
         /// </summary>
         private LightLambdaExpression GetGeneratorOrNormalLambda() {
             LightLambdaExpression finalCode;
+#if FEATURE_NET_ASYNC
+            if ((Flags & FunctionAttributes.Generator) == 0) {
+#else
             if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
+#endif
                 finalCode = Code;
             } else {
+#if FEATURE_NET_ASYNC
+                const bool isCoroutine = false;
+#else
                 bool isCoroutine = (Flags & FunctionAttributes.Coroutine) != 0;
+#endif
                 finalCode = Code.ToGenerator(
                     _lambda.ShouldInterpret,
                     _lambda.EmitDebugSymbols,

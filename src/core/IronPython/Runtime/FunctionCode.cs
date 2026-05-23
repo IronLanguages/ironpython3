@@ -751,11 +751,12 @@ namespace IronPython.Runtime {
             );
 
 #if FEATURE_NET_ASYNC
-            // Under runtime-async, Coroutine is informational (kept for
-            // __code__.co_flags) — async function bodies are already lowered
-            // through AsyncExpression and must not go through the
-            // generator rewriter here.
-            if ((Flags & FunctionAttributes.Generator) == 0) {
+            // Under runtime-async, async bodies are lowered before they reach here and must NOT go through
+            // the generator rewriter: plain async (Coroutine, no Generator) via AsyncExpression, and async
+            // generators (Generator+Coroutine) via AsyncEnumerableExpression. Only a plain generator
+            // (Generator without Coroutine) is rewritten here. Coroutine is otherwise informational
+            // (kept for __code__.co_flags).
+            if ((Flags & FunctionAttributes.Generator) == 0 || (Flags & FunctionAttributes.Coroutine) != 0) {
 #else
             if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
 #endif
@@ -794,7 +795,9 @@ namespace IronPython.Runtime {
         private LightLambdaExpression GetGeneratorOrNormalLambda() {
             LightLambdaExpression finalCode;
 #if FEATURE_NET_ASYNC
-            if ((Flags & FunctionAttributes.Generator) == 0) {
+            // See GetGeneratorOrNormalLambda's sibling in MakeDebuggableFunctionCode: only a plain generator
+            // (Generator without Coroutine) is rewritten; plain async and async generators are lowered earlier.
+            if ((Flags & FunctionAttributes.Generator) == 0 || (Flags & FunctionAttributes.Coroutine) != 0) {
 #else
             if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
 #endif

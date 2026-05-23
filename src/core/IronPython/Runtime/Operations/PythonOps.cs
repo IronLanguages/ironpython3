@@ -3326,6 +3326,23 @@ namespace IronPython.Runtime.Operations {
                 System.Runtime.CompilerServices.StrongBox<System.Exception?> cancellationException) {
             return new PythonCoroutine(task, function.__name__, function.__code__, cts, cancellationException);
         }
+
+        /// <summary>
+        /// Wraps an async-generator's <see cref="System.Collections.Generic.IAsyncEnumerable{T}"/> (from
+        /// AsyncEnumerableExpression / DriveAsyncEnumerable) in a <see cref="PythonAsyncGenerator"/> for the
+        /// caller of an <c>async def</c> with <c>yield</c>. <paramref name="sendSlot"/> carries the value of
+        /// <c>x = yield z</c> (asend); <paramref name="throwSlot"/> carries an exception to rethrow at the
+        /// yield resume (athrow/aclose); both are read by the body's yields and written by the wrapper before
+        /// each resume. <paramref name="cts"/> backs the enumerator's cancellation.
+        /// </summary>
+        public static PythonAsyncGenerator MakeAsyncGenerator(
+                PythonFunction function,
+                System.Collections.Generic.IAsyncEnumerable<object?> source,
+                System.Runtime.CompilerServices.StrongBox<object?> sendSlot,
+                System.Runtime.CompilerServices.StrongBox<System.Exception?> throwSlot,
+                System.Threading.CancellationTokenSource cts) {
+            return new PythonAsyncGenerator(source, sendSlot, throwSlot, cts, function.__name__);
+        }
 #endif
 
         public static object MakeGeneratorExpression(object function, object input) {

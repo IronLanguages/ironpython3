@@ -676,6 +676,8 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__await__", AwaitResolver),
                 new OneOffResolver("__aiter__", AsyncIterResolver),
                 new OneOffResolver("__anext__", AsyncNextResolver),
+                new OneOffResolver("__aenter__", AsyncEnterResolver),
+                new OneOffResolver("__aexit__", AsyncExitResolver),
 
                 new OneOffResolver("__complex__", ComplexResolver),
                 new OneOffResolver("__float__", FloatResolver),
@@ -1049,6 +1051,42 @@ namespace IronPython.Runtime.Types {
         /// Not auto-mapped from interfaces; the wrapper class provides __anext__ directly.
         /// </summary>
         private static MemberGroup/*!*/ AsyncNextResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
+            return MemberGroup.EmptyGroup;
+        }
+
+        /// <summary>
+        /// Provides a resolution for __aenter__ on types implementing <c>IAsyncDisposable</c>,
+        /// so that <c>async with</c> works seamlessly over .NET async-disposable resources.
+        /// </summary>
+        private static MemberGroup/*!*/ AsyncEnterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
+#if NET
+            foreach (Type t in binder.GetContributingTypes(type)) {
+                if (t.GetMember("__aenter__").Length > 0) {
+                    return MemberGroup.EmptyGroup;
+                }
+            }
+            if (typeof(IAsyncDisposable).IsAssignableFrom(type)) {
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.AEnterMethod));
+            }
+#endif
+            return MemberGroup.EmptyGroup;
+        }
+
+        /// <summary>
+        /// Provides a resolution for __aexit__ on types implementing <c>IAsyncDisposable</c>.
+        /// Maps to <c>InstanceOps.AExitMethod</c>, which awaits DisposeAsync().
+        /// </summary>
+        private static MemberGroup/*!*/ AsyncExitResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
+#if NET
+            foreach (Type t in binder.GetContributingTypes(type)) {
+                if (t.GetMember("__aexit__").Length > 0) {
+                    return MemberGroup.EmptyGroup;
+                }
+            }
+            if (typeof(IAsyncDisposable).IsAssignableFrom(type)) {
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.AExitMethod));
+            }
+#endif
             return MemberGroup.EmptyGroup;
         }
 

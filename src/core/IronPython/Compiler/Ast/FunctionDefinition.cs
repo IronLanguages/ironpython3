@@ -760,6 +760,11 @@ namespace IronPython.Compiler.Ast {
                             cts));
                 } else {
                     // Plain async def: the body returns a PythonCoroutine wrapping a Task<object?>.
+                    // Lazy start: hand MakeAsyncCoroutine a thunk (Func<Task<object?>>) instead of an
+                    // already-running Task, so the body doesn't execute until the coroutine is first driven
+                    // (send/AsTask). This makes calling an async def side-effect-free (PEP 492) and lets the
+                    // body's first await capture the driver's SynchronizationContext rather than whatever
+                    // context happened to be current at construction.
                     body = MSAst.Expression.Block(
                         new[] { cts, excBox },
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(System.Threading.CancellationTokenSource))),
@@ -767,7 +772,8 @@ namespace IronPython.Compiler.Ast {
                         Ast.Call(
                             AstMethods.MakeAsyncCoroutine,
                             _functionParam,
-                            AstUtils.Async(Name, body, ctToken, excBox),
+                            MSAst.Expression.Lambda<Func<System.Threading.Tasks.Task<object>>>(
+                                AstUtils.Async(Name, body, ctToken, excBox)),
                             cts,
                             excBox));
                 }

@@ -82,7 +82,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo MakeCoroutine = GetMethod((Func<PythonFunction, MutableTuple, object, PythonCoroutine>)PythonOps.MakeCoroutine);
 #if FEATURE_NET_ASYNC
         public static readonly MethodInfo AsTaskForAwait = GetMethod((Func<object, System.Threading.Tasks.Task<object>>)PythonOps.AsTaskForAwait);
-        public static readonly MethodInfo MakeAsyncCoroutine = GetMethod((Func<PythonFunction, System.Threading.Tasks.Task<object>, System.Threading.CancellationTokenSource, System.Runtime.CompilerServices.StrongBox<System.Exception>, PythonCoroutine>)PythonOps.MakeAsyncCoroutine);
+        public static readonly MethodInfo MakeAsyncCoroutine = GetMethod((Func<PythonFunction, Func<System.Threading.Tasks.Task<object>>, System.Threading.CancellationTokenSource, System.Runtime.CompilerServices.StrongBox<System.Exception>, PythonCoroutine>)PythonOps.MakeAsyncCoroutine);
         public static readonly MethodInfo MakeAsyncGenerator = GetMethod((Func<PythonFunction, System.Collections.Generic.IAsyncEnumerable<object>, System.Runtime.CompilerServices.StrongBox<object>, System.Runtime.CompilerServices.StrongBox<System.Exception>, System.Threading.CancellationTokenSource, PythonAsyncGenerator>)PythonOps.MakeAsyncGenerator);
 #endif
 

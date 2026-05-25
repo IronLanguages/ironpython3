@@ -3312,8 +3312,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
-        /// Wraps a runtime-async function's <see cref="System.Threading.Tasks.Task"/>
-        /// in a <see cref="PythonCoroutine"/> for the caller of <c>async def</c>.
+        /// Wraps a runtime-async function's deferred <see cref="System.Threading.Tasks.Task"/>
+        /// thunk in a <see cref="PythonCoroutine"/> for the caller of <c>async def</c>.
+        /// The thunk is invoked lazily on first drive (send/AsTask), so calling an
+        /// <c>async def</c> is side-effect-free until the coroutine is awaited (PEP 492).
         /// The supplied <see cref="System.Threading.CancellationTokenSource"/> and exception-override
         /// box are pre-bound to <see cref="Microsoft.Scripting.Runtime.AsyncHelpers.DriveAsync"/>'s
         /// cancellation channel — the coroutine uses them to implement <c>coro.throw(exc)</c> on a
@@ -3321,10 +3323,10 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static PythonCoroutine MakeAsyncCoroutine(
                 PythonFunction function,
-                System.Threading.Tasks.Task<object?> task,
+                Func<System.Threading.Tasks.Task<object?>> taskFactory,
                 System.Threading.CancellationTokenSource cts,
                 System.Runtime.CompilerServices.StrongBox<System.Exception?> cancellationException) {
-            return new PythonCoroutine(task, function.__name__, function.__code__, cts, cancellationException);
+            return new PythonCoroutine(taskFactory, function.__name__, function.__code__, cts, cancellationException);
         }
 
         /// <summary>

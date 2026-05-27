@@ -2000,11 +2000,10 @@ namespace IronPython.Compiler {
                     ReportSyntaxError("'await' outside async function");
                 }
 #if !FEATURE_NET_ASYNC
-                // Under the async-generator path, `await` desugars to `yield from`, so the
-                // enclosing function must be marked a generator. Under FEATURE_NET_ASYNC
-                // the body is lowered through AsyncExpression and is *not*
-                // a Python generator — leaving IsGenerator false here is what keeps
-                // ReturnStatement out of the yield branch.
+                // Under the generator-based async path, `await` desugars to `yield from`,
+                // so the enclosing function must be marked a generator.
+                // Under FEATURE_NET_ASYNC, the body is lowered through AsyncExpression and is *not* a Python generator
+                // so this mark assignment is being skipped here.
                 if (current is not null) {
                     current.IsGenerator = true;
                     current.GeneratorStop = GeneratorStop;

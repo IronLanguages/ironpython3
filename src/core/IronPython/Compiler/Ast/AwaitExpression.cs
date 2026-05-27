@@ -14,10 +14,8 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     /// <summary>
-    /// Represents <c>await expr</c>. Under <c>FEATURE_NET_ASYNC</c> this compiles
-    /// directly to a DLR runtime-async suspension point. Otherwise it is
-    /// desugared into <c>yield from expr.__await__()</c> against the enclosing
-    /// generator-shaped coroutine state machine.
+    /// Represents <c>await expr</c>. Under <c>FEATURE_NET_ASYNC</c> this compiles directly to a DLR async suspension point.
+    /// Otherwise it is desugared into <c>yield from expr.__await__()</c> against the enclosing generator-shaped coroutine state machine.
     /// </summary>
     public class AwaitExpression : Expression {
 #if FEATURE_NET_ASYNC

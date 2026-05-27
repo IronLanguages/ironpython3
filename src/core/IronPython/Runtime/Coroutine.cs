@@ -16,26 +16,23 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
+
 #if FEATURE_NET_ASYNC
+
     [PythonType("coroutine")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
     public sealed class PythonCoroutine : ICodeFormattable, IWeakReferenceable {
-        // Under .NET async, `async def` is compiled directly to a Task<object?>
-        // via the DLR's AsyncExpression + AsyncHelpers. PythonCoroutine is a
-        // facade over the Task with two cancellation channels pre-bound at the
-        // codegen level (see FunctionDefinition):
-        //   _cts                  — CancellationTokenSource whose Token was passed
-        //                            into AsyncExpression. throw(exc) cancels this.
-        //   _cancellationException — StrongBox<Exception?> shared with DriveAsync's
-        //                            `cancellationException` parameter; when non-null
-        //                            at cancellation time, that exception is surfaced
-        //                            to the body instead of OperationCanceledException.
-        //                            throw(non-OCE) writes here before cancelling.
+        // Under .NET async, `async def` is compiled directly to a Task<object?> via the DLR's AsyncExpression + AsyncHelpers.
+        // PythonCoroutine is a wrapper over the Task with two cancellation channels pre-bound at the codegen level:
         //
-        // Lazy start: the body is not executed at construction. _factory is the thunk
-        // that creates (and thereby starts driving) the Task on first access; _task
-        // caches the materialized Task. Calling an async def is therefore side-effect
-        // free until the coroutine is first driven (send/AsTask/GetAwaiter) — PEP 492.
+        //   _cts                   — CancellationTokenSource whose Token was passed into AsyncExpression. throw(exc) cancels this.
+        //   _cancellationException — StrongBox<Exception?> shared with DriveAsync's `cancellationException` parameter;
+        //                            when non-null at cancellation time, that exception is surfaced to the body
+        //                            instead of OperationCanceledException. 
+        //
+        // Lazy start: the body is not executed at construction. _factory is the thunk that creates (and thereby starts driving) the Task on
+        // first access; _task caches the materialized Task. Calling an async def is therefore side-effect free until the coroutine is first
+        // driven (send/AsTask/GetAwaiter) — PEP 492.
         private readonly Func<Task<object?>> _factory;
         private Task<object?>? _task;
         private readonly string _name;
@@ -54,10 +51,8 @@ namespace IronPython.Runtime {
             _cancellationException = cancellationException;
         }
 
-        /// <summary>
-        /// Materialize (and start) the underlying Task on first access, caching it thereafter.
-        /// </summary>
         private Task<object?> EnsureTask() => _task ??= _factory();
+
 
         [LightThrowing]
         public object send(object? value) {
@@ -69,21 +64,16 @@ namespace IronPython.Runtime {
             // not pay for exception unwinding (GetAwaiter().GetResult() would observe
             // and rethrow cancel/fault). After waiting, the same terminal-state
             // dispatch below applies.
+
             var task = EnsureTask();
             if (!task.IsCompleted) {
                 // TODO: coroutines should be steppable via send(), one await at a time.
                 ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
             }
-            if (task.IsCanceled) {
-                // Surfaces as Python CancelledError via the OCE -> CancelledError mapping in PythonExceptions.
-                // We need an OperationCanceledException instance because the Canceled task carries no Exception object.
-                return LightExceptions.Throw(new TaskCanceledException(task));
-            }
-            if (task.IsFaulted) {
-                return LightExceptions.Throw(task.Exception?.InnerException ?? task.Exception);
-            }
-            return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException(task.Result!));
+
+            return SettleCompletedTask(task);
         }
+
 
         [LightThrowing]
         public object @throw(object? type) => @throw(type, null, null);
@@ -114,15 +104,14 @@ namespace IronPython.Runtime {
 
             var task = EnsureTask();
             if (task.IsCompleted) {
-                // Regime 1: coroutine has finished. throw() raises the exception immediately —
+                // Case 1: coroutine has finished. throw() raises the exception immediately —
                 // the body has nothing left to observe it. Matches CPython.
                 return LightExceptions.Throw(ex);
             }
 
-            // Regime 2: body is still running (or suspended at an await). Stash the exception in the
+            // Case 2: body is still running (or suspended at an await). Stash the exception in the
             // shared StrongBox so DriveAsync surfaces it (instead of OCE) the moment it observes the
-            // cancellation, then cancel. The body sees `ex` rethrown at its next resume point via the
-            // rewriter's per-await ExceptionDispatchInfo block.
+            // cancellation, then cancel. The body sees `ex` rethrown at its next resume point.
             _cancellationException.Value = ex;
             _cts.Cancel();
 
@@ -130,12 +119,13 @@ namespace IronPython.Runtime {
             // the same logic as send() so the body's reaction (catch-and-return, propagate, etc.) is
             // reflected back to the caller of throw().
             ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
-            return SettleCompletedTask();
+            return SettleCompletedTask(task);
         }
 
-        private object SettleCompletedTask() {
-            var task = EnsureTask();
+
+        private static object SettleCompletedTask(Task<object?> task) {
             if (task.IsCanceled) {
+                // Surfaces as Python CancelledError via the OCE -> CancelledError mapping in PythonExceptions.
                 return LightExceptions.Throw(new TaskCanceledException(task));
             }
             if (task.IsFaulted) {
@@ -144,6 +134,7 @@ namespace IronPython.Runtime {
             return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException(task.Result!));
         }
 
+
         [LightThrowing]
         public object? close() => null;
 
@@ -151,8 +142,8 @@ namespace IronPython.Runtime {
 
         public FunctionCode? cr_code => _code;
 
-        // A not-yet-driven coroutine reports 0 (not running) without materializing the
-        // Task — merely inspecting cr_running must not start the body.
+        // A not-yet-driven coroutine reports 0 (not running) without materializing the Task.
+        // Merely inspecting cr_running must not start the body.
         public int cr_running => _task is null || _task.IsCompleted ? 0 : 1;
 
         public TraceBackFrame? cr_frame => null;
@@ -168,7 +159,9 @@ namespace IronPython.Runtime {
         public TaskAwaiter<object?> GetAwaiter() => EnsureTask().GetAwaiter();
 
         internal Task<object?> Task => EnsureTask();
-#else
+
+#else  // !FEATURE_NET_ASYNC
+
     [PythonType("coroutine")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
     public sealed class PythonCoroutine : ICodeFormattable, IWeakReferenceable {
@@ -253,7 +246,8 @@ namespace IronPython.Runtime {
         public TaskAwaiter<object?> GetAwaiter() => AsTask().GetAwaiter();
 
         internal PythonGenerator Generator => _generator;
-#endif
+
+#endif  // FEATURE_NET_ASYNC - the rest of the members are shared between both implementations of PythonCoroutine
 
         #region ICodeFormattable Members
 
@@ -280,6 +274,7 @@ namespace IronPython.Runtime {
 
         #endregion
     }
+
 
     [PythonType("coroutine_wrapper")]
     public sealed class CoroutineWrapper {

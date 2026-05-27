@@ -751,11 +751,10 @@ namespace IronPython.Runtime {
             );
 
 #if FEATURE_NET_ASYNC
-            // Under runtime-async, async bodies are lowered before they reach here and must NOT go through
-            // the generator rewriter: plain async (Coroutine, no Generator) via AsyncExpression, and async
-            // generators (Generator+Coroutine) via AsyncEnumerableExpression. Only a plain generator
-            // (Generator without Coroutine) is rewritten here. Coroutine is otherwise informational
-            // (kept for __code__.co_flags).
+            // Under .NET-async, async bodies are lowered before they reach here and must NOT go through the generator rewriter:
+            //  * plain async (Coroutine, no Generator) via AsyncExpression,
+            //  * async generators (Generator+Coroutine) via AsyncEnumerableExpression.
+            //  Only a plain generator (Generator without Coroutine) is rewritten here.
             if ((Flags & FunctionAttributes.Generator) == 0 || (Flags & FunctionAttributes.Coroutine) != 0) {
 #else
             if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
@@ -763,11 +762,7 @@ namespace IronPython.Runtime {
                 return context.DebugContext.TransformLambda((LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda()), debugInfo);
             }
 
-#if FEATURE_NET_ASYNC
-            const bool isCoroutine = false;
-#else
             bool isCoroutine = (Flags & FunctionAttributes.Coroutine) != 0;
-#endif
             return Expression.Lambda(
                 Code.Type,
                 new GeneratorRewriter(
@@ -803,11 +798,7 @@ namespace IronPython.Runtime {
 #endif
                 finalCode = Code;
             } else {
-#if FEATURE_NET_ASYNC
-                const bool isCoroutine = false;
-#else
                 bool isCoroutine = (Flags & FunctionAttributes.Coroutine) != 0;
-#endif
                 finalCode = Code.ToGenerator(
                     _lambda.ShouldInterpret,
                     _lambda.EmitDebugSymbols,

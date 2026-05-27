@@ -7,6 +7,8 @@
 using MSAst = System.Linq.Expressions;
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Diagnostics;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -21,9 +23,9 @@ namespace IronPython.Compiler.Ast {
     public class YieldExpression : Expression {
 #if FEATURE_NET_ASYNC
         private static readonly System.Reflection.MethodInfo s_captureMethod
-            = typeof(System.Runtime.ExceptionServices.ExceptionDispatchInfo).GetMethod(nameof(System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture))!;
+            = typeof(ExceptionDispatchInfo).GetMethod(nameof(ExceptionDispatchInfo.Capture))!;
         private static readonly System.Reflection.MethodInfo s_throwMethod
-            = typeof(System.Runtime.ExceptionServices.ExceptionDispatchInfo).GetMethod(nameof(System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw), Type.EmptyTypes)!;
+            = typeof(ExceptionDispatchInfo).GetMethod(nameof(ExceptionDispatchInfo.Throw), Type.EmptyTypes)!;
 #endif
 
         public YieldExpression(Expression? expression) {
@@ -53,11 +55,11 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression yieldValue = Expression == null ? AstUtils.Constant(null) : AstUtils.Convert(Expression, typeof(object));
 
 #if FEATURE_NET_ASYNC
-            // An async generator (`async def` with `yield`) is lowered via AsyncEnumerableExpression and has no
-            // backing PythonGenerator, so there is no `$generator` to call CheckThrowable() on. Instead the
-            // resume reads two per-generator cells that PythonAsyncGenerator writes before advancing:
-            //   AsyncThrowSlot — if set (athrow/aclose), rethrow it here (preserving stack); cleared first so a
-            //                    body that catches it and yields again doesn't re-throw on the next resume.
+            // An async generator (`async def` with `yield`) is lowered via AsyncEnumerableExpression
+            // and has no backing PythonGenerator, so there is no `$generator` to call CheckThrowable() on.
+            // Instead the resume reads two per-generator cells that PythonAsyncGenerator writes before advancing:
+            //   AsyncThrowSlot — if set (athrow/aclose), rethrow it here (preserving stack);
+            //                    cleared first so a body that catches it and yields again doesn't re-throw on the next resume.
             //   AsyncSendSlot  — the value of the yield expression: the asend(v) value, or None.
             if (Parent is FunctionDefinition { IsAsync: true } fd) {
                 MSAst.ParameterExpression sendSlot = fd.AsyncSendSlot;
@@ -65,14 +67,14 @@ namespace IronPython.Compiler.Ast {
                 MSAst.ParameterExpression pending = Ast.Variable(typeof(Exception), "$athrow");
                 return Ast.Block(
                     typeof(object),
-                    new[] { pending },
+                    [pending],
                     AstUtils.YieldReturn(GeneratorLabel, yieldValue),
-                    Ast.Assign(pending, Ast.Field(throwSlot, nameof(System.Runtime.CompilerServices.StrongBox<Exception>.Value))),
-                    Ast.Assign(Ast.Field(throwSlot, nameof(System.Runtime.CompilerServices.StrongBox<Exception>.Value)), Ast.Constant(null, typeof(Exception))),
+                    Ast.Assign(pending, Ast.Field(throwSlot, nameof(StrongBox<Exception>.Value))),
+                    Ast.Assign(Ast.Field(throwSlot, nameof(StrongBox<Exception>.Value)), Ast.Constant(null, typeof(Exception))),
                     Ast.IfThen(
                         Ast.ReferenceNotEqual(pending, Ast.Constant(null, typeof(Exception))),
                         Ast.Call(Ast.Call(s_captureMethod, pending), s_throwMethod)),
-                    Ast.Field(sendSlot, nameof(System.Runtime.CompilerServices.StrongBox<object>.Value))
+                    Ast.Field(sendSlot, nameof(StrongBox<object>.Value))
                 );
             }
 #endif

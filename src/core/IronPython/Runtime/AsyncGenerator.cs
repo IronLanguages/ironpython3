@@ -20,16 +20,18 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     /// <summary>
-    /// PEP 525 async generator object — what an <c>async def</c> with <c>yield</c> returns.
-    /// Façade over the DLR's <c>IAsyncEnumerable&lt;object&gt;</c> (produced by AsyncEnumerableExpression /
-    /// AsyncHelpers.DriveAsyncEnumerable) plus the channels that let the consumer drive it:
-    /// <list type="bullet">
-    ///   <item><c>_sendSlot</c> — the value delivered into the body at the next <c>yield</c> resume
-    ///   (<c>x = yield z</c>). Set by <see cref="asend"/> / <see cref="__anext__"/> before advancing.</item>
-    ///   <item><c>_throwSlot</c> — an exception rethrown at the next <c>yield</c> resume (athrow/aclose).</item>
-    ///   <item><c>_cts</c> — backs the underlying enumerator's cancellation.</item>
-    /// </list>
+    ///   PEP 525 async generator object — what an <c>async def</c> with <c>yield</c> returns.
     /// </summary>
+    /// <remarks>
+    ///   Wrapper over the DLR's <c>IAsyncEnumerable&lt;object&gt;</c> (produced by AsyncEnumerableExpression /
+    ///   AsyncHelpers.DriveAsyncEnumerable) plus the channels that let the consumer drive it:
+    ///   <list type="bullet">
+    ///     <item><c>_sendSlot</c> — the value delivered into the body at the next <c>yield</c> resume
+    ///       (<c>x = yield z</c>). Set by <see cref="asend"/> / <see cref="__anext__"/> before advancing.</item>
+    ///     <item><c>_throwSlot</c> — an exception rethrown at the next <c>yield</c> resume (athrow/aclose).</item>
+    ///     <item><c>_cts</c> — backs the underlying enumerator's cancellation.</item>
+    ///   </list>
+    /// </remarks>
     [PythonType("async_generator")]
     public sealed class PythonAsyncGenerator {
         private readonly IAsyncEnumerator<object?> _enumerator;
@@ -54,19 +56,21 @@ namespace IronPython.Runtime {
 
         public PythonAsyncGenerator __aiter__() => this;
 
+
         /// <summary>
-        /// Advance the generator with no value sent in (equivalent to <c>asend(None)</c>). Returns an
-        /// awaitable yielding the next produced value or raising StopAsyncIteration.
+        ///   Advance the generator with no value sent in (equivalent to <c>asend(None)</c>).
+        ///   Returns an awaitable yielding the next produced value or raising StopAsyncIteration.
         /// </summary>
         public object __anext__() {
             _sendSlot.Value = null;
             return new AsyncEnumeratorAwaitable<object?>(_enumerator);
         }
 
+
         /// <summary>
-        /// Send a value into the generator; it becomes the value of the <c>yield</c> the body is suspended
-        /// at (<c>x = yield z</c>). The first call after creation must send None (the body hasn't reached a
-        /// yield yet), matching CPython.
+        ///   Send a value into the generator; it becomes the value of the <c>yield</c> the body is suspended
+        ///   at (<c>x = yield z</c>). The first call after creation must send None (the body hasn't reached a
+        ///   yield yet), matching CPython.
         /// </summary>
         public object asend(object? value) {
             if (!_started) {
@@ -79,6 +83,7 @@ namespace IronPython.Runtime {
             return new AsyncEnumeratorAwaitable<object?>(_enumerator);
         }
 
+
         [LightThrowing]
         public object athrow(object? type) => athrow(type, null, null);
 
@@ -86,11 +91,13 @@ namespace IronPython.Runtime {
         public object athrow(object? type, object? value) => athrow(type, value, null);
 
         /// <summary>
-        /// Throw an exception into the generator at the suspended <c>yield</c>. Returns an awaitable; when
-        /// awaited the exception is rethrown at the resume point — if the body catches it and yields again
-        /// that value is produced, otherwise the exception propagates (or StopAsyncIteration if the body
-        /// finishes).
+        ///   Throw an exception into the generator at the suspended <c>yield</c>. Returns an awaitable.
         /// </summary>
+        /// <remarks>
+        ///   When awaited the exception is rethrown at the resume point:
+        ///   if the body catches it and yields again that value is produced;
+        ///   otherwise the exception propagates (or StopAsyncIteration if the body finishes).
+        /// </remarks>
         [LightThrowing]
         public object athrow(object? type, object? value, object? traceback) {
             // Validate shape (mirrors PythonGenerator/PythonCoroutine.throw).
@@ -113,8 +120,8 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Close the generator: returns an awaitable that injects GeneratorExit at the suspended <c>yield</c>
-        /// (running the body's try/finally), then disposes the underlying async iterator. Idempotent.
+        ///   Close the generator: returns an awaitable that injects GeneratorExit at the suspended <c>yield</c>
+        ///   (running the body's try/finally), then disposes the underlying async iterator.
         /// </summary>
         public object aclose() {
             return AcloseAsync();

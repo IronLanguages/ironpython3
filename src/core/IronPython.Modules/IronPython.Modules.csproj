@@ -15,6 +15,7 @@
       T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
       M:System.String.Contains(System.Char);
       M:System.String.EndsWith(System.Char);
+      M:System.Text.Encoding.GetString(System.ReadOnlySpan{System.Byte});
     </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>
 
@@ -44,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.127">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.140">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

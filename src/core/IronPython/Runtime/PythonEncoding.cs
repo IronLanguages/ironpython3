@@ -1532,15 +1532,6 @@ namespace IronPython.Runtime {
 #if !NETCOREAPP
     // TODO: Move to IronPython.Runtime.Text
 
-    internal static class EncodingExtensions {
-        public static unsafe string GetString(this Encoding encoding, ReadOnlySpan<byte> bytes) {
-            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes)) {
-                return encoding.GetString(bytesPtr, bytes.Length);
-            }
-
-        }
-    }
-
     internal static class EncoderExtensions {
         public static unsafe int GetByteCount(this Encoder encoder, ReadOnlySpan<char> chars, bool flush) {
             fixed (char* pChars = &MemoryMarshal.GetReference(chars)) {

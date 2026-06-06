@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
 using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
@@ -18,17 +19,22 @@ namespace IronPythonTest.Cases {
 
     internal class IronPythonCaseGenerator : CommonCaseGenerator<IronPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
-            return GetFilenames(new[] {
-                System.Tuple.Create(category, Path.Combine("tests", "suite")),
-                System.Tuple.Create($"{category}.scripts", Path.Combine("eng", "scripts")),
-            })
-            .OrderBy(testcase => testcase.Name);
+            return GetTestSuite().Concat(GetEngScripts()).OrderBy(testcase => testcase.Name);
 
-            IEnumerable<TestInfo> GetFilenames(IEnumerable<System.Tuple<string, string>> folders) {
-                foreach (var tuple in folders) {
-                    var fullPath = Path.Combine(CaseExecuter.FindRoot(), tuple.Item2);
-                    foreach (var filename in Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories))
-                        yield return new TestInfo(Path.GetFullPath(filename), tuple.Item1, tuple.Item2, manifest);
+            IEnumerable<TestInfo> GetTestSuite() {
+                var root = CaseExecuter.FindRoot();
+                var folder = Path.Combine("tests", "suite");
+                var fullPath = Path.GetFullPath(Path.Combine(root, folder));
+                foreach (var filename in Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories))
+                    yield return new TestInfo(filename, category, folder, manifest);
+            }
+
+            IEnumerable<TestInfo> GetEngScripts() {
+                var root = CaseExecuter.FindRoot();
+                var folder = Path.Combine("eng", "scripts");
+                var filename = Path.GetFullPath(Path.Combine(root, folder, "test_cgcheck.py"));
+                if (File.Exists(filename)) {
+                    yield return new TestInfo(filename, $"{category}.scripts", folder, manifest);
                 }
             }
         }

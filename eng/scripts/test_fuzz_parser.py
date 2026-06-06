@@ -1,6 +1,6 @@
 MAX_DEPTH = 2
 
-#class StatementGenerator(BaseGenerator): 
+#class StatementGenerator(BaseGenerator):
 #    def generate(self, depth): raise NotImplementedError
 
 ######################################################################
@@ -12,7 +12,7 @@ class ExpressionGenerator(object):
 class BinaryExpression(ExpressionGenerator):
     def __init__(self, op):
         self.op = op
-    def generate(self, depth):  
+    def generate(self, depth):
         exprs = list(MakeExpressionGenerator(depth + 1))
         for x in exprs:
             for y in exprs:
@@ -21,10 +21,10 @@ class BinaryExpression(ExpressionGenerator):
 class UnaryExpression(ExpressionGenerator):
     def __init__(self, op):
         self.op = op
-    def generate(self, depth):  
+    def generate(self, depth):
         for x in MakeExpressionGenerator(depth + 1):
             yield self.op + ' ' + x
-                
+
 class EmptyExpression(ExpressionGenerator):
     def generate(self, depth):
         yield ' '
@@ -40,7 +40,7 @@ class NameExpression(ExpressionGenerator):
         self.value = value
     def generate(self, depth):
         yield self.value
-    
+
 class InvalidExpression(ExpressionGenerator):
     def __init__(self, value):
         self.value = value
@@ -53,16 +53,16 @@ class ParenthForm(ExpressionGenerator):
     def generate(self, depth):
         subexprs = list(MakeExpressionGenerator(depth + 1))
         head = '('
-        
+
         if self.trailingComma:
             tail = ', )'
         else:
             tail = ')'
-        
+
         args3 = [x + ', ' + y + ', ' + z for x in subexprs for y in subexprs for z in subexprs]
         args2 = [x + ', ' + y for x in subexprs for y in subexprs]
         args1 = [x for x in subexprs]
-        
+
         yield head + tail
         for values in args1 + args2 + args3:
             yield head + values + tail
@@ -75,19 +75,19 @@ class GeneratorExpression(ExpressionGenerator):
                     yield '(' + expr + ' for ' + target + ' in ' + inTest + ')'
                     for cond in MakeExpressionGenerator(depth + 1):
                         yield '(' + expr + ' for ' + target + ' in ' + inTest + ' if ' + cond + ')'
-                
+
 
 class DictionaryDisplay(ExpressionGenerator):
     def generate(self, depth):
         subexprs = list(MakeExpressionGenerator(depth + 1))
-        
+
         args = [x + ': ' + y for x in subexprs for y in subexprs]
         yield '{}'
-        
+
         for x in args:
             yield '{' + x + '}'
             yield '{' + x + ', }'
-        
+
         for x, y in zip(args, args):
             yield '{' + x + ', ' + y + '}'
             yield '{' + x + ', ' + y + ', }'
@@ -112,52 +112,52 @@ class AttributeExpression(object):
 class SubscriptionExpression(object):
     def generate(self, depth):
         for expr in MakeExpressionGenerator(depth + 1):
-            for subscript in MakeExpressionGenerator(depth + 1):            
+            for subscript in MakeExpressionGenerator(depth + 1):
                 yield expr + '[' + subscript + ']'
                 yield expr + '[' + subscript + ', ]'
 
         for expr in MakeExpressionGenerator(depth + 1):
-            for subscript in MakeExpressionGenerator(depth + 1):            
-                for subscript2 in MakeExpressionGenerator(depth + 1):            
+            for subscript in MakeExpressionGenerator(depth + 1):
+                for subscript2 in MakeExpressionGenerator(depth + 1):
                     yield expr + '[' + subscript + ', ' + subscript2 + ']'
                     yield expr + '[' + subscript + ', ' + subscript2 + ', ]'
 
 class SlicingExpression(object):
     def generate(self, depth):
         for expr in MakeExpressionGenerator(depth + 1):
-            for subscript in MakeExpressionGenerator(depth + 1):            
+            for subscript in MakeExpressionGenerator(depth + 1):
                 yield expr + '[' + subscript + ':]'
                 #yield expr + '[:' + subscript + ']'
                 #yield expr + '[' + subscript + '::]'
                 #yield expr + '[::' + subscript + ']'
 
         for expr in MakeExpressionGenerator(depth + 1):
-            for subscript in MakeExpressionGenerator(depth + 1):            
-                for subscript2 in MakeExpressionGenerator(depth + 1):            
+            for subscript in MakeExpressionGenerator(depth + 1):
+                for subscript2 in MakeExpressionGenerator(depth + 1):
                     yield expr + '[' + subscript + ': ' + subscript2 + ']'
                     #yield expr + '[' + subscript + ', ' + subscript2 + ': ]'
                     #yield expr + '[ :' + subscript + ', ' + subscript2 + ']'
 
         for expr in MakeExpressionGenerator(depth + 1):
-            for subscript in MakeExpressionGenerator(depth + 1):            
-                for subscript2 in MakeExpressionGenerator(depth + 1):            
-                    for subscript3 in MakeExpressionGenerator(depth + 1):            
+            for subscript in MakeExpressionGenerator(depth + 1):
+                for subscript2 in MakeExpressionGenerator(depth + 1):
+                    for subscript3 in MakeExpressionGenerator(depth + 1):
                         yield expr + '[' + subscript + ': ' + subscript2 + ':' + subscript3 + ']'
 
 class CallExpression(object):
     def generate(self, depth):
         for expr in MakeExpressionGenerator(depth + 1):
-            for subscript in MakeExpressionGenerator(depth + 1):            
+            for subscript in MakeExpressionGenerator(depth + 1):
                 yield expr + '(' + subscript + ')'
                 yield expr + '(' + subscript + ', )'
                 yield expr + '(*' + subscript + ')'
                 yield expr + '(**' + subscript + ', )'
                 for name in MakeExpressionGenerator(depth + 1):
-                    yield expr + '(' + name + ' = ' + subscript + ')'                
+                    yield expr + '(' + name + ' = ' + subscript + ')'
 
         for expr in MakeExpressionGenerator(depth + 1):
-            for subscript in MakeExpressionGenerator(depth + 1):            
-                for subscript2 in MakeExpressionGenerator(depth + 1):            
+            for subscript in MakeExpressionGenerator(depth + 1):
+                for subscript2 in MakeExpressionGenerator(depth + 1):
                     yield expr + '(' + subscript + ', ' + subscript2 + ')'
                     yield expr + '(' + subscript + ', ' + subscript2 + ', )'
                     yield expr + '(*' + subscript + ', ' + subscript2 + ')'
@@ -209,7 +209,7 @@ class RaiseStatement(ExpressionGenerator):
 class PassStatement(ExpressionGenerator):
     def generate(self, depth):
         yield 'pass\n'
-    
+
 class IfStatement(ExpressionGenerator):
     def generate(self, depth):
         for expr in MakeExpressionGenerator(0):
@@ -239,13 +239,13 @@ class ExpressionStatement(ExpressionGenerator):
     def generate(self, depth):
         for expr in MakeExpressionGenerator(0):
             yield expr + '\n'
-    
+
 ######################################################################
 # Factories
 
 class BinaryMaker(object):
     def __init__(self, value):
-        self.value = value        
+        self.value = value
     def __call__(self):
         return BinaryExpression(self.value)
     def __repr__(self):
@@ -253,7 +253,7 @@ class BinaryMaker(object):
 
 class UnaryMaker(object):
     def __init__(self, value):
-        self.value = value        
+        self.value = value
     def __call__(self):
         return UnaryExpression(self.value)
     def __repr__(self):
@@ -291,11 +291,11 @@ class ParenthFormMaker(object):
     def __repr__(self):
         return 'ParenthFormMaker(' + self.trailingComma + ')'
 
-identifier_exprs = [NameMaker('foo'), NameMaker('...'), NameMaker('reallylongname' * 200)] # NameMaker('_bar'), 
+identifier_exprs = [NameMaker('foo'), NameMaker('...'), NameMaker('reallylongname' * 200)] # NameMaker('_bar'),
 
 expr_gens = identifier_exprs + \
-            [BinaryMaker('+'), BinaryMaker('**'), BinaryMaker('<<'), BinaryMaker('&'), BinaryMaker('=='), BinaryMaker('>'), BinaryMaker(' in '),  # BinaryMaker('-'), BinaryMaker('|'), BinaryMaker('^'), 
-             UnaryMaker('~'), UnaryMaker(' not '),  # UnaryMaker('-'), UnaryMaker('+'), 
+            [BinaryMaker('+'), BinaryMaker('**'), BinaryMaker('<<'), BinaryMaker('&'), BinaryMaker('=='), BinaryMaker('>'), BinaryMaker(' in '),  # BinaryMaker('-'), BinaryMaker('|'), BinaryMaker('^'),
+             UnaryMaker('~'), UnaryMaker(' not '),  # UnaryMaker('-'), UnaryMaker('+'),
              EmptyExpression,
              GeneratorExpression,
              DictionaryDisplay,
@@ -304,7 +304,7 @@ expr_gens = identifier_exprs + \
              SubscriptionExpression,
              SlicingExpression,
              ConstantMaker(1), ConstantMaker('abc'), ConstantMaker(1), ConstantMaker(1.0), ConstantMaker(1j),
-             ParenthFormMaker(False), ParenthFormMaker(True), 
+             ParenthFormMaker(False), ParenthFormMaker(True),
              StringConversion,
              YieldExpression,
              InvalidMaker('$'), InvalidMaker('@'), InvalidMaker('!'), InvalidMaker('\\'), #InvalidMaker('\0'),
@@ -315,35 +315,35 @@ stmt_gens = [IfStatement, PassStatement, ExpressionStatement, WhileStatement, Fo
 
 def MakeExpressionGenerator(depth):
     """yields all possible expressions"""
-    if depth == MAX_DEPTH: 
+    if depth == MAX_DEPTH:
         yield '' # empty expr
-    else: 
-        for exprGen in expr_gens:        
+    else:
+        for exprGen in expr_gens:
             for value in exprGen().generate(depth):
                 yield value
 
 def Indent(value, depth):
-    if depth == 0: 
+    if depth == 0:
         return value
     indent = '    ' * depth
     return indent + value.replace('\n', '\n' + indent)
 
 def MakeStatementGenerator(depth):
     """yields all possible expressions"""
-    if depth == MAX_DEPTH: 
+    if depth == MAX_DEPTH:
         yield '' # empty expr
-    else: 
-        for stmtGen in stmt_gens:        
+    else:
+        for stmtGen in stmt_gens:
             for value in stmtGen().generate(depth):
                 yield Indent(value, depth)
 
 def MakeIdentifierGenerator(depth):
-    for exprGen in identifier_exprs:        
+    for exprGen in identifier_exprs:
         for value in exprGen().generate(depth):
             yield value
-    
+
 i = 0
-for x in MakeStatementGenerator(0):    
+for x in MakeStatementGenerator(0):
     i += 1
     if i % 1000 == 0:
         print('.', end=' ')
@@ -352,4 +352,4 @@ for x in MakeStatementGenerator(0):
     except SyntaxError:
         pass
 
-print('Ran %d tests', i)
+print('Ran %d tests' % i)

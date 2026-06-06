@@ -1,8 +1,12 @@
-import test.support, unittest
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
+
+import unittest
 
 class PowTest(unittest.TestCase):
     # taken from test_complex.py
-    # needed for negative real values with a fractional exponent    
+    # needed for negative real values with a fractional exponent
     def assertAlmostEqual(self, a, b):
         if isinstance(a, complex):
             if isinstance(b, complex):
@@ -55,8 +59,5 @@ class PowTest(unittest.TestCase):
         self.assertAlmostEqual(pow(-1, 1/3), 0.5 + 0.8660254037844386j)
         self.assertAlmostEqual((-1)**(1/3), 0.5 + 0.8660254037844386j)
 
-def test_main():
-    test.support.run_unittest(PowTest)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main(verbosity=2)

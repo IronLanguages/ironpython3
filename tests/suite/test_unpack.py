@@ -3,7 +3,6 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
-import test.support
 import unittest
 
 class UnpackTest(unittest.TestCase):
@@ -22,7 +21,7 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(a, [0, 1, 2, 3])
         self.assertEqual(b, 4)
         self.assertEqual(c, 5)
-    
+
     def test_unpack_into_exprlist_3(self):
         a, *b, c = range(6)
         self.assertEqual(a, 0)
@@ -46,7 +45,7 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(f, [1, 2, 3])
         self.assertEqual(g, 4)
         self.assertEqual(h, 5)
-        
+
     def test_unpack_into_list_1(self):
         [*a] = range(2)
         self.assertEqual(a, [0, 1])
@@ -75,7 +74,7 @@ class UnpackTest(unittest.TestCase):
             self.assertEqual(b, index)
             self.assertEqual(a, [index])
             index = index + 1
-    
+
     def test_unpack_into_for_target_3(self):
         index = 0
         expected_a = [1, 4]
@@ -236,8 +235,5 @@ class UnpackTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             exec("{*1}")
 
-def test_main():
-    test.support.run_unittest(UnpackTest)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main(verbosity=2)

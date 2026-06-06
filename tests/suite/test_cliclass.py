@@ -4,11 +4,14 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_net100, is_netcoreapp, is_netcoreapp21, is_posix, is_arm64, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_mono, is_net70, is_net80, is_net100, is_netcoreapp, is_posix, is_arm64, big, run_test, skipUnlessIronPython
+from iptest.ipunittest import load_ironpython_test
 
 if is_cli:
     import clr
     import System
+
+    load_ironpython_test()
 
 @skipUnlessIronPython()
 class CliClassTestCase(IronPythonTestCase):
@@ -19,11 +22,6 @@ class CliClassTestCase(IronPythonTestCase):
             warnings.simplefilter('always')
             result = callable(*args, **kwds)
             self.assertFalse(any(item.category == warning for item in warning_list))
-
-    def setUp(self):
-        super(CliClassTestCase, self).setUp()
-
-        self.load_iron_python_test()
 
     def test_inheritance(self):
         import System
@@ -1087,7 +1085,6 @@ End Class""")
         self.assertRaisesPartialMessage(TypeError, 'System.Single', f)
         self.assertRaisesPartialMessage(TypeError, 'System.Version', g)
 
-    @unittest.skipIf(is_netcoreapp21, "TODO: figure out")
     def test_disposable(self):
         """classes implementing IDisposable should automatically support the with statement"""
         from IronPythonTest import DisposableTest
@@ -1890,21 +1887,18 @@ if not hasattr(A, 'Rank'):
         finally:
             os.unlink(fname)
 
-    @unittest.skipIf(is_netcoreapp21, "TODO: figure out")
-    def test_extension_methods(self):
-        import clr, os
-        if is_netcoreapp:
-            clr.AddReference('System.Linq')
-        else:
-            clr.AddReference('System.Core')
+def get_extension_method_test_cases():
+        import os
 
         test_cases = [
 """
 # add reference via type
-import clr
-from System.Linq import Enumerable
+@skipUnlessIronPython()
 class TheTestCase(IronPythonTestCase):
     def test_reference_via_type(self):
+        import clr
+        from System.Linq import Enumerable
+
         self.assertNotIn('Where', dir([]))
         clr.ImportExtensions(Enumerable)
         self.assertIn('Where', dir([]))
@@ -1912,10 +1906,12 @@ class TheTestCase(IronPythonTestCase):
 """,
 """
 # add reference via namespace
-import clr
-import System
+@skipUnlessIronPython()
 class TheTestCase(IronPythonTestCase):
     def test_reference_via_namespace(self):
+        import clr
+        import System
+
         self.assertNotIn('Where', dir([]))
         clr.ImportExtensions(System.Linq)
         self.assertIn('Where', dir([]))
@@ -1923,11 +1919,13 @@ class TheTestCase(IronPythonTestCase):
 """,
 """
 # add reference via namespace, add new namespace w/ more specific type
-import clr
-import System
-from IronPythonTest.ExtensionMethodTest import LinqCollision
+@skipUnlessIronPython()
 class TheTestCase(IronPythonTestCase):
     def test_namespace_reference(self):
+        import clr
+        import System
+        from IronPythonTest.ExtensionMethodTest import LinqCollision
+
         self.assertNotIn('Where', dir([]))
         clr.ImportExtensions(System.Linq)
         self.assertIn('Where', dir([]))
@@ -1937,7 +1935,6 @@ class TheTestCase(IronPythonTestCase):
 """,
 
 """
-import clr
 class UserType(object): pass
 class UserTypeWithValue(object):
     def __init__(self):
@@ -1949,13 +1946,15 @@ class UserTypeWithSlotsWithValue(object):
     def __init__(self):
         self.BaseClass = 100
 
+@skipUnlessIronPython()
 class TheTestCase(IronPythonTestCase):
     def test_user_type(self):
+        import clr
+
         self.assertRaises(AttributeError, lambda : UserType().BaseClass)
         self.assertRaises(AttributeError, lambda : UserTypeWithSlots().BaseClass)
         self.assertEqual(UserTypeWithValue().BaseClass, 200)
 
-        import clr
         from IronPythonTest.ExtensionMethodTest import ClassRelationship
         clr.ImportExtensions(ClassRelationship)
 
@@ -1978,13 +1977,14 @@ class TheTestCase(IronPythonTestCase):
         self.assertEqual(UserTypeWithValue().BaseClass, 200)
 """,
 """
-import clr
-import System
-from IronPythonTest.ExtensionMethodTest import ClassRelationship
-clr.ImportExtensions(ClassRelationship)
-
+@skipUnlessIronPython()
 class TheTestCase(IronPythonTestCase):
     def test_class_relationship(self):
+        import clr
+        import System
+        from IronPythonTest.ExtensionMethodTest import ClassRelationship
+        clr.ImportExtensions(ClassRelationship)
+
         self.assertEqual([].Interface(), 23)
         self.assertEqual([].GenericInterface(), 23)
         self.assertEqual([].GenericInterfaceAndMethod(), 23)
@@ -1998,12 +1998,6 @@ class TheTestCase(IronPythonTestCase):
         self.assertEqual(object().GenericMethod(), 23)
 """,
 """
-import clr
-import System
-from System import Linq
-
-clr.ImportExtensions(Linq)
-
 class Product(object):
     def __init__(self, cat, id, qtyOnHand ):
         self.Cat = cat
@@ -2011,8 +2005,15 @@ class Product(object):
         self.QtyOnHand = qtyOnHand
         self.Q = self.QtyOnHand
 
+@skipUnlessIronPython()
 class TheTestCase(IronPythonTestCase):
     def test_extension_method(self):
+        import clr
+        import System
+        from System import Linq
+
+        clr.ImportExtensions(Linq)
+
         products = [Product(prod[0], prod[1], prod[2]) for prod in
             (('DrillRod', 'DR123', 45), ('Flange', 'F423', 12), ('Gizmo', 'G9872', 214), ('Sprocket', 'S534', 42))]
 
@@ -2058,20 +2059,22 @@ class TheTestCase(IronPythonTestCase):
             try:
                 old_path = [x for x in sys.path]
                 sys.path.append('.')
-                with open(fname, 'w+') as f:
+                with open(fname, 'w') as f:
                     f.write('''
-from test import support
-from iptest import IronPythonTestCase
+from iptest import IronPythonTestCase, skipUnlessIronPython
 ''')
                     f.write(test_case)
-                    f.write('''
-
-support.run_unittest(TheTestCase)''')
 
                 __import__(temp_module)
+                yield sys.modules[temp_module].TheTestCase
                 del sys.modules[temp_module]
             finally:
                 os.unlink(fname)
                 sys.path = [x for x in old_path]
+
+def load_tests(loader, tests, pattern):
+    for test_case in get_extension_method_test_cases():
+        tests.addTests(loader.loadTestsFromTestCase(test_case))
+    return tests
 
 run_test(__name__)

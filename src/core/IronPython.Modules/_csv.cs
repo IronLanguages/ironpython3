@@ -1006,7 +1006,7 @@ elements will be converted to string.")]
                 }
 
                 foreach (char c in need_escape) {
-                    if (field.IndexOf(c) >= 0) {
+                    if (field.Contains(c)) {
                         if (string.IsNullOrEmpty(_dialect.escapechar))
                             throw MakeError("need to escape, but no escapechar set");
                         field = field.Replace(c.ToString(), _dialect.escapechar + c);

@@ -21,7 +21,7 @@ namespace IronPython.Runtime {
                 if (onDiskCode.ModuleName == "__main__") {
                     _codes["__main__"] = onDiskCode;
                 } else {
-                    string name = code.SourceUnit.Path;
+                    string name = code.SourceUnit.Path ?? throw new InvalidOperationException("OnDiskScriptCode must have a path");
                     name = name.Replace(Path.DirectorySeparatorChar, '.');
                     if (name.EndsWith("__init__.py", StringComparison.Ordinal)) {
                         name = name.Substring(0, name.Length - ".__init__.py".Length);

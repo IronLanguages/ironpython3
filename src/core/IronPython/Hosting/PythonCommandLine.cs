@@ -433,9 +433,8 @@ namespace IronPython.Hosting {
 
         protected override string Prompt {
             get {
-                object value;
-                if (Engine.GetSysModule().TryGetVariable("ps1", out value)) {
-                    var context = ((PythonScopeExtension)Scope.GetExtension(Language.ContextId)).ModuleContext.GlobalContext;
+                if (Engine.GetSysModule().TryGetVariable("ps1", out object? value)) {
+                    var context = ((PythonScopeExtension)Scope.GetExtension(Language.ContextId)!).ModuleContext.GlobalContext;
 
                     return PythonOps.ToString(context, value);
                 }
@@ -446,9 +445,8 @@ namespace IronPython.Hosting {
 
         public override string PromptContinuation {
             get {
-                object value;
-                if (Engine.GetSysModule().TryGetVariable("ps2", out value)) {
-                    var context = ((PythonScopeExtension)Scope.GetExtension(Language.ContextId)).ModuleContext.GlobalContext;
+                if (Engine.GetSysModule().TryGetVariable("ps2", out object? value)) {
+                    var context = ((PythonScopeExtension)Scope.GetExtension(Language.ContextId)!).ModuleContext.GlobalContext;
 
                     return PythonOps.ToString(context, value);
                 }
@@ -544,7 +542,8 @@ namespace IronPython.Hosting {
 
             Action action = delegate () {
                 try {
-                    su.Compile(pco, ErrorSink).Run(Scope);
+                    var sc = su.Compile(pco, ErrorSink) ?? throw new InvalidOperationException("Compilation failed without reporting errors");
+                    sc.Run(Scope);
                 } catch (Exception e) {
                     if (e is SystemExitException) {
                         throw;
@@ -659,7 +658,7 @@ namespace IronPython.Hosting {
             PythonModule module = PythonContext.CompileModule(
                 fileName,
                 "__main__",
-                PythonContext.CreateFileUnit(String.IsNullOrEmpty(fileName) ? null : fileName, PythonContext.DefaultEncoding),
+                PythonContext.CreateFileUnit(fileName, PythonContext.DefaultEncoding),
                 modOpt,
                 out compiledCode);
             PythonContext.PublishModule("__main__", module);

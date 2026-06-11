@@ -58,7 +58,7 @@ namespace IronPython.SQLite
             private List<WeakReference> statements = new List<WeakReference>();
             private int created_statements = 0;
 
-            private Dictionary<object, object> function_pinboard = new Dictionary<object, object>();
+            private readonly HashSet<object> function_pinboard = new();
 
             internal Sqlite3.sqlite3 db;
 
@@ -286,7 +286,7 @@ namespace IronPython.SQLite
                 if(rc != Sqlite3.SQLITE_OK)
                     throw MakeOperationalError("Error creating function");
                 else
-                    this.function_pinboard[func] = null;
+                    this.function_pinboard.Add(func);
             }
 
             private static void callUserFunction(Sqlite3.sqlite3_context ctx, int argc, sqlite3_value[] argv)
@@ -459,7 +459,7 @@ namespace IronPython.SQLite
                 if(rc != Sqlite3.SQLITE_OK)
                     throw MakeOperationalError("Error creating aggregate");
                 else
-                    this.function_pinboard[aggregate_class] = null;
+                    this.function_pinboard.Add(aggregate_class);
             }
 
             #endregion

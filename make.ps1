@@ -232,7 +232,7 @@ function Purge() {
 
     Write-Verbose "Deleting packaging artifacts..."
     foreach ($dir in @("Release", "Debug")) {
-        if (Test-Path (Join-Path $_BASEDIR "Package" $dir -OutVariable targetPath)) {
+        if (Test-Path (Join-Path $_BASEDIR "dist" $dir -OutVariable targetPath)) {
             Remove-Item -Path $targetPath -Force -Recurse
         }
     }

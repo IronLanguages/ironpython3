@@ -44,7 +44,7 @@ namespace IronPython.Modules {
                 if (!TryGetBoundCustomMember(context, "_type_", out object val) ||
                     (sVal = StringOps.AsString(val)) == null ||
                     sVal.Length != 1 ||
-                    allowedTypes.IndexOf(sVal[0]) == -1) {
+                    !allowedTypes.Contains(sVal[0])) {
                     throw PythonOps.AttributeError("AttributeError: class must define a '_type_' attribute which must be a single character string containing one of '{0}'.", allowedTypes);
                 }
 
@@ -86,7 +86,7 @@ namespace IronPython.Modules {
                         throw new NotImplementedException("simple type " + sVal);
                 }
 
-                if (!name.EndsWith("_be", StringComparison.Ordinal) && !name.EndsWith("_le", StringComparison.Ordinal) && swappedTypes.IndexOf(_charType) != -1) {
+                if (!name.EndsWith("_be", StringComparison.Ordinal) && !name.EndsWith("_le", StringComparison.Ordinal) && swappedTypes.Contains(_charType)) {
                     CreateSwappedType(context, name, bases, dict);
                 }
                 _format = (BitConverter.IsLittleEndian ? '<' : '>') + _charType.ToString();

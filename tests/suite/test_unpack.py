@@ -3,7 +3,6 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
-import test.support
 import unittest
 
 class UnpackTest(unittest.TestCase):
@@ -233,8 +232,5 @@ class UnpackTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             exec("{*1}")
 
-def test_main():
-    test.support.run_unittest(UnpackTest)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main(verbosity=2)

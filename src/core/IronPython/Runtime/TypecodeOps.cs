@@ -33,7 +33,7 @@ namespace IronPython.Runtime {
                 code = format[1];
             }
             // TODO: add validation of combinations
-            return ValidByteorder.IndexOf(byteorder) >= 0 && ValidCodes.IndexOf(code) >= 0;
+            return ValidByteorder.Contains(byteorder) && ValidCodes.Contains(code);
         }
 
         public static void DecomposeTypecode(string format, out char byteorder, out char code) {

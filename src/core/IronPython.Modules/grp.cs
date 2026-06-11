@@ -112,7 +112,7 @@ or via the object attributes as named in the above tuple.
         }
 
         public static struct_group getgrnam(string name) {
-            if (name is not null && name.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
+            if (name is not null && name.Contains((char)0)) throw PythonOps.ValueError("embedded null byte");
             var grp = _getgrnam(name);
             if (grp == IntPtr.Zero) {
                 throw PythonOps.KeyError($"getgrnam()): name not found: {name}");

@@ -56,7 +56,7 @@ jobs:
     - uses: actions/upload-artifact@v7
       with:
         name: packages-${{ matrix.os }}
-        path: Package/Release/Packages
+        path: dist/Release/Packages
 
   test:
     runs-on: ${{ matrix.os }}

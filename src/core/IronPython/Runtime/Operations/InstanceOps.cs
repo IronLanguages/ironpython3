@@ -242,6 +242,27 @@ namespace IronPython.Runtime.Operations {
         public static object AsyncIterMethod<T>(System.Collections.Generic.IAsyncEnumerable<T> self) {
             return new AsyncEnumeratorWrapper<T>(self.GetAsyncEnumerator());
         }
+
+        /// <summary>
+        /// Provides the implementation of __aenter__ for objects implementing <see cref="System.IAsyncDisposable"/>.
+        /// IAsyncDisposable has no async-enter step — entering just yields the resource itself, wrapped in an
+        /// already-completed Task so the desugared <c>await mgr.__aenter__()</c> resolves to <c>self</c>.
+        /// </summary>
+        public static object AEnterMethod(System.IAsyncDisposable self) {
+            // Task<object> is the same runtime type as Task<object?>, so AsTaskForAwait's
+            // Task<object?> fast path picks it up. (InstanceOps isn't a #nullable context.)
+            return System.Threading.Tasks.Task.FromResult<object>(self);
+        }
+
+        /// <summary>
+        /// Provides the implementation of __aexit__ for objects implementing <see cref="System.IAsyncDisposable"/>.
+        /// Calls <see cref="System.IAsyncDisposable.DisposeAsync"/>; the returned ValueTask is awaited by the
+        /// desugared <c>await mgr.__aexit__(...)</c>. Returns a falsy result (the ValueTask completes with no
+        /// value) so the exception, if any, is not suppressed.
+        /// </summary>
+        public static object AExitMethod(System.IAsyncDisposable self, object exc_type, object exc_value, object exc_back) {
+            return self.DisposeAsync().AsTask();
+        }
 #endif
 
         #endregion

@@ -186,7 +186,7 @@ namespace IronPython.Modules {
         }
 
         private static object LoadDLL(string? library, int mode) {
-            if (library is not null && library.IndexOf((char)0) != -1) throw PythonOps.ValueError("embedded null byte");
+            if (library is not null && library.Contains((char)0)) throw PythonOps.ValueError("embedded null byte");
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {

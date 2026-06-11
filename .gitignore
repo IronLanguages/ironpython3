@@ -6,11 +6,12 @@
 *.suo
 *.csproj.user
 launchSettings.json
+*.lscache
 
 # Build results
 obj/
 bin/
-Package/Release/
+/dist/
 *.binlog
 
 # Python cache files

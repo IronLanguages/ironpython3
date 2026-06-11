@@ -94,7 +94,7 @@ namespace IronPython.Hosting {
 
         public string[] GetModuleFilenames() {
             List<string> res = new List<string>();
-            if ((object)_engine.GetSysModule().GetVariable("modules") is PythonDictionary dict) {
+            if ((object?)_engine.GetSysModule().GetVariable("modules") is PythonDictionary dict) {
                 foreach (var kvp in dict) {
                     if (kvp.Key is string key && kvp.Value is PythonModule module) {
                         var modDict = module.Get__dict__();
@@ -130,7 +130,7 @@ namespace IronPython.Hosting {
             return new ObjectHandle((Action<Action>)(action => _context.DispatchCommand(action)));
         }
 
-        public override object InitializeLifetimeService() {
+        public override object? InitializeLifetimeService() {
             return _engine.InitializeLifetimeService();
         }
 #endif

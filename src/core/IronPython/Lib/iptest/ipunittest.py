@@ -192,8 +192,7 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
 
 def run_test(name):
     if name == '__main__':
-        from test import support
-        support.run_unittest(name)
+        unittest.main(verbosity=2)
 
 def _flatten_suite(suite):
     tests = []

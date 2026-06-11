@@ -274,7 +274,7 @@ namespace IronPython.Runtime.Types {
 
             ImplementProtectedFieldAccessors(specialNames);
 
-            Dictionary<Type, bool> doneTypes = new Dictionary<Type, bool>();
+            var doneTypes = new HashSet<Type>();
             foreach (Type interfaceType in _interfaceTypes) {
                 DoInterfaceType(interfaceType, doneTypes, specialNames);
             }
@@ -364,15 +364,15 @@ namespace IronPython.Runtime.Types {
             return true;
         }
 
-        private void DoInterfaceType(Type interfaceType, Dictionary<Type, bool> doneTypes, Dictionary<string, string[]> specialNames) {
+        private void DoInterfaceType(Type interfaceType, HashSet<Type> doneTypes, Dictionary<string, string[]> specialNames) {
             if (interfaceType == typeof(IDynamicMetaObjectProvider)) {
                 // very tricky, we'll handle it when we're creating
                 // our own IDynamicMetaObjectProvider interface
                 return;
             }
 
-            if (doneTypes.ContainsKey(interfaceType)) return;
-            doneTypes.Add(interfaceType, true);
+            if (doneTypes.Contains(interfaceType)) return;
+            doneTypes.Add(interfaceType);
             OverrideMethods(interfaceType, specialNames);
 
             foreach (Type t in interfaceType.GetInterfaces()) {

@@ -148,7 +148,7 @@ namespace IronPython.Runtime {
         public static object ImportModule(CodeContext/*!*/ context, object globals, string/*!*/ modName, bool bottom, int level) {
             if (level < 0) throw PythonOps.ValueError("level must be >= 0");
 
-            if (modName.IndexOf(Path.DirectorySeparatorChar) != -1) {
+            if (modName.Contains(Path.DirectorySeparatorChar)) {
                 throw PythonOps.ImportError("Import by filename is not supported.");
             }
 

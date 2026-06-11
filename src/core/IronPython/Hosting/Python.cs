@@ -115,7 +115,7 @@ namespace IronPython.Hosting {
         /// Given a ScriptRuntime gets the ScriptEngine for IronPython.
         /// </summary>
         public static ScriptEngine/*!*/ GetEngine(ScriptRuntime/*!*/ runtime) {
-            return runtime.GetEngineByTypeName(typeof(PythonContext).AssemblyQualifiedName);
+            return runtime.GetEngineByTypeName(GetPythonAssemblyName());
         }
 
         /// <summary>
@@ -302,7 +302,7 @@ namespace IronPython.Hosting {
         /// </summary>
         public static LanguageSetup/*!*/ CreateLanguageSetup(IDictionary<string, object>? options) {
             var setup = new LanguageSetup(
-                typeof(PythonContext).AssemblyQualifiedName,
+                GetPythonAssemblyName(),
                 PythonContext.IronPythonDisplayName,
                 PythonContext.IronPythonNames.Split(';'),
                 PythonContext.IronPythonFileExtensions.Split(';')
@@ -358,11 +358,16 @@ namespace IronPython.Hosting {
         #region Private helpers
 
         private static PythonService/*!*/ GetPythonService(ScriptEngine/*!*/ engine) {
-            return engine.GetService<PythonService>(engine);
+            return engine.GetService<PythonService>(engine)!;  // not null since PythonContext.GetService<PythonService> override will create/return the service if it doesn't exist
         }
 
         private static PythonContext/*!*/ GetPythonContext(ScriptEngine/*!*/ engine) {
             return (PythonContext)HostingHelpers.GetLanguageContext(engine);
+        }
+
+        private static string GetPythonAssemblyName() {
+            return typeof(PythonContext).AssemblyQualifiedName
+                ?? throw new InvalidOperationException($"Could not get assembly qualified name for {nameof(PythonContext)}.");
         }
 
         #endregion

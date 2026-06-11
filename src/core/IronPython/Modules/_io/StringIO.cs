@@ -114,7 +114,7 @@ namespace IronPython.Modules {
                         span = span.Slice(0, idx + 1);
                     }
                 } else if (_newline == string.Empty) {
-                    var idx = span.IndexOfAny("\r\n".AsSpan());
+                    var idx = span.IndexOfAny("\r\n");
                     if (idx != -1) {
                         if (span[idx++] == '\r') {
                             // ensure we don't split \r\n
@@ -377,7 +377,7 @@ namespace IronPython.Modules {
 
                 if (_newline is null) {
                     while (true) {
-                        var idx = span.IndexOfAny("\r\n".AsSpan());
+                        var idx = span.IndexOfAny("\r\n");
                         if (idx == -1)
                             break;
 

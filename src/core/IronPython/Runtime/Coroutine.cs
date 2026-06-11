@@ -4,7 +4,9 @@
 
 #nullable enable
 
+using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Scripting.Runtime;
@@ -14,9 +16,166 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
+
     [PythonType("coroutine")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
     public sealed class PythonCoroutine : ICodeFormattable, IWeakReferenceable {
+
+#if FEATURE_NET_ASYNC
+
+        // Under .NET async, `async def` is compiled directly to a Task<object?> via the DLR's AsyncExpression + AsyncHelpers.
+        // PythonCoroutine is a wrapper over the Task with two cancellation channels pre-bound at the codegen level:
+        //
+        //   _cts                   — CancellationTokenSource whose Token was passed into AsyncExpression. throw(exc) cancels this.
+        //   _cancellationException — StrongBox<Exception?> shared with DriveAsync's `cancellationException` parameter;
+        //                            when non-null at cancellation time, that exception is surfaced to the body
+        //                            instead of OperationCanceledException. 
+        //
+        // Lazy start: the body is not executed at construction. _factory is the thunk that creates (and thereby starts driving) the Task on
+        // first access; _task caches the materialized Task. Calling an async def is therefore side-effect free until the coroutine is first
+        // driven (send/AsTask/GetAwaiter) — PEP 492.
+        private readonly Func<Task<object?>> _factory;
+        private Task<object?>? _task;
+        private readonly string _name;
+        private readonly FunctionCode? _code;
+        private readonly CancellationTokenSource _cts;
+        private readonly StrongBox<Exception?> _cancellationException;
+        private WeakRefTracker? _tracker;
+
+        internal PythonCoroutine(Func<Task<object?>> factory, string name, FunctionCode? code,
+                                  CancellationTokenSource cts,
+                                  StrongBox<Exception?> cancellationException) {
+            _factory = factory;
+            _name = name;
+            _code = code;
+            _cts = cts;
+            _cancellationException = cancellationException;
+        }
+
+        private Task<object?> EnsureTask() => _task ??= _factory();
+
+
+        [LightThrowing]
+        public object send(object? value) {
+            // Fast path: task already completed. Dispatch on terminal state without
+            // any try/catch — Result on a Faulted/Canceled task throws, so we must
+            // check IsCanceled / IsFaulted before reading it.
+            //
+            // Slow path: not completed. Block via AsyncWaitHandle.WaitOne() so we do
+            // not pay for exception unwinding (GetAwaiter().GetResult() would observe
+            // and rethrow cancel/fault). After waiting, the same terminal-state
+            // dispatch below applies.
+
+            var task = EnsureTask();
+            if (!task.IsCompleted) {
+                // TODO: coroutines should be steppable via send(), one await at a time.
+                ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
+            }
+
+            return SettleCompletedTask(task);
+        }
+
+
+        [LightThrowing]
+        public object @throw(object? value) => @throw(value, null, null);
+
+        [LightThrowing]
+        public object @throw(object? type, object? value) => @throw(type, value, null);
+
+        /// <summary>
+        ///   Throw an exception into the generator at the suspended <c>yield</c>. Returns an awaitable.
+        /// </summary>
+        /// <remarks>
+        ///   When awaited the exception is rethrown at the resume point:
+        ///   if the body catches it and yields again that value is produced;
+        ///   otherwise the exception propagates (or StopAsyncIteration if the body finishes).
+        ///   <br/>
+        ///   In typical use, this is called with a single exception instance similar to the way the raise keyword is used.
+        ///   <br/>
+        ///   Changed in CPython 3.12: The signature (type[, value[, traceback]]) is deprecated
+        ///   and may be removed in a future version of Python.
+        /// </remarks>
+        [LightThrowing]
+        public object @throw(object? type, object? value, object? traceback) {
+            // Validate the shape of (type, value, traceback) up front. Mirrors PythonGenerator.@throw
+            // so we don't mutate any state on bad input.
+            if (type is Exception || type is PythonExceptions.BaseException) {
+                if (value is not null)
+                    return LightExceptions.Throw(PythonOps.TypeError("instance exception may not have a separate value"));
+            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
+                // ok — class form, MakeExceptionForGenerator will construct.
+            } else {
+                return LightExceptions.Throw(PythonOps.TypeError(
+                    "exceptions must be classes or instances deriving from BaseException, not {0}",
+                    PythonOps.GetPythonTypeName(type)));
+            }
+
+            // Construct the actual exception object. DefaultContext.Default suffices here — throw()'s
+            // CodeContext role is limited to resolving class-form exception construction, and the
+            // coroutine's own context will re-bind the chain when the exception unwinds inside the body.
+            Exception ex = PythonOps.MakeExceptionForGenerator(
+                DefaultContext.Default, type, value, traceback, cause: null);
+
+            var task = EnsureTask();
+            if (task.IsCompleted) {
+                // Case 1: coroutine has finished. throw() raises the exception immediately —
+                // the body has nothing left to observe it. Matches CPython.
+                return LightExceptions.Throw(ex);
+            }
+
+            // Case 2: body is still running (or suspended at an await). Stash the exception in the
+            // shared StrongBox so DriveAsync surfaces it (instead of OCE) the moment it observes the
+            // cancellation, then cancel. The body sees `ex` rethrown at its next resume point.
+            _cancellationException.Value = ex;
+            _cts.Cancel();
+
+            // Wait for the body to settle. After this the task is in a terminal state — dispatch via
+            // the same logic as send() so the body's reaction (catch-and-return, propagate, etc.) is
+            // reflected back to the caller of throw().
+            ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
+            return SettleCompletedTask(task);
+        }
+
+
+        private static object SettleCompletedTask(Task<object?> task) {
+            if (task.IsCanceled) {
+                // Surfaces as Python CancelledError via the OCE -> CancelledError mapping in PythonExceptions.
+                return LightExceptions.Throw(new TaskCanceledException(task));
+            }
+            if (task.IsFaulted) {
+                return LightExceptions.Throw(task.Exception?.InnerException ?? task.Exception);
+            }
+            return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException(task.Result!));
+        }
+
+
+        [LightThrowing]
+        public object? close() => null;
+
+        public object __await__() => new CoroutineWrapper(this);
+
+        public FunctionCode? cr_code => _code;
+
+        // A not-yet-driven coroutine reports 0 (not running) without materializing the Task.
+        // Merely inspecting cr_running must not start the body.
+        public int cr_running => _task is null || _task.IsCompleted ? 0 : 1;
+
+        public TraceBackFrame? cr_frame => null;
+
+        public string __name__ => _name;
+
+        public string __qualname__ => _name;
+
+        /// <summary>Returns the underlying <see cref="Task{Object}"/>, starting the body on first call.</summary>
+        public Task<object?> AsTask() => EnsureTask();
+
+        /// <summary>Enables <c>await coroutine</c> from C# code.</summary>
+        public TaskAwaiter<object?> GetAwaiter() => EnsureTask().GetAwaiter();
+
+        internal Task<object?> Task => EnsureTask();
+
+#else  // !FEATURE_NET_ASYNC
+
         private readonly PythonGenerator _generator;
         private WeakRefTracker? _tracker;
 
@@ -40,6 +199,7 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
+        // The signature (type[, value[, traceback]]) is deprecated in CPython 3.12
         public object @throw(object? type, object? value, object? traceback) {
             return _generator.@throw(type, value, traceback);
         }
@@ -99,6 +259,8 @@ namespace IronPython.Runtime {
 
         internal PythonGenerator Generator => _generator;
 
+#endif  // FEATURE_NET_ASYNC - the rest of the members are shared between both implementations of PythonCoroutine
+
         #region ICodeFormattable Members
 
         public string __repr__(CodeContext context) {
@@ -124,6 +286,7 @@ namespace IronPython.Runtime {
 
         #endregion
     }
+
 
     [PythonType("coroutine_wrapper")]
     public sealed class CoroutineWrapper {

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -117,7 +118,25 @@ namespace IronPython.Compiler.Ast {
 
         public Expression ReturnAnnotation { get; internal set; }
 
+#if FEATURE_NET_ASYNC
+        // Under .NET-async, async functions are compiled directly to a Task<object?> via the DLR's AsyncExpression
+        // rather than reused through the generator state machine, so IsAsync does not imply generator-shaped emission.
+        internal override bool IsGeneratorMethod => IsGenerator;
+
+        // Async-generator (PEP 525) channels. The StrongBox *values* are per-async-generator instance,
+        // allocated per stack frame at runtime in the function body. 
+        // Declared/assigned in the body, captured by the generator (its yields read them through Parent),
+        // and handed to the PythonAsyncGenerator wrapper, which writes them before each resume:
+        //   AsyncSendSlot  — the value of `x = yield z` (asend(v); None for __anext__/async for).
+        //   AsyncThrowSlot — an exception to rethrow at the yield resume point (athrow/aclose).
+        private readonly MSAst.ParameterExpression _asyncSendSlot = MSAst.Expression.Variable(typeof(StrongBox<object>), "$asyncSend");
+        private readonly MSAst.ParameterExpression _asyncThrowSlot = MSAst.Expression.Variable(typeof(StrongBox<Exception>), "$asyncThrow");
+
+        internal MSAst.ParameterExpression AsyncSendSlot => _asyncSendSlot;
+        internal MSAst.ParameterExpression AsyncThrowSlot => _asyncThrowSlot;
+#else
         internal override bool IsGeneratorMethod => IsGenerator || IsAsync;
+#endif
 
         /// <summary>
         /// The function is a generator
@@ -182,9 +201,15 @@ namespace IronPython.Compiler.Ast {
                     fa |= FunctionAttributes.ContainsTryFinally;
                 }
 
+#if FEATURE_NET_ASYNC
+                if (IsGenerator) {
+                    fa |= FunctionAttributes.Generator;
+                }
+#else
                 if (IsGenerator || IsAsync) {
                     fa |= FunctionAttributes.Generator;
                 }
+#endif
 
                 if (IsAsync) {
                     fa |= FunctionAttributes.Coroutine;
@@ -357,7 +382,13 @@ namespace IronPython.Compiler.Ast {
                                 annotations
                             )
                         ),
+#if FEATURE_NET_ASYNC
+                    // Async generators are lowered via AsyncEnumerableExpression in the body,
+                    // so they must not be wrapped as a PythonGenerator here — only plain (non-async) generators are.
+                    (IsGenerator && !IsAsync) ?
+#else
                     (IsGenerator || IsAsync) ?
+#endif
                         (MSAst.Expression)new PythonGeneratorExpression(code, GlobalParent.PyContext.Options.CompilationThreshold, IsAsync) :
                         (MSAst.Expression)code
                 );
@@ -659,7 +690,13 @@ namespace IronPython.Compiler.Ast {
             // For generators/coroutines, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
             // from inside the generator.
+#if FEATURE_NET_ASYNC
+            // Async generators have no backing PythonGenerator (they lower to IAsyncEnumerable via AsyncEnumerableExpression),
+            // so skip the $generator.CheckThrowable() prologue for them.
+            if (IsGenerator && !IsAsync) {
+#else
             if (IsGenerator || IsAsync) {
+#endif
                 MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(SourceSpan.None);
                 statements.Add(s1);
             }
@@ -680,6 +717,59 @@ namespace IronPython.Compiler.Ast {
             body = WrapScopeStatements(body, Body.CanThrow);
             body = Ast.Block(body, AstUtils.Empty());
             body = AddReturnTarget(body);
+
+#if FEATURE_NET_ASYNC
+            // Under .NET-async, an `async def` body returns a PythonCoroutine wrapping a Task<object?>.
+            // We pre-allocate a CancellationTokenSource and a StrongBox<Exception?> here
+            // so the same instances are shared with both AsyncExpression, which threads them into AsyncHelpers.DriveAsync
+            // and PythonCoroutine, which uses them to implement coro.throw(exc) on a running coroutine:
+            // write the exception to the box, cancel the CTS, and DriveAsync surfaces that exception in place of OperationCanceledException.
+            if (IsAsync) {
+                var cts = MSAst.Expression.Variable(typeof(CancellationTokenSource), "$cts");
+                var excBox = MSAst.Expression.Variable(typeof(StrongBox<Exception>), "$cancelExc");
+                var ctToken = MSAst.Expression.Property(cts, nameof(CancellationTokenSource.Token));
+                if (IsGenerator) {
+                    // Async generator: the body has both `await` and `yield`. Lower it to an
+                    // IAsyncEnumerable<object?> via AsyncEnumerableExpression, sharing the generator label so
+                    // the body's yields and the rewritten awaits land in one generator, then wrap it in a
+                    // PythonAsyncGenerator. The send/throw slots are per-generator StrongBoxes captured by the
+                    // generator (the body's yields read them) AND handed to the wrapper, which writes them
+                    // before each resume — see AsyncSendSlot / AsyncThrowSlot.
+                    var sendSlot = AsyncSendSlot;
+                    var throwSlot = AsyncThrowSlot;
+                    body = MSAst.Expression.Block(
+                        [cts, excBox, sendSlot, throwSlot],
+                        MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
+                        MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
+                        MSAst.Expression.Assign(sendSlot, MSAst.Expression.New(typeof(StrongBox<object>))),
+                        MSAst.Expression.Assign(throwSlot, MSAst.Expression.New(typeof(StrongBox<Exception>))),
+                        Ast.Call(
+                            AstMethods.MakeAsyncGenerator,
+                            _functionParam,
+                            AstUtils.AsyncEnumerable(Name, body, GeneratorLabel, ctToken, excBox),
+                            sendSlot,
+                            throwSlot,
+                            cts));
+                } else {
+                    // Plain async def: the body returns a PythonCoroutine wrapping a Task<object?>.
+                    // Lazy start: hand MakeAsyncCoroutine a thunk (Func<Task<object?>>) instead of an already-running Task,
+                    // so the body doesn't execute until the coroutine is first driven (send/AsTask).
+                    // This makes calling an async def side-effect-free (PEP 492) and lets the body's first await capture the driver's SynchronizationContext
+                    // rather than whatever context happened to be current at construction.
+                    body = MSAst.Expression.Block(
+                        [cts, excBox],
+                        MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
+                        MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
+                        Ast.Call(
+                            AstMethods.MakeAsyncCoroutine,
+                            _functionParam,
+                            MSAst.Expression.Lambda<Func<Task<object>>>(
+                                AstUtils.Async(Name, body, ctToken, excBox)),
+                            cts,
+                            excBox));
+                }
+            }
+#endif
 
             MSAst.Expression bodyStmt = body;
             if (localContext != null) {

@@ -1999,10 +1999,16 @@ namespace IronPython.Compiler {
                 if (current is null || !current.IsAsync) {
                     ReportSyntaxError("'await' outside async function");
                 }
+#if !FEATURE_NET_ASYNC
+                // Under the generator-based async path, `await` desugars to `yield from`,
+                // so the enclosing function must be marked a generator.
+                // Under FEATURE_NET_ASYNC, the body is lowered through AsyncExpression and is *not* a Python generator
+                // so this mark assignment is being skipped here.
                 if (current is not null) {
                     current.IsGenerator = true;
                     current.GeneratorStop = GeneratorStop;
                 }
+#endif
             }
 
             Expression ret = ParseAtom();

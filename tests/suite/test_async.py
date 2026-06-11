@@ -94,6 +94,24 @@ class AsyncDefTest(unittest.TestCase):
             coro.throw(ValueError('boom'))
         self.assertEqual(str(cm.exception), 'boom')
 
+    def test_lazy_evaluation(self):
+        """The body of an async def must not run until the coroutine is first driven."""
+        log = []
+
+        async def noop():
+            return
+
+        async def lazy():
+            log.append('before')
+            await noop()
+            log.append('after')
+            return 'done'
+
+        coro = lazy()
+        self.assertEqual(log, [])  # constructing the coroutine runs nothing
+        self.assertEqual(run_coro(coro), 'done')
+        self.assertEqual(log, ['before', 'after'])
+
 
 class AwaitTest(unittest.TestCase):
     """Tests for await expression."""
@@ -138,6 +156,20 @@ class AwaitTest(unittest.TestCase):
             return 'done'
 
         self.assertEqual(run_coro(test()), 'done')
+
+    def test_exception_across_await(self):
+        """An exception raised in an awaited coroutine propagates and is catchable."""
+        async def fails():
+            raise ValueError('boom')
+
+        async def test():
+            try:
+                await fails()
+            except ValueError as e:
+                return 'caught: ' + str(e)
+            return 'not caught'
+
+        self.assertEqual(run_coro(test()), 'caught: boom')
 
 
 class AsyncWithTest(unittest.TestCase):

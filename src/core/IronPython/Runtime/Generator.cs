@@ -105,6 +105,7 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
+        // The signature (type[, value[, traceback]]) is deprecated in CPython 3.12
         public object @throw(object? type, object? value, object? traceback) {
             return @throw(type, value, traceback, false);
         }

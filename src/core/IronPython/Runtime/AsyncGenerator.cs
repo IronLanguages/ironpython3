@@ -85,7 +85,7 @@ namespace IronPython.Runtime {
 
 
         [LightThrowing]
-        public object athrow(object? type) => athrow(type, null, null);
+        public object athrow(object? value) => athrow(value, null, null);
 
         [LightThrowing]
         public object athrow(object? type, object? value) => athrow(type, value, null);
@@ -97,6 +97,9 @@ namespace IronPython.Runtime {
         ///   When awaited the exception is rethrown at the resume point:
         ///   if the body catches it and yields again that value is produced;
         ///   otherwise the exception propagates (or StopAsyncIteration if the body finishes).
+        ///   <br/>
+        ///   Changed in CPython 3.12: The signature (type[, value[, traceback]]) is deprecated
+        ///   and may be removed in a future version of Python.
         /// </remarks>
         [LightThrowing]
         public object athrow(object? type, object? value, object? traceback) {

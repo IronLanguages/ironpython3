@@ -17,11 +17,12 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
 
-#if FEATURE_NET_ASYNC
-
     [PythonType("coroutine")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
     public sealed class PythonCoroutine : ICodeFormattable, IWeakReferenceable {
+
+#if FEATURE_NET_ASYNC
+
         // Under .NET async, `async def` is compiled directly to a Task<object?> via the DLR's AsyncExpression + AsyncHelpers.
         // PythonCoroutine is a wrapper over the Task with two cancellation channels pre-bound at the codegen level:
         //
@@ -76,11 +77,24 @@ namespace IronPython.Runtime {
 
 
         [LightThrowing]
-        public object @throw(object? type) => @throw(type, null, null);
+        public object @throw(object? value) => @throw(value, null, null);
 
         [LightThrowing]
         public object @throw(object? type, object? value) => @throw(type, value, null);
 
+        /// <summary>
+        ///   Throw an exception into the generator at the suspended <c>yield</c>. Returns an awaitable.
+        /// </summary>
+        /// <remarks>
+        ///   When awaited the exception is rethrown at the resume point:
+        ///   if the body catches it and yields again that value is produced;
+        ///   otherwise the exception propagates (or StopAsyncIteration if the body finishes).
+        ///   <br/>
+        ///   In typical use, this is called with a single exception instance similar to the way the raise keyword is used.
+        ///   <br/>
+        ///   Changed in CPython 3.12: The signature (type[, value[, traceback]]) is deprecated
+        ///   and may be removed in a future version of Python.
+        /// </remarks>
         [LightThrowing]
         public object @throw(object? type, object? value, object? traceback) {
             // Validate the shape of (type, value, traceback) up front. Mirrors PythonGenerator.@throw
@@ -162,9 +176,6 @@ namespace IronPython.Runtime {
 
 #else  // !FEATURE_NET_ASYNC
 
-    [PythonType("coroutine")]
-    [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
-    public sealed class PythonCoroutine : ICodeFormattable, IWeakReferenceable {
         private readonly PythonGenerator _generator;
         private WeakRefTracker? _tracker;
 
@@ -188,6 +199,7 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
+        // The signature (type[, value[, traceback]]) is deprecated in CPython 3.12
         public object @throw(object? type, object? value, object? traceback) {
             return _generator.@throw(type, value, traceback);
         }

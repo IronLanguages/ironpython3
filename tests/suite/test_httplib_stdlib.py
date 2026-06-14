@@ -6,12 +6,14 @@
 ## Run selected tests from test_httplib from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono, is_osx
 
 import test.test_httplib
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_httplib)
+    tests = loader.loadTestsFromModule(test.test_httplib, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [

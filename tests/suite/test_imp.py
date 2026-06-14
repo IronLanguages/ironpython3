@@ -319,25 +319,25 @@ else:
         #import some builtin modules not previously imported
         try:
             sys.path = [None] + prevPath
-            self.assertNotIn('array', sorted(sys.modules.keys()))
-            import array
-            self.assertIn('array', sys.modules)
+            self.assertNotIn('_csv', sorted(sys.modules.keys()))
+            import _csv
+            self.assertIn('_csv', sys.modules)
 
             sys.path = prevPath + [None]
             self.assertNotIn('cmath', sys.modules)
-            import array
+            import _csv
             import cmath
-            self.assertIn('array', sys.modules)
+            self.assertIn('_csv', sys.modules)
             self.assertIn('cmath', sys.modules)
 
             sys.path = [None]
-            self.assertNotIn('_bisect', sys.modules)
-            import array
+            self.assertNotIn('xxsubtype', sys.modules)
+            import _csv
             import cmath
-            import _bisect
-            self.assertIn('array', sys.modules)
+            import xxsubtype
+            self.assertIn('_csv', sys.modules)
             self.assertIn('cmath', sys.modules)
-            self.assertIn('_bisect', sys.modules)
+            self.assertIn('xxsubtype', sys.modules)
 
         finally:
             sys.path = prevPath

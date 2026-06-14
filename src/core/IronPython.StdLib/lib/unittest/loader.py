@@ -81,7 +81,7 @@ class TestLoader(object):
         loaded_suite = self.suiteClass(map(testCaseClass, testCaseNames))
         return loaded_suite
 
-    def loadTestsFromModule(self, module, use_load_tests=True):
+    def loadTestsFromModule(self, module, use_load_tests=True, **kws): # ironpython: add kws to accept pattern for load_tests
         """Return a suite of all tests cases contained in the given module"""
         tests = []
         for name in dir(module):

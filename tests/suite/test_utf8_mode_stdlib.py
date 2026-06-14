@@ -6,12 +6,14 @@
 ## Run selected tests from test_utf8_mode from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_netcoreapp21, is_windows
 
 import test.test_utf8_mode
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_utf8_mode)
+    tests = loader.loadTestsFromModule(test.test_utf8_mode, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [

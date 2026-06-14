@@ -6,12 +6,14 @@
 ## Run selected tests from test_dict from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono
 
 import test.test_dict
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_dict)
+    tests = loader.loadTestsFromModule(test.test_dict, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [

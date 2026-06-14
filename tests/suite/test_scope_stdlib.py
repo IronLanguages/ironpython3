@@ -6,12 +6,14 @@
 ## Run selected tests from test_scope from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_scope
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_scope)
+    tests = loader.loadTestsFromModule(test.test_scope, pattern=pattern)
 
     if is_ironpython:
         failing_tests = []

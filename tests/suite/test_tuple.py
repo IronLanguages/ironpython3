@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, big, run_test, skipUnlessIronPython
@@ -9,11 +10,16 @@ from iptest import IronPythonTestCase, big, run_test, skipUnlessIronPython
 class TupleTest(IronPythonTestCase):
 
     def test_assign_to_empty(self):
-        """Disallow assignment to empty tuple"""
+        """Assignment to empty tuple"""
         y = ()
-        self.assertRaises(SyntaxError, compile, "() = y", "Error", "exec")
-        self.assertRaises(SyntaxError, compile, "(), t = y, 0", "Error", "exec")
-        self.assertRaises(SyntaxError, compile, "((()))=((y))", "Error", "exec")
+        if sys.version_info >= (3, 6):
+            exec("() = y")
+            exec("(), t = y, 0")
+            exec("((()))=((y))")
+        else:
+            self.assertRaises(SyntaxError, compile, "() = y", "Error", "exec")
+            self.assertRaises(SyntaxError, compile, "(), t = y, 0", "Error", "exec")
+            self.assertRaises(SyntaxError, compile, "((()))=((y))", "Error", "exec")
         del y
 
     def test_unpack(self):
@@ -52,11 +58,11 @@ class TupleTest(IronPythonTestCase):
         self.assertEqual((3, 4).__mul__(mylong(2)), (3, 4, 3, 4))
         self.assertEqual((5, 6).__rmul__(mylong(2)), (5, 6, 5, 6))
         self.assertEqual(mylong(2) * (7,8) , (7, 8, 7, 8))
-        
+
         class mylong2(int):
             def __rmul__(self, other):
                 return 42
-                
+
         self.assertEqual((1,2) * mylong2(2), 42) # this one uses __rmul__
         self.assertEqual((3, 4).__mul__(mylong2(2)), (3, 4, 3, 4))
         self.assertEqual((5, 6).__rmul__(mylong2(2)), (5, 6, 5, 6))
@@ -71,12 +77,12 @@ class TupleTest(IronPythonTestCase):
                 return 42
             def __eq__(self, other):
                 return type(self) == type(other)
-        
-        
+
+
         test = (myhashable(), myhashable(), myhashable())
-        
+
         hash(test)
-        
+
         self.assertEqual(test[0].hashcalls, 1)
         self.assertEqual(test[1].hashcalls, 1)
         self.assertEqual(test[2].hashcalls, 1)
@@ -94,7 +100,7 @@ class TupleTest(IronPythonTestCase):
         import clr # Make sure .GetHashCode() is available
         example = (1, None)
         expected = 1625286227
-        
+
         self.assertEqual(hash(example), expected)
         self.assertEqual(hash(example), example.GetHashCode())
 
@@ -103,9 +109,9 @@ class TupleTest(IronPythonTestCase):
         # verify you can call ToString on a tuple after importing clr
         import clr
         a = (0,)
-        
+
         self.assertEqual(str(a), a.ToString())
-    
+
 
     def test_sequence_assign(self):
         try:
@@ -125,7 +131,7 @@ class TupleTest(IronPythonTestCase):
     def test_indexing(self):
         t = (2,3,4)
         self.assertRaises(TypeError, lambda : t[2.0])
-        
+
         class mytuple(tuple):
             def __getitem__(self, index):
                 return tuple.__getitem__(self, int(index))
@@ -145,11 +151,11 @@ class TupleTest(IronPythonTestCase):
 
         for x in T((1,)):
             self.assertEqual(x, 1)
-        
+
     def test_mul_subclass(self):
         class subclass(tuple):
             pass
-            
+
         u = subclass([0,1])
         self.assertTrue(u is not u*1)
 
@@ -179,7 +185,7 @@ class TupleTest(IronPythonTestCase):
             class x(tuple):
                 def  __contains__(self, other):
                     return retval
-                
+
             self.assertEqual('abc' in x(), False)
 
         class x2(tuple):
@@ -191,10 +197,10 @@ class TupleTest(IronPythonTestCase):
         class x(object):
             def __eq__(self, other): return False
             def __ne__(self, other): return True
-        
+
         a = x()
         self.assertEqual((a, ), (a, ))
-    
+
     def test_tuple_reuse(self):
         t = (2,4,6)
         self.assertEqual(id(t), id(tuple(t)))
@@ -206,9 +212,8 @@ class TupleTest(IronPythonTestCase):
         x = ()
         def delindex(): del x[42]
         def setindex(): x[42] = 42
-        
+
         self.assertRaisesMessage(TypeError, "'tuple' object doesn't support item deletion", delindex)
         self.assertRaisesMessage(TypeError, "'tuple' object does not support item assignment", setindex)
 
-    
 run_test(__name__)

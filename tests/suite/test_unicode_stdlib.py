@@ -6,17 +6,17 @@
 ## Run selected tests from test_unicode from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_unicode
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_unicode)
+    tests = loader.loadTestsFromModule(test.test_unicode, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
-            test.test_unicode.UnicodeTest('test_aswidechar'),
-            test.test_unicode.UnicodeTest('test_aswidecharstring'),
             test.test_unicode.UnicodeTest('test_capitalize'),
             test.test_unicode.UnicodeTest('test_case_operation_overflow'),
             test.test_unicode.UnicodeTest('test_casefold'),
@@ -25,7 +25,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_unicode.UnicodeTest('test_codecs_utf7'),
             test.test_unicode.UnicodeTest('test_compare'),
             test.test_unicode.UnicodeTest('test_constructor_defaults'),
-            test.test_unicode.UnicodeTest('test_encode_decimal'),
             test.test_unicode.UnicodeTest('test_expandtabs_optimization'),
             test.test_unicode.UnicodeTest('test_expandtabs_overflows_gracefully'),
             test.test_unicode.UnicodeTest('test_format'),
@@ -35,7 +34,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_unicode.UnicodeTest('test_formatting'),
             test.test_unicode.UnicodeTest('test_formatting_c_limits'),
             test.test_unicode.UnicodeTest('test_formatting_huge_precision_c_limits'),
-            test.test_unicode.UnicodeTest('test_from_format'),
             test.test_unicode.UnicodeTest('test_getnewargs'),
             test.test_unicode.UnicodeTest('test_invalid_cb_for_2bytes_seq'),
             test.test_unicode.UnicodeTest('test_invalid_cb_for_3bytes_seq'),
@@ -56,7 +54,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_unicode.UnicodeTest('test_lower'),
             test.test_unicode.UnicodeTest('test_mul'),
             test.test_unicode.UnicodeTest('test_partition'),
-            test.test_unicode.UnicodeTest('test_pep393_utf8_caching_bug'),
             test.test_unicode.UnicodeTest('test_printable_repr'),
             test.test_unicode.UnicodeTest('test_raiseMemError'),
             test.test_unicode.UnicodeTest('test_replace'),
@@ -64,15 +61,31 @@ def load_tests(loader, standard_tests, pattern):
             test.test_unicode.UnicodeTest('test_replace_overflow'),
             test.test_unicode.UnicodeTest('test_rpartition'),
             test.test_unicode.UnicodeTest('test_rsplit'),
-            test.test_unicode.UnicodeTest('test_split'),
+            test.test_unicode.UnicodeTest('test_split'), # https://github.com/IronLanguages/ironpython3/issues/252
             test.test_unicode.UnicodeTest('test_swapcase'),
             test.test_unicode.UnicodeTest('test_title'),
-            test.test_unicode.UnicodeTest('test_transform_decimal'),
             test.test_unicode.UnicodeTest('test_unexpected_end_of_data'),
             test.test_unicode.UnicodeTest('test_upper'),
         ]
 
-        return generate_suite(tests, failing_tests)
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_unicode.UnicodeTest('test_issue28598_strsubclass_rhs'),
+                test.test_unicode.UnicodeTest('test_join_overflow'), # ValueError: capacity was less than the current size.
+            ]
+        else:
+            failing_tests += [
+                test.test_unicode.UnicodeTest('test_aswidechar'),
+                test.test_unicode.UnicodeTest('test_aswidecharstring'),
+                test.test_unicode.UnicodeTest('test_encode_decimal'),
+                test.test_unicode.UnicodeTest('test_from_format'),
+                test.test_unicode.UnicodeTest('test_pep393_utf8_caching_bug'),
+                test.test_unicode.UnicodeTest('test_transform_decimal'),
+            ]
+
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

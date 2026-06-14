@@ -6,12 +6,14 @@
 ## Run selected tests from test_builtin from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_netcoreapp
+import sys
+
+from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_builtin
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_builtin)
+    tests = loader.loadTestsFromModule(test.test_builtin, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -31,8 +33,17 @@ def load_tests(loader, standard_tests, pattern):
             test.test_builtin.PtyTests('test_input_tty_non_ascii_unicode_errors'),
             test.test_builtin.ShutdownTest('test_cleanup'),
         ]
-        if is_netcoreapp:
+        if sys.version_info >= (3, 6):
             skip_tests += [
+                test.test_builtin.TestSorted('test_bad_arguments'), # AssertionError: TypeError not raised
+                test.test_builtin.TestType('test_bad_args'), # AssertionError: TypeError not raised
+                test.test_builtin.TestType('test_bad_slots'), # AssertionError: TypeError not raised
+                test.test_builtin.TestType('test_namespace_order'), # https://github.com/IronLanguages/ironpython3/issues/1468
+                test.test_builtin.TestType('test_new_type'), # AssertionError: <class 'test.test_builtin.B'> is not <class 'int'>
+                test.test_builtin.TestType('test_type_doc'), # AssertionError: UnicodeEncodeError not raised
+                test.test_builtin.TestType('test_type_name'), # AssertionError: ValueError not raised
+                test.test_builtin.TestType('test_type_nokwargs'), # AssertionError: TypeError not raised
+                test.test_builtin.TestType('test_type_qualname'), # https://github.com/IronLanguages/ironpython3/issues/30
             ]
 
         return generate_suite(tests, failing_tests, skip_tests)

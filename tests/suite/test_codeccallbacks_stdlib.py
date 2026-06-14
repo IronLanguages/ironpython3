@@ -6,12 +6,14 @@
 ## Run selected tests from test_codeccallbacks from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono
 
 import test.test_codeccallbacks
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_codeccallbacks)
+    tests = loader.loadTestsFromModule(test.test_codeccallbacks, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -27,15 +29,23 @@ def load_tests(loader, standard_tests, pattern):
             test.test_codeccallbacks.CodecCallbackTest('test_unencodablereplacement'), # UnicodeEncodeError not raised by encode
             test.test_codeccallbacks.CodecCallbackTest('test_unicodedecodeerror'), # TypeError not raised by UnicodeDecodeError
             test.test_codeccallbacks.CodecCallbackTest('test_unicodeencodeerror'), # TypeError not raised by UnicodeEncodeError
-            test.test_codeccallbacks.CodecCallbackTest('test_unicodetranslateerror'),  # UTF-16 vs. UTF-32
+            test.test_codeccallbacks.CodecCallbackTest('test_unicodetranslateerror'), # UTF-16 vs. UTF-32
             test.test_codeccallbacks.CodecCallbackTest('test_uninamereplace'), # bug?
         ]
         if is_mono:
             failing_tests += [
                 test.test_codeccallbacks.CodecCallbackTest('test_longstrings'), # https://github.com/mono/mono/issues/20445
             ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_codeccallbacks.CodecCallbackTest('test_badandgoodnamereplaceexceptions'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codeccallbacks.CodecCallbackTest('test_badandgoodsurrogatepassexceptions'), # AssertionError: UnicodeEncodeError not raised by surrogatepass_errors
+                test.test_codeccallbacks.CodecCallbackTest('test_crashing_decode_handler'), # NotImplementedError: Moving a decoding cursor not implemented yet
+            ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

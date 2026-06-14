@@ -3,24 +3,26 @@
 # See the LICENSE file in the project root for more information.
 
 ##
-## Run selected tests from test_resource from StdLib
+## Run selected tests from test_call from StdLib
 ##
 
 import sys
 
 from iptest import is_ironpython, generate_suite, run_test
 
-import test.test_resource
+import test.test_call
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_resource, pattern=pattern)
+    tests = loader.loadTestsFromModule(test.test_call, pattern=pattern)
 
     if is_ironpython:
         failing_tests = []
 
-        skip_tests = [
-            test.test_resource.ResourceTest('test_fsize_enforced') # TODO: handle SIGXFSZ
-        ]
+        skip_tests = []
+        if sys.version_info >= (3, 6):
+            skip_tests += [
+                test.test_call.FunctionCalls('test_kwargs_order'), # intermittent failures due to https://github.com/IronLanguages/ironpython3/issues/1460
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

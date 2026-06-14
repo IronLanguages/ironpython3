@@ -6,12 +6,14 @@
 ## Run selected tests from test_bz2 from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_bz2
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_bz2)
+    tests = loader.loadTestsFromModule(test.test_bz2, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [

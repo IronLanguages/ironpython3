@@ -11,9 +11,9 @@ import sys
 from iptest import is_ironpython, generate_suite, run_test
 
 if sys.version_info >= (3, 6):
-    import test.test_pep380 as test_yield_from
-else:
     import test.yield_from as test_yield_from
+else:
+    import test.test_pep380 as test_yield_from
 
 def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test_yield_from, pattern=pattern)

@@ -17,6 +17,10 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = []
+        if sys.version_info < (3, 6):
+            failing_tests += [
+                test.test_plistlib.TestBinaryPlistlib('test_identity'), # AssertionError: b'abcde' != Data(b'abcde')
+            ]
         if sys.version_info >= (3, 6):
             failing_tests += [
                 test.test_plistlib.TestPlistlib('test_xml_plist_with_entity_decl'), # https://github.com/IronLanguages/ironpython2/issues/464

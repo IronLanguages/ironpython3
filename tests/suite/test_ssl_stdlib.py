@@ -78,13 +78,6 @@ def load_tests(loader, standard_tests, pattern):
         if is_posix:
             failing_tests += [
                 test.test_ssl.ContextTests('test_load_default_certs_env'), # 'SSLContext' object has no attribute 'cert_store_stats'
-                test.test_ssl.NetworkedTests('test_makefile_close'), # OSError: [Errno 9] Bad file descriptor
-            ]
-        if is_mono and is_osx:
-            failing_tests += [
-                test.test_ssl.NetworkedTests('test_connect_cadata'), # # https://github.com/IronLanguages/ironpython3/issues/1523
-                test.test_ssl.NetworkedTests('test_connect_ex'), # https://github.com/IronLanguages/ironpython3/issues/1523
-                test.test_ssl.NetworkedTests('test_get_server_certificate'), # https://github.com/IronLanguages/ironpython3/issues/1523
             ]
 
         skip_tests = [
@@ -106,14 +99,13 @@ def load_tests(loader, standard_tests, pattern):
             test.test_ssl.ThreadedTests('test_socketserver'),
             test.test_ssl.ThreadedTests('test_starttls'), # blocking
         ]
-        if sys.version_info < (3, 4):
+        if sys.version_info < (3, 6):
             skip_tests += [
                 test.test_ssl.NetworkedTests('test_connect_ex_error'), # slow
                 test.test_ssl.SSLErrorTests('test_subclass'), # blocking
                 test.test_ssl.ThreadedTests('test_default_ciphers'),
                 test.test_ssl.ThreadedTests('test_handshake_timeout'), # blocking
             ]
-
         if sys.version_info >= (3, 6):
             skip_tests += [
                 test.test_ssl.SSLErrorTests('test_subclass'), # hangs indefinitely: wrapped SSLSocket resets timeout to None

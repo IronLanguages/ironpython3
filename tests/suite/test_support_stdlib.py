@@ -22,10 +22,10 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_support.TestSupport('test_args_from_interpreter_flags'), # https://github.com/IronLanguages/ironpython3/issues/1541
                 test.test_support.TestSupport('test_optim_args_from_interpreter_flags'), # https://github.com/IronLanguages/ironpython3/issues/1541
             ]
-            if is_osx:
-                failing_tests += [
-                    test.test_support.TestSupport('test_change_cwd'), # https://github.com/IronLanguages/ironpython3/issues/1543
-                ]
+        if is_osx:
+            failing_tests += [
+                test.test_support.TestSupport('test_change_cwd'), # https://github.com/IronLanguages/ironpython3/issues/1543
+            ]
 
         skip_tests = []
 

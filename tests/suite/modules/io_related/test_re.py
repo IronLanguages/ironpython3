@@ -3,6 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import re
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, run_test
@@ -33,8 +34,16 @@ class ReTest(IronPythonTestCase):
         '''
         #compile
         self.assertTrue(hasattr(re.compile("(abc){1}"), "pattern"))
-        self.assertTrue(hasattr(re.compile("(abc){1}", re.L), "pattern"))
-        self.assertTrue(hasattr(re.compile("(abc){1}", flags=re.L), "pattern"))
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.compile("(abc){1}", re.L)
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.compile("(abc){1}", flags=re.L)
+        else:
+            self.assertTrue(hasattr(re.compile("(abc){1}", re.L), "pattern"))
+            self.assertTrue(hasattr(re.compile("(abc){1}", flags=re.L), "pattern"))
+        self.assertTrue(hasattr(re.compile(b"(abc){1}", re.L), "pattern"))
+        self.assertTrue(hasattr(re.compile(b"(abc){1}", flags=re.L), "pattern"))
 
         #I IGNORECASE L LOCAL MMULTILINE S DOTALL U UNICODE X VERBOSE
         flags = ["I", "IGNORECASE",
@@ -50,15 +59,31 @@ class ReTest(IronPythonTestCase):
         #search
         self.assertEqual(re.search("(abc){1}", ""), None)
         self.assertEqual(re.search("(abc){1}", "abcxyz").span(), (0,3))
-        self.assertEqual(re.search("(abc){1}", "abcxyz", re.L).span(), (0,3))
-        self.assertEqual(re.search("(abc){1}", "abcxyz", flags=re.L).span(), (0,3))
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.search("(abc){1}", "abcxyz", re.L)
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.search("(abc){1}", "abcxyz", flags=re.L)
+        else:
+            self.assertEqual(re.search("(abc){1}", "abcxyz", re.L).span(), (0,3))
+            self.assertEqual(re.search("(abc){1}", "abcxyz", flags=re.L).span(), (0,3))
+        self.assertEqual(re.search(b"(abc){1}", b"abcxyz", re.L).span(), (0,3))
+        self.assertEqual(re.search(b"(abc){1}", b"abcxyz", flags=re.L).span(), (0,3))
         self.assertEqual(re.search("(abc){1}", "xyzabc").span(), (3,6))
 
         #match
         self.assertEqual(re.match("(abc){1}", ""), None)
         self.assertEqual(re.match("(abc){1}", "abcxyz").span(), (0,3))
-        self.assertEqual(re.match("(abc){1}", "abcxyz", re.L).span(), (0,3))
-        self.assertEqual(re.match("(abc){1}", "abcxyz", flags=re.L).span(), (0,3))
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.match("(abc){1}", "abcxyz", re.L)
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.match("(abc){1}", "abcxyz", flags=re.L)
+        else:
+            self.assertEqual(re.match("(abc){1}", "abcxyz", re.L).span(), (0,3))
+            self.assertEqual(re.match("(abc){1}", "abcxyz", flags=re.L).span(), (0,3))
+        self.assertEqual(re.match(b"(abc){1}", b"abcxyz", re.L).span(), (0,3))
+        self.assertEqual(re.match(b"(abc){1}", b"abcxyz", flags=re.L).span(), (0,3))
 
         #split
         self.assertEqual(re.split("(abc){1}", ""), [''])
@@ -76,15 +101,31 @@ class ReTest(IronPythonTestCase):
         #findall
         self.assertEqual(re.findall("(abc){1}", ""), [])
         self.assertEqual(re.findall("(abc){1}", "abcxyz"), ['abc'])
-        self.assertEqual(re.findall("(abc){1}", "abcxyz", re.L), ['abc'])
-        self.assertEqual(re.findall("(abc){1}", "abcxyz", flags=re.L), ['abc'])
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.findall("(abc){1}", "abcxyz", re.L)
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.findall("(abc){1}", "abcxyz", flags=re.L)
+        else:
+            self.assertEqual(re.findall("(abc){1}", "abcxyz", re.L), ['abc'])
+            self.assertEqual(re.findall("(abc){1}", "abcxyz", flags=re.L), ['abc'])
+        self.assertEqual(re.findall(b"(abc){1}", b"abcxyz", re.L), [b'abc'])
+        self.assertEqual(re.findall(b"(abc){1}", b"abcxyz", flags=re.L), [b'abc'])
         self.assertEqual(re.findall("(abc){1}", "xyzabcabc"), ['abc', 'abc'])
 
         #finditer
         self.assertEqual([x.group() for x in re.finditer("(abc){1}", "")], [])
         self.assertEqual([x.group() for x in re.finditer("(abc){1}", "abcxyz")], ['abc'])
-        self.assertEqual([x.group() for x in re.finditer("(abc){1}", "abcxyz", re.L)], ['abc'])
-        self.assertEqual([x.group() for x in re.finditer("(abc){1}", "abcxyz", flags=re.L)], ['abc'])
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.finditer("(abc){1}", "abcxyz", re.L)
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.finditer("(abc){1}", "abcxyz", flags=re.L)
+        else:
+            self.assertEqual([x.group() for x in re.finditer("(abc){1}", "abcxyz", re.L)], ['abc'])
+            self.assertEqual([x.group() for x in re.finditer("(abc){1}", "abcxyz", flags=re.L)], ['abc'])
+        self.assertEqual([x.group() for x in re.finditer(b"(abc){1}", b"abcxyz", re.L)], [b'abc'])
+        self.assertEqual([x.group() for x in re.finditer(b"(abc){1}", b"abcxyz", flags=re.L)], [b'abc'])
         self.assertEqual([x.group() for x in re.finditer("(abc){1}", "xyzabcabc")], ['abc', 'abc'])
         rex = re.compile("foo")
         for m in rex.finditer("this is a foo and a foo bar"):
@@ -188,7 +229,12 @@ class ReTest(IronPythonTestCase):
 
         #flags
         self.assertEqual(pattern.flags, re.U)
-        self.assertEqual(re.compile("(abc){1}", re.L).flags, re.L | re.U)
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.compile("(abc){1}", re.L)
+        else:
+            self.assertEqual(re.compile("(abc){1}", re.L).flags, re.L | re.U)
+        self.assertEqual(re.compile(b"(abc){1}", re.L).flags, re.L)
 
         #groupindex
         self.assertEqual(pattern.groupindex, {})
@@ -514,18 +560,28 @@ class ReTest(IronPythonTestCase):
 
     def test_finditer(self):
         # finditer
-        matches = re.finditer("baz","barbazbarbazbar")
+        matches = re.finditer("baz", "barbazbarbazbar")
         num = 0
         for m in matches:
             num = num + 1
             self.assertEqual("baz", m.group(0))
         self.assertTrue(num == 2)
 
-        matches = re.finditer("baz","barbazbarbazbar", re.L)
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.finditer("baz", "barbazbarbazbar", re.L)
+        else:
+            matches = re.finditer("baz", "barbazbarbazbar", re.L)
+            num = 0
+            for m in matches:
+                num = num + 1
+                self.assertEqual("baz", m.group(0))
+            self.assertTrue(num == 2)
+        matches = re.finditer(b"baz", b"barbazbarbazbar", re.L)
         num = 0
         for m in matches:
             num = num + 1
-            self.assertEqual("baz", m.group(0))
+            self.assertEqual(b"baz", m.group(0))
         self.assertTrue(num == 2)
 
         matches = re.compile("baz").finditer("barbazbarbazbar", 0)
@@ -623,8 +679,16 @@ class ReTest(IronPythonTestCase):
 
     def test_locale_flags(self):
         self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.U)
-        self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)", re.L).flags, re.L | re.U)
-        self.assertEqual(re.compile(r"(?L)^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.L | re.U)
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)", re.L)
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                re.compile(r"(?L)^\#[ \t]*(\w[\d\w]*)[ \t](.*)")
+        else:
+            self.assertEqual(re.compile(r"^\#[ \t]*(\w[\d\w]*)[ \t](.*)", re.L).flags, re.L | re.U)
+            self.assertEqual(re.compile(r"(?L)^\#[ \t]*(\w[\d\w]*)[ \t](.*)").flags, re.L | re.U)
+        self.assertEqual(re.compile(rb"", re.L).flags, re.L)
+        self.assertEqual(re.compile(rb"(?L)").flags, re.L)
 
     def test_end(self):
         ex = re.compile(r'\s+')
@@ -792,7 +856,12 @@ class ReTest(IronPythonTestCase):
     def test_cp35135(self):
         self.assertEqual(re.match(r"(?iu)aA", "aa").string, "aa")
         self.assertEqual(re.match(r"(?iu)Aa", "aa").string, "aa")
-        self.assertEqual(re.match(r"(?iLmsux)Aa", "aa").string, "aa")
+        if sys.version_info >= (3, 6):
+            with self.assertRaises(ValueError): # cannot use LOCALE flag with a str pattern
+                self.assertEqual(re.match(r"(?iLmsux)Aa", "aa").string, "aa")
+        else:
+            self.assertEqual(re.match(r"(?iLmsux)Aa", "aa").string, "aa")
+        self.assertEqual(re.match(r"(?imsux)Aa", "aa").string, "aa")
 
     def test_issue506(self):
         self.assertEqual(re.compile("^a", re.M).search("ba", 1), None)

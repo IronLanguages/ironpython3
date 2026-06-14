@@ -244,18 +244,6 @@ function Purge() {
 }
 
 switch -wildcard ($target) {
-    # debug targets
-    "restore-debug" { Main "RestoreReferences" "Debug" }
-    "debug"         { Main "Build" "Debug" }
-    "clean-debug"   { Main "Clean" "Debug" }
-    "stage-debug"   { Main "Stage" "Debug" }
-    "package-debug" { Main "Package" "Debug" }
-    "test-debug-*"  { Test $target.Substring(11) "Debug" $frameworks $platform; break }
-    "test-debug"    { Test "all" "Debug" $frameworks $platform; break }
-
-    # release targets
-    "release"       { Main "Build" "Release" }
-
     # general targets
     "restore"       { Main "RestoreReferences" $configuration }
     "build"         { Main "Build" $configuration }

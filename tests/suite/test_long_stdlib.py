@@ -6,12 +6,14 @@
 ## Run selected tests from test_long from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_long
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_long)
+    tests = loader.loadTestsFromModule(test.test_long, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -21,7 +23,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_long.LongTest('test_true_division'), # https://github.com/IronLanguages/ironpython3/issues/907
         ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

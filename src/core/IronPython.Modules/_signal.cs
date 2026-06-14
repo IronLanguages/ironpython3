@@ -23,7 +23,11 @@ using Microsoft.Scripting.Utils;
 
 #if FEATURE_PROCESS
 
+#if PYTHON_34 // rename to _signal in 3.5
 [assembly: PythonModule("signal", typeof(IronPython.Modules.PythonSignal))]
+#else
+[assembly: PythonModule("_signal", typeof(IronPython.Modules.PythonSignal))]
+#endif
 namespace IronPython.Modules {
     public static partial class PythonSignal {
         public const string __doc__ = """

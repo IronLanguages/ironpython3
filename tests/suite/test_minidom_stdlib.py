@@ -3,25 +3,24 @@
 # See the LICENSE file in the project root for more information.
 
 ##
-## Run selected tests from test_complex from StdLib
+## Run selected tests from test_minidom from StdLib
 ##
 
 import sys
 
 from iptest import is_ironpython, generate_suite, run_test
 
-import test.test_complex
+import test.test_minidom
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_complex, pattern=pattern)
+    tests = loader.loadTestsFromModule(test.test_minidom, pattern=pattern)
 
     if is_ironpython:
-        failing_tests = [
-            test.test_complex.ComplexTest('test_format'),
-        ]
+        failing_tests = []
         if sys.version_info >= (3, 6):
             failing_tests += [
-                test.test_complex.ComplexTest('test_underscores'), # https://github.com/IronLanguages/ironpython3/issues/105
+                test.test_minidom.MinidomTest('testCloneNodeEntity'), # https://github.com/IronLanguages/ironpython2/issues/464
+                test.test_minidom.MinidomTest('testEncodings'), # https://github.com/IronLanguages/ironpython2/issues/464
             ]
 
         skip_tests = []

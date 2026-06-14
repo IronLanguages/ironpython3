@@ -6,6 +6,8 @@
 ## Run selected tests from sqlite3.test from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_linux
 
 import sqlite3.test.dbapi
@@ -20,7 +22,7 @@ import sqlite3.test.userfunctions
 import test.test_sqlite
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_sqlite)
+    tests = loader.loadTestsFromModule(test.test_sqlite, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -73,7 +75,6 @@ def load_tests(loader, standard_tests, pattern):
             sqlite3.test.regression.RegressionTests('CheckNullCharacter'),
             sqlite3.test.regression.RegressionTests('CheckOnConflictRollback'),
             sqlite3.test.regression.RegressionTests('CheckRecursiveCursorUse'),
-            sqlite3.test.regression.RegressionTests('CheckSetDict'),
             sqlite3.test.regression.RegressionTests('CheckStrSubclass'),
             sqlite3.test.regression.RegressionTests('CheckTypeMapUsage'),
             sqlite3.test.transactions.TransactionTests('CheckRollbackCursorConsistency'),
@@ -91,6 +92,32 @@ def load_tests(loader, standard_tests, pattern):
             sqlite3.test.userfunctions.FunctionTests('CheckParamBlob'),
             sqlite3.test.userfunctions.FunctionTests('CheckParamLongLong'),
         ]
+        if sys.version_info < (3, 6):
+            failing_tests += [
+                sqlite3.test.regression.RegressionTests('CheckSetDict'),
+            ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                sqlite3.test.dbapi.CursorTests('CheckExecuteNonIterable'),
+                sqlite3.test.dbapi.CursorTests('CheckLastRowIDOnReplace'),
+                sqlite3.test.dbapi.ExtensionTests('CheckCursorExecutescriptAsBytes'),
+                sqlite3.test.factory.CursorFactoryTests('CheckInvalidFactory'),
+                sqlite3.test.factory.RowFactoryTests('CheckFakeCursorClass'),
+                sqlite3.test.factory.RowFactoryTests('CheckSqliteRowSlice'),
+                sqlite3.test.hooks.CollationTests('CheckCreateCollationBadUpper'),
+                sqlite3.test.hooks.CollationTests('CheckCreateCollationNotString'),
+                sqlite3.test.regression.RegressionTests('CheckBpo31770'),
+                sqlite3.test.regression.RegressionTests('CheckCommitCursorReset'),
+                sqlite3.test.regression.RegressionTests('CheckSetIsolationLevel'),
+                sqlite3.test.regression.UnhashableCallbacksTestCase('test_progress_handler'),
+                sqlite3.test.regression.UnhashableCallbacksTestCase('test_func'),
+                sqlite3.test.regression.UnhashableCallbacksTestCase('test_authorizer'),
+                sqlite3.test.regression.UnhashableCallbacksTestCase('test_aggr'),
+                sqlite3.test.transactions.TransactionTests('CheckDMLDoesNotAutoCommitBefore'),
+                sqlite3.test.transactions.TransactionalDDL('CheckImmediateTransactionalDDL'),
+                sqlite3.test.transactions.TransactionalDDL('CheckTransactionalDDL'),
+                sqlite3.test.userfunctions.AggregateTests('CheckAggrCheckParamsInt'),
+            ]
         if is_linux:
             failing_tests += [
                 sqlite3.test.transactions.TransactionTests('CheckLocking'),

@@ -6,12 +6,14 @@
 ## Run selected tests from test_sax from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_sax
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_sax)
+    tests = loader.loadTestsFromModule(test.test_sax, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -52,7 +54,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_sax.WriterXmlgenTest('test_xmlgen_unencodable'), # TypeError: expected long, got NoneType
         ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

@@ -6,12 +6,14 @@
 ## Run selected tests from test_struct from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test
+import sys
+
+from iptest import is_ironpython, generate_suite, run_test, net_version
 
 import test.test_struct
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_struct)
+    tests = loader.loadTestsFromModule(test.test_struct, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -19,8 +21,15 @@ def load_tests(loader, standard_tests, pattern):
             test.test_struct.StructTest('test_calcsize'), # AssertionError: 4 not greater than or equal to 8
             test.test_struct.StructTest('test_count_overflow'), # AssertionError: error not raised by calcsize
         ]
+        if sys.version_info >= (3, 6):
+            if net_version < (6, 0):
+                failing_tests += [
+                    test.test_struct.UnpackIteratorTest('test_half_float'), # https://github.com/IronLanguages/ironpython3/issues/1458
+                ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

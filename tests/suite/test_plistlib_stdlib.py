@@ -3,28 +3,30 @@
 # See the LICENSE file in the project root for more information.
 
 ##
-## Run selected tests from test_complex from StdLib
+## Run selected tests from test_plistlib from StdLib
 ##
 
 import sys
 
 from iptest import is_ironpython, generate_suite, run_test
 
-import test.test_complex
+import test.test_plistlib
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_complex, pattern=pattern)
+    tests = loader.loadTestsFromModule(test.test_plistlib, pattern=pattern)
 
     if is_ironpython:
-        failing_tests = [
-            test.test_complex.ComplexTest('test_format'),
-        ]
+        failing_tests = []
         if sys.version_info >= (3, 6):
             failing_tests += [
-                test.test_complex.ComplexTest('test_underscores'), # https://github.com/IronLanguages/ironpython3/issues/105
+                test.test_plistlib.TestPlistlib('test_xml_plist_with_entity_decl'), # https://github.com/IronLanguages/ironpython2/issues/464
             ]
 
         skip_tests = []
+        if sys.version_info >= (3, 6):
+            skip_tests += [
+                test.test_plistlib.TestBinaryPlistlib('test_deep_nesting'), # StackOverflowException
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

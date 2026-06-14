@@ -22,12 +22,14 @@ template = """# Licensed to the .NET Foundation under one or more agreements.
 ## Run selected tests from {name} from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import {package}test.{name}
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule({package}test.{name})
+    tests = loader.loadTestsFromModule({package}test.{name}, pattern=pattern)
 
     if is_ironpython:
         {tests}

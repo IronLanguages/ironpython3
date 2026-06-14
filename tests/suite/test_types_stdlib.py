@@ -6,12 +6,14 @@
 ## Run selected tests from test_types from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_types
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_types)
+    tests = loader.loadTestsFromModule(test.test_types, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -24,8 +26,18 @@ def load_tests(loader, standard_tests, pattern):
             test.test_types.TypesTests('test_float__format__'), # AssertionError: '1.12339e+200' != '1.1234e+200'
             test.test_types.TypesTests('test_internal_sizes'), # AttributeError: 'type' object has no attribute '__basicsize__'
         ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+            test.test_types.ClassCreationTests('test_bad___prepare__'), # AssertionError
+            test.test_types.ClassCreationTests('test_one_argument_type'), # AssertionError: TypeError not raised
+            test.test_types.CoroutineTests('test_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_genfunc'), # https://github.com/IronLanguages/ironpython3/issues/98
+            test.test_types.CoroutineTests('test_returning_itercoro'), # https://github.com/IronLanguages/ironpython3/issues/98
+        ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

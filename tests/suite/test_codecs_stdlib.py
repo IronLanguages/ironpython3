@@ -6,12 +6,14 @@
 ## Run selected tests from test_codecs from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono, is_netcoreapp, is_netcoreapp21
 
 import test.test_codecs
 
 def load_tests(loader, standard_tests, pattern):
-    tests = loader.loadTestsFromModule(test.test_codecs)
+    tests = loader.loadTestsFromModule(test.test_codecs, pattern=pattern)
 
     if is_ironpython:
         failing_tests = [
@@ -41,15 +43,44 @@ def load_tests(loader, standard_tests, pattern):
         if not is_netcoreapp or is_netcoreapp21:
             failing_tests += [
                 test.test_codecs.CP65001Test('test_decode'), # '[��]' != '[���]' (bug in .NET: dotnet/corefx#36163, fixed in .NET Core 3.x)
-                test.test_codecs.UTF8SigTest('test_lone_surrogates'), # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
-                test.test_codecs.UTF8Test('test_lone_surrogates'), # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
             ]
+            if sys.version_info < (3, 6):
+                failing_tests += [
+                    test.test_codecs.UTF8SigTest('test_lone_surrogates'), # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
+                    test.test_codecs.UTF8Test('test_lone_surrogates'), # AssertionError: '\ud803\udfff��A' != '\ud803\udfff���A'
+                ]
+
         if not is_mono:
             failing_tests += [
                 test.test_codecs.NameprepTest('test_nameprep'), # Invalid Unicode code point found at index 0
             ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_codecs.ASCIITest('test_decode_error'), # https://github.com/IronLanguages/ironpython3/issues/1452
+                test.test_codecs.CP65001Test('test_readline'), # code_page_decode issue - e.g. codecs.code_page_decode(65001, b'\xe3\x81')
+                test.test_codecs.CharmapTest('test_decode_with_int2int_map'), # https://github.com/IronLanguages/ironpython3/issues/1452
+                test.test_codecs.CharmapTest('test_decode_with_int2str_map'), # https://github.com/IronLanguages/ironpython3/issues/1452
+                test.test_codecs.CharmapTest('test_decode_with_string_map'), # https://github.com/IronLanguages/ironpython3/issues/1452
+                test.test_codecs.EscapeDecodeTest('test_escape'), # AssertionError: DeprecationWarning not triggered
+                test.test_codecs.TypesTest('test_unicode_escape'), # https://github.com/IronLanguages/ironpython3/issues/1452
+                test.test_codecs.UTF16BETest('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF16LETest('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF16Test('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF32BETest('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF32LETest('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF32Test('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF8SigTest('test_decode_error'), # https://github.com/IronLanguages/ironpython3/issues/1452
+                test.test_codecs.UTF8SigTest('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF8SigTest('test_surrogatepass_handler'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF8Test('test_decode_error'), # https://github.com/IronLanguages/ironpython3/issues/1452
+                test.test_codecs.UTF8Test('test_lone_surrogates'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UTF8Test('test_surrogatepass_handler'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codecs.UnicodeEscapeTest('test_escape_decode'), # AssertionError: DeprecationWarning not triggered
+            ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

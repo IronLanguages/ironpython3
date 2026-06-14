@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import sys
 import unittest
 
 from iptest import IronPythonTestCase, big, run_test, skipUnlessIronPython
@@ -9,11 +10,16 @@ from iptest import IronPythonTestCase, big, run_test, skipUnlessIronPython
 class TupleTest(IronPythonTestCase):
 
     def test_assign_to_empty(self):
-        """Allow assignment to empty tuple (new in 3.6)"""
+        """Assignment to empty tuple"""
         y = ()
-        () = y
-        (), t = y, 0
-        ((()))=((y))
+        if sys.version_info >= (3, 6):
+            exec("() = y")
+            exec("(), t = y, 0")
+            exec("((()))=((y))")
+        else:
+            self.assertRaises(SyntaxError, compile, "() = y", "Error", "exec")
+            self.assertRaises(SyntaxError, compile, "(), t = y, 0", "Error", "exec")
+            self.assertRaises(SyntaxError, compile, "((()))=((y))", "Error", "exec")
         del y
 
     def test_unpack(self):

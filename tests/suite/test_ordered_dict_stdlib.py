@@ -6,11 +6,17 @@
 ## Run selected tests from test_ordered_dict from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono
 
-import test.test_ordered_dict
+if sys.version_info >= (3, 6):
+    import test.test_ordered_dict
 
 def load_tests(loader, standard_tests, pattern):
+    if sys.version_info < (3, 6):
+        return standard_tests
+
     tests = loader.loadTestsFromModule(test.test_ordered_dict, pattern=pattern)
 
     if is_ironpython:

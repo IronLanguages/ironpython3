@@ -6,6 +6,8 @@
 ## Run selected tests from test_class from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_class
@@ -18,7 +20,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_class.ClassTests('testForExceptionsRaisedInInstanceGetattr2'), # https://github.com/IronLanguages/ironpython3/issues/1530
         ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

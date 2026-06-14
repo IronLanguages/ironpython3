@@ -6,6 +6,8 @@
 ## Run selected tests from test_sys from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono
 
 import test.test_sys
@@ -15,14 +17,17 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_sys.SysModuleTest('test_c_locale_surrogateescape'), # AssertionError
             test.test_sys.SysModuleTest('test_excepthook'), # TypeError: Exception expected for value, str found
-            test.test_sys.SysModuleTest('test_is_finalizing'), # AttributeError: 'module' object has no attribute 'is_finalizing'
             test.test_sys.SysModuleTest('test_lost_displayhook'), # TypeError: NoneType is not callable
             test.test_sys.SysModuleTest('test_setcheckinterval'), # NotImplementedError: IronPython does not support sys.getcheckinterval
             test.test_sys.SysModuleTest('test_switchinterval'), # AttributeError: 'module' object has no attribute 'setswitchinterval'
-            test.test_sys.SysModuleTest('test_sys_tracebacklimit'), # AssertionError
         ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_sys.SysModuleTest('test_c_locale_surrogateescape'), # AssertionError
+                test.test_sys.SysModuleTest('test_is_finalizing'), # AttributeError: 'module' object has no attribute 'is_finalizing'
+                test.test_sys.SysModuleTest('test_sys_tracebacklimit'), # AssertionError
+            ]
 
         skip_tests = [
             test.test_sys.SysModuleTest('test_43581'), # TODO: figure out - failing in CI

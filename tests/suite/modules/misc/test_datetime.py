@@ -8,7 +8,7 @@
 
 import datetime
 import os
-import unittest
+import sys
 
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
@@ -985,7 +985,10 @@ class DatetimeTest(IronPythonTestCase):
         #bool
         self.assertTrue(datetime.time(0, 0, 0, 1))
         #CodePlex Work Item 5139
-        self.assertFalse(not (datetime.time(0, 0, 0, 0))) # __bool__ removed in 3.5
+        if sys.version_info >= (3, 5):
+            self.assertFalse(not (datetime.time(0, 0, 0, 0))) # __bool__ removed in 3.5
+        else:
+            self.assertTrue(not (datetime.time(0, 0, 0, 0)))
 
         #replace
         x = datetime.time(1, 2, 33, 444)

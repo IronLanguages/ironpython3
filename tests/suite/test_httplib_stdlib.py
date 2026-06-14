@@ -6,6 +6,8 @@
 ## Run selected tests from test_httplib from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono, is_osx
 
 import test.test_httplib

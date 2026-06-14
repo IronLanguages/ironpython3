@@ -6,6 +6,8 @@
 ## Run selected tests from test_codeccallbacks from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_mono
 
 import test.test_codeccallbacks
@@ -16,13 +18,10 @@ def load_tests(loader, standard_tests, pattern):
     if is_ironpython:
         failing_tests = [
             test.test_codeccallbacks.CodecCallbackTest('test_badandgoodbackslashreplaceexceptions'), # UTF-16 vs. UTF-32
-            test.test_codeccallbacks.CodecCallbackTest('test_badandgoodnamereplaceexceptions'), # https://github.com/IronLanguages/ironpython3/issues/252
             test.test_codeccallbacks.CodecCallbackTest('test_badandgoodreplaceexceptions'), # UTF-16 vs. UTF-32
-            test.test_codeccallbacks.CodecCallbackTest('test_badandgoodsurrogatepassexceptions'), # AssertionError: UnicodeEncodeError not raised by surrogatepass_errors
             test.test_codeccallbacks.CodecCallbackTest('test_badandgoodxmlcharrefreplaceexceptions'), # UTF-16 vs. UTF-32
             test.test_codeccallbacks.CodecCallbackTest('test_badhandlerresults'), # TypeError not raised by decode
             test.test_codeccallbacks.CodecCallbackTest('test_callbacks'), # Moving cursor not implemented
-            test.test_codeccallbacks.CodecCallbackTest('test_crashing_decode_handler'), # NotImplementedError: Moving a decoding cursor not implemented yet
             test.test_codeccallbacks.CodecCallbackTest('test_decodehelper'), # Moving cursor not implemented
             test.test_codeccallbacks.CodecCallbackTest('test_decoding_callbacks'), # Moving cursor not implemented
             test.test_codeccallbacks.CodecCallbackTest('test_encodehelper'), # Moving cursor not implemented
@@ -37,8 +36,16 @@ def load_tests(loader, standard_tests, pattern):
             failing_tests += [
                 test.test_codeccallbacks.CodecCallbackTest('test_longstrings'), # https://github.com/mono/mono/issues/20445
             ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_codeccallbacks.CodecCallbackTest('test_badandgoodnamereplaceexceptions'), # https://github.com/IronLanguages/ironpython3/issues/252
+                test.test_codeccallbacks.CodecCallbackTest('test_badandgoodsurrogatepassexceptions'), # AssertionError: UnicodeEncodeError not raised by surrogatepass_errors
+                test.test_codeccallbacks.CodecCallbackTest('test_crashing_decode_handler'), # NotImplementedError: Moving a decoding cursor not implemented yet
+            ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

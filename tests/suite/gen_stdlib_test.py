@@ -22,6 +22,8 @@ template = """# Licensed to the .NET Foundation under one or more agreements.
 ## Run selected tests from {name} from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import {package}test.{name}

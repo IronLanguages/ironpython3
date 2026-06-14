@@ -6,6 +6,8 @@
 ## Run selected tests from test_resource from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_resource

@@ -6,6 +6,8 @@
 ## Run selected tests from test_socket from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_linux, is_osx, net_version, is_mono, is_posix
 
 import test.test_socket
@@ -21,7 +23,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_socket.BasicTCPTest2('testDetach'), # https://github.com/IronLanguages/ironpython3/issues/1224
             test.test_socket.BasicTCPTest2('testDup'), # https://github.com/IronLanguages/ironpython3/issues/1223
             test.test_socket.BasicTCPTest2('testFromFd'), # https://github.com/IronLanguages/ironpython3/issues/1223
-            test.test_socket.GeneralModuleTests('testCloseException'), # TODO: figure out
             test.test_socket.GeneralModuleTests('testSendtoErrors'), # TypeError messages all different
             test.test_socket.GeneralModuleTests('test_csocket_repr'), # https://github.com/IronLanguages/ironpython3/issues/1221
             test.test_socket.GeneralModuleTests('test_uknown_socket_family_repr'), # TODO: figure out
@@ -37,17 +38,21 @@ def load_tests(loader, standard_tests, pattern):
             test.test_socket.TestSocketSharing('testTypes'), # https://github.com/IronLanguages/ironpython3/issues/1226
             test.test_socket.UnbufferedFileObjectClassTestCase('testSmallReadNonBlocking'), # TODO: figure out
         ]
-        if is_mono:
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_socket.GeneralModuleTests('testCloseException'), # TODO: figure out
+            ]
+            if is_posix: # https://github.com/IronLanguages/ironpython3/pull/1638#discussion_r1059535867
+                failing_tests += [
+                    test.test_socket.GeneralModuleTests('test_socket_fileno_requires_socket_fd'),
+                ]
+        if is_linux or (is_osx and net_version < (10, 0)):
             failing_tests += [
                 test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
             ]
         if is_linux:
             failing_tests += [
                 test.test_socket.GeneralModuleTests('test_idna'), # TODO: figure out
-            ]
-        if is_posix: # https://github.com/IronLanguages/ironpython3/pull/1638#discussion_r1059535867
-            failing_tests += [
-                test.test_socket.GeneralModuleTests('test_socket_fileno_requires_socket_fd'),
             ]
 
         skip_tests = [

@@ -6,6 +6,8 @@
 ## Run selected tests from test_sax from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_sax
@@ -20,15 +22,11 @@ def load_tests(loader, standard_tests, pattern):
             test.test_sax.ErrorReportingTest('test_expat_incomplete'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
             test.test_sax.ErrorReportingTest('test_expat_inpsource_location'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
             test.test_sax.ExpatReaderTest('test_expat_dtdhandler'), # AssertionError
-            test.test_sax.ExpatReaderTest('test_expat_entityresolver_enabled'), # AssertionError
-            test.test_sax.ExpatReaderTest('test_expat_external_dtd_enabled'), # AssertionError
-            test.test_sax.ExpatReaderTest('test_expat_inpsource_character_stream'), # AssertionError
+            test.test_sax.ExpatReaderTest('test_expat_entityresolver'), # AssertionError
             test.test_sax.ExpatReaderTest('test_expat_text_file'), # AssertionError
             test.test_sax.ParseTest('test_parseString_bytes'), # UnicodeEncodeError
-            test.test_sax.ParseTest('test_parseString_text'), # UnicodeEncodeError
             test.test_sax.ParseTest('test_parse_InputSource'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
             test.test_sax.ParseTest('test_parse_bytes'), # UnicodeEncodeError
-            test.test_sax.ParseTest('test_parse_close_source'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
             test.test_sax.ParseTest('test_parse_text'), # UnicodeEncodeError
             test.test_sax.WriterXmlgenTest('test_1463026_1'), # TypeError: expected long, got NoneType
             test.test_sax.WriterXmlgenTest('test_1463026_1_empty'), # TypeError: expected long, got NoneType
@@ -56,7 +54,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_sax.WriterXmlgenTest('test_xmlgen_unencodable'), # TypeError: expected long, got NoneType
         ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

@@ -6,11 +6,17 @@
 ## Run selected tests from test_string_literals from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
-import test.test_string_literals
+if sys.version_info >= (3, 6):
+    import test.test_string_literals
 
 def load_tests(loader, standard_tests, pattern):
+    if sys.version_info < (3, 6):
+        return standard_tests
+
     tests = loader.loadTestsFromModule(test.test_string_literals, pattern=pattern)
 
     if is_ironpython:
@@ -19,7 +25,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_string_literals.TestLiterals('test_eval_str_invalid_escape'), # https://github.com/IronLanguages/ironpython3/issues/1343
         ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

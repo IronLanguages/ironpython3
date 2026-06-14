@@ -6,6 +6,8 @@
 ## Run selected tests from test_memoryio from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, is_mono, generate_suite, run_test
 
 import test.test_memoryio

@@ -42,7 +42,9 @@ namespace IronPythonTest.Stress {
         }
 
 #if FEATURE_REFEMIT
-        //[Test] // https://github.com/IronLanguages/ironpython3/issues/1444
+#if !PYTHON_36 // TODO: figure out
+        [Test]
+#endif
         public void ScenarioXGC() {
             Assert.AreEqual(1, 1); // prevents nunit from counting towards memory usage
 

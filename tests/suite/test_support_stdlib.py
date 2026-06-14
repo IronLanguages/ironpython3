@@ -6,6 +6,8 @@
 ## Run selected tests from test_support from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test, is_osx
 
 import test.test_support
@@ -14,16 +16,20 @@ def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_support, pattern=pattern)
 
     if is_ironpython:
-        failing_tests = [
-            test.test_support.TestSupport('test_args_from_interpreter_flags'), # https://github.com/IronLanguages/ironpython3/issues/1541
-            test.test_support.TestSupport('test_optim_args_from_interpreter_flags'), # https://github.com/IronLanguages/ironpython3/issues/1541
-        ]
+        failing_tests = []
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_support.TestSupport('test_args_from_interpreter_flags'), # https://github.com/IronLanguages/ironpython3/issues/1541
+                test.test_support.TestSupport('test_optim_args_from_interpreter_flags'), # https://github.com/IronLanguages/ironpython3/issues/1541
+            ]
         if is_osx:
             failing_tests += [
                 test.test_support.TestSupport('test_change_cwd'), # https://github.com/IronLanguages/ironpython3/issues/1543
             ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

@@ -6,6 +6,8 @@
 ## Run selected tests from test_code_module from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_code_module
@@ -14,11 +16,15 @@ def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_code_module, pattern=pattern)
 
     if is_ironpython:
-        failing_tests = [
-            test.test_code_module.TestInteractiveConsole('test_context_tb'), # https://github.com/IronLanguages/ironpython3/issues/1557
-        ]
+        failing_tests = []
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_code_module.TestInteractiveConsole('test_context_tb'), # https://github.com/IronLanguages/ironpython3/issues/1557
+            ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

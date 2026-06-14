@@ -119,8 +119,11 @@ class UnpackTest(unittest.TestCase):
         self.assertRaisesSyntaxError(body, "too many expressions in star-unpacking assignment")
 
     def test_assign_to_empty(self):
-        () = [] # new in 3.6
-        [] = ()
+        if sys.version_info >= (3,6):
+            exec("() = []") # TODO: remove exec once our baseline is >= 3.6
+        else:
+            self.assertRaisesSyntaxError('() = []', "can't assign to ()")
+        [] = () # OK
 
     def test_assign_trailing_comma_list_to_list(self):
         [a, *b,] = [1, 2, 3]

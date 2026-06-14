@@ -6,7 +6,9 @@
 ## Run selected tests from test_structures from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_osx
+import sys
+
+from iptest import is_ironpython, generate_suite, run_test
 
 import ctypes.test.test_structures
 
@@ -15,11 +17,16 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            ctypes.test.test_structures.StructureTestCase('test_conflicting_initializers'), # AssertionError
-            ctypes.test.test_structures.StructureTestCase('test_pass_by_value_in_register'), # NotImplementedError: in dll
         ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                ctypes.test.test_structures.StructureTestCase('test_conflicting_initializers'), # AssertionError
+                ctypes.test.test_structures.StructureTestCase('test_pass_by_value_in_register'), # NotImplementedError: in dll
+            ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

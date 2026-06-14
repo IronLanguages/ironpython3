@@ -6,6 +6,8 @@
 ## Run selected tests from test_bz2 from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_bz2

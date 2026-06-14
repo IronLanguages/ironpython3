@@ -6,6 +6,8 @@
 ## Run selected tests from test_unicode from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_unicode
@@ -46,11 +48,9 @@ def load_tests(loader, standard_tests, pattern):
             test.test_unicode.UnicodeTest('test_isnumeric'),
             test.test_unicode.UnicodeTest('test_isprintable'),
             test.test_unicode.UnicodeTest('test_issue18183'),
-            test.test_unicode.UnicodeTest('test_issue28598_strsubclass_rhs'),
             test.test_unicode.UnicodeTest('test_istitle'),
             test.test_unicode.UnicodeTest('test_isupper'),
             test.test_unicode.UnicodeTest('test_join'),
-            test.test_unicode.UnicodeTest('test_join_overflow'), # ValueError: capacity was less than the current size.
             test.test_unicode.UnicodeTest('test_lower'),
             test.test_unicode.UnicodeTest('test_mul'),
             test.test_unicode.UnicodeTest('test_partition'),
@@ -68,7 +68,24 @@ def load_tests(loader, standard_tests, pattern):
             test.test_unicode.UnicodeTest('test_upper'),
         ]
 
-        return generate_suite(tests, failing_tests)
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_unicode.UnicodeTest('test_issue28598_strsubclass_rhs'),
+                test.test_unicode.UnicodeTest('test_join_overflow'), # ValueError: capacity was less than the current size.
+            ]
+        else:
+            failing_tests += [
+                test.test_unicode.UnicodeTest('test_aswidechar'),
+                test.test_unicode.UnicodeTest('test_aswidecharstring'),
+                test.test_unicode.UnicodeTest('test_encode_decimal'),
+                test.test_unicode.UnicodeTest('test_from_format'),
+                test.test_unicode.UnicodeTest('test_pep393_utf8_caching_bug'),
+                test.test_unicode.UnicodeTest('test_transform_decimal'),
+            ]
+
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

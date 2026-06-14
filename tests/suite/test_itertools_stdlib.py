@@ -6,6 +6,8 @@
 ## Run selected tests from test_itertools from StdLib
 ##
 
+import sys
+
 from iptest import is_ironpython, generate_suite, run_test
 
 import test.test_itertools
@@ -19,7 +21,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_itertools.TestBasicOps('test_combinations_with_replacement'), # pickling
             test.test_itertools.TestBasicOps('test_compress'), # pickling
             test.test_itertools.TestBasicOps('test_cycle'), # pickling
-            test.test_itertools.TestBasicOps('test_cycle_setstate'), # __setstate__ not implemented
             test.test_itertools.TestBasicOps('test_dropwhile'), # pickling
             test.test_itertools.TestBasicOps('test_filterfalse'), # pickling
             test.test_itertools.TestBasicOps('test_groupby'), # pickling
@@ -31,11 +32,17 @@ def load_tests(loader, standard_tests, pattern):
             test.test_itertools.TestBasicOps('test_takewhile'), # pickling
             test.test_itertools.TestBasicOps('test_tee'),
             test.test_itertools.TestBasicOps('test_zip_longest_pickling'),
-            test.test_itertools.TestExamples('test_accumulate_reducible_none'), # pickling
             test.test_itertools.TestVariousIteratorArgs('test_compress'),
         ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_itertools.TestBasicOps('test_cycle_setstate'), # __setstate__ not implemented
+                test.test_itertools.TestExamples('test_accumulate_reducible_none'), # pickling
+            ]
 
-        return generate_suite(tests, failing_tests)
+        skip_tests = []
+
+        return generate_suite(tests, failing_tests, skip_tests)
 
     else:
         return tests

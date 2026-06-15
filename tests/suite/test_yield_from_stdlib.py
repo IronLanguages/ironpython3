@@ -11,7 +11,7 @@ import sys
 from iptest import is_ironpython, generate_suite, run_test
 
 if sys.version_info >= (3, 6):
-    import test.yield_from as test_yield_from
+    import test.test_yield_from as test_yield_from
 else:
     import test.test_pep380 as test_yield_from
 

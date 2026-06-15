@@ -18,7 +18,6 @@ def load_tests(loader, standard_tests, pattern):
     if is_ironpython:
         failing_tests = [
             test.test_ssl.BasicSocketTests('test_enum_crls'), # AssertionError: [] is not true
-            test.test_ssl.BasicSocketTests('test_errors'), # AssertionError: OSError not raised
             test.test_ssl.BasicSocketTests('test_get_default_verify_paths'), # AttributeError: 'module' object has no attribute 'get_default_verify_paths'
             test.test_ssl.BasicSocketTests('test_parse_cert'), # KeyError: OCSP
             test.test_ssl.BasicSocketTests('test_parse_cert_CVE_2013_4238'), # AssertionError: Tuples differ
@@ -47,6 +46,7 @@ def load_tests(loader, standard_tests, pattern):
         ]
         if sys.version_info < (3, 6):
             failing_tests += [
+                test.test_ssl.BasicSocketTests('test_errors'), # AssertionError: OSError not raised
                 test.test_ssl.NetworkedTests('test_ciphers'), # AssertionError: SSLError not raised
                 test.test_ssl.NetworkedTests('test_connect'), # AssertionError: {} != None
                 test.test_ssl.NetworkedTests('test_connect_capath'), # ssl.SSLError: [Errno 'errors while validating certificate chain: '] RemoteCertificateChainErrors

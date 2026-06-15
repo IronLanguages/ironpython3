@@ -253,6 +253,12 @@ namespace IronPython.Runtime.Operations {
 
                     { "cskoi8r"                , "koi8_r"                 },
 
+                    #if PYTHON_36_OR_GREATER
+                    { "kz_1048"                , "kz1048"                 },
+                    { "rk1048"                 , "kz1048"                 },
+                    { "strk1048_2002"          , "kz1048"                 },
+                    #endif
+
                     { "8859"                   , "latin_1"                },
                     { "cp819"                  , "latin_1"                },
                     { "csisolatin1"            , "latin_1"                },
@@ -316,7 +322,7 @@ namespace IronPython.Runtime.Operations {
                     { "utf8"                   , "utf_8"                  },
                     { "utf8_ucs2"              , "utf_8"                  },
                     { "utf8_ucs4"              , "utf_8"                  },
-                } ;
+                };
 
                 // *** END GENERATED CODE ***
 

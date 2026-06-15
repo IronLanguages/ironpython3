@@ -22,7 +22,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_sax.ErrorReportingTest('test_expat_incomplete'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
             test.test_sax.ErrorReportingTest('test_expat_inpsource_location'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
             test.test_sax.ExpatReaderTest('test_expat_dtdhandler'), # AssertionError
-            test.test_sax.ExpatReaderTest('test_expat_entityresolver'), # AssertionError
             test.test_sax.ExpatReaderTest('test_expat_text_file'), # AssertionError
             test.test_sax.ParseTest('test_parseString_bytes'), # UnicodeEncodeError
             test.test_sax.ParseTest('test_parse_InputSource'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
@@ -53,6 +52,18 @@ def load_tests(loader, standard_tests, pattern):
             test.test_sax.WriterXmlgenTest('test_xmlgen_pi'), # TypeError: expected long, got NoneType
             test.test_sax.WriterXmlgenTest('test_xmlgen_unencodable'), # TypeError: expected long, got NoneType
         ]
+        if sys.version_info < (3, 6):
+            failing_tests += [
+                test.test_sax.ExpatReaderTest('test_expat_entityresolver'), # AssertionError
+            ]
+        if sys.version_info >= (3, 6):
+            failing_tests += [
+                test.test_sax.ExpatReaderTest('test_expat_entityresolver_enabled'), # AssertionError
+                test.test_sax.ExpatReaderTest('test_expat_external_dtd_enabled'), # AssertionError
+                test.test_sax.ExpatReaderTest('test_expat_inpsource_character_stream'), # AssertionError
+                test.test_sax.ParseTest('test_parseString_text'), # UnicodeEncodeError
+                test.test_sax.ParseTest('test_parse_close_source'), # AttributeError: 'xmlparser' object has no attribute 'ErrorColumnNumber'
+            ]
 
         skip_tests = []
 

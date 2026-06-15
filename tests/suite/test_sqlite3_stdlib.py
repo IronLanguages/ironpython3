@@ -116,7 +116,6 @@ def load_tests(loader, standard_tests, pattern):
                 sqlite3.test.transactions.TransactionTests('CheckDMLDoesNotAutoCommitBefore'),
                 sqlite3.test.transactions.TransactionalDDL('CheckImmediateTransactionalDDL'),
                 sqlite3.test.transactions.TransactionalDDL('CheckTransactionalDDL'),
-                sqlite3.test.userfunctions.AggregateTests('CheckAggrCheckParamsInt'),
             ]
         if is_linux:
             failing_tests += [
@@ -148,6 +147,10 @@ def load_tests(loader, standard_tests, pattern):
             sqlite3.test.userfunctions.AuthorizerLargeIntegerTests('test_column_access'),
             sqlite3.test.userfunctions.AuthorizerLargeIntegerTests('test_table_access'),
         ]
+        if sys.version_info >= (3, 6):
+            skip_tests += [
+                sqlite3.test.userfunctions.AggregateTests('CheckAggrCheckParamsInt'),
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

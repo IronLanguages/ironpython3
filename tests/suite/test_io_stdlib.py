@@ -83,7 +83,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_io.CMiscIOTest('test_readinto_buffer_overflow'), # IndexError: Index was outside the bounds of the array.
             test.test_io.CMiscIOTest('test_warn_on_dealloc'), # AssertionError: ResourceWarning not triggered
             test.test_io.CMiscIOTest('test_warn_on_dealloc_fd'), # AssertionError: ResourceWarning not triggered
-            test.test_io.PyMiscIOTest('test_io_after_close'), # AttributeError: 'FileIO' object has no attribute 'read1'
             test.test_io.PyMiscIOTest('test_nonblock_pipe_write_bigbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
             test.test_io.PyMiscIOTest('test_nonblock_pipe_write_smallbuf'), # AttributeError: 'module' object has no attribute 'fcntl'
             test.test_io.PyMiscIOTest('test_warn_on_dealloc'), # AssertionError: ResourceWarning not triggered
@@ -102,6 +101,7 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_io.CBufferedWriterTest('test_garbage_collection'), # AssertionError: filter ('', ResourceWarning) did not catch any warning
                 test.test_io.CBufferedRandomTest('test_garbage_collection'), # AssertionError: filter ('', ResourceWarning) did not catch any warning
                 test.test_io.CTextIOWrapperTest('test_garbage_collection'), # AssertionError: filter ('', ResourceWarning) did not catch any warning
+                test.test_io.PyMiscIOTest('test_io_after_close'), # AttributeError: 'FileIO' object has no attribute 'read1'
                 test.test_io.PyMiscIOTest('test_pickling'), # AssertionError: TypeError not raised by _dumps
             ]
         if sys.version_info >= (3, 6):

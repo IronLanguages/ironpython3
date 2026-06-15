@@ -63,6 +63,7 @@
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData-3.2.0.txt.gz" />
     <EmbeddedResource Include="..\IronPython.StdLib\lib\importlib\_bootstrap.py" Link="Modules\_bootstrap.py" />
+    <EmbeddedResource Condition="'$(MajorVersion)$(MinorVersion)' >= '36'" Include="..\IronPython.StdLib\lib\importlib\_bootstrap_external.py" Link="Modules\_bootstrap_external.py" />
   </ItemGroup>
 
   <ItemGroup>

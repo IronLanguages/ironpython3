@@ -120,10 +120,13 @@ class CodeWriter:
         self.writeline("} finally {")
         self.indent()
 
-    def exit_block(self, text=None, **kw):
+    def exit_block(self, text=None):
         self.dedent()
         if text:
-            self.writeline("} " + text, **kw)
+            if text == ";":
+                 self.writeline("}" + text)
+            else:
+                self.writeline("} " + text)
         else:
             self.writeline('}')
 

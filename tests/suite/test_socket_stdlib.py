@@ -46,7 +46,7 @@ def load_tests(loader, standard_tests, pattern):
                 failing_tests += [
                     test.test_socket.GeneralModuleTests('test_socket_fileno_requires_socket_fd'),
                 ]
-        if is_linux or (is_osx and net_version < (10, 0)):
+        if is_mono or sys.version_info < (3, 6) and (is_linux or (is_osx and net_version < (10, 0))):
             failing_tests += [
                 test.test_socket.NonBlockingTCPTests('testRecv'), # TODO: figure out
             ]

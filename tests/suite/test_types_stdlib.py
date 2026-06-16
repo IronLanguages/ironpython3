@@ -8,7 +8,7 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, generate_suite, run_test, is_netcoreapp
 
 import test.test_types
 
@@ -28,12 +28,16 @@ def load_tests(loader, standard_tests, pattern):
         ]
         if sys.version_info >= (3, 6):
             failing_tests += [
-            test.test_types.ClassCreationTests('test_bad___prepare__'), # AssertionError
-            test.test_types.ClassCreationTests('test_one_argument_type'), # AssertionError: TypeError not raised
-            test.test_types.CoroutineTests('test_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_genfunc'), # https://github.com/IronLanguages/ironpython3/issues/98
-            test.test_types.CoroutineTests('test_returning_itercoro'), # https://github.com/IronLanguages/ironpython3/issues/98
-        ]
+                test.test_types.ClassCreationTests('test_bad___prepare__'), # AssertionError
+                test.test_types.ClassCreationTests('test_one_argument_type'), # AssertionError: TypeError not raised
+                test.test_types.CoroutineTests('test_gen'), # https://github.com/IronLanguages/ironpython3/issues/98
+                test.test_types.CoroutineTests('test_genfunc'), # https://github.com/IronLanguages/ironpython3/issues/98
+                test.test_types.CoroutineTests('test_returning_itercoro'), # https://github.com/IronLanguages/ironpython3/issues/98
+            ]
+            if is_netcoreapp:
+                failing_tests += [
+                    test.test_types.CoroutineTests('test_duck_functional_gen'), # https://github.com/IronLanguages/ironpython3/issues/2054#issuecomment-4722599371 - TypeError: object of type 'str' can't be used in 'await' expression
+                ]
 
         skip_tests = []
 

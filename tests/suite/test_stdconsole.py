@@ -404,7 +404,7 @@ AssertionError
         finally:
             self.batfile = hideDefaultBatch
 
-    @unittest.skipIf(not is_cli or is_netcoreapp) # https://github.com/IronLanguages/ironpython3/issues/2055
+    @unittest.skipIf(not is_cli or is_netcoreapp, "https://github.com/IronLanguages/ironpython3/issues/2055")
     def test_cp35263(self):
         script = """
 import warnings

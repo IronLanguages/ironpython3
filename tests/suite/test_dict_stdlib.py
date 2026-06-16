@@ -30,6 +30,7 @@ def load_tests(loader, standard_tests, pattern):
         if is_mono:
             skip_tests += [
                 test.test_dict.DictTest('test_container_iterator'), # https://github.com/IronLanguages/ironpython3/issues/544
+                test.test_dict.DictTest('test_free_after_iterating') # AssertionError
             ]
 
         return generate_suite(tests, failing_tests, skip_tests)

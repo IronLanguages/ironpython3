@@ -8,7 +8,7 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, generate_suite, run_test, is_netcoreapp
 
 import test.test_typing
 
@@ -49,6 +49,10 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_typing.NamedTupleTests('test_annotation_usage_with_default'), # TypeError: __new__() takes exactly 1 argument (2 given)
                 test.test_typing.NamedTupleTests('test_annotation_usage_with_methods'), # TypeError: __new__() takes exactly 1 argument (2 given)
             ]
+            if is_netcoreapp:
+                failing_tests += [
+                    test.test_typing.CollectionsAbcTests('test_awaitable'), # https://github.com/IronLanguages/ironpython3/issues/2054
+                ]
 
         skip_tests = []
         if sys.version_info >= (3, 6):

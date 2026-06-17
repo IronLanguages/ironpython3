@@ -31,6 +31,10 @@ def load_tests(loader, standard_tests, pattern):
             skip_tests += [
                 test.test_dict.DictTest('test_container_iterator'), # https://github.com/IronLanguages/ironpython3/issues/544
             ]
+            if sys.version_info >= (3, 6):
+                skip_tests += [
+                    test.test_dict.DictTest('test_free_after_iterating') # AssertionError
+                ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

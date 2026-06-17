@@ -8,7 +8,7 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, generate_suite, run_test, is_posix
 
 import test.test_array
 
@@ -64,6 +64,10 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_array.UnsignedShortTest('test_subclass_with_kwargs'), # https://github.com/IronLanguages/ironpython3/issues/767
                 test.test_array.UnsignedShortTest('test_type_error'), # https://github.com/IronLanguages/ironpython3/issues/767
             ]
+            if is_posix:
+                failing_tests += [
+                    test.test_array.LongTest('test_overflow'), # https://github.com/IronLanguages/ironpython3/issues/767
+                ]
 
         skip_tests = []
 

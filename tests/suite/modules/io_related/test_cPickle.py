@@ -718,7 +718,7 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
         #--sanity
         try:
             x = 1/0
-            Fail("should have been division by zero error")
+            self.fail("should have been division by zero error")
         except Exception as e:
             ex = e
 

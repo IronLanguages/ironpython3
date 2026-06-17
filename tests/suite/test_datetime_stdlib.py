@@ -63,12 +63,10 @@ def load_tests(loader, standard_tests, pattern):
                 test.datetimetester.TestDateTime('test_compat_unpickle'), # TypeError: function takes at least 3 arguments (1 given)
                 test.datetimetester.TestDateTime('test_isoformat'), # TypeError: isoformat() got an unexpected keyword argument 'timespec'
                 test.datetimetester.TestDateTime('test_subclass_replace'), # TypeError: replace() got an unexpected keyword argument 'year'
-                test.datetimetester.TestDateTime('test_timestamp_limits'), # ValueError: The added or subtracted value results in an un-representable DateTime.
                 test.datetimetester.TestDateTimeTZ('test_bad_constructor_arguments'), # https://github.com/IronLanguages/ironpython3/issues/1459
                 test.datetimetester.TestDateTimeTZ('test_compat_unpickle'), # TypeError: function takes at least 3 arguments (2 given)
                 test.datetimetester.TestDateTimeTZ('test_isoformat'), # TypeError: isoformat() got an unexpected keyword argument 'timespec'
                 test.datetimetester.TestDateTimeTZ('test_subclass_replace'), # TypeError: replace() got an unexpected keyword argument 'year'
-                test.datetimetester.TestDateTimeTZ('test_timestamp_limits'), # ValueError: The added or subtracted value results in an un-representable DateTime.
                 test.datetimetester.TestLocalTimeDisambiguation('test_comparison'), # https://github.com/IronLanguages/ironpython3/issues/1459
                 test.datetimetester.TestLocalTimeDisambiguation('test_constructors'), # https://github.com/IronLanguages/ironpython3/issues/1459
                 test.datetimetester.TestLocalTimeDisambiguation('test_dst'), # https://github.com/IronLanguages/ironpython3/issues/1459
@@ -91,7 +89,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.datetimetester.TestSubclassDateTime('test_compat_unpickle'), # TypeError: function takes at least 3 arguments (1 given)
                 test.datetimetester.TestSubclassDateTime('test_isoformat'), # TypeError: isoformat() got an unexpected keyword argument 'timespec'
                 test.datetimetester.TestSubclassDateTime('test_subclass_replace'), # TypeError: replace() got an unexpected keyword argument 'year'
-                test.datetimetester.TestSubclassDateTime('test_timestamp_limits'), # ValueError: The added or subtracted value results in an un-representable DateTime.
                 test.datetimetester.TestTime('test_backdoor_resistance'), # AssertionError: "^bad tzinfo state arg$" does not match "expected Int32, got bytes"
                 test.datetimetester.TestTime('test_compat_unpickle'), # TypeError: expected Int32, got str
                 test.datetimetester.TestTime('test_isoformat'), # TypeError: isoformat() takes no arguments (1 given)
@@ -112,6 +109,12 @@ def load_tests(loader, standard_tests, pattern):
                 test.datetimetester.TestTimeDelta('test_overflow'), # rounding differences
             ]
         if sys.version_info >= (3, 6):
+            skip_tests += [
+                # these can fail with a ValueError if the current time zone is not UTC
+                test.datetimetester.TestDateTime('test_timestamp_limits'), # ValueError: The added or subtracted value results in an un-representable DateTime.
+                test.datetimetester.TestDateTimeTZ('test_timestamp_limits'), # ValueError: The added or subtracted value results in an un-representable DateTime.
+                test.datetimetester.TestSubclassDateTime('test_timestamp_limits'), # ValueError: The added or subtracted value results in an un-representable DateTime.
+            ]
             for test_or_suite in tests:
                 if isinstance(test_or_suite, test.datetimetester.ZoneInfoCompleteTest):
                     for t in test_or_suite:

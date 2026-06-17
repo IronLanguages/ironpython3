@@ -2167,7 +2167,7 @@ class ClassTest(IronPythonTestCase):
             y = x.throws
         except AttributeError as ex:
             self.assertEqual(ex.args, ('catch me',))
-        else: Fail("should have thrown")
+        else: self.fail("should have thrown")
 
     def test_descriptor_meta_magic(self):
         class valueDescriptor(object):

@@ -173,11 +173,11 @@ class CopyRegTest(unittest.TestCase):
             "The get and set of the attribute failed")
 
         if 'cache1' not in copyreg._extension_cache or 'cache2' not in copyreg._extension_cache:
-            Fail("Set of the attribute failed")
+            self.fail("Set of the attribute failed")
 
         copyreg.clear_extension_cache()
         if 'cache1' in copyreg._extension_cache or 'cache2' in copyreg._extension_cache:
-            Fail("The method clear_extension_cache did not work correctly ")
+            self.fail("The method clear_extension_cache did not work correctly ")
 
     def test_reconstructor(self):
         reconstructor_copy = copyreg._reconstructor

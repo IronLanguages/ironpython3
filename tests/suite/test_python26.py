@@ -645,7 +645,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("abc")
             except TypeError as ValueError:
-                Fail("IOError is not the same as TypeError")
+                self.fail("IOError is not the same as TypeError")
         except IOError:
             pass
         self.assertEqual(ValueError, orig_ValueError)
@@ -654,7 +654,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("abc")
             except TypeError as ValueError:
-                Fail("IOError is not the same as TypeError")
+                self.fail("IOError is not the same as TypeError")
             finally:
                 pass
         except IOError:
@@ -693,7 +693,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("xyz")
             except (TypeError, ValueError) as e:
-                Fail("IOError is not the same as TypeError or ValueError")
+                self.fail("IOError is not the same as TypeError or ValueError")
         except IOError:
             pass
         self.assertEqual(e, None)
@@ -702,7 +702,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("xyz")
             except (TypeError, ValueError) as e:
-                Fail("IOError is not the same as TypeError or ValueError")
+                self.fail("IOError is not the same as TypeError or ValueError")
             finally:
                 pass
         except IOError:
@@ -745,7 +745,7 @@ class Python26Test(unittest.TestCase):
         try:
             raise IOError("abc")
         except TypeError as e:
-            Fail("IOError is not the same as TypeError")
+            self.fail("IOError is not the same as TypeError")
         except IOError as e:
             self.assertEqual(e.args[0], "abc")
         e = None
@@ -753,7 +753,7 @@ class Python26Test(unittest.TestCase):
         try:
             raise IOError("abc")
         except TypeError as e:
-            Fail("IOError is not the same as TypeError")
+            self.fail("IOError is not the same as TypeError")
         except IOError as e:
             self.assertEqual(e.args[0], "abc")
         e = None
@@ -761,7 +761,7 @@ class Python26Test(unittest.TestCase):
         try:
             raise IOError("abc")
         except TypeError as e:
-            Fail("IOError is not the same as TypeError")
+            self.fail("IOError is not the same as TypeError")
         except Exception as e:
             self.assertEqual(e.args[0], "abc")
         e = None
@@ -769,7 +769,7 @@ class Python26Test(unittest.TestCase):
         try:
             raise IOError("abc")
         except TypeError as e:
-            Fail("IOError is not the same as TypeError")
+            self.fail("IOError is not the same as TypeError")
         except:
             pass
 
@@ -778,7 +778,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("abc")
             except TypeError as e:
-                Fail("IOError is not the same as TypeError")
+                self.fail("IOError is not the same as TypeError")
         except IOError as e:
             self.assertEqual(e.args[0], "abc")
         e = None
@@ -787,7 +787,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("abc")
             except TypeError as ValueError:
-                Fail("IOError is not the same as TypeError")
+                self.fail("IOError is not the same as TypeError")
         except IOError as e:
             self.assertEqual(e.args[0], "abc")
         e = None
@@ -796,7 +796,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("abc")
             except TypeError as e:
-                Fail("IOError is not the same as TypeError")
+                self.fail("IOError is not the same as TypeError")
         except IOError as e:
             self.assertEqual(e.args[0], "abc")
         e = None
@@ -805,7 +805,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("abc")
             except TypeError as ValueError:
-                Fail("IOError is not the same as TypeError")
+                self.fail("IOError is not the same as TypeError")
             finally:
                 pass
         except Exception as e:
@@ -816,7 +816,7 @@ class Python26Test(unittest.TestCase):
             try:
                 raise IOError("abc")
             except TypeError as e:
-                Fail("IOError is not the same as TypeError")
+                self.fail("IOError is not the same as TypeError")
             finally:
                 pass
         except IOError:
@@ -964,14 +964,14 @@ class Python26Test(unittest.TestCase):
         try:
             raise GeneratorExit()
         except Exception:
-            Fail("Should not have caught this GeneratorExit")
+            self.fail("Should not have caught this GeneratorExit")
         except GeneratorExit:
             pass
 
         try:
             raise GeneratorExit()
         except Exception:
-            Fail("Should not have caught this GeneratorExit")
+            self.fail("Should not have caught this GeneratorExit")
         except GeneratorExit:
             pass
         finally:

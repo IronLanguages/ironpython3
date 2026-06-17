@@ -529,7 +529,7 @@ class ClrTypeTest(IronPythonTestCase):
         #Shouldn't be able to use non-UInt64s
         try:
             x.NOT_SO_DYNAMIC = "0"
-            Fail("TypeError should have been thrown!")
+            self.fail("TypeError should have been thrown!")
         except TypeError as e:
             self.assertEqual(str(e),
                     "expected UInt64, got str")
@@ -710,7 +710,7 @@ class ClrTypeTest(IronPythonTestCase):
         try:
             class X(object, metaclass=MyType):
                 pass
-            Fail("Bad __clrtype__ signature!")
+            self.fail("Bad __clrtype__ signature!")
 
         except TypeError as e:
             self.assertEqual(str(e),
@@ -748,7 +748,7 @@ class ClrTypeTest(IronPythonTestCase):
             try:
                 class X(object, metaclass=MyType):
                     pass
-                Fail("Arbitrary return values of __clrtype__ should not be allowed: " + str(x))
+                self.fail("Arbitrary return values of __clrtype__ should not be allowed: " + str(x))
             except TypeError as e:
                 self.assertEqual(str(e),
                         expected_msg)
@@ -768,7 +768,7 @@ class ClrTypeTest(IronPythonTestCase):
         try:
             class X(object, metaclass=MyType):
                 pass
-            Fail("Arbitrary return values of __clrtype__ are not allowed: ", + str(x))
+            self.fail("Arbitrary return values of __clrtype__ are not allowed: ", + str(x))
         except ValueError as e:
             self.assertEqual(str(e), "__clrtype__ must return a type, not None")
         finally:

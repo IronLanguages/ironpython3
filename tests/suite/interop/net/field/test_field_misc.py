@@ -25,9 +25,9 @@ class FieldMiscTest(IronPythonTestCase):
         self.assertIn('ProtectedField', dir(o))
         with self.assertRaises(TypeError):
             hasattr(o, 'ProtectedField')
-        self.assertRaisesRegexp(AttributeError, "'Misc' object has no attribute 'PrivateField'", lambda: o.PrivateField)
+        self.assertRaisesRegex(AttributeError, "'Misc' object has no attribute 'PrivateField'", lambda: o.PrivateField)
         self.assertEqual(o.InterfaceField.PublicStaticField, 500)
-        
+
         o = DerivedMisc()
         o.Set()
         self.assertEqual(o.PublicField, 400)

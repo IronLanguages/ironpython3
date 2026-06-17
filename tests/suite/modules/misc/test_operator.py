@@ -4,6 +4,7 @@
 
 import operator
 import unittest
+import sys
 
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, big, run_test, skipUnlessIronPython
 
@@ -276,7 +277,7 @@ class OperaterTest(IronPythonTestCase):
                             r = fnc(a,b)
                         except:
                             (exc_type, exc_value, exc_traceback) = sys.exc_info()
-                            Fail("Binary operator failed: %s, %s: %s %s %s (Message=%s)" % (type(a).__name__, type(b).__name__, str(a), sym, str(b), str(exc_value)))
+                            self.fail("Binary operator failed: %s, %s: %s %s %s (Message=%s)" % (type(a).__name__, type(b).__name__, str(a), sym, str(b), str(exc_value)))
 
         threes = [ 3, big(3), 3.0 ]
         zeroes = [ 0, big(0), 0.0 ]
@@ -294,7 +295,7 @@ class OperaterTest(IronPythonTestCase):
                         pass
                     else:
                         (exc_type, exc_value, exc_traceback) = sys.exc_info()
-                        Fail("Didn't get ZeroDivisionError %s, %s, %s, %s, %s (Message=%s)" % (str(func), type(i).__name__, type(j).__name__, str(i), str(j), str(exc_value)))
+                        self.fail("Didn't get ZeroDivisionError %s, %s, %s, %s, %s (Message=%s)" % (str(func), type(i).__name__, type(j).__name__, str(i), str(j), str(exc_value)))
 
         def test_unary_ops(self):
             if is_cli:

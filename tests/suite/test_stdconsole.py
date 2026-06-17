@@ -7,7 +7,7 @@ import re
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython, is_netcoreapp
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_posix, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -404,7 +404,7 @@ AssertionError
         finally:
             self.batfile = hideDefaultBatch
 
-    @unittest.skipIf(not is_cli or is_netcoreapp, "https://github.com/IronLanguages/ironpython3/issues/2057")
+    @skipUnlessIronPython()
     def test_cp35263(self):
         script = """
 import warnings

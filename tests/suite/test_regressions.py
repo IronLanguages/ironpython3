@@ -105,26 +105,26 @@ with open(r"%s", "w") as f:
         temp.BProperty = True
         for i in range(2):
             if not temp.BProperty:
-                Fail("Nullable Boolean was set to True")
+                self.fail("Nullable Boolean was set to True")
         for i in range(2):
             if not temp.BProperty==True:
-                Fail("Nullable Boolean was set to True")
+                self.fail("Nullable Boolean was set to True")
 
         temp.BProperty = False
         for i in range(2):
             if temp.BProperty:
-                Fail("Nullable Boolean was set to False")
+                self.fail("Nullable Boolean was set to False")
         for i in range(2):
             if not temp.BProperty==False:
-                Fail("Nullable Boolean was set to False")
+                self.fail("Nullable Boolean was set to False")
 
         temp.BProperty = None
         for i in range(2):
             if temp.BProperty:
-                Fail("Nullable Boolean was set to None")
+                self.fail("Nullable Boolean was set to None")
         for i in range(2):
             if not temp.BProperty==None:
-                Fail("Nullable Boolean was set to None")
+                self.fail("Nullable Boolean was set to None")
 
     def test_cp_27434(self):
         tests = {

@@ -493,7 +493,7 @@ class SyntaxTest(IronPythonTestCase):
         except AssertionError as e:
             self.assertEqual(e.args[0], "This one")
         else:
-            Fail("Expected AssertionError, got none")
+            self.fail("Expected AssertionError, got none")
 
         try:
             pass

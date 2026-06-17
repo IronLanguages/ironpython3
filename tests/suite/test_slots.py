@@ -16,7 +16,7 @@ class SlotsTest(IronPythonTestCase):
             def __init__(self):
                 try: self.b = 2
                 except AttributeError: pass
-                else: Fail("should have thrown")
+                else: self.fail("should have thrown")
 
         self.assertEqual(str(C.a), "<member 'a' of 'C' objects>")
 

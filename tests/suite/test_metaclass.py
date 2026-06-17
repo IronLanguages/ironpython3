@@ -133,7 +133,7 @@ class MetaclassTest(IronPythonTestCase):
             class D(C1, metaclass=dash_attributes):
                 pass
         except TypeError: pass
-        else: Fail("metaclass conflict expected")
+        else: self.fail("metaclass conflict expected")
 
         class D(C2, metaclass=dash_attributes):
             def StartSomethingToday(self): pass

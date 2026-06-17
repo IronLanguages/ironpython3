@@ -680,11 +680,12 @@ namespace IronPython.Compiler.Ast {
             InitializeParameters(init, needsWrapperMethod, parameters);
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
-            // add beginning sequence point
-            var start = GlobalParent.IndexToLocation(StartIndex);
-            statements.Add(GlobalParent.AddDebugInfo(
-                AstUtils.Empty(),
-                new SourceSpan(new SourceLocation(0, start.Line, start.Column), new SourceLocation(0, start.Line, int.MaxValue))));
+
+            // Add beginning sequence point. For async functions this body is deferred into the nested Async/AsyncEnumerable lambda,
+            // and the outer factory (which runs first, and is the only one traced today) re-emits its own entry point at StartIndex;
+            // anchor this one at HeaderIndex (end of the signature) so the two occupy distinct source locations should the deferred
+            // body ever become traceable. For single-line signatures both still land on the same line (differing only in column).
+            statements.Add(MakeFunctionEntrySequencePoint(IsAsync ? HeaderIndex : StartIndex));
 
 
             // For generators/coroutines, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
@@ -739,6 +740,7 @@ namespace IronPython.Compiler.Ast {
                     var throwSlot = AsyncThrowSlot;
                     body = MSAst.Expression.Block(
                         [cts, excBox, sendSlot, throwSlot],
+                        MakeFunctionEntrySequencePoint(StartIndex),
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
                         MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         MSAst.Expression.Assign(sendSlot, MSAst.Expression.New(typeof(StrongBox<object>))),
@@ -758,6 +760,7 @@ namespace IronPython.Compiler.Ast {
                     // rather than whatever context happened to be current at construction.
                     body = MSAst.Expression.Block(
                         [cts, excBox],
+                        MakeFunctionEntrySequencePoint(StartIndex),
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
                         MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         Ast.Call(
@@ -804,6 +807,13 @@ namespace IronPython.Compiler.Ast {
         internal override LightLambdaExpression GetLambda() => EnsureFunctionLambda();
 
         internal FunctionCode FunctionCode => GetOrMakeFunctionCode();
+
+        private MSAst.Expression MakeFunctionEntrySequencePoint(int index) {
+            var loc = GlobalParent.IndexToLocation(index);
+            return GlobalParent.AddDebugInfo(
+                AstUtils.Empty(),
+                new SourceSpan(new SourceLocation(0, loc.Line, loc.Column), new SourceLocation(0, loc.Line, int.MaxValue)));
+        }
 
         private static MSAst.Expression/*!*/ AddDefaultReturn(MSAst.Expression/*!*/ body, Type returnType) {
             if (body.Type == typeof(void) && returnType != typeof(void)) {

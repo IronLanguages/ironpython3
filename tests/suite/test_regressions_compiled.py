@@ -28,7 +28,7 @@ class RegressionCompiledTest(IronPythonTestCase):
         try:
             clr.CompileModules(dll, filename)
         except:
-            Fail('Failed to compile the specified file')
+            self.fail('Failed to compile the specified file')
         finally:
             os.unlink(filename)
             os.unlink(dll)
@@ -46,7 +46,7 @@ class RegressionCompiledTest(IronPythonTestCase):
         try:
             clr.CompileModules(dll, filename)
         except:
-            Fail('Failed to compile the specified file')
+            self.fail('Failed to compile the specified file')
         finally:
             os.unlink(filename)
             os.unlink(dll)

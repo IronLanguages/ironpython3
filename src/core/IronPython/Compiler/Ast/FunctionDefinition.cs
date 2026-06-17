@@ -740,6 +740,7 @@ namespace IronPython.Compiler.Ast {
                     var throwSlot = AsyncThrowSlot;
                     body = MSAst.Expression.Block(
                         [cts, excBox, sendSlot, throwSlot],
+                        MakeFunctionEntrySequencePoint(StartIndex),
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
                         MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         MSAst.Expression.Assign(sendSlot, MSAst.Expression.New(typeof(StrongBox<object>))),

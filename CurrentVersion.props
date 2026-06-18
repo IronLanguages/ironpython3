@@ -1,12 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <MajorVersion>3</MajorVersion>
-    <MinorVersion>4</MinorVersion>
-    <MicroVersion>2</MicroVersion>
-    <ReleaseLevel>final</ReleaseLevel>
-    <ReleaseSerial>0</ReleaseSerial><!-- this should only be 0 when final -->
-
-    <AssemblyRevision>0</AssemblyRevision>
-  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)\src\core\IronPython.StdLib\CurrentVersion.props" />
 </Project>

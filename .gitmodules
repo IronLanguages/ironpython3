@@ -2,3 +2,6 @@
 	path = src/dlr
 	url = https://github.com/IronLanguages/dlr
 	branch = main
+[submodule "IronPython.StdLib"]
+	path = src/core/IronPython.StdLib
+	url = https://github.com/IronLanguages/ironpython3-stdlib

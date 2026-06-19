@@ -1,9 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net462;net8.0;net10.0</TargetFrameworks>
     <AssemblyName>IronPythonTest</AssemblyName>
     <PreventStaging>true</PreventStaging>
+    <MeziantouPolyfill_IncludedPolyfills>
+      M:System.IO.Path.GetRelativePath(System.String, System.String);
+    </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +26,13 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Cases\*.ini" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.140">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

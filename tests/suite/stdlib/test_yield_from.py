@@ -3,17 +3,15 @@
 # See the LICENSE file in the project root for more information.
 
 ##
-## Run selected tests from test_pep380 from StdLib
+## Run selected tests from test_yield_from from StdLib
 ##
 
 import sys
 
 from iptest import is_ironpython, generate_suite, run_test
 
-if sys.version_info >= (3, 6):
+if is_ironpython or sys.version_info >= (3, 6):
     import test.test_yield_from as test_yield_from
-else:
-    import test.test_pep380 as test_yield_from
 
 def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test_yield_from, pattern=pattern)

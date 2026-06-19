@@ -29,6 +29,7 @@
 
     <PythonSymbols>PYTHON_$(MajorVersion)$(MinorVersion)</PythonSymbols>
     <PythonSymbols Condition="'$(MajorVersion)$(MinorVersion)' >= '36'">$(PythonSymbols);PYTHON_36_OR_GREATER</PythonSymbols>
+    <PythonSymbols Condition="'$(MajorVersion)$(MinorVersion)' >= '37'">$(PythonSymbols);PYTHON_37_OR_GREATER</PythonSymbols>
 
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 

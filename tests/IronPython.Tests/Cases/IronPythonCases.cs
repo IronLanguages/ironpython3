@@ -25,8 +25,11 @@ namespace IronPythonTest.Cases {
                 var root = CaseExecuter.FindRoot();
                 var folder = Path.Combine("tests", "suite");
                 var fullPath = Path.GetFullPath(Path.Combine(root, folder));
-                foreach (var filename in Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories))
+                var stdlibFullPath = Path.Combine(fullPath, "stdlib");
+                foreach (var filename in Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories)) {
+                    if (filename.StartsWith(stdlibFullPath, System.StringComparison.OrdinalIgnoreCase)) continue;
                     yield return new TestInfo(filename, category, folder, manifest);
+                }
             }
 
             IEnumerable<TestInfo> GetEngScripts() {

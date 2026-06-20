@@ -19,19 +19,26 @@ namespace IronPythonTest.Cases {
     internal class CPythonCaseGenerator : CommonCaseGenerator<CPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
             var libFolder = Path.Combine("src", "core", "IronPython.StdLib", "lib");
-            return GetFilenames(new [] {
-                System.Tuple.Create(category, Path.Combine(libFolder, "test")),
-                System.Tuple.Create($"{category}.ctypes", Path.Combine(libFolder, "ctypes", "test")),
-                System.Tuple.Create($"{category}.distutils", Path.Combine(libFolder, "distutils", "tests")),
-                System.Tuple.Create($"{category}.unittest", Path.Combine(libFolder, "unittest", "test")),
-            })
-            .OrderBy(testcase => testcase.Name);
+            var suiteFolder = Path.Combine("tests", "suite", "stdlib");
 
-            IEnumerable<TestInfo> GetFilenames(IEnumerable<System.Tuple<string, string>> folders) {
-                foreach (var tuple in folders) {
-                    var fullPath = Path.Combine(CaseExecuter.FindRoot(), tuple.Item2);
-                    foreach (var filename in Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories))
-                        yield return new TestInfo(Path.GetFullPath(filename), tuple.Item1, tuple.Item2, manifest);
+            return GetTestInfo(category, "test")
+                .Concat(GetTestInfo($"{category}.ctypes", Path.Combine("ctypes", "test")))
+                .Concat(GetTestInfo($"{category}.distutils", Path.Combine("distutils", "tests")))
+                .Concat(GetTestInfo($"{category}.unittest", Path.Combine("unittest", "test")))
+                .OrderBy(testcase => testcase.Name);
+
+            IEnumerable<TestInfo> GetTestInfo(string category, string folder) {
+                var root = CaseExecuter.FindRoot();
+                var altFolder = Path.GetDirectoryName(folder); // drop the trailing test (or tests) folder
+                var fullPath = Path.GetFullPath(Path.Combine(root, libFolder, folder));
+                var altFullPath = Path.GetFullPath(Path.Combine(root, suiteFolder, altFolder));
+                foreach (var filename in Directory.EnumerateFiles(fullPath, "test_*.py", SearchOption.AllDirectories)) {
+                    var altFilename = Path.GetFullPath(Path.Combine(altFullPath, Path.GetRelativePath(fullPath, filename)));
+                    if (File.Exists(altFilename)) {
+                        yield return new TestInfo(altFilename, category, Path.Combine(suiteFolder, altFolder), manifest);
+                    } else {
+                        yield return new TestInfo(filename, category, Path.Combine(libFolder, folder), manifest);
+                    }
                 }
             }
         }

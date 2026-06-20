@@ -51,9 +51,9 @@ if __name__ == "__main__":
     package = sys.argv[2] if len(sys.argv) > 2 else None
     location = sys.argv[3] if len(sys.argv) > 3 else "."
 
-    filepath = os.path.join(location, name + ("_" + package if package else "") + "_stdlib.py")
+    filepath = os.path.join(location, name + ("_" + package if package else "") + ".py")
 
-    sys.path.insert(0, os.path.abspath(os.path.join(__file__, "../../src/core/IronPython.StdLib/lib")))
+    sys.path.insert(0, os.path.abspath(os.path.join(__file__, "../../../src/core/IronPython.StdLib/lib")))
     module = importlib.import_module("{package}test.{name}".format(name=name, package=package + "." if package else ""))
 
     tests = []

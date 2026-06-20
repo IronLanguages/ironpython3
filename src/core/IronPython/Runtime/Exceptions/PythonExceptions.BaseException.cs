@@ -276,9 +276,6 @@ namespace IronPython.Runtime.Exceptions {
                 get {
                     return _context ?? __cause__;
                 }
-                internal set {
-                    _context = value;
-                }
             }
 
             public bool __suppress_context__ { get; set; }
@@ -361,7 +358,7 @@ namespace IronPython.Runtime.Exceptions {
 
             internal Exception CreateClrExceptionWithCause(BaseException? cause, BaseException? context, bool suppressContext) {
                 _cause = cause;
-                _context = context;
+                if (context != this) _context = context;
                 __suppress_context__ = suppressContext;
                 _traceback = null;
 

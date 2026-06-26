@@ -8,9 +8,21 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test, is_posix
+from iptest import is_ironpython, generate_suite, run_test, is_posix, is_windows
 
 import test.test_os
+
+def is_exfat():
+    import clr
+    clr.AddReference("System.IO.FileSystem.DriveInfo")
+    import os
+    import System.IO
+    try:
+        drive = os.path.splitdrive(os.getcwd())[0]
+        format = System.IO.DriveInfo(drive).DriveFormat.lower()
+        return format == "exfat"
+    except:
+        return False
 
 def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_os, pattern=pattern)
@@ -31,10 +43,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_os.FileTests('test_symlink_keywords'), # IndexError: Index was outside the bounds of the array.
             test.test_os.OSErrorTests('test_oserror_filename'), # AssertionError: '@test_732_tmp' is not b'@test_732_tmp'
             test.test_os.StatAttributeTests('test_stat_result_pickle'), # AssertionError
-            test.test_os.UtimeTests('test_utime'), # OSError: [WinError 87] The parameter is incorrect.
-            test.test_os.UtimeTests('test_utime_by_indexed'), # OSError: [WinError 87] The parameter is incorrect.
-            test.test_os.UtimeTests('test_utime_by_times'), # OSError: [WinError 87] The parameter is incorrect.
-            test.test_os.UtimeTests('test_utime_directory'), # OSError: [WinError 87] The parameter is incorrect.
             test.test_os.Win32KillTests('test_kill_int'), # AssertionError
             test.test_os.Win32KillTests('test_kill_sigterm'), # AssertionError
         ]
@@ -43,11 +51,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_os.EnvironTests('test_unset_error'), # ValueError: Environment variable name cannot contain equal character. (Parameter 'variable')
                 test.test_os.FDInheritanceTests('test_get_inheritable_cloexec'), # AttributeError: 'module' object has no attribute 'get_inheritable'
                 test.test_os.FDInheritanceTests('test_set_inheritable_cloexec'), # AssertionError
-            ]
-        else:
-            failing_tests += [
-                test.test_os.UtimeTests('test_utime_current'), # AssertionError
-                test.test_os.UtimeTests('test_utime_current_old'), # AssertionError
             ]
         if sys.version_info < (3, 6):
             failing_tests += [
@@ -75,12 +78,19 @@ def load_tests(loader, standard_tests, pattern):
                     test.test_os.TestScandir('test_removed_file'), # FileNotFoundError
                 ]
 
-        skip_tests = [
-            # these require symlink support on drive
-            test.test_os.LinkTests('test_link'),
-            test.test_os.LinkTests('test_link_bytes'),
-            test.test_os.LinkTests('test_unicode_name'),
-        ]
+        skip_tests = []
+        if is_windows and is_exfat():
+            skip_tests += [
+                test.test_os.LinkTests('test_link'),
+                test.test_os.LinkTests('test_link_bytes'),
+                test.test_os.LinkTests('test_unicode_name'),
+                test.test_os.UtimeTests('test_utime'),
+                test.test_os.UtimeTests('test_utime_by_indexed'),
+                test.test_os.UtimeTests('test_utime_by_times'),
+                test.test_os.UtimeTests('test_utime_directory'),
+                test.test_os.UtimeTests('test_utime_current'),
+                test.test_os.UtimeTests('test_utime_current_old'),
+            ]
         if sys.version_info >= (3, 6):
             skip_tests += [
                 # SpawnTests seem to create a console

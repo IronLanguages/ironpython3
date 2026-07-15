@@ -1313,6 +1313,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return DoubleOps.__round__(d);
             }
 
+            if (number is float f) {
+                return SingleOps.__round__(f);
+            }
+
             if (number is int i) {
                 return Int32Ops.__round__(i);
             }
@@ -1338,6 +1342,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (number is double d) {
                     return DoubleOps.__round__(d, ndi);
                 }
+                if (number is float f) {
+                    return SingleOps.__round__(f, ndi);
+                }
                 if (number is int i) {
                     return Int32Ops.__round__(i, ndi);
                 }
@@ -1349,6 +1356,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (ndigits is BigInteger ndbi) {
                 if (number is double d) {
                     return DoubleOps.__round__(d, ndbi);
+                }
+                if (number is float f) {
+                    return SingleOps.__round__(f, ndbi);
                 }
                 if (number is int i) {
                     return Int32Ops.__round__(i, ndbi);

@@ -1187,5 +1187,9 @@ namespace IronPython.Runtime.Operations {
         public static double __float__(float x) {
             return x;
         }
+
+        public static object __round__(float self) => DoubleOps.__round__(self);
+
+        public static float __round__(float self, object ndigits) => (float)DoubleOps.__round__(self, ndigits);
     }
 }

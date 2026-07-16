@@ -3848,9 +3848,9 @@ namespace IronPython.Runtime {
             void Debugging.ITraceCallback.OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload) {
                 var listener = _parent._tracebackListeners.Value;
 
-                if (listener == null && _parent.PythonOptions.Tracing) {
-                    // If tracing without sys.set_trace() is enabled, we need to register a dummy traceback listener,
-                    // because of the FunctionStack handling done there.
+                if (listener == null && (_parent.PythonOptions.Tracing || _parent._tracebackListenersCount > 0)) {
+                    // If tracing is enabled (globally or via SetTrace on any thread), we need to register a dummy
+                    // traceback listener for this thread, because of the FunctionStack handling done there.
                     _parent._tracebackListeners.Value = listener = new PythonTracebackListener(_parent, null);
                 }
 

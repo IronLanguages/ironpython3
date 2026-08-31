@@ -5,7 +5,7 @@ Usage: ipyc.exe [options] file [file ...]
 
 Options:
 
-    /out:output_file                          Output file name (default is main_file.<extenstion>)
+    /out:output_file                          Output file name (default is main_file.<extension>)
 
     /target:dll                               Compile only into dll.  Default
 
@@ -44,7 +44,7 @@ EXE/WinEXE specific options:
 
     /sta                                      Set STAThreadAttribute on Main instead of MTAThreadAttribute, only valid for /target:exe
 
-    /errfmt:msg                               A string that will be used when showing an error occured, {{0}} will be replaced by the exception message
+    /errfmt:msg                               A string that will be used when showing an error occurred, {{0}} will be replaced by the exception message
 
     /win32icon:file.ico                       Sets file.ico as the icon for the executable
 

@@ -9,10 +9,10 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+using IronPython.Runtime.Types;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Types;
 
 #pragma warning disable 675
 
@@ -104,6 +104,19 @@ namespace IronPython.Runtime.Operations {
         public static int __int__(SByte x) => unchecked((int)x);
 
         public static int __index__(SByte x) => unchecked((int)x);
+
+        public static int __round__(SByte x) => unchecked((int)x);
+
+        public static object __round__(SByte x, object ndigits) {
+            var result = BigIntegerOps.__round__(x, ndigits);
+            if (SByte.MinValue <= result && result <= SByte.MaxValue) {
+                return unchecked((SByte)result);
+            }
+            if (int.MinValue <= result && result <= int.MaxValue) {
+                return (int)result;
+            }
+            return result;
+        }
 
         public static int __hash__(SByte x) {
             if (x == -1) return -2;
@@ -377,6 +390,19 @@ namespace IronPython.Runtime.Operations {
         public static int __int__(Byte x) => unchecked((int)x);
 
         public static int __index__(Byte x) => unchecked((int)x);
+
+        public static int __round__(Byte x) => unchecked((int)x);
+
+        public static object __round__(Byte x, object ndigits) {
+            var result = BigIntegerOps.__round__(x, ndigits);
+            if (Byte.MinValue <= result && result <= Byte.MaxValue) {
+                return unchecked((Byte)result);
+            }
+            if (int.MinValue <= result && result <= int.MaxValue) {
+                return (int)result;
+            }
+            return result;
+        }
 
         public static int __hash__(Byte x) {
             return unchecked((int)x);
@@ -753,6 +779,19 @@ namespace IronPython.Runtime.Operations {
 
         public static int __index__(Int16 x) => unchecked((int)x);
 
+        public static int __round__(Int16 x) => unchecked((int)x);
+
+        public static object __round__(Int16 x, object ndigits) {
+            var result = BigIntegerOps.__round__(x, ndigits);
+            if (Int16.MinValue <= result && result <= Int16.MaxValue) {
+                return unchecked((Int16)result);
+            }
+            if (int.MinValue <= result && result <= int.MaxValue) {
+                return (int)result;
+            }
+            return result;
+        }
+
         public static int __hash__(Int16 x) {
             if (x == -1) return -2;
             return unchecked((int)x);
@@ -1030,6 +1069,19 @@ namespace IronPython.Runtime.Operations {
         public static int __int__(UInt16 x) => unchecked((int)x);
 
         public static int __index__(UInt16 x) => unchecked((int)x);
+
+        public static int __round__(UInt16 x) => unchecked((int)x);
+
+        public static object __round__(UInt16 x, object ndigits) {
+            var result = BigIntegerOps.__round__(x, ndigits);
+            if (UInt16.MinValue <= result && result <= UInt16.MaxValue) {
+                return unchecked((UInt16)result);
+            }
+            if (int.MinValue <= result && result <= int.MaxValue) {
+                return (int)result;
+            }
+            return result;
+        }
 
         public static int __hash__(UInt16 x) {
             return unchecked((int)x);
@@ -1669,6 +1721,19 @@ namespace IronPython.Runtime.Operations {
 
         public static BigInteger __index__(UInt32 x) => unchecked((BigInteger)x);
 
+        public static BigInteger __round__(UInt32 x) => unchecked((BigInteger)x);
+
+        public static object __round__(UInt32 x, object ndigits) {
+            var result = BigIntegerOps.__round__(x, ndigits);
+            if (UInt32.MinValue <= result && result <= UInt32.MaxValue) {
+                return unchecked((UInt32)result);
+            }
+            if (int.MinValue <= result && result <= int.MaxValue) {
+                return (int)result;
+            }
+            return result;
+        }
+
         public static int __hash__(UInt32 x) {
             return unchecked((int)((x >= int.MaxValue) ? (x % int.MaxValue) : x));
         }
@@ -2054,6 +2119,19 @@ namespace IronPython.Runtime.Operations {
 
         public static BigInteger __index__(Int64 x) => unchecked((BigInteger)x);
 
+        public static BigInteger __round__(Int64 x) => unchecked((BigInteger)x);
+
+        public static object __round__(Int64 x, object ndigits) {
+            var result = BigIntegerOps.__round__(x, ndigits);
+            if (Int64.MinValue <= result && result <= Int64.MaxValue) {
+                return unchecked((Int64)result);
+            }
+            if (int.MinValue <= result && result <= int.MaxValue) {
+                return (int)result;
+            }
+            return result;
+        }
+
         public static int __hash__(Int64 x) {
             if (x < 0) {
                 if (x == long.MinValue) return -2;
@@ -2329,6 +2407,19 @@ namespace IronPython.Runtime.Operations {
         public static BigInteger __int__(UInt64 x) => unchecked((BigInteger)x);
 
         public static BigInteger __index__(UInt64 x) => unchecked((BigInteger)x);
+
+        public static BigInteger __round__(UInt64 x) => unchecked((BigInteger)x);
+
+        public static object __round__(UInt64 x, object ndigits) {
+            var result = BigIntegerOps.__round__(x, ndigits);
+            if (UInt64.MinValue <= result && result <= UInt64.MaxValue) {
+                return unchecked((UInt64)result);
+            }
+            if (int.MinValue <= result && result <= int.MaxValue) {
+                return (int)result;
+            }
+            return result;
+        }
 
         public static int __hash__(UInt64 x) {
             return unchecked((int)((x >= int.MaxValue) ? (x % int.MaxValue) : x));

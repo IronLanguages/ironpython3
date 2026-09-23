@@ -131,6 +131,17 @@ simple_method = """
 [SpecialName]
 public static %(type)s %(method_name)s(%(type)s x) => (%(type)s)(%(symbol)s(x));"""
 
+round_method = """
+public static object __round__(%(type)s x, object ndigits) {
+    var result = BigIntegerOps.__round__(x, ndigits);
+    if (%(type)s.MinValue <= result && result <= %(type)s.MaxValue) {
+        return unchecked((%(type)s)result);
+    }
+    if (int.MinValue <= result && result <= int.MaxValue) {
+        return (int)result;
+    }
+    return result;
+}"""
 
 signed_abs = """
 [SpecialName]
@@ -200,6 +211,10 @@ def gen_unaryops(cw, ty):
 
         cw.write(unchecked_cast_method, type=ty.name, method_name="__int__", cast_type=ty.cast_type)
         cw.write(unchecked_cast_method, type=ty.name, method_name="__index__", cast_type=ty.cast_type)
+
+        if ty.name not in ['Int32']:
+            cw.write(unchecked_cast_method, type=ty.name, method_name="__round__", cast_type=ty.cast_type)
+            cw.write(round_method, type=ty.name)
 
         cw.writeline()
         cw.enter_block('public static int __hash__(%s x)' % (ty.name))

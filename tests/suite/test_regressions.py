@@ -1735,4 +1735,38 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
             import System
             self.assertRaises(KeyError, lambda: System.DayOfWeek["{0}"])
 
+    @skipUnlessIronPython()
+    def test_ipy3_gh1977(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1977
+        import System
+
+        res = round(System.Single(1.23))
+        self.assertTrue(isinstance(res, int))
+        self.assertEqual(res, 1)
+
+        res = round(System.Single(1.23), 2)
+        self.assertTrue(isinstance(res, System.Single))
+        self.assertEqual(res, System.Single(1.23))
+
+        for t in [System.SByte, System.Byte, System.Int16, System.UInt16, System.Int32, System.UInt32, System.Int64, System.UInt64]:
+            # round with no ndigits is expected to return an int
+            res = round(t.MaxValue)
+            self.assertTrue(isinstance(res, int))
+            self.assertEqual(res, t.MaxValue)
+
+            # round with ndigits specified is expected to return the same type as the input
+            res = round(t.MaxValue, 2)
+            self.assertTrue(isinstance(res, t))
+            self.assertEqual(res, t.MaxValue)
+
+            # on overflow, return an int
+            ndigits = 1 - len(str(int(t.MaxValue)))
+            expected = round(int(t.MaxValue), ndigits)
+            res = round(t.MaxValue, ndigits)
+            self.assertEqual(res, expected)
+            if expected > int(t.MaxValue):
+                self.assertTrue(isinstance(res, int))
+            else:
+                self.assertTrue(isinstance(res, t))
+
 run_test(__name__)

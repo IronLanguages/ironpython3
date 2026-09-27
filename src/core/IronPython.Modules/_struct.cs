@@ -425,17 +425,37 @@ namespace IronPython.Modules {
 
             [Documentation("reads the current format from the specified array")]
             public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesLike][NotNone] IList<byte>/*!*/ buffer, int offset = 0) {
-                int bytesAvail = buffer.Count - offset;
-                if (bytesAvail < size) {
+                offset = NormalizeOffset(context, offset, buffer.Count);
+                return unpack(context, buffer.Substring(offset, size));
+            }
+
+            [Documentation("reads the current format from the specified array")]
+            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNone] IBufferProtocol/*!*/ buffer, int offset = 0) {
+                using var buf = buffer.GetBuffer(BufferFlags.Simple);
+                var span = buf.AsReadOnlySpan();
+                offset = NormalizeOffset(context, offset, span.Length);
+                return unpack(context, span.Slice(offset, size).ToArray());
+            }
+
+            private int NormalizeOffset(CodeContext context, int offset, int length) {
+                if (offset < 0) {
+                    offset += length;
+                }
+                int bytesAvail = length - offset;
+                if (offset < 0 || bytesAvail < size) {
                     throw Error(context, $"unpack_from requires a buffer of at least {size} bytes");
                 }
-
-                return unpack(context, buffer.Substring(offset, size));
+                return offset;
             }
 
             [Documentation("iteratively unpack the current format from the specified array.")]
             public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [BytesLike][NotNone] IList<byte>/*!*/ buffer) {
                 return new PythonUnpackIterator(this, context, buffer);
+            }
+
+            [Documentation("iteratively unpack the current format from the specified array.")]
+            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [NotNone] IBufferProtocol/*!*/ buffer) {
+                return new PythonUnpackIterator(this, context, buffer.GetBuffer(BufferFlags.Simple));
             }
 
             [Documentation("gets the number of bytes that the serialized string will occupy or are required to deserialize the data")]
@@ -676,17 +696,21 @@ namespace IronPython.Modules {
             #endregion
         }
 
+#nullable enable
+
         [PythonType("unpack_iterator"), Documentation("Represents an iterator returned by _struct.iter_unpack()")]
         public sealed class PythonUnpackIterator : IEnumerator<object>, IEnumerable<object> {
-            private object _iter_current;
+            private object? _iter_current;
             private int _next_offset;
 
             private readonly CodeContext _context;
-            private readonly IList<byte> _buffer;
+            private readonly IList<byte>? _buffer;
+            private readonly IPythonBuffer? _pythonBuffer;
             private readonly Struct _owner;
 
             internal PythonUnpackIterator(Struct/*!*/ owner, CodeContext/*!*/ context, IList<byte>/*!*/ buffer) {
                 _context = context;
+                _pythonBuffer = null;
                 _buffer = buffer;
                 _owner = owner;
 
@@ -695,11 +719,24 @@ namespace IronPython.Modules {
                 ValidateBufferLength();
             }
 
+            internal PythonUnpackIterator(Struct/*!*/ owner, CodeContext/*!*/ context, IPythonBuffer/*!*/ buffer) {
+                _context = context;
+                _pythonBuffer = buffer;
+                _buffer = null;
+                _owner = owner;
+
+                _iter_current = null;
+                _next_offset = 0;
+                ValidateBufferLength();
+            }
+
+            private int BufferLength => _pythonBuffer?.NumBytes() ?? _buffer!.Count;
+
             private void ValidateBufferLength() {
                 if (_owner.size == 0) {
                     throw Error(_context, "cannot iteratively unpack with a struct of length 0");
                 }
-                if (_buffer.Count % _owner.size != 0) {
+                if (BufferLength % _owner.size != 0) {
                     throw Error(_context, $"iterative unpacking requires a buffer of a multiple of {_owner.size} bytes");
                 }
             }
@@ -716,15 +753,20 @@ namespace IronPython.Modules {
             #region IEnumerator<object> Members
 
             [PythonHidden]
-            public object Current => _iter_current;
+            public object Current => _iter_current!;
 
             [PythonHidden]
             public bool MoveNext() {
-                if (_buffer.Count - _next_offset < _owner.size) {
+                if (BufferLength - _next_offset < _owner.size) {
                     return false;
                 }
 
-                _iter_current = _owner.unpack_from(_context, _buffer, _next_offset);
+                if (_pythonBuffer is null) {
+                    _iter_current = _owner.unpack_from(_context, _buffer, _next_offset);
+                }
+                else {
+                    _iter_current = _owner.unpack(_context, _pythonBuffer.AsReadOnlySpan().Slice(_next_offset, _owner.size).ToArray());
+                }
                 _next_offset += _owner.size;
                 return true;
             }
@@ -732,13 +774,17 @@ namespace IronPython.Modules {
             void IEnumerator.Reset() => throw new NotSupportedException();
 
             [PythonHidden]
-            public void Dispose() { }
+            public void Dispose() {
+                _pythonBuffer?.Dispose();
+            }
 
             #endregion
 
             public int __length_hint__()
-                => (_buffer.Count - _next_offset) / _owner.size;
+                => (BufferLength - _next_offset) / _owner.size;
         }
+
+#nullable restore
 
         #endregion
 
@@ -894,8 +940,18 @@ namespace IronPython.Modules {
             return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
+        [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, object fmt, [NotNone] IBufferProtocol/*!*/ buffer, int offset = 0) {
+            return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
+        }
+
         [Documentation("Iteratively unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
         public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [BytesLike][NotNone] IList<byte>/*!*/ buffer) {
+            return GetStructFromCache(context, fmt).iter_unpack(context, buffer);
+        }
+
+        [Documentation("Iteratively unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
+        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [NotNone] IBufferProtocol/*!*/ buffer) {
             return GetStructFromCache(context, fmt).iter_unpack(context, buffer);
         }
 

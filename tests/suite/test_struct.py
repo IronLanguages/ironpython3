@@ -42,6 +42,13 @@ class StructTest(unittest.TestCase):
         a, = struct.unpack_from(b'>H', b"\x00\x01")
         self.assertEqual(a, 1)
 
+        data = b"\x00\x01\x00\x02"
+        a, = struct.unpack_from('>H', data, -2)
+        self.assertEqual(a, 2)
+
+        a, = struct.unpack_from('>H', memoryview(data), -2)
+        self.assertEqual(a, 2)
+
     def test_pack_into(self):
         # test string format string
         result = array.array('b', [0, 0])

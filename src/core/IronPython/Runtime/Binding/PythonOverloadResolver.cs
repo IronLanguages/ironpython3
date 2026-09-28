@@ -72,6 +72,14 @@ namespace IronPython.Runtime.Binding {
                 return basePreferred;
             }
 
+            // Prefer the [BytesLike] overload when the argument type is assignable to it.
+            if (IsBytesLikeParameter(candidateTwo)) {
+                return candidateTwo.Type.IsAssignableFrom(arg.LimitType) ? Candidate.Two : Candidate.One;
+            }
+            if (IsBytesLikeParameter(candidateOne)) {
+                return candidateOne.Type.IsAssignableFrom(arg.LimitType) ? Candidate.One : Candidate.Two;
+            }
+
             // Work around the choice made in Converter.PreferConvert
             // This cannot be done using NarrowingLevel rules because it would confuse rules for selecting custom operators
             if (level >= PythonNarrowing.IndexOperator && Converter.IsPythonBigInt(arg.LimitType)) {
@@ -141,15 +149,15 @@ namespace IronPython.Runtime.Binding {
             Type toType = toParameter.Type;
 
             if (IsBytesLikeParameter(toParameter)) {
-
-                if ((fromType == typeof(PythonList) || fromType.IsSubclassOf(typeof(PythonList)))) {
+                if (fromType == typeof(PythonList) || fromType.IsSubclassOf(typeof(PythonList))) {
                     if (toType.IsGenericType &&
                         toType.GetGenericTypeDefinition() == typeof(IList<>)) {
                         return false;
                     }
                 }
 
-                if (typeof(IBufferProtocol).IsAssignableFrom(fromType)) {
+                // Apply this conversion only to real arguments, not parameter-type comparisons (in which case fromArg is null).
+                if (fromArg is not null && typeof(IBufferProtocol).IsAssignableFrom(fromType)) {
                     if (toParameter.Type == typeof(IList<byte>) || toParameter.Type == typeof(IReadOnlyList<byte>)) {
                         return true;
                     }

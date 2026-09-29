@@ -51,7 +51,7 @@ namespace IronPython.Modules {
             }
 
             internal Struct(CodeContext/*!*/ context, [NotNone] string/*!*/ fmt) {
-                __init__(context, fmt);
+                InitializeFromFormat(context, fmt);
             }
 
             #region Python construction
@@ -66,8 +66,11 @@ namespace IronPython.Modules {
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]
             public void __init__(CodeContext/*!*/ context, object fmt) {
-                format = FormatObjectToString(fmt);
+                InitializeFromFormat(context, FormatObjectToString(fmt));
+            }
 
+            private void InitializeFromFormat(CodeContext context, string format) {
+                this.format = format;
                 Struct s;
                 bool gotIt;
                 lock (_cache) {
@@ -237,6 +240,7 @@ namespace IronPython.Modules {
             public void pack_into(CodeContext/*!*/ context, [NotNone] ByteArray/*!*/ buffer, int offset, [NotNone] params object[] args) {
                 var existing = buffer.UnsafeByteList;
 
+                offset = NormalizeOffset(context, offset, buffer.Count);
                 if (offset + size > existing.Count) {
                     throw Error(context, $"pack_into requires a buffer of at least {size} bytes");
                 }
@@ -254,6 +258,7 @@ namespace IronPython.Modules {
 
                 var span = existing.AsSpan();
 
+                offset = NormalizeOffset(context, offset, span.Length);
                 if (offset + size > span.Length) {
                     throw Error(context, $"pack_into requires a buffer of at least {size} bytes");
                 }
@@ -449,7 +454,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("iteratively unpack the current format from the specified array.")]
-            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [BytesLike][NotNone] IList<byte>/*!*/ buffer) {
+            public PythonUnpackIterator iter_unpack(CodeContext/*!*/ context, [NotNone] Bytes/*!*/ buffer) {
                 return new PythonUnpackIterator(this, context, buffer);
             }
 
@@ -605,6 +610,10 @@ namespace IronPython.Modules {
                             break;
                         case ' ':   // white space, ignore
                         case '\t':
+                        case '\n':
+                        case '\r':
+                        case '\v':
+                        case '\f':
                             break;
                         case '=': // native
                             if (i != 0) throw Error(context, "unexpected byte order");
@@ -628,15 +637,17 @@ namespace IronPython.Modules {
                             throw Error(context, "embedded null character");
                         default:
                             if (char.IsDigit(fmt[i])) {
-                                count = 0;
+                                long repeatCount = 0;
                                 while (char.IsDigit(fmt[i])) {
-                                    count = count * 10 + (fmt[i] - '0');
+                                    repeatCount = repeatCount * 10 + (fmt[i] - '0');
+                                    if (repeatCount > int.MaxValue) throw Error(context, "repeat count too large");
                                     i++;
                                     if (i >= fmt.Length) {
                                         throw Error(context, "repeat count given without format specifier");
                                     }
                                 }
                                 if (char.IsWhiteSpace(fmt[i])) throw Error(context, "white space not allowed between count and format");
+                                count = (int)repeatCount;
                                 i--;
                                 break;
                             }
@@ -652,7 +663,7 @@ namespace IronPython.Modules {
                     _isStandardized = fStandardized,
                     _isLittleEndian = fLittleEndian,
                 };
-                s.InitCountAndSize();
+                s.InitCountAndSize(context);
 
                 lock (_cache) {
                     _cache.Add(fmt, s);
@@ -660,7 +671,7 @@ namespace IronPython.Modules {
                 return s;
             }
 
-            private void InitCountAndSize() {
+            private void InitCountAndSize(CodeContext context) {
                 var encodingCount = 0;
                 var encodingSize = 0;
                 foreach (Format format in _formats) {
@@ -671,13 +682,19 @@ namespace IronPython.Modules {
                             encodingCount++;
                         }
                     }
+                    if (encodingCount < 0) throw Error(context, "total struct size too long");
 
                     if (!_isStandardized) {
                         // In native mode, align to {size}-byte boundaries
                         encodingSize = Align(encodingSize, format.NativeSize);
+                        if (encodingSize < 0) throw Error(context, "total struct size too long");
                     }
 
-                    encodingSize += GetNativeSize(format.Type, _isStandardized) * format.Count;
+                    try {
+                        encodingSize = checked(encodingSize + GetNativeSize(format.Type, _isStandardized) * format.Count);
+                    } catch (OverflowException) {
+                        throw Error(context, "total struct size too long");
+                    }
                 }
                 _encodingCount = encodingCount;
                 _encodingSize = encodingSize;
@@ -763,8 +780,7 @@ namespace IronPython.Modules {
 
                 if (_pythonBuffer is null) {
                     _iter_current = _owner.unpack_from(_context, _buffer, _next_offset);
-                }
-                else {
+                } else {
                     _iter_current = _owner.unpack(_context, _pythonBuffer.AsReadOnlySpan().Slice(_next_offset, _owner.size).ToArray());
                 }
                 _next_offset += _owner.size;
@@ -883,11 +899,13 @@ namespace IronPython.Modules {
         private static CacheDict<string, Struct> _cache = new CacheDict<string, Struct>(MAX_CACHE_SIZE);
 
         private static string FormatObjectToString(object fmt) {
-            if (Converter.TryConvertToString(fmt, out string res)) {
-                return res;
-            }
             if (fmt is IList<byte> b) {
                 return PythonOps.MakeString(b);
+            }
+            if (Converter.TryConvertToString(fmt, out string res)) {
+                // replicate CPython behaviour: throws UnicodeEncodeError if non-ASCII
+                StringOps.DoEncodeAscii(res);
+                return res;
             }
             throw PythonOps.TypeError("Struct() argument 1 must be a str or bytes object, not {0}", PythonOps.GetPythonTypeName(fmt));
         }
@@ -946,7 +964,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("Iteratively unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [BytesLike][NotNone] IList<byte>/*!*/ buffer) {
+        public static PythonUnpackIterator/*!*/ iter_unpack(CodeContext/*!*/ context, object fmt, [NotNone] Bytes/*!*/ buffer) {
             return GetStructFromCache(context, fmt).iter_unpack(context, buffer);
         }
 
@@ -976,15 +994,8 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void WriteUShort(this MemoryStream res, bool fLittleEndian, ushort val) {
-            if (fLittleEndian) {
-                res.WriteByte((byte)(val & 0xff));
-                res.WriteByte((byte)((val >> 8) & 0xff));
-            } else {
-                res.WriteByte((byte)((val >> 8) & 0xff));
-                res.WriteByte((byte)(val & 0xff));
-            }
-        }
+        private static void WriteUShort(this MemoryStream res, bool fLittleEndian, ushort val)
+            => WriteShort(res, fLittleEndian, unchecked((short)val));
 
         private static void WriteInt(this MemoryStream res, bool fLittleEndian, int val) {
             if (fLittleEndian) {
@@ -1000,59 +1011,8 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void WriteUInt(this MemoryStream res, bool fLittleEndian, uint val) {
-            if (fLittleEndian) {
-                res.WriteByte((byte)(val & 0xff));
-                res.WriteByte((byte)((val >> 8) & 0xff));
-                res.WriteByte((byte)((val >> 16) & 0xff));
-                res.WriteByte((byte)((val >> 24) & 0xff));
-            } else {
-                res.WriteByte((byte)((val >> 24) & 0xff));
-                res.WriteByte((byte)((val >> 16) & 0xff));
-                res.WriteByte((byte)((val >> 8) & 0xff));
-                res.WriteByte((byte)(val & 0xff));
-            }
-        }
-
-        private static void WritePointer(this MemoryStream res, bool fLittleEndian, ulong val) {
-            if (UIntPtr.Size == 4) {
-                res.WriteUInt(fLittleEndian, (uint)val);
-            } else {
-                res.WriteULong(fLittleEndian, val);
-            }
-        }
-
-        private static void WriteUnsignedNetPointer(this MemoryStream res, bool fLittleEndian, UIntPtr val) {
-            res.WritePointer(fLittleEndian, val.ToUInt64());
-        }
-
-        private static void WriteSignedNetPointer(this MemoryStream res, bool fLittleEndian, IntPtr val) {
-            res.WritePointer(fLittleEndian, unchecked((ulong)val.ToInt64()));
-        }
-
-#if NET6_0_OR_GREATER
-        private static void WriteHalf(this MemoryStream res, bool fLittleEndian, Half val) {
-            byte[] bytes = BitConverter.GetBytes(val);
-            if (BitConverter.IsLittleEndian == fLittleEndian) {
-                res.Write(bytes, 0, bytes.Length);
-            } else {
-                res.WriteByte(bytes[1]);
-                res.WriteByte(bytes[0]);
-            }
-        }
-#endif
-
-        private static void WriteFloat(this MemoryStream res, bool fLittleEndian, float val) {
-            byte[] bytes = BitConverter.GetBytes(val);
-            if (BitConverter.IsLittleEndian == fLittleEndian) {
-                res.Write(bytes, 0, bytes.Length);
-            } else {
-                res.WriteByte(bytes[3]);
-                res.WriteByte(bytes[2]);
-                res.WriteByte(bytes[1]);
-                res.WriteByte(bytes[0]);
-            }
-        }
+        private static void WriteUInt(this MemoryStream res, bool fLittleEndian, uint val)
+            => WriteInt(res, fLittleEndian, unchecked((int)val));
 
         private static void WriteLong(this MemoryStream res, bool fLittleEndian, long val) {
             if (fLittleEndian) {
@@ -1076,43 +1036,35 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void WriteULong(this MemoryStream res, bool fLittleEndian, ulong val) {
-            if (fLittleEndian) {
-                res.WriteByte((byte)(val & 0xff));
-                res.WriteByte((byte)((val >> 8) & 0xff));
-                res.WriteByte((byte)((val >> 16) & 0xff));
-                res.WriteByte((byte)((val >> 24) & 0xff));
-                res.WriteByte((byte)((val >> 32) & 0xff));
-                res.WriteByte((byte)((val >> 40) & 0xff));
-                res.WriteByte((byte)((val >> 48) & 0xff));
-                res.WriteByte((byte)((val >> 56) & 0xff));
+        private static void WriteULong(this MemoryStream res, bool fLittleEndian, ulong val)
+            => WriteLong(res, fLittleEndian, unchecked((long)val));
+
+        private static void WritePointer(this MemoryStream res, bool fLittleEndian, ulong val) {
+            if (UIntPtr.Size == 4) {
+                res.WriteUInt(fLittleEndian, (uint)val);
             } else {
-                res.WriteByte((byte)((val >> 56) & 0xff));
-                res.WriteByte((byte)((val >> 48) & 0xff));
-                res.WriteByte((byte)((val >> 40) & 0xff));
-                res.WriteByte((byte)((val >> 32) & 0xff));
-                res.WriteByte((byte)((val >> 24) & 0xff));
-                res.WriteByte((byte)((val >> 16) & 0xff));
-                res.WriteByte((byte)((val >> 8) & 0xff));
-                res.WriteByte((byte)(val & 0xff));
+                res.WriteULong(fLittleEndian, val);
             }
         }
 
-        private static void WriteDouble(this MemoryStream res, bool fLittleEndian, double val) {
-            byte[] bytes = BitConverter.GetBytes(val);
-            if (BitConverter.IsLittleEndian == fLittleEndian) {
-                res.Write(bytes, 0, bytes.Length);
-            } else {
-                res.WriteByte(bytes[7]);
-                res.WriteByte(bytes[6]);
-                res.WriteByte(bytes[5]);
-                res.WriteByte(bytes[4]);
-                res.WriteByte(bytes[3]);
-                res.WriteByte(bytes[2]);
-                res.WriteByte(bytes[1]);
-                res.WriteByte(bytes[0]);
-            }
+        private static void WriteUnsignedNetPointer(this MemoryStream res, bool fLittleEndian, UIntPtr val) {
+            res.WritePointer(fLittleEndian, val.ToUInt64());
         }
+
+        private static void WriteSignedNetPointer(this MemoryStream res, bool fLittleEndian, IntPtr val) {
+            res.WritePointer(fLittleEndian, unchecked((ulong)val.ToInt64()));
+        }
+
+#if NET6_0_OR_GREATER
+        private static void WriteHalf(this MemoryStream res, bool fLittleEndian, Half val)
+            => WriteShort(res, fLittleEndian, Unsafe.As<Half, short>(ref val));
+#endif
+
+        private static void WriteFloat(this MemoryStream res, bool fLittleEndian, float val)
+            => WriteInt(res, fLittleEndian, Unsafe.As<float, int>(ref val));
+
+        private static void WriteDouble(this MemoryStream res, bool fLittleEndian, double val)
+            => WriteLong(res, fLittleEndian, Unsafe.As<double, long>(ref val));
 
         private static void WriteString(this MemoryStream res, int len, IList<byte> val) {
             for (int i = 0; i < val.Count && i < len; i++) {
@@ -1124,6 +1076,7 @@ namespace IronPython.Modules {
         }
 
         private static void WritePascalString(this MemoryStream res, int len, IList<byte> val) {
+            if (len < 0) return;
             byte lenByte = (byte)Math.Min(255, Math.Min(val.Count, len));
             res.WriteByte(lenByte);
 
@@ -1140,12 +1093,7 @@ namespace IronPython.Modules {
 
         internal static bool GetBoolValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-
-            if (Converter.TryConvert(val, typeof(bool), out object res)) {
-                return (bool)res;
-            }
-            // Should never happen
-            throw Error(context, "expected bool value got " + val.ToString());
+            return Converter.ConvertToBoolean(val);
         }
 
         internal static byte GetCharValue(CodeContext/*!*/ context, int index, object[] args) {
@@ -1318,96 +1266,33 @@ namespace IronPython.Modules {
         }
 
         internal static short CreateShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = data[index++];
-            byte b2 = data[index++];
+            int b1 = data[index++];
+            int b2 = data[index++];
 
             if (fLittleEndian) {
-                return (short)((b2 << 8) | b1);
+                return unchecked((short)((b2 << 8) | b1));
             } else {
-                return (short)((b1 << 8) | b2);
+                return unchecked((short)((b1 << 8) | b2));
             }
         }
 
-        internal static ushort CreateUShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = data[index++];
-            byte b2 = data[index++];
-
-            if (fLittleEndian) {
-                return (ushort)((b2 << 8) | b1);
-            } else {
-                return (ushort)((b1 << 8) | b2);
-            }
-        }
-
-#if NET6_0_OR_GREATER
-        internal static Half CreateHalfValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte[] bytes = new byte[2];
-            if (fLittleEndian == BitConverter.IsLittleEndian) {
-                bytes[0] = data[index++];
-                bytes[1] = data[index++];
-            } else {
-                bytes[1] = data[index++];
-                bytes[0] = data[index++];
-            }
-            Half res = BitConverter.ToHalf(bytes, 0);
-
-            if (context.LanguageContext.FloatFormat == FloatFormat.Unknown) {
-                if (Half.IsNaN(res) || Half.IsInfinity(res)) {
-                    throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
-                }
-            }
-
-            return res;
-        }
-#endif
-
-        internal static float CreateFloatValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte[] bytes = new byte[4];
-            if (fLittleEndian == BitConverter.IsLittleEndian) {
-                bytes[0] = data[index++];
-                bytes[1] = data[index++];
-                bytes[2] = data[index++];
-                bytes[3] = data[index++];
-            } else {
-                bytes[3] = data[index++];
-                bytes[2] = data[index++];
-                bytes[1] = data[index++];
-                bytes[0] = data[index++];
-            }
-            float res = BitConverter.ToSingle(bytes, 0);
-
-            if (context.LanguageContext.FloatFormat == FloatFormat.Unknown) {
-                if (float.IsNaN(res) || float.IsInfinity(res)) {
-                    throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
-                }
-            }
-
-            return res;
-        }
+        internal static ushort CreateUShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data)
+            => unchecked((ushort)CreateShortValue(context, ref index, fLittleEndian, data));
 
         internal static int CreateIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = data[index++];
-            byte b2 = data[index++];
-            byte b3 = data[index++];
-            byte b4 = data[index++];
+            int b1 = data[index++];
+            int b2 = data[index++];
+            int b3 = data[index++];
+            int b4 = data[index++];
 
             if (fLittleEndian)
-                return (int)((b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
+                return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
             else
-                return (int)((b1 << 24) | (b2 << 16) | (b3 << 8) | b4);
+                return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
         }
 
-        internal static uint CreateUIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte b1 = data[index++];
-            byte b2 = data[index++];
-            byte b3 = data[index++];
-            byte b4 = data[index++];
-
-            if (fLittleEndian)
-                return (uint)((b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
-            else
-                return (uint)((b1 << 24) | (b2 << 16) | (b3 << 8) | b4);
-        }
+        internal static uint CreateUIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data)
+            => unchecked((uint)CreateIntValue(context, ref index, fLittleEndian, data));
 
         internal static long CreateLongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             long b1 = data[index++];
@@ -1420,53 +1305,48 @@ namespace IronPython.Modules {
             long b8 = data[index++];
 
             if (fLittleEndian)
-                return (long)((b8 << 56) | (b7 << 48) | (b6 << 40) | (b5 << 32) |
-                                (b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
+                return (b8 << 56) | (b7 << 48) | (b6 << 40) | (b5 << 32) |
+                                (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
             else
-                return (long)((b1 << 56) | (b2 << 48) | (b3 << 40) | (b4 << 32) |
-                                (b5 << 24) | (b6 << 16) | (b7 << 8) | b8);
+                return (b1 << 56) | (b2 << 48) | (b3 << 40) | (b4 << 32) |
+                                (b5 << 24) | (b6 << 16) | (b7 << 8) | b8;
         }
 
-        internal static ulong CreateULongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            ulong b1 = data[index++];
-            ulong b2 = data[index++];
-            ulong b3 = data[index++];
-            ulong b4 = data[index++];
-            ulong b5 = data[index++];
-            ulong b6 = data[index++];
-            ulong b7 = data[index++];
-            ulong b8 = data[index++];
-            if (fLittleEndian)
-                return (ulong)((b8 << 56) | (b7 << 48) | (b6 << 40) | (b5 << 32) |
-                                (b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
-            else
-                return (ulong)((b1 << 56) | (b2 << 48) | (b3 << 40) | (b4 << 32) |
-                                (b5 << 24) | (b6 << 16) | (b7 << 8) | b8);
+        internal static ulong CreateULongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data)
+            => unchecked((ulong)CreateLongValue(context, ref index, fLittleEndian, data));
+
+#if NET6_0_OR_GREATER
+        internal static Half CreateHalfValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
+            var val = CreateShortValue(context, ref index, fLittleEndian, data);
+            var res = Unsafe.As<short, Half>(ref val);
+
+            if (context.LanguageContext.FloatFormat == FloatFormat.Unknown) {
+                if (Half.IsNaN(res) || Half.IsInfinity(res)) {
+                    throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+                }
+            }
+
+            return res;
+        }
+#endif
+
+        internal static float CreateFloatValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
+            var val = CreateIntValue(context, ref index, fLittleEndian, data);
+            var res = Unsafe.As<int, float>(ref val);
+
+            if (context.LanguageContext.FloatFormat == FloatFormat.Unknown) {
+                if (float.IsNaN(res) || float.IsInfinity(res)) {
+                    throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+                }
+            }
+
+            return res;
         }
 
         internal static double CreateDoubleValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
-            byte[] bytes = new byte[8];
-            if (fLittleEndian == BitConverter.IsLittleEndian) {
-                bytes[0] = data[index++];
-                bytes[1] = data[index++];
-                bytes[2] = data[index++];
-                bytes[3] = data[index++];
-                bytes[4] = data[index++];
-                bytes[5] = data[index++];
-                bytes[6] = data[index++];
-                bytes[7] = data[index++];
-            } else {
-                bytes[7] = data[index++];
-                bytes[6] = data[index++];
-                bytes[5] = data[index++];
-                bytes[4] = data[index++];
-                bytes[3] = data[index++];
-                bytes[2] = data[index++];
-                bytes[1] = data[index++];
-                bytes[0] = data[index++];
-            }
+            var val = CreateLongValue(context, ref index, fLittleEndian, data);
+            var res = Unsafe.As<long, double>(ref val);
 
-            double res = BitConverter.ToDouble(bytes, 0);
             if (context.LanguageContext.DoubleFormat == FloatFormat.Unknown) {
                 if (double.IsNaN(res) || double.IsInfinity(res)) {
                     throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
@@ -1477,26 +1357,29 @@ namespace IronPython.Modules {
         }
 
         internal static Bytes CreateString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
-            using var res = new MemoryStream();
+            if (count == 0) return Bytes.Empty;
+            var res = new byte[count];
             for (int i = 0; i < count; i++) {
-                res.WriteByte(data[index++]);
+                res[i] = data[index++];
             }
-            return Bytes.Make(res.ToArray());
+            return Bytes.Make(res);
         }
 
 
         internal static Bytes CreatePascalString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
-            int realLen = (int)data[index++];
+            if (count < 0) return Bytes.Empty;
+            int realLen = data[index++];
+            if (count == 0) return Bytes.Empty;
             if (realLen > count) realLen = count;
-            using var res = new MemoryStream();
+            var res = new byte[realLen];
             for (int i = 0; i < realLen; i++) {
-                res.WriteByte(data[index++]);
+                res[i] = data[index++];
             }
             for (int i = realLen; i < count; i++) {
                 // throw away null bytes
                 index++;
             }
-            return Bytes.Make(res.ToArray());
+            return Bytes.Make(res);
         }
 
         #endregion

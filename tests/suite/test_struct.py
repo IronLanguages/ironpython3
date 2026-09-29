@@ -49,6 +49,22 @@ class StructTest(unittest.TestCase):
         a, = struct.unpack_from('>H', memoryview(data), -2)
         self.assertEqual(a, 2)
 
+    def test_zero_length_string_fields(self):
+        self.assertEqual(struct.pack('0s', b'ignored'), b'')
+        self.assertEqual(struct.unpack('0s', b''), (b'',))
+        self.assertEqual(struct.pack('0p', b'ignored'), b'')
+        self.assertEqual(struct.unpack('0p', b''), (b'',))
+
+        self.assertEqual(struct.pack('1pB', b'ignored', 7), b'\x00\x07')
+        self.assertEqual(struct.unpack('1pB', b'\x00\x07'), (b'', 7))
+
+    def test_format_string_ascii_and_whitespace(self):
+        self.assertEqual(struct.calcsize('b \tb\nb\rb\vb\fb'), 6)
+        with self.assertRaises(UnicodeEncodeError):
+            struct.calcsize(chr(0x0662) + 'b')
+        with self.assertRaises(struct.error):
+            struct.calcsize(bytes([0xff]))
+
     def test_pack_into(self):
         # test string format string
         result = array.array('b', [0, 0])
@@ -63,6 +79,13 @@ class StructTest(unittest.TestCase):
         # test bytearray
         result = bytearray(b'\x00\x00')
         struct.pack_into('>H', result, 0, 0xABCD)
+        self.assertSequenceEqual(result, bytearray(b"\xAB\xCD"))
+
+        struct.pack_into('>H', result, -2, 0x1234)
+        self.assertSequenceEqual(result, bytearray(b"\x12\x34"))
+
+        result = bytearray(b'\x00\x00')
+        struct.pack_into('>H', memoryview(result), -2, 0xABCD)
         self.assertSequenceEqual(result, bytearray(b"\xAB\xCD"))
 
     def test_ipy2_gh407(self):
@@ -103,6 +126,12 @@ class StructTest(unittest.TestCase):
 
         # struct.error: iterative unpacking requires a buffer of a multiple of {N} bytes
         self.assertRaises(struct.error, struct.iter_unpack, "h", b"\0")
+
+        mutable = bytearray(b"\x01\x02")
+        it = struct.iter_unpack('B', mutable)
+        with self.assertRaises(BufferError):
+            mutable.append(3)
+        self.assertEqual(list(it), [(1,), (2,)])
 
 
     def test_sizes(self):

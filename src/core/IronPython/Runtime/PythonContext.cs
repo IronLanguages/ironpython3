@@ -3848,10 +3848,10 @@ namespace IronPython.Runtime {
             void Debugging.ITraceCallback.OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload) {
                 var listener = _parent._tracebackListeners.Value;
 
-                if (listener == null && _parent.PythonOptions.Tracing) {
-                    // If tracing without sys.set_trace() is enabled, we need to register a dummy traceback listener,
-                    // because of the FunctionStack handling done there.
-                    _parent._tracebackListeners.Value = listener = new PythonTracebackListener(_parent, null);
+                if (listener == null && (_parent.PythonOptions.Tracing || _parent._tracebackListenersCount > 0)) {
+                    // If tracing is enabled (globally or via SetTrace on any thread), we need to register a dummy
+                    // traceback listener for this thread, because of the FunctionStack handling done there.
+                    _parent._tracebackListeners.Value = listener = new PythonTracebackListener(_parent, null, isDummyListener: true);
                 }
 
                 listener?.OnTraceEvent(kind, name, sourceFileName, sourceSpan, scopeCallback, payload, customPayload);
@@ -3881,8 +3881,8 @@ namespace IronPython.Runtime {
                 // If CurrentPythonFrame is not null then we're currently inside a traceback, and
                 // enabling trace while inside a traceback is only allowed through sys.call_tracing()
                 var pyThread = PythonOps.GetFunctionStackNoCreate();
-                if (pyThread == null || (oldTraceListener == null || !oldTraceListener.InTraceBack)) {
-                    _tracebackListeners.Value = newTraceListener = new PythonTracebackListener(this, o);
+                if (pyThread == null || oldTraceListener == null || !oldTraceListener.InTraceBack) {
+                    _tracebackListeners.Value = newTraceListener = new PythonTracebackListener(this, o, isDummyListener: false);
                 }
             }
 
@@ -3890,8 +3890,11 @@ namespace IronPython.Runtime {
             lock (_codeUpdateLock) {
                 var oldEnableTracing = EnableTracing;
 
-                if ((oldTraceListener != null) != (newTraceListener != null)) {
-                    _tracebackListenersCount += (newTraceListener != null) ? 1 : -1;
+                var oldCounted = oldTraceListener?.IsDummyListener == false;
+                var newCounted = newTraceListener?.IsDummyListener == false;
+
+                if (oldCounted != newCounted) {
+                    _tracebackListenersCount += newCounted ? 1 : -1;
                 }
 
                 if (EnableTracing != oldEnableTracing) {

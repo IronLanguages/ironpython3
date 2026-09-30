@@ -21,13 +21,14 @@ namespace IronPython.Runtime {
         private TracebackDelegate _traceDispatch;
         private bool _inTraceBack;
         private bool _exceptionThrown;
-        
+
 #if PROFILE_SUPPORT
         private bool _profile;
 #endif
 
-        internal PythonTracebackListener(PythonContext pythonContext, object traceObject) {
+        internal PythonTracebackListener(PythonContext pythonContext, object traceObject, bool isDummyListener) {
             _pythonContext = pythonContext;
+            IsDummyListener = isDummyListener;
 
             if (traceObject != null) {
                 _traceObject = traceObject;
@@ -62,6 +63,9 @@ namespace IronPython.Runtime {
                 return _exceptionThrown;
             }
         }
+
+        // dummy listener used to maintain the frame stack
+        internal bool IsDummyListener { get; }
 
 #if PROFILE_SUPPORT
         internal void SetProfile(TracebackDelegate traceDispatch) {

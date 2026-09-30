@@ -87,11 +87,8 @@ finally:
         finally:
             continue
 '''
-        try:
+        with self.assertRaises(SyntaxError):
             compile(t, '<test>', 'exec')
-            self.fail("Should raise SyntaxError")
-        except SyntaxError:
-            pass
 
     def test_bigint_division(self):
         def divide(a, b):
@@ -1078,5 +1075,29 @@ finally:
             raise error(0)
 
         self.assertRaises(error, f)
+
+    def test_reraise_context(self):
+        # reraising an exception should preserve the context
+        ex1 = Exception(1)
+        try:
+            try:
+                raise ex1
+            except:
+                raise ex1
+        except Exception as e:
+            self.assertIsNone(e.__context__)
+
+        ex1 = Exception(1)
+        ex2 = Exception(2)
+        try:
+            try:
+                try:
+                    raise ex2
+                except:
+                    raise ex1
+            except:
+                raise ex1
+        except Exception as e:
+            self.assertIs(e.__context__, ex2)
 
 run_test(__name__)

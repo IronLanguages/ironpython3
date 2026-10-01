@@ -82,9 +82,9 @@ class MemoryTest(unittest.TestCase):
         from Microsoft.Scripting.Generation import Snippets
 
         self.skipMemoryCheck = Snippets.Shared.SaveSnippets or clr.GetCurrentRuntime().Configuration.DebugMode
-        self.expectedMem = 24000
 
         # account for adaptive compilation
+        self.expectedMem = 24000
         if is_cli64:
             self.expectedMem = int(self.expectedMem*1.25)
 

@@ -1338,21 +1338,38 @@ namespace IronPython.Compiler {
             }
         }
 
+#nullable enable
+
         // <summary>
         // Returns whether the
         // </summary>
         private bool ReadNewline() {
             // Keep track of the indentation format for the current line - may want to optimize in the future
-            StringBuilder sb = new StringBuilder(80);
+            StringBuilder? sb = null;
 
+            int ch;
             int spaces = 0;
-            while (true) {
-                int ch = NextChar();
+            while ((ch = NextChar()) == ' ') {
+                spaces += 1;
+            }
 
+            while (true) {
                 switch (ch) {
-                    case ' ': spaces += 1; sb.Append(' '); break;
-                    case '\t': spaces += 8 - (spaces % 8); sb.Append('\t'); break;
-                    case '\f': spaces = 0; break;
+                    case ' ':
+                        sb?.Append(' ');
+                        spaces += 1;
+                        break;
+                    case '\t':
+                        if (sb is null) {
+                            sb = new StringBuilder(80).Append(' ', spaces);
+                        }
+                        sb.Append('\t');
+                        spaces += 8 - (spaces % 8);
+                        break;
+                    case '\f':
+                        sb?.Clear();
+                        spaces = 0;
+                        break;
 
                     case '#':
                         if (_verbatim) {
@@ -1368,7 +1385,7 @@ namespace IronPython.Compiler {
                         if (ReadEolnOpt(ch) > 0) {
                             _newLineLocations.Add(CurrentIndex);
                             spaces = 0;
-                            sb.Length = 0;
+                            sb?.Clear();
                             break;
                         }
 
@@ -1384,7 +1401,7 @@ namespace IronPython.Compiler {
                         // Check that any of this indentation that's in common with the current indent
                         // level is constructed in exactly the same way (i.e. has the same mix of spaces
                         // and tabs etc.).
-                        CheckIndent(sb);
+                        CheckIndent(spaces, sb);
 
                         // if there's a blank line then we don't want to mess w/ the
                         // indentation level - Python says that blank lines are ignored.
@@ -1406,30 +1423,61 @@ namespace IronPython.Compiler {
 
                         return true;
                 }
+
+                ch = NextChar();
             }
         }
 
-        private void CheckIndent(StringBuilder sb) {
-            if (_state.Indent[_state.IndentLevel] > 0) {
-                StringBuilder previousIndent = _state.IndentFormat[_state.IndentLevel];
-                int checkLength = previousIndent.Length < sb.Length ? previousIndent.Length : sb.Length;
-                for (int i = 0; i < checkLength; i++) {
-                    if (sb[i] != previousIndent[i]) {
+        private void CheckIndent(int spaces, StringBuilder? sb) {
+            var previousSpaces = _state.Indent[_state.IndentLevel];
+            if (previousSpaces > 0) {
+                var previousIndent = _state.IndentFormat[_state.IndentLevel];
+                if (sb is null) {
+                    if (previousIndent is null) return;
 
-                        SourceLocation eoln_token_end = BufferTokenEnd;
+                    int checkLength = previousIndent.Length < spaces ? previousIndent.Length : spaces;
+                    for (int i = 0; i < checkLength; i++) {
+                        if (previousIndent[i] != ' ') {
+                            SourceLocation eoln_token_end = BufferTokenEnd;
 
-                        // We've hit a difference in the way we're indenting, report it.
-                        _errors.Add(_sourceUnit, Resources.InconsistentWhitespace,
-                            new SourceSpan(eoln_token_end, eoln_token_end), // TODO: we can report better span - starting at the beginning of the line
-                            ErrorCodes.TabError, Severity.Error
-                        );
+                            // We've hit a difference in the way we're indenting, report it.
+                            _errors.Add(_sourceUnit, Resources.InconsistentWhitespace,
+                                new SourceSpan(eoln_token_end, eoln_token_end), // TODO: we can report better span - starting at the beginning of the line
+                                ErrorCodes.TabError, Severity.Error
+                            );
+                        }
+                    }
+                } else if (previousIndent is null) {
+                    int checkLength = previousSpaces < sb.Length ? previousSpaces : sb.Length;
+                    for (int i = 0; i < checkLength; i++) {
+                        if (sb[i] != ' ') {
+                            SourceLocation eoln_token_end = BufferTokenEnd;
+
+                            // We've hit a difference in the way we're indenting, report it.
+                            _errors.Add(_sourceUnit, Resources.InconsistentWhitespace,
+                                new SourceSpan(eoln_token_end, eoln_token_end), // TODO: we can report better span - starting at the beginning of the line
+                                ErrorCodes.TabError, Severity.Error
+                            );
+                        }
+                    }
+                } else {
+                    int checkLength = previousIndent.Length < sb.Length ? previousIndent.Length : sb.Length;
+                    for (int i = 0; i < checkLength; i++) {
+                        if (sb[i] != previousIndent[i]) {
+                            SourceLocation eoln_token_end = BufferTokenEnd;
+
+                            // We've hit a difference in the way we're indenting, report it.
+                            _errors.Add(_sourceUnit, Resources.InconsistentWhitespace,
+                                new SourceSpan(eoln_token_end, eoln_token_end), // TODO: we can report better span - starting at the beginning of the line
+                                ErrorCodes.TabError, Severity.Error
+                            );
+                        }
                     }
                 }
             }
         }
 
-
-        private void SetIndent(int spaces, StringBuilder chars) {
+        private void SetIndent(int spaces, StringBuilder? chars) {
             int current = _state.Indent[_state.IndentLevel];
             if (spaces == current) {
                 return;
@@ -1447,6 +1495,8 @@ namespace IronPython.Compiler {
                 }
             }
         }
+
+#nullable restore
 
         private int DoDedent(int spaces, int current) {
             while (spaces < current) {
@@ -1600,6 +1650,8 @@ namespace IronPython.Compiler {
             #endregion
         }
 
+#nullable enable
+
         [Serializable]
         private struct State : IEquatable<State> {
             // indentation state
@@ -1607,8 +1659,8 @@ namespace IronPython.Compiler {
             public int IndentLevel;
             public int PendingDedents;
             public bool LastNewLine;        // true if the last token we emitted was a new line.
-            public IncompleteString IncompleteString;
-            public StringBuilder[] IndentFormat;
+            public IncompleteString? IncompleteString;
+            public StringBuilder?[] IndentFormat;
 
             // grouping state
             public int ParenLevel, BraceLevel, BracketLevel;
@@ -1633,7 +1685,7 @@ namespace IronPython.Compiler {
                 IncompleteString = null;
             }
 
-            public override bool Equals(object obj) {
+            public override bool Equals(object? obj) {
                 if (obj is State other) {
                     return other == this;
                 } else {
@@ -1667,6 +1719,8 @@ namespace IronPython.Compiler {
 
             #endregion
         }
+
+#nullable restore
 
         #region Buffer Access
 

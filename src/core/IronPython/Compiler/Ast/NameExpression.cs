@@ -78,7 +78,7 @@ namespace IronPython.Compiler.Ast {
                 assignment = Ast.Call(
                     null,
                     AstMethods.SetName,
-                    Parent.LocalContext, 
+                    Parent.LocalContext,
                     Ast.Constant(Name),
                     AstUtils.Convert(right, typeof(object))
                 );
@@ -120,6 +120,8 @@ namespace IronPython.Compiler.Ast {
                 );
             }
         }
+
+        public override string NodeName => "name";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {

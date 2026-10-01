@@ -141,6 +141,8 @@ namespace IronPython.Compiler.Ast {
             return Expression.Call(AstMethods.MakeConstantDict, Expression.Constant(new ConstantDictionaryStorage(storage), typeof(object)));
         }
 
+        public override string NodeName => "literal";
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 if (_items != null) {

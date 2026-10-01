@@ -91,6 +91,7 @@ def gen_python_name_binder(cw):
                   "FromImportStatement",
                   "GlobalStatement",
                   "NameExpression",
+                  "NamedExpression",
                   "PythonAst",
                   "ImportStatement",
                   "TryStatement",

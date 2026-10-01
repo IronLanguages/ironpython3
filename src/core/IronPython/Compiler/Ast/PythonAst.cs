@@ -153,6 +153,7 @@ namespace IronPython.Compiler.Ast {
         /// be reduced.
         /// </summary>
         public void Bind() {
+            NamedExpressionChecker.Check(this, _compilerContext);
             PythonNameBinder.BindAst(this, _compilerContext);
             StarredExpressionChecker.Check(this, _compilerContext);
         }

@@ -42,7 +42,7 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal override string CheckAssign() => "can't assign to literal";
+        public override string NodeName => "literal";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {

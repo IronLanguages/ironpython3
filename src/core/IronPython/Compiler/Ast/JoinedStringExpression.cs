@@ -23,6 +23,8 @@ namespace IronPython.Compiler.Ast {
         public override System.Linq.Expressions.Expression Reduce()
             => Expression.Call(concat, NewArrayInit(typeof(string), ToExpressionArray<string>(_values)));
 
+        public override string NodeName => "literal";
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 foreach (var arg in Values) {

@@ -141,6 +141,8 @@ namespace IronPython.Compiler {
             var context = new CompilerContext(sourceUnit, _context.Options, _context.Errors, _context.ParserSink);
             using var parser = CreateParser(context, new PythonOptions());
             var ast = parser.ParseSingleStatement();
+            _hasNamedExpressions |= !ast.SkipNamedExpressionCheck;
+            _hasStarExpressions |= !ast.SkipStarredExpressionCheck;
             ExpressionStatement? statement = null;
             if (parser.ErrorCode == 0) {
                 statement = ast.Body as ExpressionStatement;
@@ -1394,7 +1396,7 @@ namespace IronPython.Compiler {
         private WhileStatement ParseWhileStmt() {
             Eat(TokenKind.KeywordWhile);
             var start = GetStart();
-            Expression expr = ParseTest();
+            Expression expr = ParseNamedExprTest();
             var mid = GetEnd();
             Statement body = ParseLoopSuite();
             Statement else_ = null;
@@ -1632,9 +1634,24 @@ namespace IronPython.Compiler {
             return ret;
         }
 
+        private Expression ParseNamedExprTest() {
+            Expression expr = ParseTest();
+            if (MaybeEat(TokenKind.Walrus)) {
+                if (expr is not NameExpression name) {
+                    ReportSyntaxError(expr.StartIndex, expr.EndIndex, $"cannot use assignment expressions with {expr.NodeName}", ErrorCodes.SyntaxError | ErrorCodes.NoCaret);
+                    ParseTest();
+                    return new ErrorExpression();
+                }
+                NamedExpression ret = new(name, ParseTest());
+                ret.SetLoc(_globalParent, expr.StartIndex, ret.Value.EndIndex);
+                return ret;
+            }
+            return expr;
+        }
+
         private IfStatementTest ParseIfStmtTest() {
             var start = GetStart();
-            Expression expr = ParseTest();
+            Expression expr = ParseNamedExprTest();
             var header = GetEnd();
             Statement suite = ParseSuite();
             IfStatementTest ret = new IfStatementTest(expr, suite);
@@ -2342,19 +2359,24 @@ namespace IronPython.Compiler {
             Token t = PeekToken();
             if (t.Kind != TokenKind.RightParenthesis && t.Kind != TokenKind.Multiply && t.Kind != TokenKind.Power) {
                 var start = GetStart();
-                Expression e = ParseTest();
+                Expression e = ParseNamedExprTest();
                 if (e is ErrorExpression) {
                     return null;
                 }
 
-                if (MaybeEat(TokenKind.Assign)) {               //  Keyword argument
-                    a = FinishKeywordArgument(e);
-                } else if (PeekToken(Tokens.KeywordForToken)) {    //  Generator expression
+                // Generator expression
+                if (PeekToken(Tokens.KeywordForToken)) {
                     a = ParseGeneratorExpression(e);
                     Eat(TokenKind.RightParenthesis);
                     a.SetLoc(_globalParent, start, GetEnd());
                     ParserSink?.EndParameters(GetSourceSpan());
-                    return new Node[1] { a };       //  Generator expression is the argument
+                    return new Node[1] { a }; // Generator expression is the argument
+                }
+
+                if (e is NamedExpression) {
+                    a = e;
+                } else if (MaybeEat(TokenKind.Assign)) { // Keyword argument
+                    a = FinishKeywordArgument(e);
                 } else {
                     a = e;
                 }
@@ -2422,8 +2444,10 @@ namespace IronPython.Compiler {
                     a = new Keyword(null, e);
                     a.SetLoc(_globalParent, e.StartIndex, e.EndIndex);
                 } else {
-                    var e = ParseTest();
-                    if (MaybeEat(TokenKind.Assign)) {
+                    var e = ParseNamedExprTest();
+                    if (e is NamedExpression) {
+                        a = e;
+                    } else if (MaybeEat(TokenKind.Assign)) {
                         a = FinishKeywordArgument(e);
                         CheckUniqueArgument(l, (Keyword)a);
                     } else {
@@ -2564,7 +2588,7 @@ namespace IronPython.Compiler {
                 if (PeekToken(TokenKind.Multiply)) {
                     expr = ParseStarExpr();
                 } else if (!NeverTestToken(PeekToken())) {
-                    expr = ParseTest();
+                    expr = ParseNamedExprTest();
                 } else {
                     break;
                 }
@@ -2604,7 +2628,7 @@ namespace IronPython.Compiler {
                 try {
                     _allowIncomplete = true;
 
-                    var expr = PeekToken(TokenKind.Multiply) ? ParseStarExpr() : ParseTest();
+                    var expr = PeekToken(TokenKind.Multiply) ? ParseStarExpr() : ParseNamedExprTest();
                     if (MaybeEat(TokenKind.Comma)) {
                         // "(" expression "," ...
                         ret = FinishExpressionListAsExpr(expr);
@@ -2667,6 +2691,7 @@ namespace IronPython.Compiler {
             Parameter parameter = new Parameter("__gen_$_parm__", 0);
             FunctionDefinition func = new FunctionDefinition(fname, new Parameter[] { parameter }, root);
             func.IsGenerator = true;
+            func.IsGeneratorExpression = true;
             func.GeneratorStop = GeneratorStop;
             func.SetLoc(_globalParent, root.StartIndex, GetEnd());
             func.HeaderIndex = root.EndIndex;
@@ -2769,8 +2794,11 @@ namespace IronPython.Compiler {
 
                         setMembers?.Add(expr);
                     } else {
-                        Expression e1 = ParseTest();
+                        Expression e1 = ParseNamedExprTest();
                         if (MaybeEat(TokenKind.Colon)) { // dict literal
+                            if (e1 is NamedExpression) {
+                                ReportSyntaxError(GetStart(), GetEnd(), "invalid syntax");
+                            }
                             if (setMembers != null) {
                                 ReportSyntaxError("invalid syntax");
                             } else if (dictMembers == null) {
@@ -2788,7 +2816,7 @@ namespace IronPython.Compiler {
 
                             SliceExpression se = new SliceExpression(e1, e2, null);
                             se.SetLoc(_globalParent, e1.StartIndex, e2.EndIndex);
-                            dictMembers.Add(se);
+                            dictMembers?.Add(se);
                         } else { // set literal
                             if (dictMembers != null) {
                                 ReportSyntaxError("invalid syntax");
@@ -2938,7 +2966,7 @@ namespace IronPython.Compiler {
                     _allowIncomplete = true;
 
                     // (test|star_expr)
-                    var expr = PeekToken(TokenKind.Multiply) ? ParseStarExpr() : ParseTest();
+                    var expr = PeekToken(TokenKind.Multiply) ? ParseStarExpr() : ParseNamedExprTest();
 
                     // (comp_for | (',' (test|star_expr))* [','] )
 
@@ -2955,7 +2983,7 @@ namespace IronPython.Compiler {
                             if (PeekToken(TokenKind.Multiply)) {
                                 items.Add(ParseStarExpr());
                             } else if (!NeverTestToken(PeekToken())) {
-                                items.Add(ParseTest());
+                                items.Add(ParseNamedExprTest());
                             } else {
                                 // prevents the case of ','*
                                 break;

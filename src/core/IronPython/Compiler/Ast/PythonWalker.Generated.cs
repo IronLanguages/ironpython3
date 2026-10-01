@@ -88,6 +88,10 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(NameExpression node) { return true; }
         public virtual void PostWalk(NameExpression node) { }
 
+        // NamedExpression
+        public virtual bool Walk(NamedExpression node) { return true; }
+        public virtual void PostWalk(NamedExpression node) { }
+
         // OrExpression
         public virtual bool Walk(OrExpression node) { return true; }
         public virtual void PostWalk(OrExpression node) { }
@@ -354,6 +358,10 @@ namespace IronPython.Compiler.Ast {
         // NameExpression
         public override bool Walk(NameExpression node) { return false; }
         public override void PostWalk(NameExpression node) { }
+
+        // NamedExpression
+        public override bool Walk(NamedExpression node) { return false; }
+        public override void PostWalk(NamedExpression node) { }
 
         // OrExpression
         public override bool Walk(OrExpression node) { return false; }

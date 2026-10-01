@@ -285,8 +285,8 @@ namespace IronPython.Modules {
 #if FEATURE_FILESYSTEM
 
         public static void chdir([NotNone] string path) {
-            if (String.IsNullOrEmpty(path)) {
-                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_NAME, "Path cannot be an empty string", path, PythonExceptions._OSError.ERROR_INVALID_NAME);
+            if (string.IsNullOrEmpty(path)) {
+                throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_INVALID_NAME, path);
             }
 
             try {
@@ -553,7 +553,7 @@ namespace IronPython.Modules {
             }
 
             if (path == string.Empty) {
-                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
+                throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path);
             }
 
 #if !NETFRAMEWORK
@@ -628,7 +628,7 @@ namespace IronPython.Modules {
 
             [LightThrowing]
             public object? inode() {
-                var obj = stat(follow_symlinks: false);
+                var obj = PythonNT.stat(info.FullName, new Dictionary<string, object>());
                 if (obj is stat_result res) return res.st_ino;
                 return obj;
             }
@@ -640,9 +640,15 @@ namespace IronPython.Modules {
             public bool is_symlink() => info.Attributes.HasFlag(FileAttributes.ReparsePoint) ? throw new NotImplementedException() : false;
 
             [LightThrowing]
-            public object? stat(bool follow_symlinks = true) => PythonNT.stat(info.FullName, new Dictionary<string, object>());
+            public object? stat(bool follow_symlinks = true) {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    return statWindowsImpl(info);
+                return PythonNT.stat(info.FullName, new Dictionary<string, object>());
+            }
 
             public string __repr__(CodeContext context) => $"<DirEntry {PythonOps.Repr(context, name)}>";
+
+            public object __fspath__(CodeContext context) => path;
         }
 
         [PythonType, PythonHidden]
@@ -675,6 +681,8 @@ namespace IronPython.Modules {
 
             [PythonHidden]
             public void Reset() => enumerator.Reset();
+
+            public void close() => Dispose();
         }
 
         public static ScandirIterator scandir(CodeContext context, string? path = null)
@@ -689,7 +697,7 @@ namespace IronPython.Modules {
             }
 
             if (path == string.Empty) {
-                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
+                throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path);
             }
 
 #if !NETFRAMEWORK
@@ -1396,8 +1404,8 @@ namespace IronPython.Modules {
             }
         }
 
-        private static bool HasExecutableExtension(string path) {
-            string extension = Path.GetExtension(path).ToLower(CultureInfo.InvariantCulture);
+        private static bool HasExecutableExtension(string extension) {
+            extension = extension.ToLower(CultureInfo.InvariantCulture);
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
@@ -1456,50 +1464,22 @@ namespace IronPython.Modules {
             VerifyPath(path, functionName: nameof(stat), argName: nameof(path));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (IsNulFile(path)) {
+                    return new stat_result(0x2000);
+                }
+
                 try {
                     FileInfo fi = new FileInfo(path);
-                    int mode = 0;
-                    long size;
-
-                    if (IsNulFile(path)) {
-                        return new stat_result(0x2000);
-                    } else if (Directory.Exists(path)) {
-                        size = 0;
-                        mode = 0x4000 | S_IEXEC;
-                    } else if (File.Exists(path)) {
-                        size = fi.Length;
-                        mode = 0x8000;
-                        if (HasExecutableExtension(path)) {
-                            mode |= S_IEXEC;
-                        }
-                    } else {
-                        return LightExceptions.Throw(PythonOps.OSError(0, "file does not exist", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
+                    if (fi.Exists) {
+                        return statWindowsImpl(fi);
                     }
-
-                    mode |= S_IREAD;
-                    if ((fi.Attributes & FileAttributes.ReadOnly) == 0) {
-                        mode |= S_IWRITE;
+                    DirectoryInfo di = new DirectoryInfo(path);
+                    if (di.Exists) {
+                        return statWindowsImpl(di);
                     }
-
-                    const long epochDifferenceLong = 62135596800 * TimeSpan.TicksPerSecond;
-
-                    // 1 tick = 100 nanoseconds
-                    long st_atime_ns = (fi.LastAccessTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
-                    long st_mtime_ns = (fi.LastWriteTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
-                    long st_ctime_ns = (fi.CreationTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
-
-                    ulong fileIdx = 0;
-                    var handle = CreateFile(path, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
-                    if (!handle.IsInvalid) {
-                        if (GetFileInformationByHandle(handle, out BY_HANDLE_FILE_INFORMATION fileInfo)) {
-                            fileIdx = (((ulong)fileInfo.FileIndexHigh) << 32) + fileInfo.FileIndexLow;
-                        }
-                        handle.Close();
-                    }
-
-                    return new stat_result(mode, fileIdx, size, st_atime_ns, st_mtime_ns, st_ctime_ns);
+                    return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, path));
                 } catch (ArgumentException) {
-                    return LightExceptions.Throw(PythonOps.OSError(0, "The path is invalid", path, PythonExceptions._OSError.ERROR_INVALID_NAME));
+                    return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_INVALID_NAME, path));
                 } catch (Exception e) {
                     return LightExceptions.Throw(ToPythonException(e, path));
                 }
@@ -1508,6 +1488,46 @@ namespace IronPython.Modules {
             } else {
                 throw new PlatformNotSupportedException();
             }
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static stat_result statWindowsImpl(FileSystemInfo fsi) {
+            int mode = 0;
+            long size;
+            if (fsi is FileInfo fi) {
+                size = fi.Length;
+                mode = 0x8000;
+                if (HasExecutableExtension(fi.Extension)) {
+                    mode |= S_IEXEC;
+                }
+            } else {
+                Debug.Assert(fsi is DirectoryInfo);
+                size = 0;
+                mode = 0x4000 | S_IEXEC;
+            }
+
+            mode |= S_IREAD;
+            if ((fsi.Attributes & FileAttributes.ReadOnly) == 0) {
+                mode |= S_IWRITE;
+            }
+
+            const long epochDifferenceLong = 62135596800 * TimeSpan.TicksPerSecond;
+
+            // 1 tick = 100 nanoseconds
+            long st_atime_ns = (fsi.LastAccessTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
+            long st_mtime_ns = (fsi.LastWriteTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
+            long st_ctime_ns = (fsi.CreationTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
+
+            ulong fileIdx = 0;
+            var handle = CreateFile(fsi.FullName, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
+            if (!handle.IsInvalid) {
+                if (GetFileInformationByHandle(handle, out BY_HANDLE_FILE_INFORMATION fileInfo)) {
+                    fileIdx = (((ulong)fileInfo.FileIndexHigh) << 32) + fileInfo.FileIndexLow;
+                }
+                handle.Close();
+            }
+
+            return new stat_result(mode, fileIdx, size, st_atime_ns, st_mtime_ns, st_ctime_ns);
         }
 
         [LightThrowing, Documentation("")]
@@ -1663,7 +1683,20 @@ namespace IronPython.Modules {
                         throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
                 }
             }
-            UnlinkWorker(path);
+
+            if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
+                throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_INVALID_NAME, path);
+            }
+
+            bool existing = File.Exists(path); // will return false also on access denied
+            try {
+                File.Delete(path); // will throw an exception on access denied, no exception on file not existing
+            } catch (Exception e) {
+                throw ToPythonException(e, path);
+            }
+            if (!existing) { // file was not existing in the first place
+                throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, path);
+            }
         }
 
         [Documentation("")]
@@ -1685,24 +1718,6 @@ namespace IronPython.Modules {
         [Documentation("")]
         public static void unlink(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs)
             => unlink(ConvertToFsString(context, path, nameof(path)), kwargs);
-
-        private static void UnlinkWorker(string path) {
-            if (path == null) {
-                throw new ArgumentNullException(nameof(path));
-            } else if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
-                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_NAME, "The filename, directory name, or volume label syntax is incorrect", path, PythonExceptions._OSError.ERROR_INVALID_NAME);
-            }
-
-            bool existing = File.Exists(path); // will return false also on access denied
-            try {
-                File.Delete(path); // will throw an exception on access denied, no exception on file not existing
-            } catch (Exception e) {
-                throw ToPythonException(e, path);
-            }
-            if (!existing) { // file was not existing in the first place
-                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified", path, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND);
-            }
-        }
 #endif
 
 #if FEATURE_PROCESS
@@ -2127,15 +2142,13 @@ the 'status' value."),
                 message = e.Message;
                 isWindowsError = true;
             } else if (e is UnauthorizedAccessException unauth) {
-                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    GetWin32Error(PythonExceptions._OSError.ERROR_ACCESS_DENIED, filename) :
-                    GetOsError(PythonErrno.EACCES, filename);
+                return GetOsOrWinError(PythonErrno.EACCES, PythonExceptions._OSError.ERROR_ACCESS_DENIED, filename);
             } else {
                 var ioe = e as IOException;
                 Exception? pe = IOExceptionToPythonException(ioe, error, filename);
                 if (pe != null) return pe;
 
-                errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
+                errorCode = Marshal.GetHRForException(e);
 
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {
                     // Win32 HR, translate HR to Python error code if possible, otherwise
@@ -2310,18 +2323,20 @@ the 'status' value."),
 
 #endif
 
-        private static Exception DirectoryExistsError(string? filename) {
-#if FEATURE_NATIVE
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                return GetWin32Error(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, filename);
-            }
-#endif
-            return GetOsError(PythonErrno.EEXIST, filename);
-        }
-
+        private static Exception DirectoryExistsError(string? filename)
+            => GetOsOrWinError(PythonErrno.EEXIST, PythonExceptions._OSError.ERROR_ALREADY_EXISTS, filename);
 
         internal static Exception GetOsError(int errno, string? filename = null, string? filename2 = null)
             => PythonOps.OSError(errno, strerror(errno), filename, null, filename2);
+
+        internal static Exception GetOsOrWinError(int errno, int winerror, string? filename = null, string? filename2 = null) {
+#if FEATURE_NATIVE
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return GetWin32Error(winerror, filename, filename2);
+            }
+#endif
+            return PythonOps.OSError(errno, strerror(errno), filename, null, filename2);
+        }
 
 #if FEATURE_NATIVE || FEATURE_CTYPES
 

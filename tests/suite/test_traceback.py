@@ -3,12 +3,10 @@
 # See the LICENSE file in the project root for more information.
 
 import os
-import shutil
 import sys
-import tempfile
 import unittest
 
-from iptest import is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
 FILE = __file__
 
@@ -28,7 +26,7 @@ def _raise_exception_with_finally():
 
 _rewftb = (getlineno(_raise_exception_with_finally) + 2, 0, FILE, '_raise_exception_with_finally')
 
-class TracebackTest(unittest.TestCase):
+class TracebackTest(IronPythonTestCase):
     def assert_traceback(self, expected):
         tb = sys.exc_info()[2]
 
@@ -182,15 +180,40 @@ class TracebackTest(unittest.TestCase):
     def test_throw_while_yield(self):
         lineno = getlineno(lambda _: None)
 
-        def generator_throw_after_yield():
-            yield 1
-            _raise_exception()
+        def generator_throw_while_yield():
+            yield _raise_exception()
 
         try:
             for x in generator_throw_while_yield():
                 pass
         except:
-            self.assert_traceback([(lineno + 7, 0, FILE, 'test_throw_while_yield')])
+            self.assert_traceback([(lineno + 6, 0, FILE, 'test_throw_while_yield'), (lineno + 3, 2, FILE, 'generator_throw_while_yield'), _retb])
+
+    def test_throw_after_yield(self):
+        lineno = getlineno(lambda _: None)
+
+        def generator_throw_after_yield():
+            yield 1
+            _raise_exception()
+
+        try:
+            for x in generator_throw_after_yield():
+                pass
+        except:
+            self.assert_traceback([(lineno + 7, 0, FILE, 'test_throw_after_yield'), (lineno + 4, 2, FILE, 'generator_throw_after_yield'), _retb])
+
+    def test_throw_after_yield(self):
+        lineno = getlineno(lambda _: None)
+
+        def generator_throw_after_yield():
+            yield 1
+            _raise_exception()
+
+        try:
+            for x in generator_throw_after_yield():
+                pass
+        except:
+            self.assert_traceback([(lineno + 7, 0, FILE, 'test_throw_after_yield'), (lineno + 4, 2, FILE, 'generator_throw_after_yield'), _retb])
 
     def test_yield_inside_try(self):
         lineno = getlineno(lambda _: None)
@@ -222,19 +245,24 @@ class TracebackTest(unittest.TestCase):
 
     def test_throw_in_another_file(self):
         lineno = getlineno(lambda _: None)
-        _f_file = os.path.join(os.getcwd(), 'foo.py')
+        _dir = self.temporary_dir
+        _mod_name = 'foo_%d' % os.getpid()
+        _f_file = os.path.join(_dir, _mod_name + '.py')
         with open(_f_file, "w") as f:
             f.write('''
 def another_raise():
     raise Exception()
 ''');
+        sys.path.insert(0, _dir)
         try:
-            import foo
+            foo = __import__(_mod_name)
             foo.another_raise()
         except:
-            self.assert_traceback([(lineno + 9, 0, FILE, 'test_throw_in_another_file'), (3, 0, _f_file, 'another_raise')])
+            self.assert_traceback([(lineno + 12, 0, FILE, 'test_throw_in_another_file'), (3, 0, _f_file, 'another_raise')])
         finally:
             os.remove(_f_file)
+            sys.modules.pop(_mod_name, None)
+            sys.path.remove(_dir)
 
     def test_catch_MyException(self):
         lineno = getlineno(lambda _: None)
@@ -253,25 +281,30 @@ def another_raise():
 
     def test_cp11923_first(self):
         line_num = getlineno(lambda _: None)
+        _dir = self.temporary_dir
+        _mod_name = 'cp11923_%d' % os.getpid()
+        _t_test = os.path.join(_dir, _mod_name + '.py')
+        sys.path.insert(0, _dir)
         try:
-            _t_test = os.path.join(os.getcwd(), "cp11923.py")
             with open(_t_test, "w") as f:
                 f.write("""
 def f():
     x = 'something bad'
     raise Exception(x)""")
 
-            import cp11923
+            cp11923 = __import__(_mod_name)
             for i in range(3):
                 try:
                     cp11923.f()
                 except:
-                    self.assert_traceback([(line_num + 12, 69, FILE, 'test_cp11923_first'), (4, 22, _t_test, 'f')])
+                    self.assert_traceback([(line_num + 15, 69, FILE, 'test_cp11923_first'), (4, 22, _t_test, 'f')])
                 import importlib
                 importlib.reload(cp11923)
 
         finally:
             os.remove(_t_test)
+            sys.modules.pop(_mod_name, None)
+            sys.path.remove(_dir)
 
     def test_reraise(self):
         line_num = getlineno(lambda _: None)
@@ -361,7 +394,6 @@ def f():
                               (line_num + 6, 3, FILE, 'g'),
                               (line_num + 9, 3, FILE, 'h')])
 
-    @unittest.expectedFailure # https://github.com/IronLanguages/ironpython3/issues/738
     def test_xraise_again(self):
         line_num=getlineno(lambda _: None)
         def f():
@@ -396,12 +428,11 @@ def f():
         def h():
             raise Exception('hello!!')
 
-
         try:
             with ctx_mgr():
                 h()
         except:
-            self.assert_traceback([(line_num + 12, 30, FILE, 'test_with_traceback_enter_throws'),
+            self.assert_traceback([(line_num + 11, 30, FILE, 'test_with_traceback_enter_throws'),
                               (line_num + 3, 3, FILE, '__enter__')])
 
     def test_with_traceback_exit_throws(self):

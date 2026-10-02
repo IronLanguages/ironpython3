@@ -2521,17 +2521,11 @@ namespace IronPython.Runtime.Operations {
             return e;
         }
 
-        public static Exception MakeException(CodeContext/*!*/ context, object exception) {
-            Exception e = MakeExceptionWorker(context, exception, null, null, null, suppressContext: false, forRethrow: false);
-            e.RemoveFrameList();
-            return e;
-        }
+        public static Exception MakeException(CodeContext/*!*/ context, object exception)
+            => MakeExceptionWorker(context, exception, null, null, null, suppressContext: false, forRethrow: false);
 
-        public static Exception MakeExceptionWithCause(CodeContext/*!*/ context, object exception, object cause) {
-            Exception e = MakeExceptionWorker(context, exception, null, null, cause, suppressContext: true, forRethrow: false);
-            e.RemoveFrameList();
-            return e;
-        }
+        public static Exception MakeExceptionWithCause(CodeContext/*!*/ context, object exception, object cause)
+            => MakeExceptionWorker(context, exception, null, null, cause, suppressContext: true, forRethrow: false);
 
         internal static PythonExceptions.BaseException? GetRawContextException() => GetCurrentException()?.GetPythonException();
 

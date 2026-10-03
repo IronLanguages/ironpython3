@@ -236,6 +236,8 @@ namespace IronPython.Compiler.Ast {
             _comprehension = comprehension;
         }
 
+        internal Comprehension Comprehension => _comprehension;
+
         internal override bool ExposesLocalVariable(PythonVariable variable) {
             if (NeedsLocalsDictionary) {
                 return true;

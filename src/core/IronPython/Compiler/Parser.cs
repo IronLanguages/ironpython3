@@ -557,13 +557,6 @@ namespace IronPython.Compiler {
 
         // yield_stmt: yield_expr
         private Statement ParseYieldStmt() {
-            // For yield statements, continue to enforce that it's currently in a function.
-            // This gives us better syntax error reporting for yield-statements than for yield-expressions.
-            FunctionDefinition current = CurrentFunction;
-            if (current == null) {
-                ReportSyntaxError(IronPython.Resources.MisplacedYield);
-            }
-
             Eat(TokenKind.KeywordYield);
 
             // See Pep 342: a yield statement is now just an expression statement around a yield expression.
@@ -589,7 +582,7 @@ namespace IronPython.Compiler {
             // Mark that this function is actually a generator.
             // If we're in a generator expression, then we don't have a function yet.
             //    g=((yield i) for i in range(5))
-            // In that acse, the genexp will mark IsGenerator.
+            // In that case, the genexp will mark IsGenerator.
             FunctionDefinition current = CurrentFunction;
             if (current != null) {
                 current.IsGenerator = true;

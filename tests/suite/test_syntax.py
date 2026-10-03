@@ -454,6 +454,74 @@ class SyntaxTest(IronPythonTestCase):
             yield 42
             return
 
+    def test_misplaced_yield(self):
+        import ast
+
+        def check_error(code, msg, lineno):
+            run_compile_test(self, code, msg, lineno)
+
+            # the yield placement check happens after parsing so the AST can still be generated
+            tree = compile(code, "<ast>", "exec", ast.PyCF_ONLY_AST)
+            self.assertIsInstance(tree, ast.Module)
+
+            # compiling the AST object performs the check
+            with self.assertRaises(SyntaxError) as cm:
+                compile(tree, "<ast>", "exec")
+            self.assertEqual(cm.exception.msg, msg)
+
+        def check_valid(code):
+            compile(code, "", "exec")
+            compile(ast.parse(code), "", "exec")
+
+        yield_from_msg = "'yield from' outside function" if sys.version_info >= (3,12) else "'yield' outside function"
+
+        tests = [
+            ("(yield)", "'yield' outside function", 1),
+            ("x = (yield 1)", "'yield' outside function", 1),
+            ("(yield from x)", yield_from_msg, 1),
+            ("x = 1\nyield x", "'yield' outside function", 2),
+            ("yield from x", yield_from_msg, 1),
+            ("class C:\n    (yield)", "'yield' outside function", 2),
+            ("class C:\n    yield from x", yield_from_msg, 2),
+            ("def f():\n    class C:\n        yield", "'yield' outside function", 3),
+        ]
+
+        for code, msg, lineno in tests:
+            with self.subTest(code=code):
+                check_error(code, msg, lineno)
+
+        # yield inside a comprehension is a SyntaxError in Python 3.8+, IronPython never supported it
+        tests = [
+            ("[(yield) for x in y]", "'yield' inside list comprehension", 1),
+            ("def f():\n    [(yield) for x in y]", "'yield' inside list comprehension", 2),
+            ("def f():\n    [x for x in y if (yield)]", "'yield' inside list comprehension", 2),
+            ("def f():\n    [x for y in z for x in (yield)]", "'yield' inside list comprehension", 2),
+            ("def f():\n    [(yield from x) for x in y]", "'yield' inside list comprehension", 2),
+            ("def f():\n    {(yield) for x in y}", "'yield' inside set comprehension", 2),
+            ("def f():\n    {x: (yield) for x in y}", "'yield' inside dict comprehension", 2),
+        ]
+
+        for code, msg, lineno in tests:
+            with self.subTest(code=code):
+                if is_cli or sys.version_info >= (3,8):
+                    check_error(code, msg, lineno)
+                else:
+                    check_valid(code)
+
+        # valid placements
+        tests = [
+            "def f(): (yield)",
+            "def f(): yield from x",
+            "lambda: (yield)",
+            "class C:\n    def f(self): yield",
+            "def f():\n    [x for x in (yield)]",
+            "def f():\n    {x for x in (yield from y)}",
+        ]
+
+        for code in tests:
+            with self.subTest(code=code):
+                check_valid(code)
+
     def test_return_from_finally(self):
         # compile function which returns from finally, but does not yield from finally.
         c = compile("def f():\n    try:\n        pass\n    finally:\n        return 1", "", "exec")

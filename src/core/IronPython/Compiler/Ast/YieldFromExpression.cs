@@ -20,7 +20,7 @@ namespace IronPython.Compiler.Ast {
 
         public YieldFromExpression(Expression expression) {
             statement = GenYieldFromStatement(expression);
-            result = new NameExpression("__yieldfromprefix_r") { Parent = expression.Parent };
+            result = new NameExpression("__yieldfromprefix_r");
 
             Expression = expression;
         }
@@ -73,12 +73,11 @@ else:
         private static Statement GenYieldFromStatement(Expression expression) {
             var expr = Modules._ast.ConvertToPythonAst(Runtime.DefaultContext.Default, yieldFromAst, "").Body;
             Modules._ast._containsYield = false; // reset state of _ast module
-            expr.Parent = expression.Parent;
 
             return new SuiteStatement(new[] {
-                new AssignmentStatement(new[] { new NameExpression("__yieldfromprefix_EXPR") { Parent = expression.Parent } }, expression) { Parent = expression.Parent },
+                new AssignmentStatement(new[] { new NameExpression("__yieldfromprefix_EXPR") }, expression),
                     expr
-                }) { Parent = expression.Parent };
+                });
         }
 
         public override MSAst.Expression Reduce() {

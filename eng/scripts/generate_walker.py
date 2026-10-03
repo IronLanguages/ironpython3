@@ -95,7 +95,9 @@ def gen_python_name_binder(cw):
                   "TryStatement",
                   "ComprehensionFor",
                   "CallExpression",
-                  "NonlocalStatement"
+                  "NonlocalStatement",
+                  "YieldExpression",
+                  "YieldFromExpression",
                   ]
     nodes = get_python_nodes()
     nodes.sort()

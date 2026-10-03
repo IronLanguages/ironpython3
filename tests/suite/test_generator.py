@@ -524,4 +524,14 @@ def fetest(%s):
             next(x)
         self.assertIsNone(cm.exception.value)
 
+    def test_ipy3_gh1616(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1616
+        def f(b):
+            yield from (b for x in range(3))
+        self.assertEqual(list(f(5)), [5, 5, 5])
+
+        def g():
+            yield from (lambda: [1, 2])()
+        self.assertEqual(list(g()), [1, 2])
+
 run_test(__name__)

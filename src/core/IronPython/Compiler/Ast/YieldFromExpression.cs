@@ -90,7 +90,7 @@ else:
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                Expression?.Walk(walker);
+                // Expression is already walked as part of statement so skip it
                 statement.Walk(walker);
                 result.Walk(walker);
             }

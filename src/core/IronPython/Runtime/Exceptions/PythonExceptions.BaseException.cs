@@ -364,6 +364,7 @@ namespace IronPython.Runtime.Exceptions {
                 _context = context;
                 __suppress_context__ = suppressContext;
                 _traceback = null;
+                _tracebackSet = false;
 
                 if (cause != null) {
                     return GetClrException(cause.GetClrException());

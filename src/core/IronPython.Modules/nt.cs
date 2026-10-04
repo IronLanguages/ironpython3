@@ -1180,30 +1180,27 @@ namespace IronPython.Modules {
                 return ScriptingRuntimeHelpers.Int32ToObject(id);
             }
 
-            // Convert the list of args to a string suitable for using to spawn a process.
-            static void SetArguments(ProcessStartInfo startInfo, List<string> list) {
-                if (list.Count == 0) {
-                    startInfo.Arguments = string.Empty;
+            // Set the process arguments from the list of args
+            static void SetArguments(ProcessStartInfo startInfo, List<string> args) {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    startInfo.Arguments = string.Join(" ", args);
                     return;
                 }
 
-                StringBuilder sb = new();
-                bool space = false;
-                foreach (var strarg in list) {
-                    if (space) {
-                        sb.Append(' ');
-                    }
-                    if (strarg.Contains(' ')) {
-                        sb.Append('"');
-                        // double quote any existing quotes
-                        sb.Append(strarg.Replace("\"", "\"\""));
-                        sb.Append('"');
-                    } else {
-                        sb.Append(strarg);
-                    }
-                    space = true;
+#if NET
+                foreach (var arg in args) {
+                    startInfo.ArgumentList.Add(arg);
                 }
-                startInfo.Arguments = sb.ToString();
+#else
+                startInfo.Arguments = string.Join(" ", args.Select(QuoteIfNeeded));
+
+                static string QuoteIfNeeded(string str) {
+                    if (str.Contains(' ')) {
+                        return "\"" + str.Replace("\"", "\"\"") + "\"";
+                    }
+                    return str;
+                }
+#endif
             }
 
             static List<string> ArgumentsToList(CodeContext/*!*/ context, object? args, string? methodname) {

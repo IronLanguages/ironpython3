@@ -68,8 +68,8 @@ class StdConsoleTest(IronPythonTestCase):
     #       "lastline"  : valuestring is compared against the last line of the output
     #       "regexp"    : valuestring is a regular expression compared against the entire output
     def TestCommandLine(self, args, expected_output, expected_exitcode = 0):
-        if not is_cli:
-            # https://github.com/IronLanguages/ironpython3/issues/648
+        if os.name == 'nt':
+            # must self-quote arguments with spawnv on Windows
             try:
                 idx = args.index("-c")
                 if idx + 1 < len(args):

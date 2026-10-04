@@ -902,7 +902,6 @@ class NtTest(IronPythonTestCase):
         for bad in [None, 0, 34, -big(12345), 3.14, object, self.test__getfullpathname]:
             self.assertRaises(TypeError, nt._getfullpathname, bad)
 
-    @unittest.skipIf(is_netcoreapp, 'TODO: figure out')
     @unittest.skipUnless(sys.platform == "win32", 'windir is Windows specific')
     def test_cp15514(self):
         cmd_variation_list = ['%s -c "print(__name__)"' % sys.executable,

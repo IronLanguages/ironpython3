@@ -1144,7 +1144,7 @@ namespace IronPython.Modules {
 
         private static object SpawnProcessImpl(CodeContext/*!*/ context, Process process, int mode, string path, object? args, [CallerMemberName] string? methodname = null) {
             try {
-                process.StartInfo.Arguments = ArgumentsToString(context, args, methodname);
+                SetArguments(process.StartInfo, ArgumentsToList(context, args, methodname));
                 process.StartInfo.FileName = path;
                 process.StartInfo.UseShellExecute = false;
             } catch (Exception e) {
@@ -1179,6 +1179,51 @@ namespace IronPython.Modules {
                 _processToIdMapping[id] = process;
                 return ScriptingRuntimeHelpers.Int32ToObject(id);
             }
+
+            // Convert the list of args to a string suitable for using to spawn a process.
+            static void SetArguments(ProcessStartInfo startInfo, List<string> list) {
+                if (list.Count == 0) {
+                    startInfo.Arguments = string.Empty;
+                    return;
+                }
+
+                StringBuilder sb = new();
+                bool space = false;
+                foreach (var strarg in list) {
+                    if (space) {
+                        sb.Append(' ');
+                    }
+                    if (strarg.Contains(' ')) {
+                        sb.Append('"');
+                        // double quote any existing quotes
+                        sb.Append(strarg.Replace("\"", "\"\""));
+                        sb.Append('"');
+                    } else {
+                        sb.Append(strarg);
+                    }
+                    space = true;
+                }
+                startInfo.Arguments = sb.ToString();
+            }
+
+            static List<string> ArgumentsToList(CodeContext/*!*/ context, object? args, string? methodname) {
+                IEnumerator? argsEnumerator;
+                if (!PythonOps.TryGetEnumerator(context, args, out argsEnumerator)) {
+                    throw PythonOps.TypeErrorForBadInstance("args parameter must be sequence, not {0}", args);
+                }
+
+                var list = new List<string>();
+                try {
+                    // skip the first element, which is the name of the command being run
+                    argsEnumerator.MoveNext();
+                    while (argsEnumerator.MoveNext()) {
+                        list.Add(ConvertToFsString(context, argsEnumerator.Current, "elements of 'args'", methodname));
+                    }
+                } finally {
+                    (argsEnumerator as IDisposable)?.Dispose();
+                }
+                return list;
+            }
         }
 
         /// <summary>
@@ -1200,45 +1245,6 @@ namespace IronPython.Modules {
             }
         }
 #endif
-
-        /// <summary>
-        /// Convert a sequence of args to a string suitable for using to spawn a process.
-        /// </summary>
-        private static string ArgumentsToString(CodeContext/*!*/ context, object? args, string? methodname) {
-            IEnumerator? argsEnumerator;
-            StringBuilder? sb = null;
-            if (!PythonOps.TryGetEnumerator(context, args, out argsEnumerator)) {
-                throw PythonOps.TypeErrorForBadInstance("args parameter must be sequence, not {0}", args);
-            }
-
-            bool space = false;
-            try {
-                // skip the first element, which is the name of the command being run
-                argsEnumerator.MoveNext();
-                while (argsEnumerator.MoveNext()) {
-                    if (sb == null) sb = new StringBuilder(); // lazy creation
-                    string strarg = ConvertToFsString(context, argsEnumerator.Current, "elements of 'args'", methodname);
-                    if (space) {
-                        sb.Append(' ');
-                    }
-                    if (strarg.Contains(' ')) {
-                        sb.Append('"');
-                        // double quote any existing quotes
-                        sb.Append(strarg.Replace("\"", "\"\""));
-                        sb.Append('"');
-                    } else {
-                        sb.Append(strarg);
-                    }
-                    space = true;
-                }
-            } finally {
-                IDisposable? disposable = argsEnumerator as IDisposable;
-                if (disposable != null) disposable.Dispose();
-            }
-
-            if (sb == null) return "";
-            return sb.ToString();
-        }
 
 #if FEATURE_PROCESS
         [SupportedOSPlatform("windows"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]

@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Linq;
+using System.Numerics;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -581,7 +582,7 @@ namespace IronPython.Runtime {
                 case 'N': // unsigned index
                 case 'q': // signed long long
                 case 'Q': // unsigned long long
-                    if (!PythonOps.IsNumericObject(value)) {
+                    if (!PythonOps.TryToIndex(value, out value)) {
                         throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
                     }
 
@@ -597,11 +598,10 @@ namespace IronPython.Runtime {
                     break;
 
                 case 'P': // void pointer
-                    if (!PythonOps.IsNumericObject(value)) {
+                    if (!PythonOps.TryToIndex(value, out BigInteger bi)) {
                         throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", _format);
                     }
 
-                    var bi = Converter.ConvertToBigInteger(value);
                     if (TypecodeOps.CausesOverflow(bi, typecode)) {
                         throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", _format);
                     }

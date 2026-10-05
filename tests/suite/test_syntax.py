@@ -617,6 +617,33 @@ class SyntaxTest(IronPythonTestCase):
 
         self.assertRaises(SyntaxError, f)
 
+    def test_missing_parentheses(self):
+        tests = [
+            ("print 2", "print"),
+            ("print 'hello'", "print"),
+            ("print x, y", "print"),
+            ("x = 1; print x", "print"),
+            ("if 1:\n    print f(x)\n", "print"),
+            ("exec 'x = 1'", "exec"),
+            ("exec code in ns", "exec"),
+        ]
+        for code, name in tests:
+            with self.assertRaises(SyntaxError) as cm:
+                compile(code, "", "exec")
+            self.assertEqual(cm.exception.msg, "Missing parentheses in call to '{0}'. Did you mean {0}(...)?".format(name))
+
+        # still valid code
+        for code in ["print", "print\n", "print; x = 1", "print = 3", "print += 1", "print.x = 1", "print[0]", "print -1", "exec"]:
+            compile(code, "", "exec")
+
+    def test_trailing_whitespace(self):
+        # a blank last line is ignored in exec mode
+        for code in ["if 1:\n    x = 1", "if 1:\n    x = 1\n", "if 1:\n    x = 1\n  ", "if 1:\n  if 1:\n        x = 1\n     ", "if 1:\n    x = 1\n\t"]:
+            compile(code, "", "exec")
+
+        with self.assertRaises(IndentationError):
+            compile("if 1:\n    x = 1\n  y = 2\n", "", "exec")
+
     def test_no_throw(self):
         #Just make sure these don't throw
         print("^L")

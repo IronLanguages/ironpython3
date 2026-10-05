@@ -447,6 +447,7 @@ namespace IronPython.Compiler {
                         // implies a new line
                         break;
                     } else if (!MaybeEat(TokenKind.Semicolon)) {
+                        CheckLegacyPrintExec(l[^1]);
                         EatNewLine();
                         break;
                     }
@@ -456,11 +457,25 @@ namespace IronPython.Compiler {
                 SuiteStatement ret = new SuiteStatement(stmts);
                 ret.SetLoc(_globalParent, start, stmts[stmts.Length - 1].EndIndex);
                 return ret;
-            } else if (!MaybeEat(TokenKind.EndOfFile) && !EatNewLine()) {
-                // error handling, make sure we're making forward progress
-                NextToken();
+            } else if (!MaybeEat(TokenKind.EndOfFile)) {
+                CheckLegacyPrintExec(s);
+                if (!EatNewLine()) {
+                    // error handling, make sure we're making forward progress
+                    NextToken();
+                }
             }
             return s;
+
+            // Reports a legacy print/exec statement instead of a generic syntax error
+            void CheckLegacyPrintExec(Statement stmt) {
+                if (!PeekToken(TokenKind.NewLine) && stmt is ExpressionStatement { Expression: NameExpression { Name: "print" or "exec" } name }) {
+                    // only report if the rest is a valid argument list
+                    var expr = ParseTestListStarExpr();
+                    if (_errorCode == 0) {
+                        ReportSyntaxError(name.StartIndex, expr.EndIndex, $"Missing parentheses in call to '{name.Name}'. Did you mean {name.Name}(...)?");
+                    }
+                }
+            }
         }
 
         /*
@@ -1794,8 +1809,7 @@ namespace IronPython.Compiler {
             } else {
                 //  simple_stmt NEWLINE
                 //  ParseSimpleStmt takes care of the NEWLINE
-                Statement s = ParseSimpleStmt();
-                return s;
+                return ParseSimpleStmt();
             }
         }
 
@@ -2205,6 +2219,7 @@ namespace IronPython.Compiler {
                             break;
                         case TokenKind.Constant:
                             // abc.1, abc"", abc 1L, abc 0j
+                            if (ret is NameExpression { Name: "print" or "exec" }) return ret; // let this pass, it'll be caught later
                             ReportSyntaxError("invalid syntax");
                             return Error();
                         default:

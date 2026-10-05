@@ -309,6 +309,23 @@ class MemoryViewTests(unittest.TestCase):
         mv  = mv.cast('b').cast('i')
         self.assertRaises(TypeError, lambda: setitem(mv, 2.5))
 
+    def test_setitem_index(self):
+        class Index:
+            def __index__(self):
+                return 7
+
+        mv = memoryview(bytearray(2))
+        mv[0] = Index()
+        self.assertEqual(mv[0], 7)
+        self.assertRaises(TypeError, lambda: mv.__setitem__(0, "a"))
+
+        if is_cli:
+            import System
+            mv[0] = System.Byte(5)
+            mv[1] = System.UInt64(255)
+            self.assertEqual(mv.tolist(), [5, 255])
+            self.assertRaises(ValueError, lambda: mv.__setitem__(0, System.Int32(256)))
+
     def test_scalar(self):
         scalar = memoryview(b'a').cast('B', ())
 

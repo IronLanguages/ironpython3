@@ -636,6 +636,14 @@ class SyntaxTest(IronPythonTestCase):
         for code in ["print", "print\n", "print; x = 1", "print = 3", "print += 1", "print.x = 1", "print[0]", "print -1", "exec"]:
             compile(code, "", "exec")
 
+    def test_trailing_whitespace(self):
+        # a blank last line is ignored in exec mode
+        for code in ["if 1:\n    x = 1", "if 1:\n    x = 1\n", "if 1:\n    x = 1\n  ", "if 1:\n  if 1:\n        x = 1\n     ", "if 1:\n    x = 1\n\t"]:
+            compile(code, "", "exec")
+
+        with self.assertRaises(IndentationError):
+            compile("if 1:\n    x = 1\n  y = 2\n", "", "exec")
+
     def test_no_throw(self):
         #Just make sure these don't throw
         print("^L")

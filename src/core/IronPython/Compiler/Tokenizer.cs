@@ -1397,7 +1397,13 @@ namespace IronPython.Compiler {
 
                         MarkTokenEnd();
 
-                        // We've captured a line of significant identation (i.e. not pure whitespace).
+                        // a blank last line at EOF is ignored
+                        if (ch == EOF && _sourceUnit.Kind != SourceCodeKind.InteractiveCode) {
+                            DoDedent(0, _state.Indent[_state.IndentLevel]);
+                            return true;
+                        }
+
+                        // We've captured a line of significant indentation (i.e. not pure whitespace).
                         // Check that any of this indentation that's in common with the current indent
                         // level is constructed in exactly the same way (i.e. has the same mix of spaces
                         // and tabs etc.).
@@ -1405,16 +1411,10 @@ namespace IronPython.Compiler {
 
                         // if there's a blank line then we don't want to mess w/ the
                         // indentation level - Python says that blank lines are ignored.
-                        // And if we're the last blank line in a file we don't want to
-                        // increase the new indentation level.
                         if (ch == EOF) {
+                            // interactive only: a trailing blank line still has to dedent to a valid level
                             if (spaces < _state.Indent[_state.IndentLevel]) {
-                                if (_sourceUnit.Kind == SourceCodeKind.InteractiveCode ||
-                                    _sourceUnit.Kind == SourceCodeKind.Statements) {
-                                    SetIndent(spaces, sb);
-                                } else {
-                                    DoDedent(spaces, _state.Indent[_state.IndentLevel]);
-                                }
+                                SetIndent(spaces, sb);
                             }
                         } else if (ch != '\n' && ch != '\r') {
                             SetIndent(spaces, sb);

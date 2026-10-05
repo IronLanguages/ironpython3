@@ -441,7 +441,7 @@ class SocketTest(IronPythonTestCase):
 
         portFile = os.path.join(self.temporary_dir, "cp5814port_%d" % os.getpid())
 
-        #Server code
+        # Server code
         server = """
 import _socket
 import os
@@ -449,10 +449,11 @@ import os
 HOST = 'localhost'
 PORT = 0
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-s.settimeout(20) # prevents the server from staying open if the client never connects
+s.settimeout(90) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 s.listen(1)
 
+conn = None
 try:
     with open(r"{PORTFILE}", "w") as f:
         print(s.getsockname()[1], file=f)
@@ -471,14 +472,15 @@ try:
         raise Exception('%s != stuff' % str(data))
 
 finally:
-    conn.close()
+    if conn is not None:
+        conn.close()
     s.close()
     try:
         os.remove(r"{PORTFILE}")
     except:
         pass
 """.format(PORTFILE=portFile)
-        #Spawn off a thread to startup the server
+        # Spawn off a thread to startup the server
         def server_thread():
             nonlocal EXIT_CODE
             nonlocal HAS_EXITED
@@ -493,13 +495,14 @@ finally:
                 pass
 
         _thread.start_new_thread(server_thread, ())
-        #Give the server a chance to startup
+        # Give the server a chance to startup
         portex = None
         startTime = time.perf_counter()
-        for _ in range(20):
+        # Wait a minute since starting a new process can be slow (e.g. Mono during CI)
+        while time.perf_counter() - startTime < 60:
             time.sleep(0.5)
-            if EXIT_CODE > 0:
-                self.fail("Server died with exit code %d" % EXIT_CODE)
+            if HAS_EXITED:
+                self.fail("Server exited early with exit code %d" % EXIT_CODE)
             try:
                 with open(portFile) as f:
                     PORT = int(f.read())
@@ -510,7 +513,7 @@ finally:
             duration = time.perf_counter() - startTime
             self.fail("Server not detected after trying for %g s, last detection attempt resulted in %r" % (duration, portex))
 
-        #Client
+        # Client
         HOST = 'localhost'
         s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
         s.connect((HOST, PORT))
@@ -518,7 +521,7 @@ finally:
         data, addr = s.recvfrom(1024)
         s.close()
 
-        #Ensure the server didn't die
+        # Ensure the server didn't die
         for _ in range(100):
             if HAS_EXITED:
                 self.assertEqual(EXIT_CODE, 0)
@@ -529,7 +532,7 @@ finally:
 
         self.assertTrue(HAS_EXITED)
 
-        #Verification
+        # Verification
         self.assertEqual(data, b"stuff")
         if is_cli:
             self.assertEqual(addr[0], "0.0.0.0")
@@ -594,7 +597,7 @@ class SocketMakefileTest(IronPythonTestCase):
 
         portFile = os.path.join(self.temporary_dir, "cp7451port_%d" % os.getpid())
 
-        #Server code
+        # Server code
         server = """
 import socket as _socket
 import os
@@ -602,10 +605,11 @@ import os
 HOST = 'localhost'
 PORT = 0
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-s.settimeout(20) # prevents the server from staying open if the client never connects
+s.settimeout(90) # prevents the server from staying open if the client never connects
 s.bind((HOST, PORT))
 s.listen(1)
 
+conn = None
 try:
     with open(r"{PORTFILE}", "w") as f:
         print(s.getsockname()[1], file=f)
@@ -623,14 +627,15 @@ try:
         raise Exception('%s != stuff2' % str(data))
 
 finally:
-    conn.close()
+    if conn is not None:
+        conn.close()
     s.close()
     try:
         os.remove(r"{PORTFILE}")
     except:
         pass
 """.format(PORTFILE=portFile)
-        #Spawn off a thread to startup the server
+        # Spawn off a thread to startup the server
         def server_thread():
             nonlocal EXIT_CODE
             nonlocal HAS_EXITED
@@ -645,13 +650,14 @@ finally:
                 pass
 
         _thread.start_new_thread(server_thread, ())
-        #Give the server a chance to startup
+        # Give the server a chance to startup
         portex = None
         startTime = time.perf_counter()
-        for _ in range(20):
+        # Wait a minute since starting a new process can be slow (e.g. Mono during CI)
+        while time.perf_counter() - startTime < 60:
             time.sleep(0.5)
-            if EXIT_CODE > 0:
-                self.fail("Server died with exit code %d" % EXIT_CODE)
+            if HAS_EXITED:
+                self.fail("Server exited early with exit code %d" % EXIT_CODE)
             try:
                 with open(portFile) as f:
                     PORT = int(f.read())
@@ -662,7 +668,7 @@ finally:
             duration = time.perf_counter() - startTime
             self.fail("Server not detected after trying for %g s, last detection attempt resulted in %r" % (duration, portex))
 
-        #Client
+        # Client
         HOST = 'localhost'
         s = socket.socket()
         s.connect((HOST, PORT))
@@ -670,7 +676,7 @@ finally:
         f = s.makefile()
         s.close()
 
-        #Ensure the server didn't die
+        # Ensure the server didn't die
         for _ in range(100):
             if HAS_EXITED:
                 self.assertEqual(EXIT_CODE, 0)
@@ -681,7 +687,7 @@ finally:
 
         self.assertTrue(HAS_EXITED)
 
-        #Verification
+        # Verification
         self.assertEqual(f.read(6), "stuff2")
 
         f.close()

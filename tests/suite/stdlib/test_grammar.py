@@ -19,7 +19,6 @@ def load_tests(loader, standard_tests, pattern):
         failing_tests = []
         if sys.version_info >= (3, 6):
             failing_tests += [
-                test.test_grammar.GrammarTests('test_former_statements_refer_to_builtins'), # https://github.com/IronLanguages/ironpython3/issues/374
                 test.test_grammar.GrammarTests('test_var_annot_basic_semantics'), # https://github.com/IronLanguages/ironpython3/issues/106
                 test.test_grammar.GrammarTests('test_var_annot_custom_maps'), # https://github.com/IronLanguages/ironpython3/issues/106
                 test.test_grammar.GrammarTests('test_var_annot_metaclass_semantics'), # https://github.com/IronLanguages/ironpython3/issues/106
@@ -27,7 +26,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_grammar.GrammarTests('test_var_annot_refleak'), # https://github.com/IronLanguages/ironpython3/issues/106
                 test.test_grammar.GrammarTests('test_var_annot_simple_exec'), # https://github.com/IronLanguages/ironpython3/issues/106
                 test.test_grammar.GrammarTests('test_var_annot_syntax_errors'), # https://github.com/IronLanguages/ironpython3/issues/106
-                test.test_grammar.GrammarTests('test_yield'), # NotImplementedError: The method or operation is not implemented.
                 test.test_grammar.TokenTests('test_underscore_literals'), # https://github.com/IronLanguages/ironpython3/issues/105
             ]
 

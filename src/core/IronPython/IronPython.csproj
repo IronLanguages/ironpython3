@@ -9,11 +9,13 @@
     <MeziantouPolyfill_IncludedPolyfills>
       T:System.Diagnostics.CodeAnalysis.AllowNullAttribute;
       T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
+      T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute;
       T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute;
       T:System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute;
       T:System.Diagnostics.CodeAnalysis.NotNullAttribute;
       T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute;
       T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
+      T:System.Index;
       T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
       T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute;
       M:System.String.Contains(System.Char);
@@ -67,7 +69,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.140">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.165">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

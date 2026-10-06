@@ -140,11 +140,11 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Called by the __builtin__.__import__ functions (general importing) and ScriptEngine (for site.py)
-        /// 
+        ///
         /// level indiciates whether to perform absolute or relative imports.
         ///     0 indicates only absolute imports should be performed
         ///     Positive numbers indicate the # of parent directories to search relative to the calling module
-        /// </summary>        
+        /// </summary>
         public static object ImportModule(CodeContext/*!*/ context, object globals, string/*!*/ modName, bool bottom, int level) {
             if (level < 0) throw PythonOps.ValueError("level must be >= 0");
 
@@ -282,7 +282,7 @@ namespace IronPython.Runtime {
         /// Interrogates the importing module for __name__ and __path__, which determine
         /// whether the imported module (whose name is 'name') is being imported as nested
         /// module (__path__ is present) or as sibling.
-        /// 
+        ///
         /// For sibling import, the full name of the imported module is parent.sibling
         /// For nested import, the full name of the imported module is parent.module.nested
         /// where parent.module is the mod.__name__
@@ -486,7 +486,7 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Trys to get an existing module and if that fails fall backs to searching 
+        /// Trys to get an existing module and if that fails fall backs to searching
         /// </summary>
         private static bool TryGetExistingOrMetaPathModule(CodeContext/*!*/ context, string fullName, PythonList path, out object ret) {
             if (TryGetExistingModule(context, fullName, out ret)) {
@@ -498,7 +498,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Attempts to load a module from sys.meta_path as defined in PEP 302.
-        /// 
+        ///
         /// The meta_path provides a list of importer objects which can be used to load modules before
         /// searching sys.path but after searching built-in modules.
         /// </summary>
@@ -517,7 +517,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Given a user defined importer object as defined in PEP 302 tries to load a module.
-        /// 
+        ///
         /// First the find_module(fullName, path) is invoked to get a loader, then load_module(fullName) is invoked
         /// </summary>
         private static bool FindAndLoadModuleFromImporter(CodeContext/*!*/ context, object importer, string fullName, PythonList path, out object ret) {
@@ -836,7 +836,12 @@ namespace IronPython.Runtime {
 
         private static object LoadFromDisk(CodeContext context, string name, string fullName, string str) {
             // default behavior
-            string pathname = context.LanguageContext.DomainManager.Platform.CombinePaths(str, name);
+            string pathname;
+            try {
+                pathname = context.LanguageContext.DomainManager.Platform.CombinePaths(str, name);
+            } catch (ArgumentException) {
+                return null; // ignore invalid paths
+            }
 
             PythonModule module = LoadPackageFromSource(context, fullName, pathname);
             if (module != null) {

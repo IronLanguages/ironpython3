@@ -1282,6 +1282,16 @@ X = 3.14
         # can't access private fields
         self.assertRaises(AttributeError, lambda : test_new_module._value)
 
+    def test_invalid_path_entry(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1188
+        sys.path.append('>')
+        try:
+            with self.assertRaises(ImportError):
+                import some_non_existent_module
+        finally:
+            sys.path.remove('>')
+            sys.path_importer_cache.pop('>', None)
+
 run_test(__name__)
 if __name__ == '__main__':
     from iptest.file_util import delete_all_f

@@ -37,15 +37,12 @@ namespace IronPython.Runtime {
     internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
         private T[] _items;
         private int _size;
-        private GCHandle? _dataHandle;
-
-        private static readonly T[] empty = Array.Empty<T>();
+        private PinnedHandle? _dataHandle;
 
         public ArrayData() : this(0) { }
 
         public ArrayData(int capacity) {
-            GC.SuppressFinalize(this);
-            _items = capacity == 0 ? empty : new T[capacity];
+            _items = capacity == 0 ? [] : new T[capacity];
         }
 
         public ArrayData(IEnumerable<T> collection) : this(collection is ICollection<T> c ? c.Count : collection is IReadOnlyCollection<T> rc ? rc.Count : 0) {
@@ -53,14 +50,8 @@ namespace IronPython.Runtime {
         }
 
         internal ArrayData(ReadOnlySpan<T> data) {
-            GC.SuppressFinalize(this);
             _items = data.ToArray();
             _size = _items.Length;
-        }
-
-        ~ArrayData() {
-            Debug.Assert(_dataHandle.HasValue);
-            _dataHandle?.Free();
         }
 
         public int Count => _size;
@@ -171,23 +162,38 @@ namespace IronPython.Runtime {
                 if (length < size) length = (int)size;
                 Array.Resize(ref _items, length);
                 if (_dataHandle != null) {
-                    _dataHandle.Value.Free();
+                    _dataHandle.Free();
                     _dataHandle = null;
-                    GC.SuppressFinalize(this);
                 }
             }
         }
 
         IntPtr ArrayData.GetAddress() {
-            // slightly evil to pin our data array but it's only used in rare
-            // interop cases.  If this becomes a problem we can move the allocation
-            // onto the unmanaged heap if we have full trust via a different subclass
-            // of ArrayData.
-            if (!_dataHandle.HasValue) {
-                _dataHandle = GCHandle.Alloc(_items, GCHandleType.Pinned);
-                GC.ReRegisterForFinalize(this);
+            // pinned for interop; the address is invalidated when the array is reallocated
+            _dataHandle ??= new PinnedHandle(_items);
+            return _dataHandle.Address;
+        }
+
+        /// <summary>
+        /// Helper class which owns the pinned handle so only pinned arrays pay for a finalizer.
+        /// </summary>
+        private sealed class PinnedHandle {
+            private GCHandle _handle;
+
+            public PinnedHandle(T[] items) {
+                _handle = GCHandle.Alloc(items, GCHandleType.Pinned);
             }
-            return _dataHandle.Value.AddrOfPinnedObject();
+
+            ~PinnedHandle() {
+                if (_handle.IsAllocated) _handle.Free();
+            }
+
+            public IntPtr Address => _handle.AddrOfPinnedObject();
+
+            public void Free() {
+                _handle.Free();
+                GC.SuppressFinalize(this);
+            }
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -363,6 +369,57 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal int Capacity => _items.Length;
+
+        /// <summary>
+        /// Sets the number of items without taking a lock, zero-filling added items by default.
+        /// </summary>
+        /// <param name="clear">Pass false only if the caller overwrites all the added items.</param>
+        internal void ResizeNoLock(int size, bool clear = true) {
+            Debug.Assert(size >= 0);
+            if (size == _size) return;
+            CheckBuffer();
+            if (size > _size) {
+                EnsureSize(size);
+                if (clear) {
+                    // items past _size may hold stale data since shrinking does not clear them
+                    Array.Clear(_items, _size, size - _size);
+                }
+            }
+            _size = size;
+        }
+
+        /// <summary>
+        /// Reduces the capacity to the number of items.
+        /// </summary>
+        internal void TrimExcess() {
+            lock (this) {
+                CheckBuffer();
+                if (_items.Length == _size) return;
+                if (_size == 0) {
+                    _items = [];
+                } else {
+                    Array.Resize(ref _items, _size);
+                }
+                _dataHandle?.Free();
+                _dataHandle = null;
+            }
+        }
+
+        /// <summary>
+        /// Copies a range of items into a new array.
+        /// </summary>
+        internal T[] ToArray(int start, int count) {
+            Debug.Assert(start >= 0 && count >= 0 && start + count <= _size);
+#if NET
+            T[] arr = GC.AllocateUninitializedArray<T>(count);
+#else
+            T[] arr = new T[count];
+#endif
+            Array.Copy(_items, start, arr, 0, count);
+            return arr;
+        }
+
         public void Reverse()
             => Array.Reverse(_items, 0, _size);
 
@@ -393,7 +450,7 @@ namespace IronPython.Runtime {
             return new ArrayDataView(owner, format, this, flags);
         }
 
-        private void CheckBuffer() {
+        internal void CheckBuffer() {
             if (_bufferCount > 0) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
         }
 
@@ -449,5 +506,4 @@ namespace IronPython.Runtime {
             public IReadOnlyList<int>? SubOffsets => null;
         }
     }
-
 }

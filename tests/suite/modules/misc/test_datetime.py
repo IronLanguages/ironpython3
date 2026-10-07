@@ -443,6 +443,7 @@ class DatetimeTest(IronPythonTestCase):
         self.assertEqual(x.hour, 1)
         self.assertEqual(x.minute, 46)
         self.assertEqual(x.second, 40)
+        self.assertEqual(datetime.datetime.utcfromtimestamp(0.000123).microsecond, 123)
 
         #combine
         x = datetime.datetime.combine(datetime.date(2005, 3, 22), datetime.time(2,28,3,99))

@@ -416,9 +416,7 @@ namespace IronPython.Modules {
             }
 
             public static date fromtimestamp(double timestamp) {
-                DateTime dt = PythonTime.TimestampToDateTime(timestamp);
-                dt = dt.AddSeconds(-PythonTime.timezone);
-
+                DateTime dt = PythonTime.TimestampToLocalDateTime(timestamp);
                 return new date(dt.Year, dt.Month, dt.Day);
             }
 
@@ -762,21 +760,15 @@ namespace IronPython.Modules {
             }
 
             public static object fromtimestamp(double timestamp, tzinfo? tz = null) {
-                DateTime dt = PythonTime.TimestampToDateTime(timestamp);
-                dt = dt.AddSeconds(-PythonTime.timezone);
-
                 if (tz != null) {
-                    dt = dt.ToUniversalTime();
-                    datetime pdtc = new datetime(dt, tz);
-                    return tz.fromutc(pdtc);
+                    return tz.fromutc(new datetime(PythonTime.TimestampToUtcDateTime(timestamp), tz));
                 } else {
-                    return new datetime(dt);
+                    return new datetime(PythonTime.TimestampToLocalDateTime(timestamp));
                 }
             }
 
             public static datetime utcfromtimestamp(double timestamp) {
-                DateTime dt = new DateTime(PythonTime.TimestampToTicks(timestamp), DateTimeKind.Utc);
-                return new datetime(dt, 0, null);
+                return new datetime(PythonTime.TimestampToUtcDateTime(timestamp), null);
             }
 
             public static new datetime fromordinal(int d) {

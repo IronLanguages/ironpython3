@@ -144,21 +144,21 @@ namespace IronPython.Modules {
             => (BigInteger)Stopwatch.GetTimestamp() * 1000000000 / Stopwatch.Frequency;
 
         public static double time()
-            => TicksToTimestamp(DateTime.Now.ToUniversalTime().Ticks);
+            => TicksToTimestamp(DateTime.UtcNow.Ticks);
 
         public static PythonTuple localtime()
             => localtime(null);
 
         public static PythonTuple localtime(object? seconds) {
-            DateTime dt = seconds is null ? DateTime.Now : TimestampToDateTime(GetTimestampFromObject(seconds)).AddSeconds(-timezone);
-            return GetDateTimeTuple(dt, dt.IsDaylightSavingTime());
+            DateTime utc = seconds is null ? DateTime.UtcNow : TimestampToUtcDateTime(GetTimestampFromObject(seconds));
+            return GetDateTimeTuple(UtcToLocalDateTime(utc), TimeZoneInfo.Local.IsDaylightSavingTime(utc));
         }
 
         public static PythonTuple gmtime()
             => gmtime(null);
 
         public static PythonTuple gmtime(object? seconds) {
-            DateTime dt = seconds is null ? DateTime.Now.ToUniversalTime() : new DateTime(TimestampToTicks(GetTimestampFromObject(seconds)), DateTimeKind.Unspecified);
+            DateTime dt = seconds is null ? DateTime.UtcNow : TimestampToUtcDateTime(GetTimestampFromObject(seconds));
             return GetDateTimeTuple(dt, false);
         }
 
@@ -238,29 +238,27 @@ namespace IronPython.Modules {
             return res.ToString();
         }
 
-        internal static double DateTimeToTimestamp(DateTime dateTime) {
-            return TicksToTimestamp(RemoveDst(dateTime).Ticks);
-        }
+        internal static DateTime TimestampToUtcDateTime(double timeStamp)
+            => new DateTime(TimestampToTicks(timeStamp), DateTimeKind.Utc);
 
-        internal static DateTime TimestampToDateTime(double timeStamp) {
-            return AddDst(new DateTime(TimestampToTicks(timeStamp)));
-        }
+        /// <summary>
+        /// Converts a POSIX timestamp to the local time.
+        /// </summary>
+        internal static DateTime TimestampToLocalDateTime(double timeStamp)
+            => UtcToLocalDateTime(TimestampToUtcDateTime(timeStamp));
 
-        private static DateTime RemoveDst(DateTime dt) {
-            return RemoveDst(dt, false);
-        }
+        // unlike TimeZoneInfo.ConvertTimeFromUtc, this throws instead of clamping when the result is out of range
+        private static DateTime UtcToLocalDateTime(DateTime utc)
+            => new DateTime(utc.Ticks + TimeZoneInfo.Local.GetUtcOffset(utc).Ticks);
 
-        private static DateTime RemoveDst(DateTime dt, bool always) {
-            if (always || TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
-                dt -= TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset;
+        private static DateTime RemoveDst(DateTime dt, bool always = false) {
+            if (always && TimeZoneInfo.Local.IsAmbiguousTime(dt)) {
+                // the time occurs twice (at the end of DST), pick the daylight saving time offset
+                return dt - (TimeZoneInfo.Local.GetAmbiguousTimeOffsets(dt).Max() - TimeZoneInfo.Local.BaseUtcOffset);
             }
 
-            return dt;
-        }
-
-        private static DateTime AddDst(DateTime dt) {
-            if (TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
-                dt += TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset;
+            if (always || TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
+                dt -= TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset;
             }
 
             return dt;

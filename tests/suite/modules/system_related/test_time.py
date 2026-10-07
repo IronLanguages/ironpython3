@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import datetime
 import time
 
 from iptest import IronPythonTestCase, is_cli, run_test
@@ -132,6 +133,18 @@ class TimeTest(IronPythonTestCase):
 
     def test_localtime(self):
         self.assertEqual(time.mktime(time.localtime(0)), 0)
+
+    def test_localtime_dst(self):
+        # https://github.com/IronLanguages/ironpython3/issues/570
+        # check every hour of a year so we go through the DST transitions (if the local time zone has any)
+        t0 = 1767225600 # 2026-01-01 00:00 UTC
+        for h in range(365 * 24):
+            t = t0 + h * 3600
+            lt = time.localtime(t)
+            self.assertEqual(time.gmtime(t - (time.altzone if lt.tm_isdst else time.timezone))[:6], lt[:6], lt)
+            self.assertEqual(time.mktime(lt), t, lt)
+            self.assertEqual(datetime.datetime.fromtimestamp(t).timetuple()[:6], lt[:6])
+            self.assertEqual(datetime.date.fromtimestamp(t).timetuple()[:3], lt[:3])
 
     def test_asctime(self):
         self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 0)), 'Fri Sep  4 14:57:11 2009')

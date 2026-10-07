@@ -22,7 +22,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestDateTime('test_extreme_timedelta'),
             test.datetimetester.TestDateTime('test_insane_fromtimestamp'),
             test.datetimetester.TestDateTime('test_insane_utcfromtimestamp'),
-            test.datetimetester.TestDateTime('test_microsecond_rounding'),
             test.datetimetester.TestDateTime('test_strftime_with_bad_tzname_replace'),
             test.datetimetester.TestDateTimeTZ('test_backdoor_resistance'),
             test.datetimetester.TestDateTimeTZ('test_even_more_compare'),
@@ -30,7 +29,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestDateTimeTZ('test_extreme_timedelta'),
             test.datetimetester.TestDateTimeTZ('test_insane_fromtimestamp'),
             test.datetimetester.TestDateTimeTZ('test_insane_utcfromtimestamp'),
-            test.datetimetester.TestDateTimeTZ('test_microsecond_rounding'),
             test.datetimetester.TestDateTimeTZ('test_mixed_compare'),
             test.datetimetester.TestDateTimeTZ('test_strftime_with_bad_tzname_replace'),
             test.datetimetester.TestDateTimeTZ('test_tz_aware_arithmetic'),
@@ -38,7 +36,6 @@ def load_tests(loader, standard_tests, pattern):
             test.datetimetester.TestSubclassDateTime('test_extreme_timedelta'),
             test.datetimetester.TestSubclassDateTime('test_insane_fromtimestamp'),
             test.datetimetester.TestSubclassDateTime('test_insane_utcfromtimestamp'),
-            test.datetimetester.TestSubclassDateTime('test_microsecond_rounding'),
             test.datetimetester.TestSubclassDateTime('test_replace'), # TODO
             test.datetimetester.TestSubclassDateTime('test_strftime_with_bad_tzname_replace'),
             test.datetimetester.TestTimeDelta('test_computations'), # rounding differences

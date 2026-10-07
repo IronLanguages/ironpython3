@@ -17,7 +17,6 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_memoryio.CBytesIOTest('test_getbuffer'), # https://github.com/IronLanguages/ironpython3/issues/1002
             test.test_memoryio.CBytesIOTest('test_pickling'), # https://github.com/IronLanguages/ironpython3/issues/1003
             test.test_memoryio.CStringIOTest('test_pickling'), # https://github.com/IronLanguages/ironpython3/issues/1003
         ]

@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Numerics;
@@ -22,7 +21,7 @@ namespace IronPython.Modules {
     public static partial class PythonIOModule {
         /// <summary>
         /// BytesIO([initializer]) -> object
-        /// 
+        ///
         /// Create a buffered I/O implementation using an in-memory bytes
         /// buffer, ready for reading and writing.
         /// </summary>
@@ -30,14 +29,12 @@ namespace IronPython.Modules {
         public class BytesIO : _BufferedIOBase, IEnumerator, IDisposable, IDynamicMetaObjectProvider {
             #region Fields and constructors
 
-            private static readonly int DEFAULT_BUF_SIZE = 20;
-
-            private byte[] _data;
-            private int _pos, _length;
+            private ArrayData<byte> _data;
+            private int _pos;
 
             internal BytesIO(CodeContext/*!*/ context)
                 : base(context) {
-                _data = new byte[DEFAULT_BUF_SIZE];
+                _data = new ArrayData<byte>();
             }
 
             public BytesIO(CodeContext/*!*/ context, [ParamDictionary] IDictionary<object, object> kwArgs, [NotNone] params object[] args)
@@ -45,11 +42,16 @@ namespace IronPython.Modules {
             }
 
             public void __init__(IBufferProtocol initial_bytes = null) {
-                _pos = _length = 0;
-                if (initial_bytes != null) {
-                    DoWrite(initial_bytes);
-                    _pos = 0;
+                if (initial_bytes is null) {
+                    _data?.Clear();
+                } else {
+                    _checkClosed();
+                    _data.CheckBuffer();
+                    // allocate exactly what is needed rather than growing the buffer
+                    using var buffer = initial_bytes.GetBuffer();
+                    _data = new ArrayData<byte>(buffer.AsReadOnlySpan());
                 }
+                _pos = 0;
             }
 
             #endregion
@@ -60,6 +62,7 @@ namespace IronPython.Modules {
             /// close() -> None.  Disable all I/O operations.
             /// </summary>
             public override void close(CodeContext/*!*/ context) {
+                _data?.CheckBuffer();
                 _data = null;
             }
 
@@ -74,25 +77,22 @@ namespace IronPython.Modules {
 
             /// <summary>
             /// getvalue() -> bytes.
-            /// 
+            ///
             /// Retrieve the entire contents of the BytesIO object.
             /// </summary>
             public Bytes getvalue() {
                 _checkClosed();
 
-                if (_length == 0) {
+                if (_data.Count == 0) {
                     return Bytes.Empty;
                 }
 
-                byte[] arr = new byte[_length];
-                Array.Copy(_data, arr, _length);
-                return Bytes.Make(arr);
+                return Bytes.Make(_data.ToArray(0, _data.Count));
             }
 
             public MemoryView getbuffer() {
                 _checkClosed();
-                // TODO: MemoryView constructor should accept Memory/ReadOnlyMemory
-                return (MemoryView)new MemoryView(new Bytes(_data))[new Slice(0, _length, 1)];
+                return new MemoryView(new _BytesIOBuffer(_data));
             }
 
             [Documentation("isatty() -> False\n\n"
@@ -113,7 +113,7 @@ namespace IronPython.Modules {
                 _checkClosed();
                 int sz = GetInt(size, -1);
 
-                int len = Math.Max(0, _length - _pos);
+                int len = Math.Max(0, _data.Count - _pos);
                 if (sz >= 0) {
                     len = Math.Min(len, sz);
                 }
@@ -121,8 +121,7 @@ namespace IronPython.Modules {
                     return Bytes.Empty;
                 }
 
-                byte[] arr = new byte[len];
-                Array.Copy(_data, _pos, arr, 0, len);
+                byte[] arr = _data.ToArray(_pos, len);
                 _pos += len;
 
                 return Bytes.Make(arr);
@@ -150,10 +149,10 @@ namespace IronPython.Modules {
 
                 _checkClosed();
 
-                if (_pos >= _length) return 0;
+                if (_pos >= _data.Count) return 0;
                 var span = pythonBuffer.AsSpan();
-                int len = Math.Min(_length - _pos, span.Length);
-                _data.AsSpan(_pos, len).CopyTo(span);
+                int len = Math.Min(_data.Count - _pos, span.Length);
+                _data.Data.AsSpan(_pos, len).CopyTo(span);
                 _pos += len;
                 return len;
             }
@@ -174,21 +173,20 @@ namespace IronPython.Modules {
 
             private Bytes readline(int size = -1) {
                 _checkClosed();
-                if (_pos >= _length || size == 0) {
+                if (_pos >= _data.Count || size == 0) {
                     return Bytes.Empty;
                 }
 
-                int origPos = _pos;
-                while ((size < 0 || _pos - origPos < size) && _pos < _length) {
-                    if (_data[_pos] == '\n') {
-                        _pos++;
-                        break;
-                    }
-                    _pos++;
+                int count = _data.Count - _pos;
+                if (size > 0 && size < count) {
+                    count = size;
                 }
 
-                byte[] arr = new byte[_pos - origPos];
-                Array.Copy(_data, origPos, arr, 0, _pos - origPos);
+                int idx = Array.IndexOf(_data.Data, (byte)'\n', _pos, count);
+                int len = idx < 0 ? count : idx - _pos + 1;
+                byte[] arr = _data.ToArray(_pos, len);
+                _pos += len;
+
                 return Bytes.Make(arr);
             }
 
@@ -241,7 +239,7 @@ namespace IronPython.Modules {
                         _pos = Math.Max(0, _pos + pos);
                         return _pos;
                     case 2:
-                        _pos = Math.Max(0, _length + pos);
+                        _pos = Math.Max(0, _data.Count + pos);
                         return _pos;
                     default:
                         throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1 or 2)", whence);
@@ -302,7 +300,14 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("negative size value {0}", size);
                 }
 
-                _length = Math.Min(_length, size);
+                _data.CheckBuffer();
+                if (size < _data.Count) {
+                    _data.ResizeNoLock(size);
+                    if (size < _data.Capacity / 2) {
+                        // release memory on a major downsize, like CPython
+                        _data.TrimExcess();
+                    }
+                }
                 return (BigInteger)size;
             }
 
@@ -440,6 +445,8 @@ namespace IronPython.Modules {
             #region Private implementation details
 
             private int DoWrite(IBufferProtocol bufferProtocol) {
+                _data.CheckBuffer();
+
                 using var buffer = bufferProtocol.GetBuffer();
                 var bytes = buffer.AsReadOnlySpan();
 
@@ -447,8 +454,16 @@ namespace IronPython.Modules {
                     return 0;
                 }
 
-                EnsureSizeSetLength(_pos + bytes.Length);
-                bytes.CopyTo(_data.AsSpan(_pos, bytes.Length));
+                long end = (long)_pos + bytes.Length;
+                if (end > int.MaxValue) throw PythonOps.MemoryError();
+                if (end > _data.Count) {
+                    // zero-fill the gap when writing past the end, the rest is overwritten below
+                    if (_pos > _data.Count) {
+                        _data.ResizeNoLock(_pos);
+                    }
+                    _data.ResizeNoLock((int)end, clear: false);
+                }
+                bytes.CopyTo(_data.Data.AsSpan(_pos));
 
                 _pos += bytes.Length;
                 return bytes.Length;
@@ -459,38 +474,22 @@ namespace IronPython.Modules {
                 return DoWrite(Converter.Convert<IBufferProtocol>(bytes));
             }
 
-            private void EnsureSize(int size) {
-                Debug.Assert(size > 0);
-
-                if (_data.Length < size) {
-                    size = size <= DEFAULT_BUF_SIZE ? DEFAULT_BUF_SIZE : Math.Max(size, _data.Length * 2);
-
-                    byte[] oldBuffer = _data;
-                    _data = new byte[size];
-                    Array.Copy(oldBuffer, _data, _length);
-                }
-            }
-
-            private void EnsureSizeSetLength(int size) {
-                Debug.Assert(size >= _pos);
-                Debug.Assert(_length <= _data.Length);
-
-                if (_data.Length < size) {
-                    // EnsureSize is guaranteed to resize, so we need not write any zeros here.
-                    EnsureSize(size);
-                    _length = size;
-                    return;
-                }
-
-                // _data[_pos:size] is about to be overwritten, so we only need to zero out _data[_length:_pos]
-                while (_length < _pos) {
-                    _data[_length++] = 0;
-                }
-
-                _length = Math.Max(_length, size);
-            }
-
             #endregion
+        }
+
+        /// <summary>
+        /// Exporter for the memoryview returned by getbuffer.
+        /// </summary>
+        [PythonType]
+        public sealed class _BytesIOBuffer : IBufferProtocol {
+            private readonly ArrayData<byte> _data;
+
+            internal _BytesIOBuffer(ArrayData<byte> data) {
+                _data = data;
+            }
+
+            IPythonBuffer IBufferProtocol.GetBuffer(BufferFlags flags, bool throwOnError)
+                => _data.GetBuffer(this, "B", flags);
         }
     }
 }

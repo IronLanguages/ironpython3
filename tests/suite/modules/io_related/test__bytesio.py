@@ -11,7 +11,7 @@ import unittest
 
 from _io import BytesIO
 
-from iptest import big, is_32, is_windows, run_test
+from iptest import big, is_32, is_cli, is_windows, run_test
 
 is_long32bit = is_32 or is_windows
 
@@ -337,5 +337,62 @@ class BytesIOTest(unittest.TestCase):
 
         testObject = TestStream("val1", "val2", "val3")
         self.assertEqual(testObject.val3, "val3")
+
+    def test_write_after_truncate(self):
+        # bytes removed by truncate must not reappear when writing past the end
+        b = BytesIO(b"abcdef")
+        b.truncate(2)
+        b.seek(5)
+        b.write(b"x")
+        self.assertEqual(b.getvalue(), b"ab\x00\x00\x00x")
+
+        b = BytesIO(b"x" * 1000)
+        b.truncate(0)
+        b.seek(3)
+        b.write(b"y")
+        self.assertEqual(b.getvalue(), b"\x00\x00\x00y")
+
+    @unittest.skipUnless(is_cli, "IronPython buffers are limited to int.MaxValue bytes")
+    def test_write_overflow(self):
+        b = BytesIO()
+        b.seek(2**31 - 4)
+        self.assertRaises(MemoryError, b.write, b"x" * 10)
+
+    def test_readline_limit(self):
+        b = BytesIO(b"abc\ndef\n\nghi")
+        self.assertEqual(b.readline(2), b"ab")
+        self.assertEqual(b.readline(2), b"c\n")
+        self.assertEqual(b.readline(), b"def\n")
+        self.assertEqual(b.readline(-1), b"\n")
+        self.assertEqual(b.readline(0), b"")
+        self.assertEqual(b.readline(100), b"ghi")
+        self.assertEqual(b.readline(), b"")
+
+    def test_getbuffer_exports(self):
+        b = BytesIO(b"abc")
+        m = b.getbuffer()
+        self.assertEqual(type(m.obj).__name__, "_BytesIOBuffer")
+        self.assertRaises(BufferError, b.write, b"")
+        self.assertRaises(BufferError, b.writelines, [b"x"])
+        self.assertRaises(BufferError, b.truncate, 10)
+        self.assertRaises(BufferError, b.close)
+        self.assertFalse(b.closed)
+
+        # the buffer is shared with the BytesIO
+        m[0] = ord("z")
+        self.assertEqual(b.getvalue(), b"zbc")
+
+        m.release()
+        b.write(b"de")
+        self.assertEqual(b.getvalue(), b"dec")
+        b.close()
+        self.assertTrue(b.closed)
+
+        # the resulting state differs between implementations so only check the error
+        b = BytesIO(b"abc")
+        m = b.getbuffer()
+        self.assertRaises(BufferError, b.__init__, b"xyz")
+        self.assertRaises(BufferError, b.__init__)
+        m.release()
 
 run_test(__name__)

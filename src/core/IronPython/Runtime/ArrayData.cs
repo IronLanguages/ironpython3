@@ -369,6 +369,57 @@ namespace IronPython.Runtime {
             }
         }
 
+        internal int Capacity => _items.Length;
+
+        /// <summary>
+        /// Sets the number of items without taking a lock, zero-filling added items by default.
+        /// </summary>
+        /// <param name="clear">Pass false only if the caller overwrites all the added items.</param>
+        internal void ResizeNoLock(int size, bool clear = true) {
+            Debug.Assert(size >= 0);
+            if (size == _size) return;
+            CheckBuffer();
+            if (size > _size) {
+                EnsureSize(size);
+                if (clear) {
+                    // items past _size may hold stale data since shrinking does not clear them
+                    Array.Clear(_items, _size, size - _size);
+                }
+            }
+            _size = size;
+        }
+
+        /// <summary>
+        /// Reduces the capacity to the number of items.
+        /// </summary>
+        internal void TrimExcess() {
+            lock (this) {
+                CheckBuffer();
+                if (_items.Length == _size) return;
+                if (_size == 0) {
+                    _items = [];
+                } else {
+                    Array.Resize(ref _items, _size);
+                }
+                _dataHandle?.Free();
+                _dataHandle = null;
+            }
+        }
+
+        /// <summary>
+        /// Copies a range of items into a new array.
+        /// </summary>
+        internal T[] ToArray(int start, int count) {
+            Debug.Assert(start >= 0 && count >= 0 && start + count <= _size);
+#if NET
+            T[] arr = GC.AllocateUninitializedArray<T>(count);
+#else
+            T[] arr = new T[count];
+#endif
+            Array.Copy(_items, start, arr, 0, count);
+            return arr;
+        }
+
         public void Reverse()
             => Array.Reverse(_items, 0, _size);
 
@@ -399,7 +450,7 @@ namespace IronPython.Runtime {
             return new ArrayDataView(owner, format, this, flags);
         }
 
-        private void CheckBuffer() {
+        internal void CheckBuffer() {
             if (_bufferCount > 0) throw PythonOps.BufferError("Existing exports of data: object cannot be re-sized");
         }
 

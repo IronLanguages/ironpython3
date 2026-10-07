@@ -37,15 +37,12 @@ namespace IronPython.Runtime {
     internal class ArrayData<T> : ArrayData, IList<T>, IReadOnlyList<T> where T : struct {
         private T[] _items;
         private int _size;
-        private GCHandle? _dataHandle;
-
-        private static readonly T[] empty = Array.Empty<T>();
+        private PinnedHandle? _dataHandle;
 
         public ArrayData() : this(0) { }
 
         public ArrayData(int capacity) {
-            GC.SuppressFinalize(this);
-            _items = capacity == 0 ? empty : new T[capacity];
+            _items = capacity == 0 ? [] : new T[capacity];
         }
 
         public ArrayData(IEnumerable<T> collection) : this(collection is ICollection<T> c ? c.Count : collection is IReadOnlyCollection<T> rc ? rc.Count : 0) {
@@ -53,14 +50,8 @@ namespace IronPython.Runtime {
         }
 
         internal ArrayData(ReadOnlySpan<T> data) {
-            GC.SuppressFinalize(this);
             _items = data.ToArray();
             _size = _items.Length;
-        }
-
-        ~ArrayData() {
-            Debug.Assert(_dataHandle.HasValue);
-            _dataHandle?.Free();
         }
 
         public int Count => _size;
@@ -171,23 +162,38 @@ namespace IronPython.Runtime {
                 if (length < size) length = (int)size;
                 Array.Resize(ref _items, length);
                 if (_dataHandle != null) {
-                    _dataHandle.Value.Free();
+                    _dataHandle.Free();
                     _dataHandle = null;
-                    GC.SuppressFinalize(this);
                 }
             }
         }
 
         IntPtr ArrayData.GetAddress() {
-            // slightly evil to pin our data array but it's only used in rare
-            // interop cases.  If this becomes a problem we can move the allocation
-            // onto the unmanaged heap if we have full trust via a different subclass
-            // of ArrayData.
-            if (!_dataHandle.HasValue) {
-                _dataHandle = GCHandle.Alloc(_items, GCHandleType.Pinned);
-                GC.ReRegisterForFinalize(this);
+            // pinned for interop; the address is invalidated when the array is reallocated
+            _dataHandle ??= new PinnedHandle(_items);
+            return _dataHandle.Address;
+        }
+
+        /// <summary>
+        /// Helper class which owns the pinned handle so only pinned arrays pay for a finalizer.
+        /// </summary>
+        private sealed class PinnedHandle {
+            private GCHandle _handle;
+
+            public PinnedHandle(T[] items) {
+                _handle = GCHandle.Alloc(items, GCHandleType.Pinned);
             }
-            return _dataHandle.Value.AddrOfPinnedObject();
+
+            ~PinnedHandle() {
+                if (_handle.IsAllocated) _handle.Free();
+            }
+
+            public IntPtr Address => _handle.AddrOfPinnedObject();
+
+            public void Free() {
+                _handle.Free();
+                GC.SuppressFinalize(this);
+            }
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -449,5 +455,4 @@ namespace IronPython.Runtime {
             public IReadOnlyList<int>? SubOffsets => null;
         }
     }
-
 }

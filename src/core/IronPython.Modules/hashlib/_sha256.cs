@@ -2,86 +2,51 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography;
+#nullable enable
 
 using IronPython.Runtime;
-using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting.Runtime;
 
-using Mono.Security.Cryptography;
+using Org.BouncyCastle.Crypto.Digests;
 
 [assembly: PythonModule("_sha256", typeof(IronPython.Modules.PythonSha256))]
 namespace IronPython.Modules {
-    [Documentation("SHA256 hash algorithm")]
     public static class PythonSha256 {
-        private const int BLOCK_SIZE = 64;
+        public const string __doc__ = "SHA-224 and SHA-256 hash algorithms";
 
-        public const string __doc__ = "SHA256 hash algorithm";
+        [Documentation("Return a new SHA-256 hash object.")]
+        public static SHA256Type sha256([NotNone] IBufferProtocol data) => new SHA256Type(data);
 
-        public static SHA256Type sha256([NotNone] IBufferProtocol data) {
-            return new SHA256Type(data);
-        }
+        [Documentation("Return a new SHA-256 hash object.")]
+        public static SHA256Type sha256([NotNone] string data) => throw HashHelpers.StringNotEncodedError();
 
-        public static SHA256Type sha256([NotNone] string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
-
-        public static SHA256Type sha256() {
-            return new SHA256Type();
-        }
+        [Documentation("Return a new SHA-256 hash object.")]
+        public static SHA256Type sha256() => new SHA256Type();
 
         [PythonType("sha256")]
-        public sealed class SHA256Type : HashBase<SHA256> {
-            internal SHA256Type() : base("sha256", BLOCK_SIZE, 32) { }
+        public sealed class SHA256Type : HashBase {
+            internal SHA256Type() : base("sha256", new Sha256Digest()) { }
 
-            internal SHA256Type(IBufferProtocol initialBytes) : this() {
-                update(initialBytes);
-            }
-
-            [Documentation("copy() -> object (copy of this object)")]
-            public override HashBase<SHA256> copy() {
-                SHA256Type res = new SHA256Type();
-                res._hasher = CloneHasher();
-                return res;
-            }
-
-            protected override void CreateHasher() {
-                _hasher = new Mono.Security.Cryptography.SHA256Managed();
-            }
+            internal SHA256Type(IBufferProtocol initialBytes) : this()
+                => update(initialBytes);
         }
 
-        public static SHA224Type sha224([NotNone] IBufferProtocol data) {
-            return new SHA224Type(data);
-        }
+        [Documentation("Return a new SHA-224 hash object.")]
+        public static SHA224Type sha224([NotNone] IBufferProtocol data) => new SHA224Type(data);
 
-        public static SHA256Type sha224([NotNone] string data) {
-            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-        }
+        [Documentation("Return a new SHA-224 hash object.")]
+        public static SHA224Type sha224([NotNone] string data) => throw HashHelpers.StringNotEncodedError();
 
-        public static SHA224Type sha224() {
-            return new SHA224Type();
-        }
+        [Documentation("Return a new SHA-224 hash object.")]
+        public static SHA224Type sha224() => new SHA224Type();
 
         [PythonType("sha224")]
-        public sealed class SHA224Type : HashBase<SHA224> {
-            internal SHA224Type() : base("sha224", BLOCK_SIZE, 28) {
-            }
+        public sealed class SHA224Type : HashBase {
+            internal SHA224Type() : base("sha224", new Sha224Digest()) { }
 
-            internal SHA224Type(IBufferProtocol initialBytes) : this() {
-                update(initialBytes);
-            }
-
-            protected override void CreateHasher() {
-                _hasher = new SHA224Managed();
-            }
-
-            [Documentation("copy() -> object (copy of this object)")]
-            public override HashBase<SHA224> copy() {
-                SHA224Type res = new SHA224Type();
-                res._hasher = CloneHasher();
-                return res;
-            }
+            internal SHA224Type(IBufferProtocol initialBytes) : this()
+                => update(initialBytes);
         }
     }
 }

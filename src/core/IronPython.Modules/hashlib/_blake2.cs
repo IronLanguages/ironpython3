@@ -11,6 +11,7 @@ using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting.Runtime;
 
+using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
 
 [assembly: PythonModule("_blake2", typeof(IronPython.Modules.PythonBlake2))]
@@ -29,141 +30,78 @@ namespace IronPython.Modules {
         public const int BLAKE2S_MAX_DIGEST_SIZE = blake2s.MAX_DIGEST_SIZE;
 
         [PythonType]
-        public sealed class blake2b {
+        public sealed class blake2b : HashBase {
             public const int SALT_SIZE = 16;
             public const int PERSON_SIZE = 16;
             public const int MAX_KEY_SIZE = 64;
             public const int MAX_DIGEST_SIZE = 64;
             private const long MAX_NODE_OFFSET = long.MaxValue;
 
-            private readonly Blake2bDigest _digest;
-
-            public blake2b(IBufferProtocol? data = null, int digest_size = MAX_DIGEST_SIZE,
+            public blake2b([NotNone] IBufferProtocol data = null!, int digest_size = MAX_DIGEST_SIZE,
                 IBufferProtocol? key = null, IBufferProtocol? salt = null, IBufferProtocol? person = null,
                 int fanout = 1, int depth = 1, long leaf_size = 0, long node_offset = 0, int node_depth = 0,
-                int inner_size = 0, bool last_node = false) {
-
-                CheckParameters(digest_size, MAX_DIGEST_SIZE, MAX_NODE_OFFSET, fanout, depth, leaf_size, node_offset, node_depth, inner_size, last_node);
-
-                _digest = new Blake2bDigest(
-                    GetParameter(key, MAX_KEY_SIZE, "key", pad: false),
-                    digest_size,
-                    GetParameter(salt, SALT_SIZE, "salt", pad: true),
-                    GetParameter(person, PERSON_SIZE, "person", pad: true));
+                int inner_size = 0, bool last_node = false)
+                : base("blake2b", CreateDigest(digest_size, key, salt, person, fanout, depth, leaf_size, node_offset, node_depth, inner_size, last_node)) {
 
                 if (data != null) update(data);
             }
 
-            private blake2b(Blake2bDigest digest) {
-                _digest = digest;
-            }
+            public blake2b([NotNone] string data, int digest_size = MAX_DIGEST_SIZE,
+                IBufferProtocol? key = null, IBufferProtocol? salt = null, IBufferProtocol? person = null,
+                int fanout = 1, int depth = 1, long leaf_size = 0, long node_offset = 0, int node_depth = 0,
+                int inner_size = 0, bool last_node = false) : this()
+                => update(data);
 
-            public string name => "blake2b";
+            private protected override IDigest CloneDigest(IDigest digest) => new Blake2bDigest((Blake2bDigest)digest);
 
-            public int digest_size => _digest.GetDigestSize();
+            private static Blake2bDigest CreateDigest(int digest_size, IBufferProtocol? key, IBufferProtocol? salt, IBufferProtocol? person,
+                int fanout, int depth, long leaf_size, long node_offset, int node_depth, int inner_size, bool last_node) {
 
-            public int block_size => _digest.GetByteLength();
+                CheckParameters(digest_size, MAX_DIGEST_SIZE, MAX_NODE_OFFSET, fanout, depth, leaf_size, node_offset, node_depth, inner_size, last_node);
 
-            [Documentation("Update this hash object's state with the provided bytes-like object.")]
-            public void update([NotNone] IBufferProtocol data) {
-                lock (_digest) {
-                    HashHelpers.Update(_digest, data);
-                }
-            }
-
-            [Documentation("Update this hash object's state with the provided bytes-like object.")]
-            public void update([NotNone] string data) {
-                // TODO: error message changes in Python 3.9
-                throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-            }
-
-            [Documentation("Return the digest value as a bytes object.")]
-            public Bytes digest() {
-                var copy = CopyDigest();
-                var res = new byte[copy.GetDigestSize()];
-                copy.DoFinal(res, 0);
-                return Bytes.Make(res);
-            }
-
-            [Documentation("Return the digest value as a string of hexadecimal digits.")]
-            public string hexdigest() => HashHelpers.ToHex(digest().UnsafeByteArray);
-
-            [Documentation("Return a copy of the hash object.")]
-            public blake2b copy() => new blake2b(CopyDigest());
-
-            private Blake2bDigest CopyDigest() {
-                lock (_digest) {
-                    return new Blake2bDigest(_digest);
-                }
+                return new Blake2bDigest(
+                    GetParameter(key, MAX_KEY_SIZE, "key", pad: false),
+                    digest_size,
+                    GetParameter(salt, SALT_SIZE, "salt", pad: true),
+                    GetParameter(person, PERSON_SIZE, "person", pad: true));
             }
         }
 
         [PythonType]
-        public sealed class blake2s {
+        public sealed class blake2s : HashBase {
             public const int SALT_SIZE = 8;
             public const int PERSON_SIZE = 8;
             public const int MAX_KEY_SIZE = 32;
             public const int MAX_DIGEST_SIZE = 32;
             private const long MAX_NODE_OFFSET = (1L << 48) - 1;
 
-            private readonly Blake2sDigest _digest;
-
-            public blake2s(IBufferProtocol? data = null, int digest_size = MAX_DIGEST_SIZE,
+            public blake2s([NotNone] IBufferProtocol data = null!, int digest_size = MAX_DIGEST_SIZE,
                 IBufferProtocol? key = null, IBufferProtocol? salt = null, IBufferProtocol? person = null,
                 int fanout = 1, int depth = 1, long leaf_size = 0, long node_offset = 0, int node_depth = 0,
-                int inner_size = 0, bool last_node = false) {
-
-                CheckParameters(digest_size, MAX_DIGEST_SIZE, MAX_NODE_OFFSET, fanout, depth, leaf_size, node_offset, node_depth, inner_size, last_node);
-
-                _digest = new Blake2sDigest(
-                    GetParameter(key, MAX_KEY_SIZE, "key", pad: false),
-                    digest_size,
-                    GetParameter(salt, SALT_SIZE, "salt", pad: true),
-                    GetParameter(person, PERSON_SIZE, "person", pad: true));
+                int inner_size = 0, bool last_node = false)
+                : base("blake2s", CreateDigest(digest_size, key, salt, person, fanout, depth, leaf_size, node_offset, node_depth, inner_size, last_node)) {
 
                 if (data != null) update(data);
             }
 
-            private blake2s(Blake2sDigest digest) {
-                _digest = digest;
-            }
+            public blake2s([NotNone] string data, int digest_size = MAX_DIGEST_SIZE,
+                IBufferProtocol? key = null, IBufferProtocol? salt = null, IBufferProtocol? person = null,
+                int fanout = 1, int depth = 1, long leaf_size = 0, long node_offset = 0, int node_depth = 0,
+                int inner_size = 0, bool last_node = false) : this()
+                => update(data);
 
-            public string name => "blake2s";
+            private protected override IDigest CloneDigest(IDigest digest) => new Blake2sDigest((Blake2sDigest)digest);
 
-            public int digest_size => _digest.GetDigestSize();
+            private static Blake2sDigest CreateDigest(int digest_size, IBufferProtocol? key, IBufferProtocol? salt, IBufferProtocol? person,
+                int fanout, int depth, long leaf_size, long node_offset, int node_depth, int inner_size, bool last_node) {
 
-            public int block_size => _digest.GetByteLength();
+                CheckParameters(digest_size, MAX_DIGEST_SIZE, MAX_NODE_OFFSET, fanout, depth, leaf_size, node_offset, node_depth, inner_size, last_node);
 
-            [Documentation("Update this hash object's state with the provided bytes-like object.")]
-            public void update([NotNone] IBufferProtocol data) {
-                lock (_digest) {
-                    HashHelpers.Update(_digest, data);
-                }
-            }
-
-            [Documentation("Update this hash object's state with the provided bytes-like object.")]
-            public void update([NotNone] string data) {
-                throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
-            }
-
-            [Documentation("Return the digest value as a bytes object.")]
-            public Bytes digest() {
-                var copy = CopyDigest();
-                var res = new byte[copy.GetDigestSize()];
-                copy.DoFinal(res, 0);
-                return Bytes.Make(res);
-            }
-
-            [Documentation("Return the digest value as a string of hexadecimal digits.")]
-            public string hexdigest() => HashHelpers.ToHex(digest().UnsafeByteArray);
-
-            [Documentation("Return a copy of the hash object.")]
-            public blake2s copy() => new blake2s(CopyDigest());
-
-            private Blake2sDigest CopyDigest() {
-                lock (_digest) {
-                    return new Blake2sDigest(_digest);
-                }
+                return new Blake2sDigest(
+                    GetParameter(key, MAX_KEY_SIZE, "key", pad: false),
+                    digest_size,
+                    GetParameter(salt, SALT_SIZE, "salt", pad: true),
+                    GetParameter(person, PERSON_SIZE, "person", pad: true));
             }
         }
 
@@ -193,10 +131,8 @@ namespace IronPython.Modules {
         private static byte[]? GetParameter(IBufferProtocol? value, int maxSize, string name, bool pad) {
             if (value is null) return null;
 
-            byte[] bytes;
-            using (var buffer = value.GetBuffer()) {
-                bytes = buffer.ToArray();
-            }
+            using var buffer = value.GetBuffer();
+            byte[] bytes = buffer.ToArray();
 
             if (bytes.Length > maxSize)
                 throw PythonOps.ValueError("maximum {0} length is {1} bytes", name, maxSize);

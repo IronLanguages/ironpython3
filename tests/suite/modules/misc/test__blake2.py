@@ -55,6 +55,7 @@ class _Blake2Test(unittest.TestCase):
     def test_errors(self):
         for ctor in [_blake2.blake2b, _blake2.blake2s]:
             with self.subTest(ctor=ctor):
+                self.assertRaises(TypeError, ctor, None)
                 self.assertRaises(ValueError, ctor, digest_size=0)
                 self.assertRaises(ValueError, ctor, digest_size=ctor.MAX_DIGEST_SIZE + 1)
                 self.assertRaises(ValueError, ctor, key=b'x' * (ctor.MAX_KEY_SIZE + 1))
@@ -68,6 +69,15 @@ class _Blake2Test(unittest.TestCase):
                 self.assertRaises(OverflowError, ctor, leaf_size=1<<32)
                 self.assertRaises((ValueError, OverflowError), ctor, node_offset=-1)
         self.assertRaises(OverflowError, _blake2.blake2s, node_offset=1<<48)
+
+    def test_not_picklable(self):
+        import copy, pickle
+        for ctor in [_blake2.blake2b, _blake2.blake2s]:
+            with self.subTest(ctor=ctor):
+                h = ctor(b'abc', key=b'key')
+                self.assertRaises(TypeError, copy.copy, h)
+                self.assertRaises(TypeError, copy.deepcopy, h)
+                self.assertRaises(TypeError, pickle.dumps, h)
 
     @unittest.skipUnless(is_cli, 'IronPython does not support tree hashing')
     def test_tree_hashing_not_supported(self):

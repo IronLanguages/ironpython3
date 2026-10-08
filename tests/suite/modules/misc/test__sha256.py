@@ -16,7 +16,7 @@ class _Sha256Test(unittest.TestCase):
     def test_sanity(self):
         self.assertTrue("__doc__" in dir(_sha256))
         if is_cli:
-            self.assertEqual(_sha256.__doc__, "SHA256 hash algorithm")
+            self.assertEqual(_sha256.__doc__, "SHA-224 and SHA-256 hash algorithms")
         self.assertTrue("__name__" in dir(_sha256))
         self.assertTrue("sha224" in dir (_sha256))
         self.assertTrue("sha256" in dir(_sha256))

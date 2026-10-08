@@ -15,7 +15,7 @@ class _Sha512Test(unittest.TestCase):
     def test_sanity(self):
         self.assertTrue("__doc__" in dir(_sha512))
         if is_cli:
-            self.assertEqual(_sha512.__doc__, "SHA512 hash algorithm")
+            self.assertEqual(_sha512.__doc__, "SHA-384 and SHA-512 hash algorithms")
         self.assertTrue("__name__" in dir(_sha512))
         self.assertTrue("sha384" in dir (_sha512))
         self.assertTrue("sha512" in dir(_sha512))

@@ -100,6 +100,13 @@ jobs:
       # Build & Test
     - name: Build
       run: pwsh make.ps1
+    - name: Version Information (${{ matrix.framework }})
+      run: |
+        $ipy = "bin/Release/${{ matrix.framework }}/ipy"
+        if ('${{ matrix.framework }}' -ne 'net462') { dotnet "$ipy.dll" -VV }
+        elseif ($IsWindows) { & "$ipy.exe" -VV }
+        else { mono "$ipy.exe" -VV }
+      shell: pwsh
     - name: Test (${{ matrix.framework }})
       run: ./make.ps1 -frameworks ${{ matrix.framework }} test-all
       shell: pwsh

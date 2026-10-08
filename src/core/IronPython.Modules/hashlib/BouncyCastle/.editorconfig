@@ -1,0 +1,11 @@
+root = true
+
+[*]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.cs]
+# leave upstream code formatting and style intact
+generated_code = true
+
+dotnet_diagnostic.CS1574.severity = none # CS1574: XML comment has cref attribute that could not be resolved

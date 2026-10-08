@@ -41,9 +41,9 @@ namespace IronPython.Modules {
         [Documentation("update(string) -> None (update digest with string data)")]
         public void update([NotNone] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
-            byte[] bytes = buffer.ToArray();
+            byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
             lock (_hasher) {
-                _hasher.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+                _hasher.TransformBlock(bytes, 0, bytes.Length, null, 0);
             }
         }
         public void update([NotNone] string data) {
@@ -58,16 +58,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("hexdigest() -> string (current digest as hex digits)")]
-        public string hexdigest() {
-            T copy = CloneHasher();
-            copy.TransformFinalBlock(_empty, 0, 0);
-
-            StringBuilder result = new StringBuilder(2 * copy.Hash.Length);
-            for (int i = 0; i < copy.Hash.Length; i++) {
-                result.Append(copy.Hash[i].ToString("x2"));
-            }
-            return result.ToString();
-        }
+        public string hexdigest() => HashHelpers.ToHex(digest().UnsafeByteArray);
 
         public abstract HashBase<T> copy();
 
@@ -104,6 +95,28 @@ namespace IronPython.Modules {
                 }
             }
             return clone;
+        }
+    }
+
+    internal static class HashHelpers {
+        internal static void Update(Org.BouncyCastle.Crypto.IDigest digest, IBufferProtocol data) {
+            using var buffer = data.GetBuffer();
+#if NETCOREAPP
+            if (buffer.IsCContiguous()) {
+                digest.BlockUpdate(buffer.AsReadOnlySpan());
+                return;
+            }
+#endif
+            byte[] bytes = buffer.AsUnsafeArray() ?? buffer.ToArray();
+            digest.BlockUpdate(bytes, 0, bytes.Length);
+        }
+
+        internal static string ToHex(byte[] bytes) {
+            StringBuilder result = new StringBuilder(2 * bytes.Length);
+            for (int i = 0; i < bytes.Length; i++) {
+                result.Append(bytes[i].ToString("x2"));
+            }
+            return result.ToString();
         }
     }
 }

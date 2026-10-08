@@ -66,12 +66,22 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-22.04, macos-14]
         framework: ['net462', 'net8.0', 'net10.0']
+        stdlib: ['3.4', '3.6']
+
+    name: test (${{ matrix.os }}, ${{ matrix.framework }}, ${{ matrix.stdlib }})
 
     steps:
       # Prerequisites
     - uses: actions/checkout@v6
       with:
         submodules: true
+
+      # Retarget to a different Python version by switching the StdLib branch
+    - name: Checkout StdLib ${{ matrix.stdlib }}
+      if: matrix.stdlib != '3.4'
+      run: |
+        git -C src/core/IronPython.StdLib fetch --depth 1 origin ${{ matrix.stdlib }}
+        git -C src/core/IronPython.StdLib checkout FETCH_HEAD
 
       # Setup .NET
     - name: Setup .NET 10.0

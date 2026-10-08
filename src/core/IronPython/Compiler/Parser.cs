@@ -2232,7 +2232,7 @@ namespace IronPython.Compiler {
         }
 
         //subscriptlist: subscript (',' subscript)* [',']
-        //subscript: '.' '.' '.' | expression | [expression] ':' [expression] [sliceop]
+        //subscript: expression | [expression] ':' [expression] [sliceop]
         //sliceop: ':' [expression]
         private Expression ParseSubscriptList() {
             const TokenKind terminator = TokenKind.RightBracket;
@@ -2242,12 +2242,7 @@ namespace IronPython.Compiler {
             List<Expression> l = new List<Expression>();
             while (true) {
                 Expression e;
-                if (MaybeEat(TokenKind.Dot)) {
-                    var start = GetStart();
-                    Eat(TokenKind.Dot); Eat(TokenKind.Dot);
-                    e = new ConstantExpression(Ellipsis.Value);
-                    e.SetLoc(_globalParent, start, GetEnd());
-                } else if (MaybeEat(TokenKind.Colon)) {
+                if (MaybeEat(TokenKind.Colon)) {
                     e = FinishSlice(null, GetStart());
                 } else {
                     e = ParseTest();

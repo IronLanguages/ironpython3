@@ -271,23 +271,17 @@ namespace IronPython.Modules {
             => new DateTime(utc.Ticks + TimeZoneInfo.Local.GetUtcOffset(utc).Ticks);
 
         // The standard (non-DST) UTC offset in effect on the given date. Unlike TimeZoneInfo.Local.BaseUtcOffset
-        // (a single zone-wide value), this honors AdjustmentRule.BaseUtcOffsetDelta, which models a jurisdiction
-        // permanently changing its standard offset (e.g. abolishing DST) rather than merely toggling DST on/off.
-        // BaseUtcOffsetDelta does not exist prior to .NET 6, so older targets fall back to the zone-wide value.
+        // (a single zone-wide value), this is correct even for a jurisdiction that permanently changes its
+        // standard offset (e.g. abolishing DST).
         private static TimeSpan GetStandardOffset(DateTime date) {
             TimeZoneInfo tz = TimeZoneInfo.Local;
-#if NET6_0_OR_GREATER
-            // Adjacent rules can share a boundary calendar day (one rule's DateEnd equals the next
-            // rule's DateStart), so matching on [DateStart, DateEnd] is ambiguous right at the
-            // transition. Instead pick the rule with the latest DateStart not after the given date -
-            // since rules abut with no gaps, this unambiguously identifies the rule in effect.
-            var rule = tz.GetAdjustmentRules().Where(r => r.DateStart.Date <= date.Date)
-                                               .OrderByDescending(r => r.DateStart)
-                                               .FirstOrDefault();
-            return tz.BaseUtcOffset + (rule?.BaseUtcOffsetDelta ?? TimeSpan.Zero);
-#else
-            return tz.BaseUtcOffset;
-#endif
+            TimeSpan offset = tz.GetUtcOffset(date);
+            if (tz.IsDaylightSavingTime(date)) {
+                var rule = tz.GetAdjustmentRules().FirstOrDefault(r => r.DaylightDelta != TimeSpan.Zero
+                                                                     && r.DateStart.Date <= date.Date && date.Date <= r.DateEnd.Date);
+                if (rule != null) offset -= rule.DaylightDelta;
+            }
+            return offset;
         }
 
         private static DateTime RemoveDst(DateTime dt, bool always = false) {

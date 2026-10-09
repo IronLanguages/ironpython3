@@ -784,6 +784,23 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("'read()' should have returned bytes");
             }
 
+            private Bytes? CallRawReadAll(CodeContext/*!*/ context) {
+                object? obj;
+                if (PythonOps.TryGetBoundAttr(context, _raw, "readall", out object? readall)) {
+                    obj = PythonCalls.Call(context, readall);
+                } else {
+                    obj = PythonOps.Invoke(context, _raw, "read");
+                }
+                if (obj is null) return null;
+                if (obj is Bytes bytes) {
+                    if (_absPos != -1) {
+                        _absPos += bytes.Count;
+                    }
+                    return bytes;
+                }
+                throw PythonOps.TypeError("readall() should return bytes");
+            }
+
             private Bytes? ReadNoLock(CodeContext/*!*/ context, int length, bool read1 = false) {
                 if (length == 0) {
                     return Bytes.Empty;
@@ -796,17 +813,14 @@ namespace IronPython.Modules {
                         chunks.Add(res);
                         count += chunks[0].Count;
                     }
-                    for (; ; ) {
-                        var chunk = CallRawRead(context, -1);
-                        if (chunk == null || chunk.Count == 0) {
-                            if (count == 0) {
-                                return chunk;
-                            }
-                            break;
+                    var chunk = CallRawReadAll(context);
+                    if (chunk == null || chunk.Count == 0) {
+                        if (count == 0) {
+                            return chunk;
                         }
+                    } else {
                         chunks.Add(chunk);
                         count += chunk.Count;
-                        if (read1) break;
                     }
 
                     GC.KeepAlive(this);
@@ -897,6 +911,7 @@ namespace IronPython.Modules {
                 if (length == 0) {
                     return Bytes.Empty;
                 } else if (length < 0) {
+                    // TODO: in Python 3.7 negative length works
                     throw PythonOps.ValueError("number of bytes to read must be positive");
                 }
 

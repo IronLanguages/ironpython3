@@ -137,11 +137,14 @@ class TimeTest(IronPythonTestCase):
     def test_localtime_dst(self):
         # https://github.com/IronLanguages/ironpython3/issues/570
         # check every hour of a year so we go through the DST transitions (if the local time zone has any)
+        #
+        # Note: time.timezone/time.altzone are computed once at process start and only hold a single
+        # standard/daylight offset pair, so they can't describe a zone whose standard offset itself
+        # changes mid-year (e.g. a jurisdiction abolishing DST); don't use them as an oracle here.
         t0 = 1767225600 # 2026-01-01 00:00 UTC
         for h in range(365 * 24):
             t = t0 + h * 3600
             lt = time.localtime(t)
-            self.assertEqual(time.gmtime(t - (time.altzone if lt.tm_isdst else time.timezone))[:6], lt[:6], lt)
             self.assertEqual(time.mktime(lt), t, lt)
             self.assertEqual(datetime.datetime.fromtimestamp(t).timetuple()[:6], lt[:6])
             self.assertEqual(datetime.date.fromtimestamp(t).timetuple()[:3], lt[:3])

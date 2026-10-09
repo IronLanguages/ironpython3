@@ -163,7 +163,26 @@ namespace IronPython.Modules {
         }
 
         public static double mktime(CodeContext/*!*/ context, [NotNone] PythonTuple localTime) {
-            return TicksToTimestamp(GetDateTimeFromTuple(context, localTime).AddSeconds(timezone).Ticks);
+            DateTime raw = GetDateTimeFromTupleNoDst(context, localTime, out int[]? ints);
+            TimeZoneInfo tz = TimeZoneInfo.Local;
+            if (tz.IsAmbiguousTime(raw)) {
+                // raw occurs twice (once under daylight, once under standard). Resolve directly from the
+                // ambiguous offset pair rather than going through RemoveDst+GetStandardOffset: raw can sit
+                // exactly on an AdjustmentRule's date boundary (e.g. a jurisdiction abolishing DST), where
+                // date-only rule matching can't tell which side of the transition the shifted result landed on.
+                bool preferDaylight = ints is null || ints[IsDaylightSavingsIndex] != 0;
+                var offsets = tz.GetAmbiguousTimeOffsets(raw);
+                return TicksToTimestamp((raw - (preferDaylight ? offsets.Max() : offsets.Min())).Ticks);
+            }
+
+            DateTime res = raw;
+            if (ints != null) {
+                switch (ints[IsDaylightSavingsIndex]) {
+                    case -1: res = RemoveDst(raw); break;
+                    case 1: res = RemoveDst(raw, true); break;
+                }
+            }
+            return TicksToTimestamp((res - GetStandardOffset(res)).Ticks);
         }
 
         public static string strftime(CodeContext/*!*/ context, [NotNone] string format) {
@@ -250,6 +269,26 @@ namespace IronPython.Modules {
         // unlike TimeZoneInfo.ConvertTimeFromUtc, this throws instead of clamping when the result is out of range
         private static DateTime UtcToLocalDateTime(DateTime utc)
             => new DateTime(utc.Ticks + TimeZoneInfo.Local.GetUtcOffset(utc).Ticks);
+
+        // The standard (non-DST) UTC offset in effect on the given date. Unlike TimeZoneInfo.Local.BaseUtcOffset
+        // (a single zone-wide value), this honors AdjustmentRule.BaseUtcOffsetDelta, which models a jurisdiction
+        // permanently changing its standard offset (e.g. abolishing DST) rather than merely toggling DST on/off.
+        // BaseUtcOffsetDelta does not exist prior to .NET 6, so older targets fall back to the zone-wide value.
+        private static TimeSpan GetStandardOffset(DateTime date) {
+            TimeZoneInfo tz = TimeZoneInfo.Local;
+#if NET6_0_OR_GREATER
+            // Adjacent rules can share a boundary calendar day (one rule's DateEnd equals the next
+            // rule's DateStart), so matching on [DateStart, DateEnd] is ambiguous right at the
+            // transition. Instead pick the rule with the latest DateStart not after the given date -
+            // since rules abut with no gaps, this unambiguously identifies the rule in effect.
+            var rule = tz.GetAdjustmentRules().Where(r => r.DateStart.Date <= date.Date)
+                                               .OrderByDescending(r => r.DateStart)
+                                               .FirstOrDefault();
+            return tz.BaseUtcOffset + (rule?.BaseUtcOffsetDelta ?? TimeSpan.Zero);
+#else
+            return tz.BaseUtcOffset;
+#endif
+        }
 
         private static DateTime RemoveDst(DateTime dt, bool always = false) {
             if (always && TimeZoneInfo.Local.IsAmbiguousTime(dt)) {
@@ -421,20 +460,6 @@ namespace IronPython.Modules {
 
         internal static struct_time GetDateTimeTuple(DateTime dt, bool dstMode) {
             return new struct_time(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, Weekday(dt), dt.DayOfYear, dstMode ? 1 : 0);
-        }
-
-        private static DateTime GetDateTimeFromTuple(CodeContext/*!*/ context, PythonTuple t) {
-            DateTime res = GetDateTimeFromTupleNoDst(context, t, out int[]? ints);
-
-            if (ints != null) {
-                switch (ints[IsDaylightSavingsIndex]) {
-                    // automatic detection
-                    case -1: res = RemoveDst(res); break;
-                    // is daylight savings time, force adjustment
-                    case 1: res = RemoveDst(res, true); break;
-                }
-            }
-            return res;
         }
 
         private static DateTime GetDateTimeFromTupleNoDst(CodeContext context, PythonTuple t) {

@@ -153,6 +153,14 @@ namespace IronPython.Modules {
             return LightExceptions.Throw(GetLastUnixError(path));
         }
 
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        private static object lstatUnix(string path) {
+            if (Syscall.lstat(path, out Stat buf) == 0) {
+                return new stat_result(buf);
+            }
+            return LightExceptions.Throw(GetLastUnixError(path));
+        }
 
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]

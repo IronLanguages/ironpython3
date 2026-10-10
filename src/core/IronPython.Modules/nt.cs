@@ -739,8 +739,19 @@ namespace IronPython.Modules {
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                // TODO: implement this
+#if NET
+                if (File.Exists(src)) {
+                    File.CreateSymbolicLink(dst, src);
+                }
+                else if (Directory.Exists(src) || target_is_directory) {
+                    Directory.CreateSymbolicLink(dst, src);
+                }
+                else {
+                    File.CreateSymbolicLink(dst, src);
+                }
+#else
                 throw new NotImplementedException();
+#endif
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 symlinkUnix(src, dst);
             } else {
@@ -1459,11 +1470,14 @@ namespace IronPython.Modules {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
 
+            bool follow_symlinks = true;
             foreach (var key in kwargs.Keys) {
                 switch (key) {
                     case "dir_fd":
+                        // TODO: implement this
+                        break;
                     case "follow_symlinks":
-                        // TODO: implement these!
+                        follow_symlinks = kwargs[key] is bool b ? b : Converter.ConvertToBoolean(kwargs[key]);
                         break;
                     default:
                         return LightExceptions.Throw(PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key));
@@ -1501,6 +1515,7 @@ namespace IronPython.Modules {
                     return LightExceptions.Throw(ToPythonException(e, path));
                 }
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                if (!follow_symlinks) return lstatUnix(path);
                 return statUnix(path);
             } else {
                 throw new PlatformNotSupportedException();
@@ -1672,8 +1687,6 @@ namespace IronPython.Modules {
                 context.LanguageContext.FileManager.GetStreams(fd).Truncate((long)length);
             }
         }
-
-
 
 #if FEATURE_FILESYSTEM
         public static object times() {

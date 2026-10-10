@@ -1715,14 +1715,11 @@ namespace IronPython.Modules {
                 throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_INVALID_NAME, path);
             }
 
-            bool existing = File.Exists(path); // will return false also on access denied
             try {
+                File.GetAttributes(path); // this will throw an exception if the file doesn't exist (File.Exists can false return for symlinks)
                 File.Delete(path); // will throw an exception on access denied, no exception on file not existing
             } catch (Exception e) {
                 throw ToPythonException(e, path);
-            }
-            if (!existing) { // file was not existing in the first place
-                throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, path);
             }
         }
 

@@ -1428,6 +1428,12 @@ namespace IronPython.Modules {
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile);
 
+        private const int FILE_TYPE_CHAR = 0x0002;
+        private const int FILE_TYPE_PIPE = 0x0003;
+
+        [DllImport("kernel32.dll")]
+        private static extern int GetFileType(SafeFileHandle hFile);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetFileInformationByHandle(SafeFileHandle hFile, out BY_HANDLE_FILE_INFORMATION lpFileInformation);
 
@@ -1467,20 +1473,28 @@ namespace IronPython.Modules {
             VerifyPath(path, functionName: nameof(stat), argName: nameof(path));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                if (IsNulFile(path)) {
-                    return new stat_result(0x2000);
-                }
-
                 try {
                     FileInfo fi = new FileInfo(path);
                     if (fi.Exists) {
+                        // FileInfo trims trailing separators, so maybe it doesn't exist after all...
+                        if (path.EndsWith(Path.DirectorySeparatorChar) || path.EndsWith(Path.AltDirectorySeparatorChar)) {
+                            return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOTDIR, PythonExceptions._OSError.ERROR_DIRECTORY, path));
+                        }
                         return statWindowsImpl(fi);
                     }
                     DirectoryInfo di = new DirectoryInfo(path);
                     if (di.Exists) {
                         return statWindowsImpl(di);
                     }
-                    return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, path));
+                    using var handle = CreateFile(path, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
+                    if (handle.IsInvalid) {
+                        return LightExceptions.Throw(GetWin32Error(Marshal.GetLastWin32Error(), path));
+                    }
+                    switch (GetFileType(handle)) {
+                        case FILE_TYPE_CHAR: return new stat_result(0x2000);
+                        case FILE_TYPE_PIPE: return new stat_result(0x1000);
+                    }
+                    return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path));
                 } catch (ArgumentException) {
                     return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_INVALID_NAME, path));
                 } catch (Exception e) {
@@ -1522,12 +1536,9 @@ namespace IronPython.Modules {
             long st_ctime_ns = (fsi.CreationTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
 
             ulong fileIdx = 0;
-            var handle = CreateFile(fsi.FullName, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
-            if (!handle.IsInvalid) {
-                if (GetFileInformationByHandle(handle, out BY_HANDLE_FILE_INFORMATION fileInfo)) {
-                    fileIdx = (((ulong)fileInfo.FileIndexHigh) << 32) + fileInfo.FileIndexLow;
-                }
-                handle.Close();
+            using var handle = CreateFile(fsi.FullName, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
+            if (!handle.IsInvalid && GetFileInformationByHandle(handle, out BY_HANDLE_FILE_INFORMATION fileInfo)) {
+                fileIdx = (((ulong)fileInfo.FileIndexHigh) << 32) + fileInfo.FileIndexLow;
             }
 
             return new stat_result(mode, fileIdx, size, st_atime_ns, st_mtime_ns, st_ctime_ns);

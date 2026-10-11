@@ -277,11 +277,27 @@ namespace IronPython.Modules {
             TimeZoneInfo tz = TimeZoneInfo.Local;
             TimeSpan offset = tz.GetUtcOffset(date);
             if (tz.IsDaylightSavingTime(date)) {
-                var rule = tz.GetAdjustmentRules().FirstOrDefault(r => r.DaylightDelta != TimeSpan.Zero
+                var rule = GetAdjustmentRules(tz).FirstOrDefault(r => r.DaylightDelta != TimeSpan.Zero
                                                                      && r.DateStart.Date <= date.Date && date.Date <= r.DateEnd.Date);
                 if (rule != null) offset -= rule.DaylightDelta;
             }
             return offset;
+        }
+
+        private sealed class AdjustmentRulesCache(TimeZoneInfo tz, TimeZoneInfo.AdjustmentRule[] rules) {
+            public TimeZoneInfo Tz { get; } = tz;
+            public TimeZoneInfo.AdjustmentRule[] Rules { get; } = rules;
+        }
+
+        private static AdjustmentRulesCache? _adjustmentRulesCache;
+
+        private static TimeZoneInfo.AdjustmentRule[] GetAdjustmentRules(TimeZoneInfo tz) {
+            var cache = _adjustmentRulesCache;
+            if (cache is null || !ReferenceEquals(cache.Tz, tz)) {
+                cache = new AdjustmentRulesCache(tz, tz.GetAdjustmentRules());
+                _adjustmentRulesCache = cache;
+            }
+            return cache.Rules;
         }
 
         private static DateTime RemoveDst(DateTime dt, bool always = false) {

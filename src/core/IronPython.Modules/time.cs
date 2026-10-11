@@ -285,13 +285,14 @@ namespace IronPython.Modules {
         }
 
         private static DateTime RemoveDst(DateTime dt, bool always = false) {
+            // Use the date-aware standard offset (GetStandardOffset), not TimeZoneInfo.Local.BaseUtcOffset
             if (always && TimeZoneInfo.Local.IsAmbiguousTime(dt)) {
                 // the time occurs twice (at the end of DST), pick the daylight saving time offset
-                return dt - (TimeZoneInfo.Local.GetAmbiguousTimeOffsets(dt).Max() - TimeZoneInfo.Local.BaseUtcOffset);
+                return dt - (TimeZoneInfo.Local.GetAmbiguousTimeOffsets(dt).Max() - GetStandardOffset(dt));
             }
 
             if (always || TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
-                dt -= TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset;
+                dt -= TimeZoneInfo.Local.GetUtcOffset(dt) - GetStandardOffset(dt);
             }
 
             return dt;

@@ -6,7 +6,7 @@ import datetime
 import os
 import time
 
-from iptest import IronPythonTestCase, is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, is_windows, run_test
 
 class TimeTest(IronPythonTestCase):
     def test_strftime(self):
@@ -193,6 +193,14 @@ class TimeTest(IronPythonTestCase):
         self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 0)), 'Fri Sep  4 14:57:11 2009')
         self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 1)), 'Fri Sep  4 14:57:11 2009')
         self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, -1)), 'Fri Sep  4 14:57:11 2009')
+
+    def test_year_lt_100(self):
+        t = (50, 7, 1, 12, 0, 0, 2, 182, -1)
+        if is_cli or not is_windows:
+            # years below 100 are taken literally and not mapped to 19xx/20xx
+            self.assertEqual(time.localtime(time.mktime(t))[:6], t[:6])
+        else:
+            self.assertRaises(OverflowError, time.mktime, t)
 
 
 run_test(__name__)

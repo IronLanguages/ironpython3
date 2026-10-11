@@ -62,10 +62,7 @@ class NtTest(IronPythonTestCase):
         self.assertRaises(nt.error, nt.lstat, 'doesnotexist.txt')
 
         self.assertRaisesNumber(WindowsError, 2, nt.stat, 'doesnotexist.txt')
-        if is_netcoreapp:
-            self.assertRaisesNumber(WindowsError, 2, nt.stat, 'bad?path.txt')
-        else:
-            self.assertRaisesNumber(WindowsError, 22, nt.stat, 'bad?path.txt')
+        self.assertRaisesNumber(WindowsError, 22, nt.stat, 'bad?path.txt')
 
     def test_stat_nul(self):
         st_arg = [0] * nt.stat_result.n_sequence_fields

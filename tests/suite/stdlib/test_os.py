@@ -65,7 +65,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_os.PathTConverterTests('test_path_t_converter'), # AssertionError
                 test.test_os.StatAttributeTests('test_file_attributes'), # AssertionError
                 test.test_os.TestInvalidFD('test_inheritable'), # AttributeError: 'module' object has no attribute 'get_inheritable'
-                test.test_os.TestScandir('test_attributes'), # OSError: [WinError 1] Incorrect function
                 test.test_os.TestScandir('test_resource_warning'), # AssertionError: ResourceWarning not triggered
                 test.test_os.UtimeTests('test_utime_invalid_arguments'), # OSError: [WinError 87] The parameter is incorrect.
                 test.test_os.WalkTests('test_walk_bottom_up'), # AssertionError
@@ -74,6 +73,7 @@ def load_tests(loader, standard_tests, pattern):
             ]
             if is_posix:
                 failing_tests += [
+                    test.test_os.TestScandir('test_broken_symlink'), # FileNotFoundError
                     test.test_os.TestScandir('test_removed_dir'), # FileNotFoundError
                     test.test_os.TestScandir('test_removed_file'), # FileNotFoundError
                 ]

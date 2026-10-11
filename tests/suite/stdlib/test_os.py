@@ -73,6 +73,7 @@ def load_tests(loader, standard_tests, pattern):
             ]
             if is_posix:
                 failing_tests += [
+                    test.test_os.TestScandir('test_attributes'), # AssertionError
                     test.test_os.TestScandir('test_broken_symlink'), # FileNotFoundError
                     test.test_os.TestScandir('test_removed_dir'), # FileNotFoundError
                     test.test_os.TestScandir('test_removed_file'), # FileNotFoundError

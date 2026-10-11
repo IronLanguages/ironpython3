@@ -1628,8 +1628,13 @@ namespace IronPython.Modules {
         public static terminal_size get_terminal_size(CodeContext context)
             => get_terminal_size(1); // stdout
 
-        public static terminal_size get_terminal_size(int fd)
-            => new terminal_size(new object[2] { Console.WindowWidth, Console.WindowHeight }); // TODO: use the fd
+        public static terminal_size get_terminal_size(int fd) {
+            // TODO: use the fd
+            int columns = Console.WindowWidth;
+            int lines = Console.WindowHeight;
+            if (columns < 0 || lines < 0) throw GetOsError(PythonErrno.ENOTTY);
+            return new terminal_size(new object[2] { columns, lines });
+        }
 
         [PythonType]
         public sealed class terminal_size : PythonTuple {

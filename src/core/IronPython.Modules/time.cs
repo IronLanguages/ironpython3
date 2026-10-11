@@ -96,7 +96,7 @@ namespace IronPython.Modules {
             => AscTimeFormat(DateTime.Now);
 
         public static string asctime(CodeContext/*!*/ context, [NotNone] PythonTuple time)
-            => AscTimeFormat(GetDateTimeFromTupleNoDst(context, time));
+            => AscTimeFormat(GetDateTimeFromTuple(time, out _));
 
         public static double clock() {
             InitStopWatch();
@@ -163,7 +163,24 @@ namespace IronPython.Modules {
         }
 
         public static double mktime(CodeContext/*!*/ context, [NotNone] PythonTuple localTime) {
-            return TicksToTimestamp(GetDateTimeFromTuple(context, localTime).AddSeconds(timezone).Ticks);
+            DateTime raw = GetDateTimeFromTuple(localTime, out int isDst);
+            TimeZoneInfo tz = TimeZoneInfo.Local;
+            if (tz.IsAmbiguousTime(raw)) {
+                // raw occurs twice (once under daylight, once under standard). Resolve directly from the
+                // ambiguous offset pair rather than going through RemoveDst+GetStandardOffset: raw can sit
+                // exactly on an AdjustmentRule's date boundary (e.g. a jurisdiction abolishing DST), where
+                // date-only rule matching can't tell which side of the transition the shifted result landed on.
+                bool preferDaylight = isDst != 0;
+                var offsets = tz.GetAmbiguousTimeOffsets(raw);
+                return TicksToTimestamp((raw - (preferDaylight ? offsets.Max() : offsets.Min())).Ticks);
+            }
+
+            DateTime res = isDst switch {
+                0 => raw,
+                < 0 => RemoveDst(raw),
+                _ => RemoveDst(raw, true),
+            };
+            return TicksToTimestamp((res - GetStandardOffset(res)).Ticks);
         }
 
         public static string strftime(CodeContext/*!*/ context, [NotNone] string format) {
@@ -171,7 +188,7 @@ namespace IronPython.Modules {
         }
 
         public static string strftime(CodeContext/*!*/ context, [NotNone] string format, [NotNone] PythonTuple dateTime) {
-            return strftime(context, format, GetDateTimeFromTupleNoDst(context, dateTime), null, TimeZoneInfo.Local, errorOnF: true);
+            return strftime(context, format, GetDateTimeFromTuple(dateTime, out _), null, TimeZoneInfo.Local, errorOnF: true);
         }
 
         public static object? strptime(CodeContext/*!*/ context, [NotNone] string @string) {
@@ -251,14 +268,45 @@ namespace IronPython.Modules {
         private static DateTime UtcToLocalDateTime(DateTime utc)
             => new DateTime(utc.Ticks + TimeZoneInfo.Local.GetUtcOffset(utc).Ticks);
 
+        // The standard (non-DST) UTC offset in effect on the given date. Unlike TimeZoneInfo.Local.BaseUtcOffset
+        // (a single zone-wide value), this is correct even for a jurisdiction that permanently changes its
+        // standard offset (e.g. abolishing DST).
+        private static TimeSpan GetStandardOffset(DateTime date) {
+            TimeZoneInfo tz = TimeZoneInfo.Local;
+            TimeSpan offset = tz.GetUtcOffset(date);
+            if (tz.IsDaylightSavingTime(date)) {
+                var rule = GetAdjustmentRules(tz).FirstOrDefault(r => r.DaylightDelta != TimeSpan.Zero
+                                                                     && r.DateStart.Date <= date.Date && date.Date <= r.DateEnd.Date);
+                if (rule != null) offset -= rule.DaylightDelta;
+            }
+            return offset;
+        }
+
+        private sealed class AdjustmentRulesCache(TimeZoneInfo tz, TimeZoneInfo.AdjustmentRule[] rules) {
+            public TimeZoneInfo Tz { get; } = tz;
+            public TimeZoneInfo.AdjustmentRule[] Rules { get; } = rules;
+        }
+
+        private static AdjustmentRulesCache? _adjustmentRulesCache;
+
+        private static TimeZoneInfo.AdjustmentRule[] GetAdjustmentRules(TimeZoneInfo tz) {
+            var cache = _adjustmentRulesCache;
+            if (cache is null || !ReferenceEquals(cache.Tz, tz)) {
+                cache = new AdjustmentRulesCache(tz, tz.GetAdjustmentRules());
+                _adjustmentRulesCache = cache;
+            }
+            return cache.Rules;
+        }
+
         private static DateTime RemoveDst(DateTime dt, bool always = false) {
+            // Use the date-aware standard offset (GetStandardOffset), not TimeZoneInfo.Local.BaseUtcOffset
             if (always && TimeZoneInfo.Local.IsAmbiguousTime(dt)) {
                 // the time occurs twice (at the end of DST), pick the daylight saving time offset
-                return dt - (TimeZoneInfo.Local.GetAmbiguousTimeOffsets(dt).Max() - TimeZoneInfo.Local.BaseUtcOffset);
+                return dt - (TimeZoneInfo.Local.GetAmbiguousTimeOffsets(dt).Max() - GetStandardOffset(dt));
             }
 
             if (always || TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
-                dt -= TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset;
+                dt -= TimeZoneInfo.Local.GetUtcOffset(dt) - GetStandardOffset(dt);
             }
 
             return dt;
@@ -423,60 +471,30 @@ namespace IronPython.Modules {
             return new struct_time(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, Weekday(dt), dt.DayOfYear, dstMode ? 1 : 0);
         }
 
-        private static DateTime GetDateTimeFromTuple(CodeContext/*!*/ context, PythonTuple t) {
-            DateTime res = GetDateTimeFromTupleNoDst(context, t, out int[]? ints);
+        private static int ToInt32(object? o)
+            => Converter.TryConvertToIndex(o, out int i) ? i : throw PythonOps.TypeErrorForUnIndexableObject(o);
 
-            if (ints != null) {
-                switch (ints[IsDaylightSavingsIndex]) {
-                    // automatic detection
-                    case -1: res = RemoveDst(res); break;
-                    // is daylight savings time, force adjustment
-                    case 1: res = RemoveDst(res, true); break;
-                }
-            }
-            return res;
-        }
-
-        private static DateTime GetDateTimeFromTupleNoDst(CodeContext context, PythonTuple t) {
-            return GetDateTimeFromTupleNoDst(context, t, out _);
-        }
-
-        private static DateTime GetDateTimeFromTupleNoDst(CodeContext context, PythonTuple t, out int[]? ints) {
-            if (t == null) {
-                ints = null;
-                return DateTime.Now;
-            }
-
-            ints = ValidateDateTimeTuple(context, t);
-
-            var month = ints[MonthIndex];
-            if (month == 0) month = 1;
-            var day = ints[DayIndex];
-            if (day == 0) day = 1;
-
-            return new DateTime(ints[YearIndex], month, day, ints[HourIndex], ints[MinuteIndex], ints[SecondIndex]);
-        }
-
-        private static int[] ValidateDateTimeTuple(CodeContext/*!*/ context, PythonTuple t) {
+        private static DateTime GetDateTimeFromTuple(PythonTuple t, out int isDst) {
             if (t.__len__() != MaxIndex) throw PythonOps.TypeError("expected tuple of length {0}", MaxIndex);
 
-            int[] ints = new int[MaxIndex];
-            for (int i = 0; i < MaxIndex; i++) {
-                ints[i] = context.LanguageContext.ConvertToInt32(t[i]);
-            }
+            var year = ToInt32(t[YearIndex]);
+            var month = ToInt32(t[MonthIndex]);
+            var day = ToInt32(t[DayIndex]);
+            var hour = ToInt32(t[HourIndex]);
+            var minute = ToInt32(t[MinuteIndex]);
+            var second = ToInt32(t[SecondIndex]);
+            var weekday = ToInt32(t[WeekdayIndex]);
+            ToInt32(t[DayOfYearIndex]); // validate
+            isDst = ToInt32(t[IsDaylightSavingsIndex]);
 
-            int year = ints[YearIndex];
-            if (year >= 0 && year <= 99) {
-                if (year > 68) {
-                    year += 1900;
-                } else {
-                    year += 2000;
-                }
-            }
             if (year < DateTime.MinValue.Year) throw PythonOps.ValueError("year is too low");
             if (year > DateTime.MaxValue.Year) throw PythonOps.ValueError("year is too high");
-            if (ints[WeekdayIndex] < 0 || ints[WeekdayIndex] >= 7) throw PythonOps.ValueError("day of week is outside of 0-6 range");
-            return ints;
+            if (weekday < 0 || weekday >= 7) throw PythonOps.ValueError("day of week is outside of 0-6 range");
+
+            if (month == 0) month = 1;
+            if (day == 0) day = 1;
+
+            return new DateTime(year, month, day, hour, minute, second);
         }
 
         [MemberNotNull(nameof(sw))]

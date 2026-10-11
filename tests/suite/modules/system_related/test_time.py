@@ -3,9 +3,10 @@
 # See the LICENSE file in the project root for more information.
 
 import datetime
+import os
 import time
 
-from iptest import IronPythonTestCase, is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, is_windows, run_test
 
 class TimeTest(IronPythonTestCase):
     def test_strftime(self):
@@ -137,19 +138,69 @@ class TimeTest(IronPythonTestCase):
     def test_localtime_dst(self):
         # https://github.com/IronLanguages/ironpython3/issues/570
         # check every hour of a year so we go through the DST transitions (if the local time zone has any)
+        #
+        # Note: time.timezone/time.altzone are computed once at process start and only hold a single
+        # standard/daylight offset pair, so they can't describe a zone whose standard offset itself
+        # changes mid-year (e.g. a jurisdiction abolishing DST); don't use them as an oracle here.
         t0 = 1767225600 # 2026-01-01 00:00 UTC
         for h in range(365 * 24):
             t = t0 + h * 3600
             lt = time.localtime(t)
-            self.assertEqual(time.gmtime(t - (time.altzone if lt.tm_isdst else time.timezone))[:6], lt[:6], lt)
             self.assertEqual(time.mktime(lt), t, lt)
             self.assertEqual(datetime.datetime.fromtimestamp(t).timetuple()[:6], lt[:6])
             self.assertEqual(datetime.date.fromtimestamp(t).timetuple()[:3], lt[:3])
+
+    def test_mktime_forced_dst_no_daylight(self):
+        # https://github.com/IronLanguages/ironpython3/issues/570
+        # Forcing isdst=1 on a date that has no actual daylight saving (e.g. after a
+        # jurisdiction permanently abolishes DST, as America/Vancouver does on
+        # 2026-11-01) must give the same result as isdst=0/-1
+        #
+        # Scope the local time zone to America/Vancouver for this test alone, so it
+        # reproduces regardless of the machine's configured zone
+        old_tz = os.environ.get('TZ')
+        os.environ['TZ'] = 'America/Vancouver'
+        try:
+            if is_cli:
+                import System
+                System.TimeZoneInfo.ClearCachedData()
+                active = System.TimeZoneInfo.Local.Id == 'America/Vancouver'
+            else:
+                active = hasattr(time, 'tzset')
+                if active:
+                    time.tzset()
+
+            if not active:
+                # TZ isn't honored at runtime on this platform (e.g. native Windows,
+                # where both .NET's TimeZoneInfo.Local and the CRT read the OS/registry
+                # setting instead): nothing to scope, so there's nothing to test here.
+                self.skipTest('cannot override the local time zone on this platform')
+
+            t = (2026, 12, 15, 12, 0, 0, 0, 0, 0)
+            self.assertEqual(time.mktime(t), time.mktime(t[:8] + (1,)))
+            self.assertEqual(time.mktime(t), time.mktime(t[:8] + (-1,)))
+        finally:
+            if old_tz is None:
+                os.environ.pop('TZ', None)
+            else:
+                os.environ['TZ'] = old_tz
+            if is_cli:
+                System.TimeZoneInfo.ClearCachedData()
+            elif hasattr(time, 'tzset'):
+                time.tzset()
 
     def test_asctime(self):
         self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 0)), 'Fri Sep  4 14:57:11 2009')
         self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, 1)), 'Fri Sep  4 14:57:11 2009')
         self.assertEqual(time.asctime((2009, 9, 4, 14, 57, 11, 4, 247, -1)), 'Fri Sep  4 14:57:11 2009')
+
+    def test_year_lt_100(self):
+        t = (50, 7, 1, 12, 0, 0, 2, 182, -1)
+        if is_cli or not is_windows:
+            # years below 100 are taken literally and not mapped to 19xx/20xx
+            self.assertEqual(time.localtime(time.mktime(t))[:6], t[:6])
+        else:
+            self.assertRaises(OverflowError, time.mktime, t)
 
 
 run_test(__name__)

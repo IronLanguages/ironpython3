@@ -739,7 +739,7 @@ namespace IronPython.Modules {
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-#if NET
+#if NET && false // TODO: re-enable once symlinks are better supported
                 if (File.Exists(src)) {
                     File.CreateSymbolicLink(dst, src);
                 }

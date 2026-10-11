@@ -6,21 +6,9 @@
 ## Run selected tests from test_genericpath from StdLib
 ##
 
-from iptest import is_ironpython, generate_suite, run_test, is_netcoreapp, is_windows
+from iptest import is_ironpython, generate_suite, run_test, is_exfat, is_netcoreapp, is_windows
 
 import test.test_genericpath
-
-def is_exfat():
-    import clr
-    clr.AddReference("System.IO.FileSystem.DriveInfo")
-    import os
-    import System.IO
-    try:
-        drive = os.path.splitdrive(os.getcwd())[0]
-        format = System.IO.DriveInfo(drive).DriveFormat.lower()
-        return format == "exfat"
-    except:
-        return False
 
 def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_genericpath, pattern=pattern)

@@ -8,21 +8,9 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test, is_posix, is_windows
+from iptest import is_ironpython, generate_suite, run_test, is_exfat, is_posix, is_windows
 
 import test.test_os
-
-def is_exfat():
-    import clr
-    clr.AddReference("System.IO.FileSystem.DriveInfo")
-    import os
-    import System.IO
-    try:
-        drive = os.path.splitdrive(os.getcwd())[0]
-        format = System.IO.DriveInfo(drive).DriveFormat.lower()
-        return format == "exfat"
-    except:
-        return False
 
 def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_os, pattern=pattern)
@@ -112,6 +100,10 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_os.SpawnTests('test_spawnvpe'),
                 test.test_os.SpawnTests('test_spawnvpe_invalid_env'),
             ]
+            if is_windows and is_exfat():
+                skip_tests += [
+                    test.test_os.TestScandir('test_attributes'),
+                ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

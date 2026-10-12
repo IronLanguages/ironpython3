@@ -861,6 +861,7 @@ namespace IronPython.Compiler.Ast {
 
             foreach (TryStatementHandler tsh in node.Handlers) {
                 tsh.Target?.Walk(_define);
+                tsh.Target?.Walk(_delete); // the target is implicitly deleted at the end of the handler
                 tsh.Parent = _currentScope;
                 tsh.Walk(this);
             }

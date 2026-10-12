@@ -639,9 +639,41 @@ namespace IronPython.Modules {
                 return obj;
             }
 
-            public bool is_dir(bool follow_symlinks = true) => info.Attributes.HasFlag(FileAttributes.Directory);
+            // TODO: Windows symlinks are not supported yet, so reparse points are treated like regular entries
+            private bool IsSymlink => !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && info.Attributes.HasFlag(FileAttributes.ReparsePoint);
 
-            public bool is_file(bool follow_symlinks = true) => !is_dir();
+            public bool is_dir(bool follow_symlinks = true) {
+                if (IsSymlink) {
+                    return follow_symlinks && IsLinkTargetType(S_IFDIR);
+                }
+                return info.Attributes.HasFlag(FileAttributes.Directory);
+            }
+
+            public bool is_file(bool follow_symlinks = true) {
+                if (IsSymlink) {
+                    return follow_symlinks && IsLinkTargetType(S_IFREG);
+                }
+                return !info.Attributes.HasFlag(FileAttributes.Directory);
+            }
+
+            private const int S_IFMT = 0xF000;
+            private const int S_IFDIR = 0x4000;
+            private const int S_IFREG = 0x8000;
+
+            private bool IsLinkTargetType(int fileType) {
+                var obj = statImpl(info.FullName, follow_symlinks: true);
+                if (obj is stat_result res) {
+                    return (Convert.ToInt32(res.st_mode) & S_IFMT) == fileType;
+                }
+                // like CPython, a broken symlink is neither a file nor a directory
+                if (LightExceptions.GetLightException(obj) is Exception ex) {
+                    if (ex.GetPythonException() is PythonExceptions._OSError { errno: int errno } && errno == PythonErrno.ENOENT) {
+                        return false;
+                    }
+                    throw ex;
+                }
+                return false;
+            }
 
             public bool is_symlink() {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

@@ -5,12 +5,14 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Win32.SafeHandles;
 
@@ -18,6 +20,7 @@ using Mono.Unix;
 using Mono.Unix.Native;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Modules {
     // This file contains exclusively functions used on POSIX systems, heavily dependent on Mono.Unix.
@@ -98,7 +101,7 @@ namespace IronPython.Modules {
                     // set close-on-exec flag
                     int flags = Syscall.fcntl(fd2, FcntlCommand.F_GETFD);
                     if (flags == -1) throw GetLastUnixError();
-    
+
                     flags |= PythonFcntl.FD_CLOEXEC;
                     flags = Syscall.fcntl(fd2, FcntlCommand.F_SETFD, flags);
                     if (flags == -1) throw GetLastUnixError();
@@ -194,6 +197,49 @@ namespace IronPython.Modules {
                 return new uname_result(info.sysname, info.nodename, info.release, info.version, info.machine);
             }
             throw GetLastUnixError();  // rare
+        }
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        [Documentation("Return a string representing the path to which the symbolic link points.")]
+        public static string readlink(CodeContext context, [NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs)
+            => readlinkUnix(path, kwargs).ToFsString(context);
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        [Documentation("")]
+        public static Bytes readlink(CodeContext context, [NotNone] Bytes path, [ParamDictionary] IDictionary<string, object> kwargs)
+            => readlinkUnix(path.ToFsString(context), kwargs);
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        [Documentation("")]
+        public static string readlink(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs)
+            => readlink(context, ConvertToFsString(context, path, nameof(path)), kwargs);
+
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        private static Bytes readlinkUnix(string path, IDictionary<string, object> kwargs) {
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "dir_fd":
+                        if (kwargs[key] is not null) throw new NotImplementedException();
+                        break;
+                    default:
+                        throw PythonOps.TypeError("'{0}' is an invalid keyword argument for readlink()", key);
+                }
+            }
+
+            var buf = new byte[4096];
+            while (true) {
+                long len = Syscall.readlink(path, buf);
+                if (len < 0) throw GetLastUnixError(path);
+                if (len < buf.Length) return Bytes.Make(buf.AsSpan(0, (int)len).ToArray());
+                buf = new byte[buf.Length * 2];
+            }
         }
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]

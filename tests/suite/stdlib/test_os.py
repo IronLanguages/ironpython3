@@ -46,7 +46,6 @@ def load_tests(loader, standard_tests, pattern):
             ]
         if sys.version_info >= (3, 6):
             failing_tests += [
-                test.test_os.BytesWalkTests('test_walk_bottom_up'), # AssertionError
                 test.test_os.ExecTests('test_execv_with_bad_arglist'), # NameError: name 'execv' is not defined
                 test.test_os.ExecTests('test_execve_invalid_env'), # NameError: name 'execve' is not defined
                 test.test_os.ExecTests('test_execve_with_empty_path'), # NameError: name 'execve' is not defined
@@ -55,7 +54,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_os.TestInvalidFD('test_inheritable'), # AttributeError: 'module' object has no attribute 'get_inheritable'
                 test.test_os.TestScandir('test_resource_warning'), # AssertionError: ResourceWarning not triggered
                 test.test_os.UtimeTests('test_utime_invalid_arguments'), # OSError: [WinError 87] The parameter is incorrect.
-                test.test_os.WalkTests('test_walk_bottom_up'), # AssertionError
                 test.test_os.Win32JunctionTests('test_create_junction'), # AttributeError: 'module' object has no attribute 'CreateJunction'
                 test.test_os.Win32JunctionTests('test_unlink_removes_junction'), # AttributeError: 'module' object has no attribute 'CreateJunction'
             ]

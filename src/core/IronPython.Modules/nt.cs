@@ -621,15 +621,17 @@ namespace IronPython.Modules {
         public sealed class DirEntry {
             private readonly CodeContext context;
             private readonly FileSystemInfo info;
+            private readonly string dirPath;
             private readonly bool asBytes;
 
-            internal DirEntry(CodeContext context, FileSystemInfo info, bool asBytes) {
+            internal DirEntry(CodeContext context, string dirPath, FileSystemInfo info, bool asBytes) {
                 this.context = context;
                 this.info = info;
+                this.dirPath = dirPath;
                 this.asBytes = asBytes;
             }
 
-            public object path => asBytes ? info.FullName.ToFsBytes(context) : info.FullName;
+            public object path => asBytes ? Path.Combine(dirPath, info.Name).ToFsBytes(context) : Path.Combine(dirPath, info.Name);
             public object name => asBytes ? info.Name.ToFsBytes(context) : info.Name;
 
             [LightThrowing]
@@ -696,17 +698,19 @@ namespace IronPython.Modules {
         [PythonType, PythonHidden]
         public sealed class ScandirIterator : IEnumerable<DirEntry>, IEnumerator<DirEntry> {
             private readonly CodeContext context;
+            private readonly string path;
             private readonly IEnumerator<FileSystemInfo> enumerator;
             private readonly bool asBytes;
 
-            internal ScandirIterator(CodeContext context, IEnumerable<FileSystemInfo> list, bool asBytes) {
+            internal ScandirIterator(CodeContext context, string path, IEnumerable<FileSystemInfo> list, bool asBytes) {
                 this.context = context;
+                this.path = path;
                 enumerator = list.GetEnumerator();
                 this.asBytes = asBytes;
             }
 
             [PythonHidden]
-            public DirEntry Current => new DirEntry(context, enumerator.Current, asBytes);
+            public DirEntry Current => new DirEntry(context, path, enumerator.Current, asBytes);
 
             object IEnumerator.Current => Current;
 
@@ -728,10 +732,12 @@ namespace IronPython.Modules {
         }
 
         public static ScandirIterator scandir(CodeContext context, string? path = null)
-            => new ScandirIterator(context, ScandirHelper(context, path), asBytes: false);
+            => new ScandirIterator(context, path ?? ".", ScandirHelper(context, path), asBytes: false);
 
-        public static ScandirIterator scandir(CodeContext context, [NotNone] object path)
-            => new ScandirIterator(context, ScandirHelper(context, ConvertToFsString(context, path, nameof(path), orType: "None")), asBytes: true);
+        public static ScandirIterator scandir(CodeContext context, [NotNone] object path) {
+            var fsPath = ConvertToFsString(context, path, nameof(path), orType: "None");
+            return new ScandirIterator(context, fsPath, ScandirHelper(context, fsPath), asBytes: true);
+        }
 
         private static IEnumerable<FileSystemInfo> ScandirHelper(CodeContext context, string? path) {
             if (path == null) {

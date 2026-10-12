@@ -596,11 +596,17 @@ namespace IronPython.Modules {
             "Equivalent to calling stat(...) with follow_symlinks=False.")]
         [LightThrowing]
         public static object lstat([NotNone] string path, [ParamDictionary] IDictionary<string, object> kwargs) {
-            if (kwargs.ContainsKey("follow_symlinks"))
-                throw PythonOps.TypeError("'follow_symlinks' is an invalid keyword argument for lstat(...)");
+            foreach (var key in kwargs.Keys) {
+                switch (key) {
+                    case "dir_fd":
+                        // TODO: implement this
+                        break;
+                    default:
+                        return LightExceptions.Throw(PythonOps.TypeError("'{0}' is an invalid keyword argument for {1}(...)", key, nameof(lstat)));
+                }
+            }
 
-            kwargs["follow_symlinks"] = false;
-            return stat(path, kwargs);
+            return statImpl(path, follow_symlinks: false);
         }
 
         [LightThrowing, Documentation("")]
@@ -628,7 +634,7 @@ namespace IronPython.Modules {
 
             [LightThrowing]
             public object? inode() {
-                var obj = PythonNT.stat(info.FullName, new Dictionary<string, object>());
+                var obj = statImpl(info.FullName, follow_symlinks: false);
                 if (obj is stat_result res) return res.st_ino;
                 return obj;
             }
@@ -637,13 +643,17 @@ namespace IronPython.Modules {
 
             public bool is_file(bool follow_symlinks = true) => !is_dir();
 
-            public bool is_symlink() => info.Attributes.HasFlag(FileAttributes.ReparsePoint) ? throw new NotImplementedException() : false;
+            public bool is_symlink() {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    return info.Attributes.HasFlag(FileAttributes.ReparsePoint) ? throw new NotImplementedException() : false;
+                return info.Attributes.HasFlag(FileAttributes.ReparsePoint);
+            }
 
             [LightThrowing]
             public object? stat(bool follow_symlinks = true) {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return statWindowsImpl(info);
-                return PythonNT.stat(info.FullName, new Dictionary<string, object>());
+                return statImpl(info.FullName, follow_symlinks: follow_symlinks);
             }
 
             public string __repr__(CodeContext context) => $"<DirEntry {PythonOps.Repr(context, name)}>";
@@ -1484,6 +1494,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            return statImpl(path, follow_symlinks);
+        }
+
+        private static object statImpl(string path, bool follow_symlinks) {
             VerifyPath(path, functionName: nameof(stat), argName: nameof(path));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {

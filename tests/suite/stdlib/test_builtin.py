@@ -20,7 +20,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_builtin.BuiltinTest('test_compile'),
             test.test_builtin.BuiltinTest('test_dir'),
             test.test_builtin.BuiltinTest('test_exec_globals'),
-            test.test_builtin.BuiltinTest('test_input'),
             test.test_builtin.BuiltinTest('test_len'),
             test.test_builtin.BuiltinTest('test_open_non_inheritable'), # https://github.com/IronLanguages/ironpython3/issues/1225
         ]

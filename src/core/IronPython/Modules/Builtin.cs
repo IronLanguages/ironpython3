@@ -1280,11 +1280,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType range => DynamicHelpers.GetPythonTypeFromType(typeof(Runtime.PythonRange));
 
-        public static string? input(CodeContext/*!*/ context) {
+        public static string input(CodeContext/*!*/ context) {
             return input(context, null);
         }
 
-        public static string? input(CodeContext/*!*/ context, object? prompt) {
+        public static string input(CodeContext/*!*/ context, object? prompt) {
             var pc = context.LanguageContext;
             var readlineModule = pc.GetModuleByName("readline");
             string? line;
@@ -1297,8 +1297,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
                 line = PythonOps.ReadLineFromSrc(context, context.LanguageContext.SystemStandardIn) as string;
             }
-
-            if (line != null && line.EndsWith('\n')) return line.Substring(0, line.Length - 1);
+            if (line is null || line.Length == 0) throw PythonOps.EofError("EOF when reading a line");
+            if (line.EndsWith('\n')) return line.Substring(0, line.Length - 1);
             return line;
         }
 

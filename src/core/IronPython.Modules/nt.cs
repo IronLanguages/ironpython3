@@ -552,7 +552,7 @@ namespace IronPython.Modules {
                 path = getcwd(context);
             }
 
-            if (path == string.Empty) {
+            if (path.Length == 0) {
                 throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path);
             }
 
@@ -677,11 +677,7 @@ namespace IronPython.Modules {
                 return false;
             }
 
-            public bool is_symlink() {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    return info.Attributes.HasFlag(FileAttributes.ReparsePoint) ? throw new NotImplementedException() : false;
-                return info.Attributes.HasFlag(FileAttributes.ReparsePoint);
-            }
+            public bool is_symlink() => IsSymlink;
 
             [LightThrowing]
             public object? stat(bool follow_symlinks = true) {
@@ -744,7 +740,7 @@ namespace IronPython.Modules {
                 path = getcwd(context);
             }
 
-            if (path == string.Empty) {
+            if (path.Length == 0) {
                 throw GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path);
             }
 
@@ -1536,6 +1532,10 @@ namespace IronPython.Modules {
         }
 
         private static object statImpl(string path, bool follow_symlinks) {
+            if (path.Length == 0) {
+                return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path));
+            }
+
             VerifyPath(path, functionName: nameof(stat), argName: nameof(path));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {

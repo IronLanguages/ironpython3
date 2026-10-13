@@ -217,8 +217,14 @@ namespace IronPython.Modules {
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         [Documentation("")]
-        public static string readlink(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs)
-            => readlink(context, ConvertToFsString(context, path, nameof(path)), kwargs);
+        public static object readlink(CodeContext context, object? path, [ParamDictionary] IDictionary<string, object> kwargs) {
+            return ToFsPath(context, path, nameof(path)) switch {
+                string s => readlink(context, s, kwargs),
+                Extensible<string> es => readlink(context, es.Value, kwargs),
+                Bytes b => readlink(context, b, kwargs),
+                _ => throw new InvalidOperationException(),
+            };
+        }
 
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]

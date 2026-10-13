@@ -133,6 +133,7 @@ namespace IronPython.Modules {
         }
 
         public static void sleep(double tm) {
+            if (tm < 0) throw PythonOps.ValueError("sleep length must be non-negative");
             Thread.Sleep((int)(tm * 1000));
         }
 

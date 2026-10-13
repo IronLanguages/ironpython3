@@ -481,7 +481,7 @@ class NameBindingTest(IronPythonTestCase):
         else:
             self.fail("%s: expected unassigned variable exception, but no exception caught" % function.__name__)
 
-    def _test_attribute_error(function, *args):
+    def _test_attribute_error(self, function, *args):
         try:
             function(*args)
         except AttributeError:
@@ -708,6 +708,31 @@ class NameBindingTest(IronPythonTestCase):
                 pass
             except Error as undefined:
                 pass
+            x = undefined
+
+        self._test_undefined(test)
+
+    def test_except_target_deleted(self):
+        """the except target is deleted at the end of the handler"""
+        def test():
+            undefined = 1
+            try:
+                raise ValueError
+            except ValueError as undefined:
+                pass
+            x = undefined
+
+        self._test_undefined(test)
+
+        def test():
+            undefined = 1
+            def inner():
+                nonlocal undefined
+                try:
+                    raise ValueError
+                except ValueError as undefined:
+                    pass
+            inner()
             x = undefined
 
         self._test_undefined(test)

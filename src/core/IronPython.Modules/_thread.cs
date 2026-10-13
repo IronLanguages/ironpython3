@@ -185,6 +185,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            [Documentation("An obsolete synonym of acquire().")]
+            public bool acquire_lock(bool blocking = true, double timeout = -1)
+                => acquire(blocking, timeout);
+
             public void release(CodeContext/*!*/ context) {
                 if (Interlocked.Exchange(ref curHolder, null) is null) {
                     throw PythonOps.RuntimeError("release unlocked lock");
@@ -196,8 +200,16 @@ namespace IronPython.Modules {
                 }
             }
 
+            [Documentation("An obsolete synonym of release().")]
+            public void release_lock(CodeContext/*!*/ context)
+                => release(context);
+
             public bool locked()
                 => curHolder is not null;
+
+            [Documentation("An obsolete synonym of locked().")]
+            public bool locked_lock()
+                => locked();
 
             public string __repr__() {
                 if (curHolder is null) {

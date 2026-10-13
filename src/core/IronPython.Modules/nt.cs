@@ -1332,7 +1332,7 @@ namespace IronPython.Modules {
 
         [PythonType]
         public sealed class stat_result : PythonTuple {
-            public const int n_fields = 16;
+            public static readonly int n_fields = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 19 : 16;
             public const int n_sequence_fields = 10;
             public const int n_unnamed_fields = 3;
 
@@ -1340,22 +1340,53 @@ namespace IronPython.Modules {
 
             private static object ToInt(BigInteger x) => x.AsInt32(out int i) ? i : (object)x;
 
-            internal stat_result(int mode) : this(new object[10] { mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, null) { }
+            internal stat_result(int mode) : this([ mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], null) { }
 
             [SupportedOSPlatform("linux")]
             [SupportedOSPlatform("macos")]
             internal stat_result(Mono.Unix.Native.Stat stat)
-                : this(new object[16] {Mono.Unix.Native.NativeConvert.FromFilePermissions(stat.st_mode), ToInt(stat.st_ino), ToInt(stat.st_dev), ToInt(stat.st_nlink), ToInt(stat.st_uid), ToInt(stat.st_gid), ToInt(stat.st_size),
-                      ToInt(stat.st_atime), ToInt(stat.st_mtime), ToInt(stat.st_ctime),
-                      stat.st_atime + stat.st_atime_nsec / (double)nanosecondsPerSeconds, stat.st_mtime + stat.st_mtime_nsec / (double)nanosecondsPerSeconds, stat.st_ctime + stat.st_ctime_nsec / (double)nanosecondsPerSeconds,
-                      ToInt(stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec), ToInt(stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec), ToInt(stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec) }, null) { }
+                : this([
+                    Mono.Unix.Native.NativeConvert.FromFilePermissions(stat.st_mode),
+                    ToInt(stat.st_ino),
+                    ToInt(stat.st_dev),
+                    ToInt(stat.st_nlink),
+                    ToInt(stat.st_uid),
+                    ToInt(stat.st_gid),
+                    ToInt(stat.st_size),
+                    ToInt(stat.st_atime),
+                    ToInt(stat.st_mtime),
+                    ToInt(stat.st_ctime),
+                    stat.st_atime + stat.st_atime_nsec / (double)nanosecondsPerSeconds,
+                    stat.st_mtime + stat.st_mtime_nsec / (double)nanosecondsPerSeconds,
+                    stat.st_ctime + stat.st_ctime_nsec / (double)nanosecondsPerSeconds,
+                    ToInt(stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec),
+                    ToInt(stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec),
+                    ToInt(stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec),
+                    ToInt(stat.st_blksize),
+                    ToInt(stat.st_blocks),
+                    ToInt(stat.st_rdev),
+                ], null) { }
 
             [SupportedOSPlatform("windows")]
             internal stat_result(int mode, ulong fileidx, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns)
-                : this(new object[16] { mode, ToInt(fileidx), 0, 0, 0, 0, ToInt(size),
-                      ToInt(st_atime_ns / nanosecondsPerSeconds), ToInt(st_mtime_ns / nanosecondsPerSeconds), ToInt(st_ctime_ns / nanosecondsPerSeconds),
-                      st_atime_ns / (double)nanosecondsPerSeconds, st_mtime_ns / (double)nanosecondsPerSeconds, st_ctime_ns / (double)nanosecondsPerSeconds,
-                      ToInt(st_atime_ns), ToInt(st_mtime_ns), ToInt(st_ctime_ns) }, null) { }
+                : this([
+                    mode,
+                    ToInt(fileidx),
+                    0,
+                    0,
+                    0,
+                    0,
+                    ToInt(size),
+                    ToInt(st_atime_ns / nanosecondsPerSeconds),
+                    ToInt(st_mtime_ns / nanosecondsPerSeconds),
+                    ToInt(st_ctime_ns / nanosecondsPerSeconds),
+                    st_atime_ns / (double)nanosecondsPerSeconds,
+                    st_mtime_ns / (double)nanosecondsPerSeconds,
+                    st_ctime_ns / (double)nanosecondsPerSeconds,
+                    ToInt(st_atime_ns),
+                    ToInt(st_mtime_ns),
+                    ToInt(st_ctime_ns),
+                ], null) { }
 
             private stat_result(object?[] statResult, PythonDictionary? dict) : base(statResult.Take(n_sequence_fields).ToArray()) {
                 if (statResult.Length < n_sequence_fields) {
@@ -1400,6 +1431,26 @@ namespace IronPython.Modules {
                 } else if (TryGetDictValue(dict, "st_ctime_ns", out obj)) {
                     st_ctime_ns = obj;
                 }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    if (statResult.Length >= 17) {
+                        st_blksize = statResult[16];
+                    } else if (TryGetDictValue(dict, "st_blksize", out obj)) {
+                        st_blksize = obj;
+                    }
+
+                    if (statResult.Length >= 18) {
+                        st_blocks = statResult[17];
+                    } else if (TryGetDictValue(dict, "st_blocks", out obj)) {
+                        st_blocks = obj;
+                    }
+
+                    if (statResult.Length >= 19) {
+                        st_rdev = statResult[18];
+                    } else if (TryGetDictValue(dict, "st_rdev", out obj)) {
+                        st_rdev = obj;
+                    }
+                }
             }
 
             public static stat_result __new__(CodeContext context, [NotNone] PythonType cls, [NotNone] IEnumerable<object?> sequence, PythonDictionary? dict = null) {
@@ -1432,6 +1483,21 @@ namespace IronPython.Modules {
             public object? st_mtime_ns { get; }
             public object? st_ctime_ns { get; }
 
+            [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("macos")]
+            public object? st_blksize { get; }
+
+            [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("macos")]
+            public object? st_blocks { get; }
+
+            [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("macos")]
+            public object? st_rdev { get; }
+
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return string.Format("os.stat_result("
                     + "st_mode={0}, "
@@ -1447,13 +1513,18 @@ namespace IronPython.Modules {
             }
 
             public PythonTuple __reduce__() {
-                PythonDictionary timeDict = new PythonDictionary(3);
+                PythonDictionary timeDict = new PythonDictionary(9);
                 timeDict["st_atime"] = _atime;
                 timeDict["st_mtime"] = _mtime;
                 timeDict["st_ctime"] = _ctime;
                 timeDict["st_atime_ns"] = st_atime_ns;
                 timeDict["st_mtime_ns"] = st_mtime_ns;
                 timeDict["st_ctime_ns"] = st_ctime_ns;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    timeDict["st_blksize"] = st_blksize;
+                    timeDict["st_blocks"] = st_blocks;
+                    timeDict["st_rdev"] = st_rdev;
+                }
 
                 return MakeTuple(
                     DynamicHelpers.GetPythonTypeFromType(typeof(stat_result)),

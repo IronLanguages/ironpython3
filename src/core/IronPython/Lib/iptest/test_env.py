@@ -87,6 +87,18 @@ is_peverify_run = False
 if is_cli:
     is_peverify_run = is_debug and "-X:SaveAssemblies" in System.Environment.CommandLine
 
+#--File system of the current working directory
+def is_exfat():
+    """Returns True if the current working directory is on an exFAT drive (e.g. no support for hard links)."""
+    if not is_cli:
+        return False
+    try:
+        clr.AddReference("System.IO.FileSystem.DriveInfo")
+        drive = os.path.splitdrive(os.getcwd())[0]
+        return System.IO.DriveInfo(drive).DriveFormat.lower() == "exfat"
+    except:
+        return False
+
 #--We only run certain time consuming test cases in the stress lab
 is_stress = False
 # if get_env_var("THISISSTRESS")!=None:

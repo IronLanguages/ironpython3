@@ -533,15 +533,15 @@ namespace IronPython.Compiler {
         private Token ReadEof() {
             MarkTokenEnd();
 
-            if (!_dontImplyDedent && _state.IndentLevel > 0) {
-                // before we imply dedents we need to make sure the last thing we returned was
-                // a new line.
+            // don't imply dedents inside an unclosed grouping or after a line continuation, the statement is incomplete
+            if (!_dontImplyDedent && _state.IndentLevel > 0 && GroupingLevel == 0 && !_endContinues) {
+                // before we imply dedents we need to make sure the last thing we returned was a new line
                 if (!_state.LastNewLine) {
                     _state.LastNewLine = true;
                     return Tokens.NewLineToken;
                 }
 
-                // and then go ahead and imply the dedents.
+                // and then go ahead and imply the dedents
                 SetIndent(0, null);
                 _state.PendingDedents--;
                 return Tokens.DedentToken;

@@ -3273,6 +3273,9 @@ namespace IronPython.Compiler {
         private Expression ParseTestListAsExpression() {
             StartParsing();
 
+            // skip leading blank lines and comments
+            MaybeEatNewLine();
+
             Expression expression = ParseTestList();
             EatEndOfInput();
             return expression;

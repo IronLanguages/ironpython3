@@ -543,6 +543,15 @@ class BuiltinsTest2(IronPythonTestCase):
         except NameError:
             pass
 
+        # https://github.com/IronLanguages/ironpython3/issues/1841
+        # leading blank lines and comments are skipped
+        self.assertEqual(eval(" 42"), 42)
+        self.assertEqual(eval("\t42"), 42)
+        self.assertEqual(eval("\n42"), 42)
+        self.assertEqual(eval("\n\n  \n# comment\n42\n\n"), 42)
+        self.assertEqual(eval(compile("\n42", "<string>", "eval")), 42)
+        self.assertRaises(IndentationError, eval, "\t\n 42")
+
         # test one of each expression in all sorts of combinations
         foo = 1
         bar = 2

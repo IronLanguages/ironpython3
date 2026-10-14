@@ -1668,7 +1668,7 @@ namespace IronPython.Compiler {
             public State(State state) {
                 Indent = (int[])state.Indent.Clone();
                 LastNewLine = state.LastNewLine;
-                BracketLevel = state.BraceLevel;
+                BracketLevel = state.BracketLevel;
                 ParenLevel = state.ParenLevel;
                 BraceLevel = state.BraceLevel;
                 PendingDedents = state.PendingDedents;

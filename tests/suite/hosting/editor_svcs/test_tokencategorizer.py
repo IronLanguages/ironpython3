@@ -296,4 +296,21 @@ class TokenCategorizerTest(IronPythonTestCase):
 
         self.assertEqual(actual, expected2)
 
+    def test_tokenizer_restart_grouping(self):
+        from System import Object
+        from Microsoft.Scripting import SourceLocation
+        from Microsoft.Scripting.Hosting import TokenCategorizer
+
+        def tokenize(code, state=None):
+            source = self.engine.CreateScriptSourceFromString(code)
+            categorizer = self.engine.GetService[TokenCategorizer]()
+            categorizer.Initialize(state, source, SourceLocation.MinValue)
+            list(categorizer.ReadTokens(len(source.GetCode())))
+            return categorizer.CurrentState
+
+        for opener, closer in [("(", ")"), ("[", "]"), ("{", "}")]:
+            line1, line2 = "x = %s1,\n" % opener, "2%s\n" % closer
+            state = tokenize(line2, tokenize(line1))
+            self.assertTrue(Object.Equals(state, tokenize(line1 + line2)), opener)
+
 run_test(__name__)

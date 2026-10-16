@@ -1797,7 +1797,8 @@ namespace IronPython.Compiler {
 
                     if (MaybeEat(TokenKind.Dedent)) break;
                     if (PeekToken().Kind == TokenKind.EndOfFile) {
-                        ReportSyntaxError("unexpected end of file");
+                        // don't report an induced error
+                        if (_errorCode == 0) ReportSyntaxError("unexpected end of file");
                         break; // error handling
                     }
                 }
@@ -3272,6 +3273,9 @@ namespace IronPython.Compiler {
 
         private Expression ParseTestListAsExpression() {
             StartParsing();
+
+            // skip leading blank lines and comments
+            MaybeEatNewLine();
 
             Expression expression = ParseTestList();
             EatEndOfInput();

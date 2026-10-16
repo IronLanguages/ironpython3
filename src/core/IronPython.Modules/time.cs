@@ -22,6 +22,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("time", typeof(IronPython.Modules.PythonTime))]
 namespace IronPython.Modules {
@@ -37,9 +38,11 @@ namespace IronPython.Modules {
         private const int IsDaylightSavingsIndex = 8;
         private const int MaxIndex = 9;
 
-        private const double epochDifferenceDouble = 62135596800.0; // Difference between CLS epoch and UNIX epoch, == System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).Ticks / TimeSpan.TicksPerSecond
-        private const long epochDifferenceLong = 62135596800;
+        private const long epochDifferenceLong = 62135596800; // Difference between CLS epoch and UNIX epoch, == System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).Ticks / TimeSpan.TicksPerSecond
+        private const long epochTicks = epochDifferenceLong * TimeSpan.TicksPerSecond;
         private const double ticksPerSecond = (double)TimeSpan.TicksPerSecond;
+        private const double minTimestamp = -epochDifferenceLong; // 0001-01-01T00:00:00Z
+        private const double maxTimestamp = 253402300800 - epochDifferenceLong; // 10000-01-01T00:00:00Z
 
         public static readonly int altzone;
         public static readonly int daylight;
@@ -67,26 +70,56 @@ namespace IronPython.Modules {
             altzone = timezone;
             if (TimeZoneInfo.Local.SupportsDaylightSavingTime) {
                 var now = DateTime.Now;
-                var rule = TimeZoneInfo.Local.GetAdjustmentRules().Where(x => x.DateStart <= now && x.DateEnd >= now).FirstOrDefault();
+                var rule = TimeZoneInfo.Local.GetAdjustmentRules().FirstOrDefault(x => x.DateStart <= now && x.DateEnd >= now);
                 if (rule != null) {
                     altzone = timezone + ((int)-rule.DaylightDelta.TotalSeconds);
                 }
             }
         }
 
-        internal static long TimestampToTicks(double seconds) {
+        internal static double GetTimestamp(object? obj) {
+            double seconds;
+            if (obj is int i) {
+                return i;
+            } else if (obj is double d) {
+                seconds = d;
+            } else if (obj is Extensible<double> ed) {
+                seconds = ed.Value;
+            } else if (PythonOps.TryToIndex(obj, out BigInteger index)) {
+                if (index < long.MinValue || index > long.MaxValue) throw PythonOps.OverflowError("timestamp out of range for platform time_t");
+                // values near long.MaxValue round up to 2**63, which is fine since they are outside the DateTime range anyway
+                return (double)index;
+            } else {
+                throw PythonOps.TypeError("'{0}' object cannot be interpreted as an integer", PythonOps.GetPythonTypeName(obj));
+            }
+
+            if (double.IsNaN(seconds)) throw PythonOps.ValueError("Invalid value NaN (not a number)");
+            if (!(seconds >= long.MinValue && seconds < long.MaxValue)) throw PythonOps.OverflowError("timestamp out of range for platform time_t");
+            return seconds;
+        }
+
+        internal static long TimestampToTicks(object? obj)
+            => TryTimestampToTicks(GetTimestamp(obj), out long ticks) ? ticks : throw PythonOps.OSError(PythonErrno.EINVAL, "Invalid argument");
+
+        internal static bool TryTimestampToTicks(double seconds, out long ticks) {
+            if (!(seconds >= minTimestamp && seconds < maxTimestamp)) {
+                ticks = 0;
+                return false;
+            }
+
             // If everything is converted in one shot, the rounding error surface at
             // microsecond level.
             // e.g: 5399410716.777882 --> 2141-02-06 05:18:36.777881
             //      1399410716.123    --> 2014-05-06 23:11:56.122995
-            // To work around it, second and microseconds are converted
-            // separately
-            return (((long)seconds) + epochDifferenceLong) * TimeSpan.TicksPerSecond + // seconds
-                   (long)(Math.Round(seconds % 1, 6) * TimeSpan.TicksPerSecond); // micro seconds
+            // To work around it, second and microseconds are converted separately
+            ticks = (((long)seconds) + epochDifferenceLong) * TimeSpan.TicksPerSecond + // seconds
+                    (long)(Math.Round(seconds % 1, 6) * TimeSpan.TicksPerSecond); // micro seconds
+            return true;
         }
 
         internal static double TicksToTimestamp(long ticks) {
-            return (ticks / ticksPerSecond) - epochDifferenceDouble;
+            long relativeTicks = ticks - epochTicks;
+            return relativeTicks / TimeSpan.TicksPerSecond + (relativeTicks % TimeSpan.TicksPerSecond) / ticksPerSecond;
         }
 
         private static string AscTimeFormat(DateTime dt)
@@ -151,7 +184,7 @@ namespace IronPython.Modules {
             => localtime(null);
 
         public static PythonTuple localtime(object? seconds) {
-            DateTime utc = seconds is null ? DateTime.UtcNow : TimestampToUtcDateTime(GetTimestampFromObject(seconds));
+            DateTime utc = seconds is null ? DateTime.UtcNow : TimestampToUtcDateTime(seconds);
             return GetDateTimeTuple(UtcToLocalDateTime(utc), TimeZoneInfo.Local.IsDaylightSavingTime(utc));
         }
 
@@ -159,7 +192,7 @@ namespace IronPython.Modules {
             => gmtime(null);
 
         public static PythonTuple gmtime(object? seconds) {
-            DateTime dt = seconds is null ? DateTime.UtcNow : TimestampToUtcDateTime(GetTimestampFromObject(seconds));
+            DateTime dt = seconds is null ? DateTime.UtcNow : TimestampToUtcDateTime(seconds);
             return GetDateTimeTuple(dt, false);
         }
 
@@ -256,17 +289,11 @@ namespace IronPython.Modules {
             return res.ToString();
         }
 
-        internal static DateTime TimestampToUtcDateTime(double timeStamp)
-            => new DateTime(TimestampToTicks(timeStamp), DateTimeKind.Utc);
-
-        /// <summary>
-        /// Converts a POSIX timestamp to the local time.
-        /// </summary>
-        internal static DateTime TimestampToLocalDateTime(double timeStamp)
-            => UtcToLocalDateTime(TimestampToUtcDateTime(timeStamp));
+        private static DateTime TimestampToUtcDateTime(object seconds)
+            => new DateTime(TimestampToTicks(seconds), DateTimeKind.Utc);
 
         // unlike TimeZoneInfo.ConvertTimeFromUtc, this throws instead of clamping when the result is out of range
-        private static DateTime UtcToLocalDateTime(DateTime utc)
+        internal static DateTime UtcToLocalDateTime(DateTime utc)
             => new DateTime(utc.Ticks + TimeZoneInfo.Local.GetUtcOffset(utc).Ticks);
 
         // The standard (non-DST) UTC offset in effect on the given date. Unlike TimeZoneInfo.Local.BaseUtcOffset
@@ -311,19 +338,6 @@ namespace IronPython.Modules {
             }
 
             return dt;
-        }
-
-        private static double GetTimestampFromObject(object seconds) {
-            if (Converter.TryConvertToInt32(seconds, out int intSeconds)) {
-                return intSeconds;
-            }
-
-            if (Converter.TryConvertToDouble(seconds, out double dblVal)) {
-                if (dblVal > long.MaxValue || dblVal < long.MinValue) throw PythonOps.ValueError("unreasonable date/time");
-                return dblVal;
-            }
-
-            throw PythonOps.TypeError("expected int, got {0}", DynamicHelpers.GetPythonType(seconds));
         }
 
         private enum FormatInfoType {

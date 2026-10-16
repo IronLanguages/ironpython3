@@ -317,13 +317,27 @@ namespace IronPython.Modules {
             }
         }
 
+        private static DateTime TimestampToUtcDateTime(object? timestamp) {
+            double seconds = PythonTime.GetTimestamp(timestamp);
+            if (PythonTime.TryTimestampToTicks(seconds, out long ticks)) {
+                return new DateTime(ticks, DateTimeKind.Utc);
+            }
+
+            long year = (long)Math.Floor(seconds / 31556952) + 1970; // 31556952 is the average Gregorian year in seconds
+            year = seconds < 0 ? Math.Min(year, 0) : Math.Max(year, 10000); // can land on 1 or 9999 near the limits
+            throw PythonOps.ValueError("year {0} is out of range", year);
+        }
+
+        private static DateTime TimestampToLocalDateTime(object? timestamp)
+            => PythonTime.UtcToLocalDateTime(TimestampToUtcDateTime(timestamp));
+
         internal enum InputKind { Year, Month, Day, Hour, Minute, Second, Microsecond }
 
         internal static void ValidateInput(InputKind kind, int value) {
             switch (kind) {
                 case InputKind.Year:
                     if (value > DateTime.MaxValue.Year || value < DateTime.MinValue.Year) {
-                        throw PythonOps.ValueError("year is out of range");
+                        throw PythonOps.ValueError("year {0} is out of range", value);
                     }
                     break;
                 case InputKind.Month:
@@ -415,8 +429,8 @@ namespace IronPython.Modules {
                 return new date(min._dateTime.AddDays(d - 1));
             }
 
-            public static date fromtimestamp(double timestamp) {
-                DateTime dt = PythonTime.TimestampToLocalDateTime(timestamp);
+            public static date fromtimestamp(object? timestamp) {
+                DateTime dt = TimestampToLocalDateTime(timestamp);
                 return new date(dt.Year, dt.Month, dt.Day);
             }
 
@@ -703,7 +717,7 @@ namespace IronPython.Modules {
                     throw PythonOps.TypeError("function takes at most 8 arguments ({0} given)", args.Length);
                 }
 
-                for (int i = 0; i < args.Length && i < 7; i++) {    // 8 is offsetof tzinfo
+                for (int i = 0; i < args.Length && i < 7; i++) { // 8 is the offset of tzinfo
                     if (args[i] is not int) {
                         throw PythonOps.TypeError("an integer is required");
                     }
@@ -759,16 +773,16 @@ namespace IronPython.Modules {
                 return new datetime(DateTime.Now, 0, null);
             }
 
-            public static object fromtimestamp(double timestamp, tzinfo? tz = null) {
+            public static object fromtimestamp(object? timestamp, tzinfo? tz = null) {
                 if (tz != null) {
-                    return tz.fromutc(new datetime(PythonTime.TimestampToUtcDateTime(timestamp), tz));
+                    return tz.fromutc(new datetime(TimestampToUtcDateTime(timestamp), tz));
                 } else {
-                    return new datetime(PythonTime.TimestampToLocalDateTime(timestamp));
+                    return new datetime(TimestampToLocalDateTime(timestamp));
                 }
             }
 
-            public static datetime utcfromtimestamp(double timestamp) {
-                return new datetime(PythonTime.TimestampToUtcDateTime(timestamp), null);
+            public static datetime utcfromtimestamp(object? timestamp) {
+                return new datetime(TimestampToUtcDateTime(timestamp), null);
             }
 
             public static new datetime fromordinal(int d) {
@@ -919,17 +933,20 @@ namespace IronPython.Modules {
             }
 
             public object astimezone(tzinfo? tz = null) {
-                // https://github.com/IronLanguages/ironpython3/issues/1136
-                tz ??= timezone.GetTimezone(DateTime.Now, TimeZoneInfo.Local);
-
-                if (_tz == null)
-                    throw PythonOps.ValueError("astimezone() cannot be applied to a naive datetime");
-
-                if (tz == _tz)
+                if (_tz != null && tz == _tz)
                     return this;
 
-                var offset = utcoffset() ?? throw PythonOps.ValueError("astimezone() cannot be applied to a naive datetime");
+#if PYTHON_36_OR_GREATER
+                // naive datetime assumes local time
+                var offset = utcoffset() ?? new timedelta(TimeZoneInfo.Local.GetUtcOffset(InternalDateTime), 0);
+#else
+                var offset = utcoffset() ?? throw PythonOps.ValueError("astimezone() requires an aware datetime");
+#endif
                 datetime utc = this - offset;
+
+                // no tz means the local timezone (https://github.com/IronLanguages/ironpython3/issues/1136)
+                tz ??= timezone.GetTimezone(DateTime.SpecifyKind(utc.InternalDateTime, DateTimeKind.Utc), TimeZoneInfo.Local);
+
                 utc._tz = tz;
                 return tz.fromutc(utc);
             }
@@ -1047,7 +1064,8 @@ namespace IronPython.Modules {
 
             public double timestamp() {
                 if (tzinfo is null) {
-                    return PythonTime.TicksToTimestamp(_dateTime.ToUniversalTime().Ticks);
+                    // _dateTime only holds milliseconds, add back the remaining microseconds
+                    return PythonTime.TicksToTimestamp(_dateTime.AddTicks(_lostMicroseconds * 10).ToUniversalTime().Ticks);
                 } else {
                     return (this - new datetime(new DateTime(1970, 1, 1), timezone.utc)).total_seconds();
                 }

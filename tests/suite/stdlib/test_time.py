@@ -21,7 +21,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_time.TestAsctime4dyear('test_negative'), # ValueError: year is too low
             test.test_time.TimeTestCase('test_asctime'), # ValueError: year is too high
             test.test_time.TimeTestCase('test_asctime_bounding_check'), # ValueError: Hour, Minute, and Second parameters describe an un-representable DateTime.
-            test.test_time.TimeTestCase('test_insane_timestamps'), # ValueError: unreasonable date/time
             test.test_time.TimeTestCase('test_mktime_error'), # ValueError: year is too low
             test.test_time.TimeTestCase('test_strftime_bounding_check'), # ValueError: Hour, Minute, and Second parameters describe an un-representable DateTime.
             test.test_time.TimeTestCase('test_default_values_for_zero'), # AssertionError: '2000 01 01 00 00 00 1 001' != '2000 01 01 00 00 00 6 001'

@@ -1740,6 +1740,21 @@ class foo(object):
             Assert.That(ScriptCodeParseResult.IncompleteStatement, Is.EqualTo(code.GetCodeProperties()));
         }
 
+        [Test]
+        public void ScenarioInteractiveIncompleteGrouping() {
+            // unclosed groupings or line continuations inside a block are incomplete, not invalid
+            foreach (var text in new[] {
+                "def test():\n    t = (1,\n",
+                "if 1:\n    t = [1,\n",
+                "def f():\n    x = {1:\n",
+                "def f():\n    return (1,\n\n",
+                "def f():\n    x = 1 + \\\n",
+            }) {
+                var code = _pe.CreateScriptSourceFromString(text, SourceCodeKind.InteractiveCode);
+                Assert.That(code.GetCodeProperties(), Is.EqualTo(ScriptCodeParseResult.IncompleteStatement), text);
+            }
+        }
+
         public delegate int CP19724Delegate(double p1);
 
         [Test]

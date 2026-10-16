@@ -907,7 +907,7 @@ namespace IronPython.Runtime {
 
         public object __iter__() => this;
 
-        public int __len__() => _size - _pos - 1;
+        public int __length_hint__() => _size - _pos - 1;
 
         #region Pickling
 
@@ -971,14 +971,14 @@ namespace IronPython.Runtime {
 
         public object __iter__() => this;
 
-        public int __len__() => _size - _pos - 1;
+        public int __length_hint__() => _size - _pos - 1;
 
         #region Pickling
 
         public object __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => (object)PythonTuple.MakeTuple(x.Key, x.Value)).ToArray())));
         }
 
         #endregion

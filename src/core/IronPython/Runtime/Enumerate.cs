@@ -366,6 +366,18 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        [return: MaybeNotImplemented]
+        public object __length_hint__() {
+            if (_index < 0) {
+                return 0;
+            }
+            if (!PythonOps.TryLength(_source, out int len)) {
+                return NotImplementedType.Value;
+            }
+            len -= _index;
+            return len >= 0 ? len : 0;
+        }
+
         #region IEnumerator members
 
         object IEnumerator.Current {

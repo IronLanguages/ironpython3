@@ -20,7 +20,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_dict.DictTest('test_equal_operator_modifying_operand'),
             test.test_dict.DictTest('test_errors_in_view_containment_check'),
             test.test_dict.DictTest('test_instance_dict_getattr_str_subclass'),
-            test.test_dict.DictTest('test_itemiterator_pickling'),
             test.test_dict.DictTest('test_merge_and_mutate'),
             test.test_dict.DictTest('test_oob_indexing_dictiter_iternextitem'),
             test.test_dict.DictTest('test_setdefault_atomic'),

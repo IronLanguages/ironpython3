@@ -1463,7 +1463,7 @@ namespace IronPython.Runtime {
         #endregion
 
         public int __length_hint__()
-            => _list is null ? 0 : _list._size - _index - 1;
+            => _list is null ? 0 : Math.Max(0, _list._size - _index - 1);
     }
 
     [PythonType("list_reverseiterator")]
@@ -1492,7 +1492,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public bool MoveNext() {
-            if (_list is null || --_index < 0) {
+            if (_list is null || --_index < 0 || _index >= _list._size) {
                 _list = null;
                 return false;
             }
@@ -1526,7 +1526,7 @@ namespace IronPython.Runtime {
         #endregion
 
         public int __length_hint__()
-            => _list is null ? 0 : _index;
+            => _list is null || _index > _list._size ? 0 : _index;
     }
 
     /// <summary>

@@ -1959,16 +1959,19 @@ namespace IronPython.Modules {
                 return;
             }
 
+            var atime = DateTime.Now;
+            var mtime = DateTime.Now;
+            if (times != null) {
+                // outside the try so that timestamp errors aren't turned into an OSError
+                atime = new DateTime(PythonTime.TimestampToTicks(times[0]), DateTimeKind.Utc);
+                mtime = new DateTime(PythonTime.TimestampToTicks(times[1]), DateTimeKind.Utc);
+            }
+
             try {
                 // Create a DirectoryInfo or FileInfo depending on what it is
                 // Changing the times of a directory does not work with a FileInfo and v.v.
                 var fi = Directory.Exists(path) ? (FileSystemInfo)new DirectoryInfo(path) : new FileInfo(path);
-                var atime = DateTime.Now;
-                var mtime = DateTime.Now;
-                if (times != null) {
-                    atime = new DateTime(PythonTime.TimestampToTicks(Converter.ConvertToDouble(times[0])), DateTimeKind.Utc);
-                    mtime = new DateTime(PythonTime.TimestampToTicks(Converter.ConvertToDouble(times[1])), DateTimeKind.Utc);
-                } else if (ns != null) {
+                if (ns != null) {
                     const long epochDifferenceLong = 62135596800 * TimeSpan.TicksPerSecond;
                     atime = new DateTime(Converter.ConvertToInt64(ns[0]) / 100 + epochDifferenceLong, DateTimeKind.Utc);
                     mtime = new DateTime(Converter.ConvertToInt64(ns[1]) / 100 + epochDifferenceLong, DateTimeKind.Utc);

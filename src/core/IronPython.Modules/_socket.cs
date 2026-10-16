@@ -101,6 +101,7 @@ namespace IronPython.Modules {
             private const int DefaultProtocolType = (int)ProtocolType.Unspecified;
 
             internal Socket _socket;
+            private bool _closed;
             internal string? _hostName;
             private WeakRefTracker? _weakRefTracker;
             private int _referenceCount = 1; // TODO: this is no longer incremented by anything...
@@ -266,6 +267,7 @@ namespace IronPython.Modules {
                             PythonOps.Warn(_context, PythonExceptions.ResourceWarning, $"unclosed {PythonOps.Repr(_context, this)}");
                         } catch { }
                     }
+                    _closed = true;
                 }
             }
 
@@ -321,6 +323,7 @@ namespace IronPython.Modules {
                 + "Return the underlying system handle for this socket (a 64-bit integer)."
                 )]
             public long fileno() {
+                if (_closed) return -1;
                 try {
                     return _socket.Handle.ToInt64();
                 } catch (Exception e) {

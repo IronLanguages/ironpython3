@@ -24,7 +24,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_socket.BasicTCPTest2('testDup'), # https://github.com/IronLanguages/ironpython3/issues/1223
             test.test_socket.BasicTCPTest2('testFromFd'), # https://github.com/IronLanguages/ironpython3/issues/1223
             test.test_socket.GeneralModuleTests('testSendtoErrors'), # TypeError messages all different
-            test.test_socket.GeneralModuleTests('test_csocket_repr'), # https://github.com/IronLanguages/ironpython3/issues/1221
             test.test_socket.GeneralModuleTests('test_uknown_socket_family_repr'), # TODO: figure out
             test.test_socket.InheritanceTest('test_default_inheritable'), # https://github.com/IronLanguages/ironpython3/issues/1225
             test.test_socket.InheritanceTest('test_dup'), # https://github.com/IronLanguages/ironpython3/issues/1223

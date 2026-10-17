@@ -1865,7 +1865,7 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(buffer.IsCContiguous());
 
             var span = buffer.AsReadOnlySpan();
-            int start = GetStartingOffset(span, e);
+            int start = GetStartingOffset(span, ref e);
             int length = (numBytes >= 0 ? numBytes : span.Length) - start;
 
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1914,9 +1914,25 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Gets the starting offset checking to see if the incoming bytes already include a preamble.
         /// </summary>
-        private static int GetStartingOffset(ReadOnlySpan<byte> bytes, Encoding e) {
+        private static int GetStartingOffset(ReadOnlySpan<byte> bytes, ref Encoding e) {
             byte[] preamble = e.GetPreamble();
-            return preamble.Length > 0 && bytes.StartsWith(preamble) ? preamble.Length : 0;
+            if (preamble.Length == 0) return 0;
+            if (bytes.StartsWith(preamble)) return preamble.Length;
+
+            // utf-16 and utf-32 also accept a BOM of the opposite endianness
+            bool isLE = preamble[0] == 0xFF;
+            Encoding? swapped = e switch {
+                UnicodeEncoding => CodecsInfo.Codecs[isLE ? "utf_16be" : "utf_16le"].Value,
+                UTF32Encoding => CodecsInfo.Codecs[isLE ? "utf_32be" : "utf_32le"].Value,
+                _ => null,
+            };
+            if (swapped is null) return 0;
+
+            // the swapped encodings have no preamble, the opposite BOM is the reversed preamble
+            Array.Reverse(preamble);
+            if (!bytes.StartsWith(preamble)) return 0;
+            e = swapped;
+            return preamble.Length;
         }
 
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string? errors) {

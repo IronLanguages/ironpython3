@@ -408,6 +408,14 @@ class BytesTest(IronPythonTestCase):
     def test_decode(self):
         for testType in types:
             self.assertEqual(testType(b'\xff\xfea\x00b\x00c\x00').decode('utf-16'), 'abc')
+            # https://github.com/IronLanguages/ironpython3/issues/1445
+            self.assertEqual(testType(b'\xfe\xff\x00a\x00b\x00c').decode('utf-16'), 'abc')
+            self.assertEqual(testType(b'\xff\xfe\x00\x00a\x00\x00\x00').decode('utf-32'), 'a')
+            self.assertEqual(testType(b'\x00\x00\xfe\xff\x00\x00\x00a').decode('utf-32'), 'a')
+            self.assertEqual(testType(b'\xfe\xff\x00a').decode('utf-16-le'), '\ufffe\u6100')
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                self.assertEqual(testType(b'\xff\xfea\x00').decode('unicode_internal'), '\ufeffa')
 
     def test_endswith(self):
         for testType in types:

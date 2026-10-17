@@ -39,8 +39,12 @@ namespace IronPython.Runtime {
         }
 
         public void __setstate__(int index) {
+            if (index < 0) index = 0;
+            else if (index > _s.Length) index = _s.Length;
             _index = index - 1;
         }
+
+        public int __length_hint__() => _index < _s.Length ? _s.Length - _index - 1 : 0;
 
         #region IEnumerable Members
 

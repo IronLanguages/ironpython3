@@ -5,9 +5,12 @@
 #nullable enable
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
@@ -61,9 +64,76 @@ namespace IronPython.Runtime.Operations {
             return bx > y ? +1 : -1;
         }
 
+        [SpecialName]
+        public static bool LessThan(decimal x, double y) => !double.IsNaN(y) && Compare(x, y) < 0;
+        [SpecialName]
+        public static bool LessThanOrEqual(decimal x, double y) => !double.IsNaN(y) && Compare(x, y) <= 0;
+        [SpecialName]
+        public static bool GreaterThan(decimal x, double y) => !double.IsNaN(y) && Compare(x, y) > 0;
+        [SpecialName]
+        public static bool GreaterThanOrEqual(decimal x, double y) => !double.IsNaN(y) && Compare(x, y) >= 0;
+        [SpecialName]
+        public static bool Equals(decimal x, double y) => !double.IsNaN(y) && Compare(x, y) == 0;
+        [SpecialName]
+        public static bool NotEquals(decimal x, double y) => double.IsNaN(y) || Compare(x, y) != 0;
+
+        internal static int Compare(decimal x, double y) {
+            Debug.Assert(!double.IsNaN(y));
+            if (double.IsPositiveInfinity(y)) return -1;
+            if (double.IsNegativeInfinity(y)) return +1;
+
+            // x == xNum / 10**scale
+            GetParts(x, out BigInteger xNum, out int scale);
+            if (y == 0) return xNum.Sign;
+
+            // y == sign * mantissa * 2**exp
+            DoubleOps.DecomposeDouble(y, out int sign, out long mantissa, out int exp);
+            BigInteger yNum = sign * mantissa;
+
+            BigInteger lhs = exp < 0 ? xNum << -exp : xNum;
+            BigInteger rhs = (exp > 0 ? yNum << exp : yNum) * BigInteger.Pow(10, scale);
+            return lhs.CompareTo(rhs);
+        }
+
+        private static void GetParts(decimal x, out BigInteger num, out int scale) {
+            int[] bits = decimal.GetBits(x);
+            num = ((BigInteger)(uint)bits[2] << 64) | ((BigInteger)(uint)bits[1] << 32) | (uint)bits[0];
+            if (bits[3] < 0) num = -num;
+            scale = (bits[3] >> 16) & 0xFF;
+        }
+
+        // numerator and denominator so System.Decimal can be registered as a numbers.Rational
+
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getnumerator(decimal self) {
+            GetRatio(self, out BigInteger numerator, out _);
+            return numerator;
+        }
+
+        [PropertyMethod, SpecialName]
+        public static BigInteger Getdenominator(decimal self) {
+            GetRatio(self, out _, out BigInteger denominator);
+            return denominator;
+        }
+
+        private static void GetRatio(decimal x, out BigInteger numerator, out BigInteger denominator) {
+            GetParts(x, out BigInteger num, out int scale);
+            BigInteger den = BigInteger.Pow(10, scale);
+            BigInteger gcd = BigInteger.GreatestCommonDivisor(num, den);
+            numerator = num / gcd;
+            denominator = den / gcd;
+        }
+
         public static int __hash__(decimal x) {
-            // TODO: This should be made consistent with Python number hashing
-            return ((BigInteger)x).GetHashCode();
+            // hash the exact value so it agrees with an equal int, float, Fraction or decimal.Decimal
+            if (x == decimal.Truncate(x)) return BigIntegerOps.__hash__((BigInteger)x);
+
+            GetParts(x, out BigInteger num, out int scale);
+            BigInteger modulus = int.MaxValue;
+            BigInteger inverse = BigInteger.ModPow(BigInteger.ModPow(10, scale, modulus), modulus - 2, modulus);
+            int hash = (int)(BigInteger.Abs(num) % modulus * inverse % modulus);
+            if (num.Sign < 0) hash = -hash;
+            return hash == -1 ? -2 : hash;
         }
 
         public static string __format__(CodeContext/*!*/ context, decimal self, [NotNone] string/*!*/ formatSpec) {
@@ -140,7 +210,7 @@ namespace IronPython.Runtime.Operations {
 
                             digits = self.ToString(fmt + "e+00", CultureInfo.InvariantCulture);
                         } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly 
+                            // we're including all the numbers to the right of the decimal we can, we explicitly
                             // round to match CPython's behavior
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
@@ -202,7 +272,7 @@ namespace IronPython.Runtime.Operations {
 
                             digits = self.ToString(fmt + (spec.Type == 'G' ? "E+00" : "e+00"), CultureInfo.InvariantCulture);
                         } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly 
+                            // we're including all the numbers to the right of the decimal we can, we explicitly
                             // round to match CPython's behavior
                             if (self < 1) {
                                 // no implicit 0

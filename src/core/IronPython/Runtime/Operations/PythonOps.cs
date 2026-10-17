@@ -934,6 +934,22 @@ namespace IronPython.Runtime.Operations {
                 throw TypeError("object of type '{0}' has no len()", GetPythonTypeName(o));
             }
 
+            return LengthResultToInt(len, out res, out bigRes);
+        }
+
+        internal static bool TryLength(object? o, out int res) {
+            if (!PythonContext.TryInvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, out object len)) {
+                res = 0;
+                return false;
+            }
+
+            if (LengthResultToInt(len, out res, out _)) {
+                return true;
+            }
+            throw OverflowError("cannot fit 'int' into an index-sized integer");
+        }
+
+        private static bool LengthResultToInt(object len, out int res, out BigInteger bigRes) {
             var indexObj = Index(len);
 
             if (IndexObjectToInt(indexObj, out res, out bigRes)) {
@@ -949,7 +965,7 @@ namespace IronPython.Runtime.Operations {
             if (Length(o, out int res, out _)) {
                 return res;
             }
-            throw new OverflowException();
+            throw OverflowError("cannot fit 'int' into an index-sized integer");
         }
 
         internal static bool TryInvokeLengthHint(CodeContext context, object? sequence, out int hint) {

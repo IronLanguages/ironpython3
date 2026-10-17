@@ -883,14 +883,14 @@ class Python26Test(unittest.TestCase):
 
         #--Complex
         for x in [
-                    System.Double(9), System.Int32(4), System.Boolean(1),
+                    System.Double(9), System.Int32(4), System.Boolean(1), System.Decimal(10),
                     ]:
             self.assertTrue(isinstance(x, Complex))
 
         for x in [
                     #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23147
                     System.Char.MaxValue,
-                    System.Single(8), System.Decimal(10),
+                    System.Single(8),
                     System.SByte(0), System.Byte(1),
                     System.Int16(2), System.UInt16(3), System.UInt32(5), System.Int64(6), System.UInt64(7),
                     ]:
@@ -898,14 +898,14 @@ class Python26Test(unittest.TestCase):
 
         #--Real
         for x in [
-                    System.Double(9), System.Int32(4), System.Boolean(1),
+                    System.Double(9), System.Int32(4), System.Boolean(1), System.Decimal(10),
                     ]:
             self.assertTrue(isinstance(x, Real))
 
         for x in [
                     #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23147
                     System.Char.MaxValue,
-                    System.Single(8), System.Decimal(10),
+                    System.Single(8),
                     System.SByte(0), System.Byte(1),
                     System.Int16(2), System.UInt16(3), System.UInt32(5), System.Int64(6), System.UInt64(7),
                     ]:
@@ -914,7 +914,7 @@ class Python26Test(unittest.TestCase):
 
         #--Rational
         for x in [
-                    System.Int32(4), System.Boolean(1),
+                    System.Int32(4), System.Boolean(1), System.Decimal(10),
                     ]:
             self.assertTrue(isinstance(x, Rational))
 
@@ -922,7 +922,7 @@ class Python26Test(unittest.TestCase):
                     System.Double(9),
                     #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23147
                     System.Char.MaxValue,
-                    System.Single(8), System.Decimal(10),
+                    System.Single(8),
                     System.SByte(0), System.Byte(1),
                     System.Int16(2), System.UInt16(3), System.UInt32(5), System.Int64(6), System.UInt64(7),
                     ]:
@@ -946,14 +946,14 @@ class Python26Test(unittest.TestCase):
 
         #--Number
         for x in [
-                    System.Double(9), System.Int32(4), System.Boolean(1),
+                    System.Double(9), System.Int32(4), System.Boolean(1), System.Decimal(10),
                     ]:
             self.assertTrue(isinstance(x, Number))
 
         for x in [
                     #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23147
                     System.Char.MaxValue,
-                    System.Single(8), System.Decimal(10),
+                    System.Single(8),
                     System.SByte(0), System.Byte(1),
                     System.Int16(2), System.UInt16(3), System.UInt32(5), System.Int64(6), System.UInt64(7),
                     ]:

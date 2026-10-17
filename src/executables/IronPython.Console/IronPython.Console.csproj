@@ -13,11 +13,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\core\IronPython\IronPython.csproj" />
-    <ProjectReference Include="..\..\core\IronPython.Modules\IronPython.Modules.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </ProjectReference>
+    <!-- referencing IronPython.Modules is not strictly needed, but it adds it to ipy.deps.json and includes it in ReadyToRun publishing -->
+    <ProjectReference Include="..\..\core\IronPython.Modules\IronPython.Modules.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' AND !$([MSBuild]::IsOSPlatform('WINDOWS')) ">

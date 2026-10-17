@@ -213,6 +213,69 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
     }
 }
 
+function Ngen([String] $configuration) {
+    if ($global:isUnix) {
+        Write-Warning "ngen is only available on Windows"
+        return
+    }
+
+    $binDir = [System.IO.Path]::Combine($_BASEDIR, "bin", $configuration, "net462")
+    $frameworkDir = [System.IO.Path]::Combine($env:SystemRoot, "Microsoft.NET")
+
+    # ipy.exe is AnyCPU so ngen needs to match the bitness of the process it will run as
+    $targets = @(
+        @{ exe = "ipy.exe"; framework = $(if ([System.Environment]::Is64BitOperatingSystem) { "Framework64" } else { "Framework" }) },
+        @{ exe = "ipy32.exe"; framework = "Framework" }
+    )
+
+    foreach ($target in $targets) {
+        $exePath = [System.IO.Path]::Combine($binDir, $target.exe)
+        if (!(Test-Path $exePath)) {
+            Write-Error "Could not find $exePath, build the $configuration configuration first"
+            $global:Result = -1
+            return
+        }
+
+        $ngen = [System.IO.Path]::Combine($frameworkDir, $target.framework, "v4.0.30319", "ngen.exe")
+
+        # installing the exe also compiles its static dependencies (IronPython, Microsoft.Scripting, etc.),
+        & $ngen install $exePath /nologo
+        if ($LastExitCode -ne 0) { $global:Result = $LastExitCode }
+
+        # but modules loaded at runtime have to be listed explicitly and bound using the exe's configuration
+        $assemblies = @([System.IO.Path]::Combine($binDir, "IronPython.Modules.dll")) + @(Get-ChildItem -Path ([System.IO.Path]::Combine($binDir, "DLLs")) -Filter "IronPython.*.dll" | ForEach-Object { $_.FullName })
+        foreach ($assembly in $assemblies) {
+            & $ngen install $assembly /ExeConfig:$exePath /nologo
+            if ($LastExitCode -ne 0) { $global:Result = $LastExitCode }
+        }
+    }
+}
+
+function ReadyToRun([String] $configuration, [String[]] $frameworks) {
+    foreach ($framework in $frameworks) {
+        if ($framework -eq "net462") {
+            Write-Warning "ReadyToRun is not available for $framework, use the ngen target instead"
+            continue
+        }
+
+        $binDir = [System.IO.Path]::Combine($_BASEDIR, "bin", $configuration, $framework)
+        $workDir = [System.IO.Path]::Combine($_BASEDIR, "obj", "ReadyToRun", $configuration, $framework)
+        $publishDir = [System.IO.Path]::Combine($workDir, "publish")
+
+        # publishing for a specific runtime also produces runtime specific deps.json/runtimeconfig.json files
+        # so build and publish to a separate folder and only copy the precompiled assemblies over the portable build
+        dotnet publish ([System.IO.Path]::Combine($_BASEDIR, "src", "executables", "IronPython.Console", "IronPython.Console.csproj")) -c $configuration -f $framework --use-current-runtime --self-contained false -p:PublishReadyToRun=true "-p:OutputPath=$([System.IO.Path]::Combine($workDir, "build"))/" -o $publishDir -nologo -v minimal
+        if ($LastExitCode -ne 0) {
+            $global:Result = $LastExitCode
+            continue
+        }
+
+        foreach ($assembly in @("ipy.dll", "IronPython.dll", "IronPython.Modules.dll", "Microsoft.Dynamic.dll", "Microsoft.Scripting.dll", "Microsoft.Scripting.Metadata.dll")) {
+            Copy-Item -Path ([System.IO.Path]::Combine($publishDir, $assembly)) -Destination $binDir -Force
+        }
+    }
+}
+
 function Purge() {
     Main "Clean" "Release"
     Main "Clean" "Debug"
@@ -254,12 +317,8 @@ switch -wildcard ($target) {
     "test"          { Test "all" $configuration $frameworks $platform; break }
 
     # utility targets
-    "ngen"          {
-        if(!$global:isUnix) {
-            $imagePath = [System.IO.Path]::Combine($_BASEDIR, "bin\$configuration\net462\ipy.exe")
-            & "${env:SystemRoot}\Microsoft.NET\Framework\v4.0.30319\ngen.exe" install $imagePath
-        }
-    }
+    "ngen"          { Ngen $configuration }
+    "readytorun"    { ReadyToRun $configuration $frameworks }
     "purge"         { Purge }
 
     default { Write-Error "No target '$target'" ; Exit -1 }

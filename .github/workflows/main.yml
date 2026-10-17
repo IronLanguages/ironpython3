@@ -100,6 +100,10 @@ jobs:
       # Build & Test
     - name: Build
       run: pwsh make.ps1
+    - name: NGen
+      if: matrix.os == 'windows-latest' && matrix.framework == 'net462'
+      run: ./make.ps1 ngen
+      shell: pwsh
     - name: Version Information (${{ matrix.framework }})
       run: |
         $ipy = "bin/Release/${{ matrix.framework }}/ipy"

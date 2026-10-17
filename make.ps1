@@ -213,6 +213,44 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
     }
 }
 
+function Ngen([String] $configuration) {
+    if ($global:isUnix) {
+        Write-Warning "ngen is only available on Windows"
+        return
+    }
+
+    $binDir = [System.IO.Path]::Combine($_BASEDIR, "bin", $configuration, "net462")
+    $frameworkDir = [System.IO.Path]::Combine($env:SystemRoot, "Microsoft.NET")
+
+    # ipy.exe is AnyCPU so ngen needs to match the bitness of the process it will run as
+    $targets = @(
+        @{ exe = "ipy.exe"; framework = $(if ([System.Environment]::Is64BitOperatingSystem) { "Framework64" } else { "Framework" }) },
+        @{ exe = "ipy32.exe"; framework = "Framework" }
+    )
+
+    foreach ($target in $targets) {
+        $exePath = [System.IO.Path]::Combine($binDir, $target.exe)
+        if (!(Test-Path $exePath)) {
+            Write-Error "Could not find $exePath, build the $configuration configuration first"
+            $global:Result = -1
+            return
+        }
+
+        $ngen = [System.IO.Path]::Combine($frameworkDir, $target.framework, "v4.0.30319", "ngen.exe")
+
+        # installing the exe also compiles its static dependencies (IronPython, Microsoft.Scripting, etc.),
+        & $ngen install $exePath /nologo
+        if ($LastExitCode -ne 0) { $global:Result = $LastExitCode }
+
+        # but modules loaded at runtime have to be listed explicitly and bound using the exe's configuration
+        $assemblies = @([System.IO.Path]::Combine($binDir, "IronPython.Modules.dll")) + @(Get-ChildItem -Path ([System.IO.Path]::Combine($binDir, "DLLs")) -Filter "IronPython.*.dll" | ForEach-Object { $_.FullName })
+        foreach ($assembly in $assemblies) {
+            & $ngen install $assembly /ExeConfig:$exePath /nologo
+            if ($LastExitCode -ne 0) { $global:Result = $LastExitCode }
+        }
+    }
+}
+
 function Purge() {
     Main "Clean" "Release"
     Main "Clean" "Debug"
@@ -254,12 +292,7 @@ switch -wildcard ($target) {
     "test"          { Test "all" $configuration $frameworks $platform; break }
 
     # utility targets
-    "ngen"          {
-        if(!$global:isUnix) {
-            $imagePath = [System.IO.Path]::Combine($_BASEDIR, "bin\$configuration\net462\ipy.exe")
-            & "${env:SystemRoot}\Microsoft.NET\Framework\v4.0.30319\ngen.exe" install $imagePath
-        }
-    }
+    "ngen"          { Ngen $configuration }
     "purge"         { Purge }
 
     default { Write-Error "No target '$target'" ; Exit -1 }

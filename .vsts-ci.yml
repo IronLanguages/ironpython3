@@ -151,6 +151,9 @@ jobs:
       # Build & Test
       - powershell: ./make.ps1
         displayName: Build
+      - powershell: ./make.ps1 ngen
+        displayName: NGen
+        condition: and(succeeded(), eq(variables.osName, 'Windows'), eq(variables.framework, 'net462'))
       - powershell: ./make.ps1 -frameworks $(framework) test-all
         displayName: Test ($(framework))
 

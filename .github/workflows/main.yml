@@ -104,6 +104,10 @@ jobs:
       if: matrix.os == 'windows-latest' && matrix.framework == 'net462'
       run: ./make.ps1 ngen
       shell: pwsh
+    - name: ReadyToRun
+      if: matrix.framework != 'net462'
+      run: ./make.ps1 -frameworks ${{ matrix.framework }} readytorun
+      shell: pwsh
     - name: Version Information (${{ matrix.framework }})
       run: |
         $ipy = "bin/Release/${{ matrix.framework }}/ipy"

@@ -256,7 +256,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             // we have 52 bits to store the exponent.  In a normalized number the mantissa has an
-            // implied 1 bit, in denormalized mode it doesn't. 
+            // implied 1 bit, in denormalized mode it doesn't.
             int lostBits = highBit - 53;
             bool rounded = false;
             if (lostBits > 0) {
@@ -466,7 +466,7 @@ namespace IronPython.Runtime.Operations {
                     return y > 0 ? double.PositiveInfinity : 0.0;
                 }
             } else if (x < 0 && (Math.Floor(y) != y)) {
-                // the return value is complex when x is negative and y is fractional. 
+                // the return value is complex when x is negative and y is fractional.
                 return ComplexOps.Power(x, y);
             }
 
@@ -529,7 +529,7 @@ namespace IronPython.Runtime.Operations {
                 return BigIntegerOps.__hash__((BigInteger)d);
             }
 
-            DecomposeDouble(d, out int sign, out int exponent, out long mantissa);
+            DecomposeDouble(d, out int sign, out long mantissa, out int exponent);
 
             // make sure the mantissa is not even
             while ((mantissa & 1) == 0) {
@@ -540,21 +540,22 @@ namespace IronPython.Runtime.Operations {
 
             var exp = exponent % 31;
             var invmod = exp == 0 ? 1 : (1 << (31 + exp));
-            return unchecked((int)(sign * (((mantissa % int.MaxValue) * invmod) % int.MaxValue)));
+            var hash = unchecked((int)(sign * (((mantissa % int.MaxValue) * invmod) % int.MaxValue)));
+            return hash == -1 ? -2 : hash;
+        }
 
-            void DecomposeDouble(in double x, out int Sign, out int Exponent, out long Mantissa) {
-                Debug.Assert(x != 0 && !double.IsInfinity(x) && !double.IsNaN(x));
+        internal static void DecomposeDouble(in double x, out int sign, out long mantissa, out int exponent) {
+            Debug.Assert(x != 0 && !double.IsInfinity(x) && !double.IsNaN(x));
 
-                var RawBits = (ulong)BitConverter.DoubleToInt64Bits(x);
-                var RawSign = (int)(RawBits >> 63);
-                var RawExponent = (int)(RawBits >> 52) & 0x7FF;
-                var RawMantissa = (long)(RawBits & 0x000FFFFFFFFFFFFF);
-                var IsDenormal = RawExponent == 0 && RawMantissa != 0;
-                // assumes not infinity, not zero and not NaN
-                Sign = 1 - RawSign * 2;
-                Mantissa = IsDenormal ? RawMantissa : RawMantissa | 0x0010000000000000;
-                Exponent = IsDenormal ? -1074 : RawExponent - 1075;
-            }
+            var rawBits = (ulong)BitConverter.DoubleToInt64Bits(x);
+            var rawSign = (int)(rawBits >> 63);
+            var rawExponent = (int)(rawBits >> 52) & 0x7FF;
+            var rawMantissa = (long)(rawBits & 0x000FFFFFFFFFFFFF);
+            var isDenormal = rawExponent == 0 && rawMantissa != 0;
+            // assumes not infinity, not zero and not NaN
+            sign = 1 - rawSign * 2;
+            mantissa = isDenormal ? rawMantissa : rawMantissa | 0x0010000000000000;
+            exponent = isDenormal ? -1074 : rawExponent - 1075;
         }
 
         #endregion
@@ -630,6 +631,25 @@ namespace IronPython.Runtime.Operations {
             return Compare(x, y) != 0;
         }
 
+        [SpecialName]
+        [return: MaybeNotImplemented]
+        public static NotImplementedType LessThan(double x, decimal y) => NotImplementedType.Value;
+        [SpecialName]
+        [return: MaybeNotImplemented]
+        public static NotImplementedType LessThanOrEqual(double x, decimal y) => NotImplementedType.Value;
+        [SpecialName]
+        [return: MaybeNotImplemented]
+        public static NotImplementedType GreaterThan(double x, decimal y) => NotImplementedType.Value;
+        [SpecialName]
+        [return: MaybeNotImplemented]
+        public static NotImplementedType GreaterThanOrEqual(double x, decimal y) => NotImplementedType.Value;
+        [SpecialName]
+        [return: MaybeNotImplemented]
+        public static NotImplementedType Equals(double x, decimal y) => NotImplementedType.Value;
+        [SpecialName]
+        [return: MaybeNotImplemented]
+        public static NotImplementedType NotEquals(double x, decimal y) => NotImplementedType.Value;
+
         internal const double PositiveZero = 0.0;
         internal const double NegativeZero = -0.0;
 
@@ -686,37 +706,6 @@ namespace IronPython.Runtime.Operations {
             }
             if (by > x) return -1;
             return +1;
-        }
-
-        [SpecialName]
-        public static bool LessThan(double x, decimal y) {
-            return Compare(x, y) < 0;
-        }
-        [SpecialName]
-        public static bool LessThanOrEqual(double x, decimal y) {
-            return Compare(x, y) <= 0;
-        }
-        [SpecialName]
-        public static bool GreaterThan(double x, decimal y) {
-            return Compare(x, y) > 0;
-        }
-        [SpecialName]
-        public static bool GreaterThanOrEqual(double x, decimal y) {
-            return Compare(x, y) >= 0;
-        }
-        [SpecialName]
-        public static bool Equals(double x, decimal y) {
-            return Compare(x, y) == 0;
-        }
-        [SpecialName]
-        public static bool NotEquals(double x, decimal y) {
-            return Compare(x, y) != 0;
-        }
-
-        private static int Compare(double x, decimal y) {
-            if (x > (double)decimal.MaxValue) return +1;
-            if (x < (double)decimal.MinValue) return -1;
-            return ((decimal)x).CompareTo(y);
         }
 
         [SpecialName]
@@ -893,7 +882,7 @@ namespace IronPython.Runtime.Operations {
 
                             digits = self.ToString(fmt + "e+00", CultureInfo.InvariantCulture);
                         } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly 
+                            // we're including all the numbers to the right of the decimal we can, we explicitly
                             // round to match CPython's behavior
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
@@ -952,7 +941,7 @@ namespace IronPython.Runtime.Operations {
 
                             digits = self.ToString(fmt + (spec.Type == 'G' ? "E+00" : "e+00"), CultureInfo.InvariantCulture);
                         } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly 
+                            // we're including all the numbers to the right of the decimal we can, we explicitly
                             // round to match CPython's behavior
                             if (self < 1) {
                                 // no implicit 0
@@ -1056,7 +1045,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             var result = MathUtils.Round(self, ndigits, MidpointRounding.ToEven);
-            
+
             if (double.IsInfinity(result)) {
                 throw PythonOps.OverflowError("rounded value too large to represent");
             }
@@ -1148,7 +1137,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object Power(float x, float y) {
-            // the return value is complex when x is negative and y is fractional. 
+            // the return value is complex when x is negative and y is fractional.
             return DoubleOps.Power(x, y);
         }
 

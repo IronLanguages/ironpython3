@@ -1437,9 +1437,13 @@ class MethodDispatchTest(IronPythonTestCase):
             self.assertRaises(TypeError, cd.ObjectEnumerator, seq)
             self.assertRaises(TypeError, cd.NonGenericEnumerator, seq)
 
-    def test_property_conversions(self):
+    def test_property_conversions_cp24802(self):
+        # cp24802: assigning a float to a Single property narrows like a method call
+        import System
         from IronPythonTest import Dispatch
         d = Dispatch()
+        d.P01 = System.Single(3.14)
+        self.assertEqual(d.P01, System.Single(3.14))
         d.P01 = 2.0
         self.assertEqual(d.P01, 2.0)
 

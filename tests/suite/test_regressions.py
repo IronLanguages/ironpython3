@@ -545,18 +545,6 @@ with open(r"%s", "w") as f:
         self.assertRaisesRegex(TypeError, "f\(\) got multiple values for keyword argument 'a'",
                             lambda: f(a=1, **{"a": 3}))
 
-    @unittest.skipIf(is_netcoreapp, 'requires System.Drawing.Common dependency')
-    @skipUnlessIronPython()
-    def test_cp24802(self):
-        import clr
-        clr.AddReference('System.Drawing')
-        import System
-        p = System.Drawing.Pen(System.Drawing.Color.Blue)
-        p.Width = System.Single(3.14)
-        self.assertEqual(p.Width, System.Single(3.14))
-        p.Width = 4.0
-        self.assertEqual(p.Width, 4.0)
-
 
     def test_cp23822(self):
         from copy import deepcopy

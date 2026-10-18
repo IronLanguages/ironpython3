@@ -13,13 +13,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04, macos-14]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
       # Prerequisites
     - name: Install tools
-      if: matrix.os == 'ubuntu-22.04'
-      run: sudo apt-get -yq install mono-vbnc dos2unix
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get -yq install dos2unix
     - uses: actions/checkout@v6
       with:
         submodules: true
@@ -32,11 +32,7 @@ jobs:
 
       # CI debug information
     - name: Version Information
-      run: |
-        dotnet --info
-        try { msbuild -version } catch { }
-        try { mono --version } catch { }
-      shell: pwsh
+      run: dotnet --info
 
       # Build & package
     - name: Build
@@ -56,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04, macos-14]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         framework: ['net462', 'net8.0', 'net10.0']
         stdlib: ['3.4', '3.6']
 
@@ -86,6 +82,16 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+      # Setup Mono (the runner images no longer include it)
+    - name: Install Mono
+      if: matrix.os != 'windows-latest' && matrix.framework == 'net462'
+      run: |
+        if [ "$RUNNER_OS" = Linux ]; then
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "$HOMEBREW_PREFIX/bin" >> "$GITHUB_PATH"
+        fi
+        brew install mono
+
       # Build & Test
     - name: Build
       run: pwsh make.ps1
@@ -101,8 +107,11 @@ jobs:
       run: |
         $ipy = "bin/Release/${{ matrix.framework }}/ipy"
         if ('${{ matrix.framework }}' -ne 'net462') { dotnet "$ipy.dll" -VV }
-        elseif ($IsWindows) { & "$ipy.exe" -VV }
-        else { mono "$ipy.exe" -VV }
+        elseif ('${{ matrix.os }}' -eq 'windows-latest') { & "$ipy.exe" -VV }
+        else {
+          mono --version
+          mono "$ipy.exe" -VV
+        }
       shell: pwsh
     - name: Test (${{ matrix.framework }})
       run: ./make.ps1 -frameworks ${{ matrix.framework }} test-all

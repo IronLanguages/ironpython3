@@ -8,7 +8,7 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test, is_posix
+from iptest import is_ironpython, generate_suite, run_test, is_posix, is_mono
 
 import test.test_array
 
@@ -71,6 +71,23 @@ def load_tests(loader, standard_tests, pattern):
                 ]
 
         skip_tests = []
+        if is_mono:
+            skip_tests += [
+                # https://github.com/IronLanguages/ironpython3/issues/544
+                test.test_array.ByteTest('test_weakref'),
+                test.test_array.DoubleTest('test_weakref'),
+                test.test_array.FloatTest('test_weakref'),
+                test.test_array.IntTest('test_weakref'),
+                test.test_array.LongLongTest('test_weakref'),
+                test.test_array.LongTest('test_weakref'),
+                test.test_array.ShortTest('test_weakref'),
+                test.test_array.UnicodeTest('test_weakref'),
+                test.test_array.UnsignedByteTest('test_weakref'),
+                test.test_array.UnsignedIntTest('test_weakref'),
+                test.test_array.UnsignedLongLongTest('test_weakref'),
+                test.test_array.UnsignedLongTest('test_weakref'),
+                test.test_array.UnsignedShortTest('test_weakref'),
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

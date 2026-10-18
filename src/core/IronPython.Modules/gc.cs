@@ -44,13 +44,11 @@ namespace IronPython.Modules {
             return ScriptingRuntimeHelpers.True;
         }
 
-        public static int collect(CodeContext context, int generation) {
-            return context.LanguageContext.Collect(generation);
-        }
+        public static void collect(CodeContext context, int generation)
+            => context.LanguageContext.Collect(generation);
 
-        public static int collect(CodeContext context) {
-            return collect(context, GC.MaxGeneration);
-        }
+        public static void collect(CodeContext context)
+            => collect(context, GC.MaxGeneration);
 
         public static void set_debug(object? o) {
             throw PythonOps.NotImplementedError("gc.set_debug isn't implemented");

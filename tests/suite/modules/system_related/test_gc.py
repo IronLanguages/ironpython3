@@ -138,7 +138,7 @@ class GcTest(unittest.TestCase):
 
     def test_collect(self):
         if is_cli:
-            i = gc.collect() # returns # of bytes collected, could be anything
+            self.assertIsNone(gc.collect()) # returns None, we don't track collected objects
         else:
             for debug in debug_list:
                 gc.set_debug(debug)

@@ -4,10 +4,10 @@ jobs:
       matrix:
         linux:
           osName: 'Linux'
-          imageName: 'ubuntu-22.04'
+          imageName: 'ubuntu-latest'
         mac:
           osName: 'macOS'
-          imageName: 'macOS-14'
+          imageName: 'macOS-latest'
         windows:
           osName: 'Windows'
           imageName: 'windows-latest'
@@ -38,14 +38,8 @@ jobs:
           version: '10.0.x'
 
       # Display version info
-      - task: PowerShell@2
+      - script: dotnet --info
         displayName: Version Information
-        inputs:
-          targetType: inline
-          script: |
-            dotnet --info
-            try { msbuild -version } catch { }
-            try { mono --version } catch { }
 
       # Build & Package
       - powershell: ./make.ps1
@@ -86,19 +80,19 @@ jobs:
       matrix:
         linux_net462:
           osName: Linux
-          imageName: ubuntu-22.04
+          imageName: ubuntu-latest
           framework: net462
         linux_net8_0:
           osName: Linux
-          imageName: ubuntu-22.04
+          imageName: ubuntu-latest
           framework: net8.0
         macos_net462:
           osName: macOS
-          imageName: macOS-14
+          imageName: macOS-latest
           framework: net462
         macos_net8_0:
           osName: macOS
-          imageName: macOS-14
+          imageName: macOS-latest
           framework: net8.0
         windows_net462:
           osName: Windows
@@ -110,11 +104,11 @@ jobs:
           framework: net8.0
         linux_net10_0:
           osName: Linux
-          imageName: ubuntu-22.04
+          imageName: ubuntu-latest
           framework: net10.0
         macos_net10_0:
           osName: macOS
-          imageName: macOS-14
+          imageName: macOS-latest
           framework: net10.0
         windows_net10_0:
           osName: Windows
@@ -144,6 +138,16 @@ jobs:
           version: '8.0.x'
         condition: eq(variables.framework, 'net8.0')
 
+      # Setup Mono (the runner images no longer include it)
+      - bash: |
+          if [ "$(osName)" = Linux ]; then
+            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+            echo "##vso[task.prependpath]$HOMEBREW_PREFIX/bin"
+          fi
+          brew install mono
+        displayName: Install Mono
+        condition: and(ne(variables.osName, 'Windows'), eq(variables.framework, 'net462'))
+
       # Build & Test
       - powershell: ./make.ps1
         displayName: Build
@@ -153,6 +157,15 @@ jobs:
       - powershell: ./make.ps1 -frameworks $(framework) readytorun
         displayName: ReadyToRun
         condition: and(succeeded(), ne(variables.framework, 'net462'))
+      - powershell: |
+          $ipy = "bin/Release/$(framework)/ipy"
+          if ('$(framework)' -ne 'net462') { dotnet "$ipy.dll" -VV }
+          elseif ('$(osName)' -eq 'Windows') { & "$ipy.exe" -VV }
+          else {
+            mono --version
+            mono "$ipy.exe" -VV
+          }
+        displayName: Version Information ($(framework))
       - powershell: ./make.ps1 -frameworks $(framework) test-all
         displayName: Test ($(framework))
 

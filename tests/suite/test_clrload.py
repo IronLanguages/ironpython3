@@ -85,10 +85,8 @@ class ClrLoadTest(IronPythonTestCase):
         import System
         def get_gac():
                 process = System.Diagnostics.Process()
-                if is_osx:
-                    process.StartInfo.FileName = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/gacutil"
-                elif is_posix:
-                    process.StartInfo.FileName = "/usr/bin/gacutil"
+                if is_posix:
+                    process.StartInfo.FileName = self.find_mono_tool("gacutil")
                 else:
                     process.StartInfo.FileName = System.IO.Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "gacutil.exe")
                 process.StartInfo.Arguments = "/nologo /l"

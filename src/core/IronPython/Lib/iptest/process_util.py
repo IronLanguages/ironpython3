@@ -45,27 +45,30 @@ class ProcessUtil(object):
                 self.__has_ilasm = True
         return self.__has_ilasm
 
-    def run_csc(self, args):
+    def find_mono_tool(self, name):
+        import shutil
+        path = shutil.which(name)
+        if path:
+            return path
         if is_osx:
-            return self.run_tool("/Library/Frameworks/Mono.framework/Versions/Current/Commands/mcs", args)
-        elif is_posix:
-            return self.run_tool("/usr/bin/mcs", args)
+            return os.path.join("/Library/Frameworks/Mono.framework/Versions/Current/Commands", name)
+        return os.path.join("/usr/bin", name)
+
+    def run_csc(self, args):
+        if is_posix:
+            return self.run_tool(self.find_mono_tool("mcs"), args)
         else:
             return self.run_tool(os.path.join(self.get_clr_dir(),"csc.exe"), args)
 
     def run_vbc(self, args):
-        if is_osx:
-            return self.run_tool("/Library/Frameworks/Mono.framework/Versions/Current/Commands/vbnc", args)
-        elif is_posix:
-            return self.run_tool("/usr/bin/vbnc", args)
+        if is_posix:
+            return self.run_tool(self.find_mono_tool("vbnc"), args)
         else:
             return self.run_tool(os.path.join(self.get_clr_dir(),"vbc.exe"), args)
 
     def run_ilasm(self, args):
-        if is_osx:
-            return self.run_tool("/Library/Frameworks/Mono.framework/Versions/Current/Commands/ilasm", args)
-        elif is_posix:
-            return self.run_tool("/usr/bin/ilasm", args)
+        if is_posix:
+            return self.run_tool(self.find_mono_tool("ilasm"), args)
         else:
             return self.run_tool(os.path.join(self.get_clr_dir(),"ilasm.exe"), args)
 

@@ -3232,14 +3232,10 @@ namespace IronPython.Runtime {
         /// Performs a GC collection including the possibility of freeing weak data structures held onto by the Python runtime.
         /// </summary>
         /// <param name="generation"></param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
-        internal int Collect(int generation) {
+        internal void Collect(int generation) {
             if (generation > GC.MaxGeneration || generation < 0) {
                 throw PythonOps.ValueError("invalid generation {0}", generation);
             }
-
-            // now let the CLR do it's normal collection
-            long start = GC.GetTotalMemory(false);
 
             for (int i = 0; i < 2; i++) {
                 GC.Collect(generation);
@@ -3251,8 +3247,6 @@ namespace IronPython.Runtime {
                     FunctionCode.CleanFunctionCodes(this, true);
                 }
             }
-
-            return (int)Math.Max(start - GC.GetTotalMemory(false), 0);
         }
 
         public DynamicDelegateCreator DelegateCreator {

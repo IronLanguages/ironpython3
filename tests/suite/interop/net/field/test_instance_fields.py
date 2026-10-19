@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import contextlib
 import unittest
 import warnings
 
@@ -14,6 +15,12 @@ class InstanceFieldsTest(IronPythonTestCase):
     def setUp(self):
         super(InstanceFieldsTest, self).setUp()
         self.add_clr_assemblies("fieldtests", "typesamples")
+
+    def _assertWarnsIfValueType(self, t):
+        import clr
+        if clr.GetClrType(t).IsValueType:
+            return self.assertWarnsRegex(RuntimeWarning, 'may result in updating a copy')
+        return contextlib.ExitStack() # no-op context manager
 
     def _test_get_by_instance(self, o):
         import System
@@ -203,7 +210,9 @@ class InstanceFieldsTest(IronPythonTestCase):
         def f1(): v.InstanceInt32Field = "abc"
         def f2(): v.InstanceEnumField = 3
 
-        for f in [f1, f2]: self.assertRaises(TypeError, f)
+        for f in [f1, f2]:
+            with self._assertWarnsIfValueType(t):
+                self.assertRaises(TypeError, f)
 
     def _test_set_by_type(self, o, vf, t):
         import clr
@@ -242,9 +251,7 @@ class InstanceFieldsTest(IronPythonTestCase):
 
         for i in range(1, 25):
             f = eval("f%s" % i)
-            if clr.GetClrType(t).IsValueType:
-                self.assertWarnsRegex(RuntimeWarning, 'may result in updating a copy', f)
-            else:
+            with self._assertWarnsIfValueType(t):
                 f()
 
         if not clr.GetClrType(t).IsValueType:
@@ -259,9 +266,12 @@ class InstanceFieldsTest(IronPythonTestCase):
         def f2(): t.InstanceCharField.__set__(v, "abc")
         def f3(): t.InstanceEnumField.__set__(v, EnumInt32.B)
 
-        self.assertRaisesRegex(TypeError, "expected Int16, got str",  f1)
-        self.assertRaisesRegex(TypeError, "expected string of length 1 when converting to char, got 'abc'", f2)
-        self.assertRaisesRegex(TypeError, "expected EnumInt64, got EnumInt32",  f3)
+        with self._assertWarnsIfValueType(t):
+            self.assertRaisesRegex(TypeError, "expected Int16, got str",  f1)
+        with self._assertWarnsIfValueType(t):
+            self.assertRaisesRegex(TypeError, "expected string of length 1 when converting to char, got 'abc'", f2)
+        with self._assertWarnsIfValueType(t):
+            self.assertRaisesRegex(TypeError, "expected EnumInt64, got EnumInt32",  f3)
 
     def _test_set_by_descriptor(self, o, vf, t):
         import clr
@@ -301,9 +311,7 @@ class InstanceFieldsTest(IronPythonTestCase):
 
         for i in range(1, 25):
             f = eval("f%s" % i)
-            if clr.GetClrType(t).IsValueType:
-                self.assertWarns(RuntimeWarning, f)
-            else:
+            with self._assertWarnsIfValueType(t):
                 f()
 
         if not clr.GetClrType(t).IsValueType:
@@ -473,7 +481,7 @@ class InstanceFieldsTest(IronPythonTestCase):
         self.assertEqual(o.InstanceStructTField.Flag, None)
 
         def tryUpdate():
-            o.InstanceTField="abc"
+            o.InstanceTField = "abc"
 
         self.assertWarnsRegex(RuntimeWarning, 'may result in updating a copy', tryUpdate)
 

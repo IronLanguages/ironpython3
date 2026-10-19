@@ -1703,7 +1703,8 @@ if not hasattr(A, 'Rank'):
     def test_ctor_field_assign_conversions(self):
         from IronPythonTest.BinderTest import ValueTypeWithFields
         res = ValueTypeWithFields(Y=42)
-        res.Y = 42
+        with self.assertWarnsRegex(RuntimeWarning, 'may result in updating a copy'):
+            res.Y = 42
         self.assertEqual(ValueTypeWithFields(Y=42), res)
 
         class myint(int): pass

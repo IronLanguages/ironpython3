@@ -107,7 +107,9 @@ namespace IronPython.Runtime.Binding {
                     break;
             }
 
-            return base.BindDelegate(site, args);
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
 
         private object IntNegate(CallSite site, object value) {

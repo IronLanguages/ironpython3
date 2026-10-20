@@ -37,6 +37,12 @@ namespace IronPython.Runtime.Binding {
 
         //private static Func<CallSite, object, object, object> DoubleAddSite = new Func<CallSite, object, object, object>(DoubleAdd);
 
+        private T LightBindAndCache<T>(object[] args) where T : class {
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
+        }
+
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
             if (args[0] != null &&
                 CompilerHelpers.GetType(args[0]) == CompilerHelpers.GetType(args[1])) {
@@ -83,7 +89,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate<T>(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindModulo<T>(CallSite<T> site, object[] args) where T : class {
@@ -103,7 +109,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
             }
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindMultiply<T>(CallSite<T> site, object[] args) where T : class {
@@ -118,7 +124,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindMultiplyDifferentTypes<T>(CallSite<T> site, object[] args) where T : class {
@@ -140,7 +146,7 @@ namespace IronPython.Runtime.Binding {
             }
 
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
 
@@ -156,7 +162,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindLessThanOrEqual<T>(CallSite<T> site, object[] args) where T : class {
@@ -171,7 +177,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindGreaterThanOrEqual<T>(CallSite<T> site, object[] args) where T : class {
@@ -186,7 +192,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindGreaterThan<T>(CallSite<T> site, object[] args) where T : class {
@@ -201,7 +207,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindLessThan<T>(CallSite<T> site, object[] args) where T : class {
@@ -216,7 +222,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindAnd<T>(CallSite<T> site, object[] args) where T : class {
@@ -231,7 +237,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindOr<T>(CallSite<T> site, object[] args) where T : class {
@@ -246,7 +252,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindAdd<T>(CallSite<T> site, object[] args) where T : class {
@@ -290,7 +296,7 @@ namespace IronPython.Runtime.Binding {
                         break;
                 }
             }
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindSubtract<T>(CallSite<T> site, object[] args) where T : class {
@@ -313,7 +319,7 @@ namespace IronPython.Runtime.Binding {
                         break;
                 }
             }
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindEqual<T>(CallSite<T> site, object[] args) where T : class {
@@ -334,7 +340,7 @@ namespace IronPython.Runtime.Binding {
                         return (T)(object)new Func<CallSite, object, object, object>(IntEqual);
                 }
             }
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private T BindNotEqual<T>(CallSite<T> site, object[] args) where T : class {
@@ -355,7 +361,7 @@ namespace IronPython.Runtime.Binding {
                         return (T)(object)new Func<CallSite, object, object, object>(IntNotEqual);
                 }
             }
-            return base.BindDelegate(site, args);
+            return LightBindAndCache<T>(args);
         }
 
         private object StringModulo(CallSite site, string self, PythonDictionary other) {

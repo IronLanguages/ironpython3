@@ -331,7 +331,9 @@ namespace IronPython.Runtime.Binding {
             }
 
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Convert " + Type.FullName + " " + CompilerHelpers.GetType(args[0]) + " " + typeof(T));
-            return base.BindDelegate(site, args);
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
 
         public string StringConversion(CallSite site, object value) {

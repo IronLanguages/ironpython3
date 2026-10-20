@@ -8,7 +8,7 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, generate_suite, run_test, is_mono
 
 import test.test_weakset
 
@@ -22,6 +22,10 @@ def load_tests(loader, standard_tests, pattern):
         ]
 
         skip_tests = []
+        if is_mono:
+            skip_tests += [
+                test.test_weakset.TestWeakSet('test_union'), # https://github.com/IronLanguages/ironpython3/issues/544
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

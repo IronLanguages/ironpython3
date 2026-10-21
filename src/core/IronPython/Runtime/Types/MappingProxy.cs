@@ -13,12 +13,29 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     [PythonType("mappingproxy")]
     public sealed class MappingProxy : IDictionary<object?, object?>, IDictionary {
         internal PythonDictionary GetDictionary(CodeContext context) => dictionary ?? type!.GetMemberDictionary(context, false);
+
+        private bool TryGetValue(CodeContext context, object? key, out object? value) {
+            if (dictionary is not null) {
+                return dictionary.TryGetValue(key, out value);
+            }
+
+            string? name = key as string ?? (key as Extensible<string>)?.Value;
+            if (name is not null && type!.TryLookupSlot(context, name, out PythonTypeSlot slot)) {
+                value = slot is PythonTypeUserDescriptorSlot dts ? dts.Value : slot;
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
 
         private readonly PythonDictionary? dictionary;
         private readonly PythonType? type;
@@ -36,7 +53,7 @@ namespace IronPython.Runtime.Types {
 
         public int __len__(CodeContext context) => GetDictionary(context).Count;
 
-        public bool __contains__(CodeContext/*!*/ context, object? value) => GetDictionary(context).TryGetValue(value, out _);
+        public bool __contains__(CodeContext/*!*/ context, object? value) => TryGetValue(context, value, out _);
 
         public string/*!*/ __str__(CodeContext/*!*/ context) => DictionaryOps.__repr__(context, this);
 
@@ -58,7 +75,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public object? get(CodeContext/*!*/ context, object? k, object? d = null) {
-            if (GetDictionary(context).TryGetValue(k, out object? res)) {
+            if (TryGetValue(context, k, out object? res)) {
                 return res;
             }
 
@@ -111,7 +128,7 @@ namespace IronPython.Runtime.Types {
         #region IDictionary Members
 
         public object? this[object? key] {
-            get => GetDictionary(DefaultContext.Default)[key];
+            get => TryGetValue(DefaultContext.Default, key, out object? value) ? value : throw PythonOps.KeyError(key);
             [PythonHidden]
             set => throw PythonOps.TypeError("'mappingproxy' object does not support item assignment");
         }
@@ -187,7 +204,7 @@ namespace IronPython.Runtime.Types {
 
         bool IDictionary<object?, object?>.Remove(object? key) => throw new InvalidOperationException("mappingproxy is read-only");
 
-        bool IDictionary<object?, object?>.TryGetValue(object? key, out object? value) => GetDictionary(DefaultContext.Default).TryGetValue(key, out value);
+        bool IDictionary<object?, object?>.TryGetValue(object? key, out object? value) => TryGetValue(DefaultContext.Default, key, out value);
 
         ICollection<object?> IDictionary<object?, object?>.Values => GetDictionary(DefaultContext.Default).Values;
 

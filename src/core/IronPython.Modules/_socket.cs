@@ -11,6 +11,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -1070,6 +1071,7 @@ namespace IronPython.Modules {
             PythonList aliases;
             PythonList ips = new PythonList();
 
+            host = EncodeHostName(host);
             if (IPAddress.TryParse(host, out IPAddress? addr)) {
                 if (AddressFamily.InterNetwork == addr.AddressFamily) {
                     hostname = host;
@@ -1971,6 +1973,29 @@ namespace IronPython.Modules {
             }
         }
 
+        private static readonly IdnMapping _idnMapping = new IdnMapping();
+
+        /// <summary>
+        /// Convert an internationalized host name to its ASCII-compatible (punycode) form.
+        /// </summary>
+        /// <remarks>
+        /// CPython encodes host names with the "idna" codec before resolving them. .NET does the
+        /// equivalent only on Windows; on POSIX the name reaches getaddrinfo as raw UTF-8, which
+        /// the resolver usually fails to find. ASCII host names are returned unchanged.
+        /// </remarks>
+        private static string EncodeHostName(string host) {
+            foreach (char c in host) {
+                if (c > 0x7f) {
+                    try {
+                        return _idnMapping.GetAscii(host);
+                    } catch (ArgumentException ex) {
+                        throw PythonOps.UnicodeError("encoding with 'idna' codec failed (UnicodeError: {0})", ex.Message);
+                    }
+                }
+            }
+            return host;
+        }
+
         /// <summary>
         /// Return the IP address associated with host, with optional address family checking.
         /// host may be either a name or an IP address (in string form).
@@ -1992,7 +2017,7 @@ namespace IronPython.Modules {
         /// converted to an IP address (e.g. through a name lookup failure).
         /// </summary>
         private static IPAddress[] HostToAddresses(CodeContext/*!*/ context, string host, AddressFamily family) {
-            host = ConvertSpecialAddresses(host);
+            host = EncodeHostName(ConvertSpecialAddresses(host));
             try {
                 bool numeric = true;
                 int dotCount = 0;

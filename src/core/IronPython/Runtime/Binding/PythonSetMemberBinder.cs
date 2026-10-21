@@ -8,6 +8,7 @@ using System;
 using System.Dynamic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Binding;
@@ -67,7 +68,9 @@ namespace IronPython.Runtime.Binding {
                 PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject Set");
             }
 
-            return base.BindDelegate(site, args);
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
 
         public PythonContext/*!*/ Context {

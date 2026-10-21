@@ -46,6 +46,14 @@ namespace IronPythonTest.Cases {
 
         private static readonly string IRONPYTHONPATH = GetIronPythonPath();
 
+        static CaseExecuter() {
+            // Mono writes runtime warnings to stdout (e.g. "abort_threads: Failed aborting id" during shutdown),
+            // which breaks tests that check the output of child processes
+            if (ClrModule.IsMono && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MONO_LOG_DEST"))) {
+                Environment.SetEnvironmentVariable("MONO_LOG_DEST", "/dev/null");
+            }
+        }
+
         private ScriptEngine defaultEngine;
 
         public static ScriptEngine CreateEngine(TestOptions options) {

@@ -792,7 +792,9 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            var rule = this.LightBind<T>(args, _newType.PythonContext.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
 
         class FastInitSite {

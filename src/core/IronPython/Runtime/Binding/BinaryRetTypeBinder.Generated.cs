@@ -52,7 +52,9 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate<T>(site, args);
+            var rule = this.LightBind<T>(args, _convBinder.Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
         /*
         private Func<CallSite, object, object, bool> GetStringObjectObjectDelegate(BinaryOperationBinder opBinder) {

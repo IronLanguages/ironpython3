@@ -73,6 +73,12 @@ namespace IronPython.Runtime.Binding {
             return Fallback(target, cc);
         }
 
+        private T LightBindAndCache<T>(object[] args) where T : class {
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
+        }
+
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
             Debug.Assert(args[1].GetType() == typeof(CodeContext));
 
@@ -84,7 +90,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IFastGettable");
-                return base.BindDelegate<T>(site, args);
+                return LightBindAndCache<T>(args);
             }
 
             if (args[0] is IPythonObject pyObj && !(args[0] is IProxyObject)) {
@@ -98,7 +104,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject Get");
-                return base.BindDelegate<T>(site, args);
+                return LightBindAndCache<T>(args);
             }
 
             if (args[0] != null) {
@@ -153,11 +159,11 @@ namespace IronPython.Runtime.Binding {
                 if (res != null) {
                     return (T)(object)res;
                 }
-                return base.BindDelegate<T>(site, args);
+                return LightBindAndCache<T>(args);
             }
 
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast " + IsNoThrow + " " + CompilerHelpers.GetType(args[0]));
-            return this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            return LightBindAndCache<T>(args);
         }
 
         private class FastErrorGet<TSelfType> : FastGetBase {

@@ -51,7 +51,9 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate(site, args);
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
         
         private object DictAssign(CallSite site, object dict, object key, object value) {

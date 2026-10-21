@@ -264,7 +264,7 @@ function ReadyToRun([String] $configuration, [String[]] $frameworks) {
 
         # publishing for a specific runtime also produces runtime specific deps.json/runtimeconfig.json files
         # so build and publish to a separate folder and only copy the precompiled assemblies over the portable build
-        dotnet publish ([System.IO.Path]::Combine($_BASEDIR, "src", "executables", "IronPython.Console", "IronPython.Console.csproj")) -c $configuration -f $framework --use-current-runtime --self-contained false -p:PublishReadyToRun=true "-p:OutputPath=$([System.IO.Path]::Combine($workDir, "build"))/" -o $publishDir -nologo -v minimal
+        dotnet publish ([System.IO.Path]::Combine($_BASEDIR, "src", "executables", "IronPython.Console", "IronPython.Console.csproj")) -c $configuration -f $framework --use-current-runtime --self-contained false -p:PublishReadyToRun=true "-p:BaseOutputPath=$([System.IO.Path]::Combine($workDir, "build"))/" -o $publishDir -nologo -v minimal
         if ($LastExitCode -ne 0) {
             $global:Result = $LastExitCode
             continue

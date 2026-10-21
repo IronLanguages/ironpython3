@@ -66,7 +66,9 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.BindDelegate<T>(site, args);
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
 
         private object ListIndex(CallSite site, PythonList target, object index) {

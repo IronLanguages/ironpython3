@@ -115,7 +115,9 @@ namespace IronPython.Runtime.Binding {
                     break;
                 
             }
-            return base.BindDelegate<T>(site, args);
+            var rule = this.LightBind<T>(args, Context.Options.CompilationThreshold);
+            CacheTarget(rule);
+            return rule;
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, PythonList value) {

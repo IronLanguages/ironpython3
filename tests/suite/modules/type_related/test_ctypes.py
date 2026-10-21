@@ -105,6 +105,15 @@ class CTypesTest(IronPythonTestCase):
         self.assertEqual(c[:], b[1:])
         self.assertRaisesMessage(TypeError, self.readonly_error_msg, (c_char * 15).from_buffer, b, sizeof(c_char))
 
+    def test_funcptr_field_keepalive(self):
+        PROC = CFUNCTYPE(c_int, c_int)
+        class S(Structure):
+            _fields_ = [("p", PROC)]
+
+        f = S(PROC(lambda a: a)).p
+        gc.collect() # f must keep the struct alive, try to collect it
+        self.assertEqual(f(10), 10)
+
     def test_bitfield_bool(self):
         """
         Tests pertaining of bitfields of type c_bool

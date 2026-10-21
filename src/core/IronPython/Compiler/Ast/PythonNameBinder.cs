@@ -565,7 +565,8 @@ namespace IronPython.Compiler.Ast {
         // ForEachStatement
         public override bool Walk(ForStatement node) {
             node.Parent = _currentScope;
-            if (_currentScope is FunctionDefinition) {
+            // generators are invoked for each item so the adaptive compiler picks up the hot ones
+            if (_currentScope is FunctionDefinition { IsGenerator: false }) {
                 _currentScope.ShouldInterpret = false;
             }
 

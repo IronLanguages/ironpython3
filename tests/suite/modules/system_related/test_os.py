@@ -3,6 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import os
+import unittest
 
 from iptest import IronPythonTestCase, is_osx, is_linux, is_windows, run_test
 
@@ -54,5 +55,22 @@ class OsTest(IronPythonTestCase):
             f.close()
         finally:
             os.close(fd)
+
+    @unittest.skipIf(is_windows, "umask is emulated on Windows")
+    def test_umask(self):
+        old = os.umask(0o022)
+        try:
+            self.assertEqual(os.umask(0o077), 0o022)
+            self.assertEqual(os.umask(0o022), 0o077)
+
+            os.umask(0o027)
+            try:
+                fd = os.open(self.temp_file, os.O_CREAT | os.O_WRONLY, 0o666)
+                os.close(fd)
+                self.assertEqual(os.stat(self.temp_file).st_mode & 0o777, 0o640)
+            finally:
+                self.delete_files(self.temp_file)
+        finally:
+            os.umask(old)
 
 run_test(__name__)

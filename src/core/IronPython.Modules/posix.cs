@@ -125,6 +125,12 @@ namespace IronPython.Modules {
 
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
+        private static int umaskUnix(int mask)
+            => (int)NativeConvert.FromFilePermissions(Syscall.umask(NativeConvert.ToFilePermissions((uint)mask)));
+
+
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
         private static void linkUnix(string src, string dst) {
             if (Syscall.link(src, dst) == 0) return;
             throw GetLastUnixError(src, dst);

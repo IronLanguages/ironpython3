@@ -1898,6 +1898,10 @@ namespace IronPython.Modules {
         private static readonly object _umaskKey = new object();
 
         public static int umask(CodeContext/*!*/ context, int mask) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                return umaskUnix(mask & 0x1FF);
+            }
+
             mask &= 0x180;
             object oldMask = context.LanguageContext.GetSetModuleState(_umaskKey, mask);
             if (oldMask == null) {

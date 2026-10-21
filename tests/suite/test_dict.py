@@ -1033,4 +1033,21 @@ class DictTest(IronPythonTestCase):
         m[u64] = 'b'
         self.assertEqual(m[9223372036854775808], 'b')
 
+    def test_mappingproxy_str_subclass_key(self):
+        class S(str): pass
+        class C:
+            x = 1
+
+        for d, key, value in ((str.__dict__, '__len__', str.__dict__['__len__']), (C.__dict__, 'x', 1)):
+            self.assertIn(S(key), d)
+            self.assertIs(d.get(S(key)), value)
+            self.assertIs(d[S(key)], value)
+            self.assertNotIn(S('nope'), d)
+            with self.assertRaises(KeyError):
+                d[S('nope')]
+
+        for key in (1, None, b'x'):
+            self.assertNotIn(key, C.__dict__)
+            self.assertIsNone(C.__dict__.get(key))
+
 run_test(__name__)

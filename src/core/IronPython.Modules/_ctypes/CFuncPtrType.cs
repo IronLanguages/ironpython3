@@ -39,7 +39,7 @@ namespace IronPython.Modules {
             private Type _reverseDelegateType;
             private static Dictionary<DelegateCacheKey, Type> _reverseDelegates = new Dictionary<DelegateCacheKey, Type>();
 
-            //from_buffer_copy,  from_param, from_address, from_buffer, __doc__ __mul__ __rmul__ in_dll __new__ 
+            //from_buffer_copy,  from_param, from_address, from_buffer, __doc__ __mul__ __rmul__ in_dll __new__
             public CFuncPtrType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
 
@@ -109,7 +109,9 @@ namespace IronPython.Modules {
                     return funcAddr.ToPython();
                 }
 
-                return CreateInstance(Context.SharedContext, funcAddr);
+                _CFuncPtr res = (_CFuncPtr)CreateInstance(Context.SharedContext, funcAddr);
+                res.MemHolder.AddObject(offset, readingFrom); // TODO: CPython keeps the owner in _b_base_ instead
+                return res;
             }
 
             object INativeType.SetValue(MemoryHolder address, int offset, object value) {
@@ -193,7 +195,7 @@ namespace IronPython.Modules {
                 return _reverseDelegate.CreateDelegate(_reverseDelegateType, constantPool);
             }
 
-           
+
             private void MakeReverseDelegateWorker(CodeContext context) {
                 Type[] sigTypes;
                 Type[] callSiteType;
@@ -229,7 +231,7 @@ namespace IronPython.Modules {
                 // load code context
                 int contextIndex = constantPool.Count;
                 Debug.Assert(pc.SharedContext != null);
-                constantPool.Add(pc.SharedContext);                
+                constantPool.Add(pc.SharedContext);
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldc_I4, contextIndex);
                 ilGen.Emit(OpCodes.Ldelem_Ref);
@@ -260,7 +262,7 @@ namespace IronPython.Modules {
                     ilGen.Emit(OpCodes.Pop);
                 }
 
-                // } catch(Exception e) { 
+                // } catch(Exception e) {
                 // emit the cleanup code
 
                 ilGen.BeginCatchBlock(typeof(Exception));

@@ -335,12 +335,12 @@ namespace IronPython.Modules {
         public static PythonTuple unicode_internal_decode(CodeContext context, [NotNone] IBufferProtocol input, string? errors = null) {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
             using IPythonBuffer buffer = input.GetBuffer();
-            return DoDecode(context, "unicode-internal", Encoding.Unicode, buffer, errors).ToPythonTuple();
+            return DoDecode(context, "unicode-internal", UnicodeInternalEncoding, buffer, errors).ToPythonTuple();
         }
 
         public static PythonTuple unicode_internal_encode(CodeContext context, [NotNone] string input, string? errors = null) {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
-            return DoEncode(context, "unicode-internal", Encoding.Unicode, input, errors, false).ToPythonTuple();
+            return DoEncode(context, "unicode-internal", UnicodeInternalEncoding, input, errors, false).ToPythonTuple();
         }
 
         public static PythonTuple unicode_internal_encode(CodeContext context, [NotNone] IBufferProtocol input, string? errors = null) {
@@ -349,6 +349,9 @@ namespace IronPython.Modules {
             var bytes = Bytes.Make(buffer.AsReadOnlySpan().ToArray());
             return PythonTuple.MakeTuple(bytes, bytes.Count);
         }
+
+        // native byte order of the internal UTF-16 string representation
+        private static Encoding UnicodeInternalEncoding => BitConverter.IsLittleEndian ? Utf16LeEncoding : Utf16BeEncoding;
 
         #endregion
 

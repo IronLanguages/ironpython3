@@ -701,21 +701,24 @@ class IsInstanceTest(IronPythonTestCase):
         # But writes to value type fields should fail with ValueError.
         success = 0
         try:
-            direct_vt.width = 5
+            with self.assertWarnsRegex(RuntimeWarning, 'may result in updating a copy'):
+                direct_vt.width = 5
         except ValueError:
             success = 1
         self.assertTrue(success == 0 and direct_vt.width == 1)
 
         success = 0
         try:
-            embedded_vt.size.width = 5
+            with self.assertWarnsRegex(RuntimeWarning, 'may result in updating a copy'):
+                embedded_vt.size.width = 5
         except ValueError:
             success = 1
         self.assertTrue(success == 0 and embedded_vt.size.width == 3)
 
         success = 0
         try:
-            embedded_vt.Size.width = 5
+            with self.assertWarnsRegex(RuntimeWarning, 'may result in updating a copy'):
+                embedded_vt.Size.width = 5
         except ValueError:
             success = 1
         self.assertTrue(success == 0 and embedded_vt.Size.width == 3)

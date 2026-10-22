@@ -687,11 +687,9 @@ namespace IronPython.Runtime {
             if (context.EnableTracing && _lambda != null) {
                 if (_tracingLambda == null) {
                     if (!forceCreation) {
-                        if (_lambda is Compiler.Ast.ClassDefinition) return; // ClassDefinition does not have the same signature as call targets
                         // the user just called sys.settrace(), don't force re-compilation of every method in the system.  Instead
                         // we'll just re-compile them as they're invoked.
-                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
-                        SetTarget(target);
+                        SetLazyTarget();
                         return;
                     }
                     _tracingLambda = GetGeneratorOrNormalLambdaTracing(context);
@@ -708,8 +706,7 @@ namespace IronPython.Runtime {
                         // we cannot create the delegate when forceCreation is false because we hold the
                         // _CodeCreateAndUpdateDelegateLock and compiling the delegate may create a FunctionCode
                         // object which requires the lock.
-                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
-                        SetTarget(target);
+                        SetLazyTarget();
                         return;
                     }
                     _normalDelegate = CompileLambda(GetGeneratorOrNormalLambda(), new TargetUpdaterForCompilation(context, this).SetCompiledTarget);
@@ -721,6 +718,23 @@ namespace IronPython.Runtime {
             finalTarget = AddRecursionCheck(context, finalTarget);
 
             SetTarget(finalTarget);
+        }
+
+        /// <summary>
+        ///   Sets a target that creates the delegate for the current mode (tracing or not) when it is first needed.
+        /// </summary>
+        /// <remarks>
+        ///   A function gets a call target that compiles its delegate on the first call. A class body cannot get one, since its
+        ///   delegate has a different signature (<c>Func&lt;CodeContext, CodeContext&gt;</c>); it gets a null target instead, as when it
+        ///   has not been compiled yet, which makes <see cref="PythonOps.MakeClass"/> compile it the next time the class is created.
+        /// </remarks>
+        private void SetLazyTarget() {
+            if (_lambda is Compiler.Ast.ClassDefinition) {
+                SetTarget(null);
+            } else {
+                PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
+                SetTarget(target);
+            }
         }
 
         /// <summary>

@@ -754,11 +754,15 @@ namespace IronPython.Runtime {
             // Under .NET-async, async bodies are lowered before they reach here and must NOT go through the generator rewriter:
             //  * plain async (Coroutine, no Generator) via AsyncExpression,
             //  * async generators (Generator+Coroutine) via AsyncEnumerableExpression.
-            //  Only a plain generator (Generator without Coroutine) is rewritten here.
-            if ((Flags & FunctionAttributes.Generator) == 0 || (Flags & FunctionAttributes.Coroutine) != 0) {
-#else
-            if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
+            // As in CPython, calling an async function only creates the coroutine (or async generator) object, so the outer factory lambda
+            // is not traced at all. The lowered async body is traced instead, by its own transform, whenever it runs: its Async/AsyncEnumerable
+            // node is swapped for a copy carrying this code's DebugContext and payload. See async-tracing-proposal.md.
+            if ((Flags & FunctionAttributes.Coroutine) != 0) {
+                var lambda = (LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda());
+                return (LambdaExpression)new AsyncDebugHookInjector(context.DebugContext, debugInfo).Visit(lambda);
+            }
 #endif
+            if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
                 return context.DebugContext.TransformLambda((LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda()), debugInfo);
             }
 
@@ -1204,4 +1208,35 @@ namespace IronPython.Runtime {
             }
         }
     }
+
+#if FEATURE_NET_ASYNC
+    /// <summary>
+    ///   Swaps a lowered <see cref="AsyncExpression"/> / <see cref="AsyncEnumerableExpression"/> for a debug-enabled copy.
+    /// </summary>
+    /// <remarks>
+    ///   Used to build the tracing variant of an async function: the debug-enabled node instruments its own body when reduced, so the
+    ///   async body becomes traceable while the outer factory stays untraced. A function's own async node is the only one in its lambda
+    ///   — nested defs compile to their own lambdas/codes — so a single replacement is made, and the node is not descended into.
+    /// </remarks>
+    internal sealed class AsyncDebugHookInjector : ExpressionVisitor {
+        private readonly DebugContext _debugContext;
+        private readonly DebugLambdaInfo _debugLambdaInfo;
+
+        internal AsyncDebugHookInjector(DebugContext debugContext, DebugLambdaInfo debugLambdaInfo) {
+            _debugContext = debugContext;
+            _debugLambdaInfo = debugLambdaInfo;
+        }
+
+        protected override Expression VisitExtension(Expression node) {
+            switch (node) {
+                case AsyncExpression ae:
+                    return ae.WithDebugInfo(_debugContext, _debugLambdaInfo);
+                case AsyncEnumerableExpression aee:
+                    return aee.WithDebugInfo(_debugContext, _debugLambdaInfo);
+                default:
+                    return base.VisitExtension(node);
+            }
+        }
+    }
+#endif
 }

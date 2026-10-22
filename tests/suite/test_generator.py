@@ -534,4 +534,53 @@ def fetest(%s):
             yield from (lambda: [1, 2])()
         self.assertEqual(list(g()), [1, 2])
 
+    def test_yield_in_handler_left_early(self):
+        """A handler that yields and then leaves its iteration does not run again in a later iteration that does not raise."""
+        def left_by_continue():
+            for i in range(3):
+                try:
+                    if i == 0:
+                        raise ValueError()
+                    yield ('try', i)
+                except ValueError:
+                    yield ('except', i)
+                    continue
+
+        def left_by_break():
+            for j in range(2):
+                for i in range(2):
+                    try:
+                        if j == 0:
+                            raise ValueError()
+                        yield ('try', j, i)
+                    except ValueError:
+                        yield ('except', j, i)
+                        break
+
+        self.assertEqual(list(left_by_continue()), [('except', 0), ('try', 1), ('try', 2)])
+        self.assertEqual(list(left_by_break()), [('except', 0, 0), ('try', 1, 0), ('try', 1, 1)])
+
+    def test_yield_in_handler_keeps_exception(self):
+        """The exception being handled survives the handler's yields, for the handler body and for a bare raise."""
+        def uses_exception():
+            try:
+                raise ValueError('v')
+            except ValueError as e:
+                yield 1
+                yield e.args[0]
+
+        def reraises():
+            try:
+                raise KeyError('k')
+            except KeyError:
+                yield 1
+                raise
+
+        self.assertEqual(list(uses_exception()), [1, 'v'])
+        g = reraises()
+        self.assertEqual(next(g), 1)
+        with self.assertRaises(KeyError) as cm:
+            next(g)
+        self.assertEqual(cm.exception.args, ('k',))
+
 run_test(__name__)

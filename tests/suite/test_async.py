@@ -48,6 +48,12 @@ class AsyncDefTest(unittest.TestCase):
             return 42
         self.assertEqual(run_coro(foo()), 42)
 
+    def test_location_starts_at_async_keyword(self):
+        # As in CPython. It is also where a coroutine's 'call' trace event is reported.
+        import ast
+        node = ast.parse("x = 1\nasync def f():\n    pass\n").body[1]
+        self.assertEqual((node.lineno, node.col_offset), (2, 0))
+
     def test_coroutine_type(self):
         async def foo():
             return 1
@@ -170,6 +176,47 @@ class AwaitTest(unittest.TestCase):
             return 'not caught'
 
         self.assertEqual(run_coro(test()), 'caught: boom')
+
+    def test_await_in_handler_left_by_continue(self):
+        """A handler that awaits and then leaves its iteration does not run again in a later iteration that does not raise."""
+        async def noop():
+            pass
+
+        async def test():
+            log = []
+            for i in range(3):
+                try:
+                    if i == 0:
+                        raise ValueError()
+                    log.append(('try', i))
+                except ValueError:
+                    await noop()
+                    log.append(('except', i))
+                    continue
+            return log
+
+        self.assertEqual(run_coro(test()), [('except', 0), ('try', 1), ('try', 2)])
+
+    def test_await_in_handler_left_by_break(self):
+        """As above, with the handler breaking out of an inner loop that the outer loop enters again."""
+        async def noop():
+            pass
+
+        async def test():
+            log = []
+            for j in range(2):
+                for i in range(2):
+                    try:
+                        if j == 0:
+                            raise ValueError()
+                        log.append(('try', j, i))
+                    except ValueError:
+                        await noop()
+                        log.append(('except', j, i))
+                        break
+            return log
+
+        self.assertEqual(run_coro(test()), [('except', 0, 0), ('try', 1, 0), ('try', 1, 1)])
 
 
 class AsyncWithTest(unittest.TestCase):

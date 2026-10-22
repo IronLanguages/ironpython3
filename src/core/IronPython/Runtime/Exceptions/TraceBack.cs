@@ -222,6 +222,12 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             FunctionCode funcCode = _debugProperties.Code;
+#if FEATURE_NET_ASYNC
+            // The frame of a traced async body reports its location but cannot change it.
+            if ((funcCode.Flags & FunctionAttributes.Coroutine) != 0) {
+                throw PythonOps.ValueError("can't jump in an async function or async generator");
+            }
+#endif
             Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations = _debugProperties.LoopAndFinallyLocations;
             Dictionary<int, bool> handlerLocations = _debugProperties.HandlerLocations;
 

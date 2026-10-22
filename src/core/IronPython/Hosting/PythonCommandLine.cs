@@ -638,7 +638,7 @@ namespace IronPython.Hosting {
                 if (Importer.TryImportMainFromZip(DefaultContext.Default, fileName, out importer)) {
                     return 0;
                 }
-                if (importer != null && importer.GetType() != typeof(PythonImport.NullImporter)) {
+                if (importer != null) {
                     Console.WriteLine(String.Format("can't find '__main__' module in '{0}'", fileName), Style.Error);
                     return 0;
                 }

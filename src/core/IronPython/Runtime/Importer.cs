@@ -825,7 +825,7 @@ namespace IronPython.Runtime {
                 return false;
             }
             importCache[path] = importer = FindImporterForPath(context, path);
-            if (importer is null || importer is PythonImport.NullImporter) {
+            if (importer is null) {
                 return false;
             }
             // for consistency with cpython, insert zip as a first entry into sys.path
@@ -869,10 +869,6 @@ namespace IronPython.Runtime {
                 } catch (ImportException) {
                     // we can't handle the path
                 }
-            }
-
-            if (!context.LanguageContext.DomainManager.Platform.DirectoryExists(dirname)) {
-                return new PythonImport.NullImporter(dirname);
             }
 
             return null;

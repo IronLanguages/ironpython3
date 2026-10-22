@@ -1045,6 +1045,8 @@ class Test(object):
 
     def test_NullImporter(self):
         self.assertEqual(imp.NullImporter.__module__, 'imp')
+        import _imp
+        self.assertFalse(hasattr(_imp, 'NullImporter'))
 
         sys.path.append('directory_that_does_not_exist')
         try:

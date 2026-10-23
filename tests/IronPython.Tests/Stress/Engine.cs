@@ -47,6 +47,7 @@ namespace IronPythonTest.Stress {
 #endif
         public void ScenarioXGC() {
             Assert.AreEqual(1, 1); // prevents nunit from counting towards memory usage
+            _pe.Execute("import gc"); // the first import initializes importlib's import machinery
 
             long initialMemory = GetTotalMemory();
 

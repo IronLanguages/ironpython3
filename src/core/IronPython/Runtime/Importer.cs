@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -71,6 +72,7 @@ namespace IronPython.Runtime {
         /// result.
         /// </summary>
         public static object ImportFrom(CodeContext/*!*/ context, object from, string name) {
+            PythonContext pc = context.LanguageContext;
             if (from is PythonModule scope) {
                 object ret;
                 if (scope.GetType() == typeof(PythonModule)) {
@@ -84,7 +86,7 @@ namespace IronPython.Runtime {
                     }
                 }
 
-                if (scope.__dict__._storage.TryGetPath(out object path)) {
+                if (pc.ImportLibBootstrap is null && scope.__dict__._storage.TryGetPath(out object path)) {
                     if (path is PythonList listPath) {
                         return ImportNestedModule(context, scope, new ArraySegment<string>(new[] { name }), listPath, scope.GetName());
                     }
@@ -107,6 +109,15 @@ namespace IronPython.Runtime {
                 if (PythonOps.TryGetBoundAttr(context, from, name, out object ret)) {
                     return ret;
                 }
+            }
+
+            if (pc.ImportLibBootstrap is not null) {
+                // like CPython 3.6, __import__ already imported submodules, but they may only be in sys.modules (e.g. circular imports)
+                if (PythonOps.TryGetBoundAttr(context, from, "__name__", out object pkgName) && pkgName is string strPkgName
+                    && pc.SystemStateModules.TryGetValue(strPkgName + "." + name, out object module)) {
+                    return module;
+                }
+                throw PythonOps.ImportError("cannot import name {0}", PythonOps.Repr(context, name));
             }
 
             throw PythonOps.ImportError("Cannot import name {0}", name);
@@ -141,12 +152,16 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Called by the __builtin__.__import__ functions (general importing) and ScriptEngine (for site.py)
         ///
-        /// level indiciates whether to perform absolute or relative imports.
+        /// level indicates whether to perform absolute or relative imports.
         ///     0 indicates only absolute imports should be performed
         ///     Positive numbers indicate the # of parent directories to search relative to the calling module
         /// </summary>
         public static object ImportModule(CodeContext/*!*/ context, object globals, string/*!*/ modName, bool bottom, int level) {
             if (level < 0) throw PythonOps.ValueError("level must be >= 0");
+
+            if (context.LanguageContext.ImportLibBootstrap is PythonModule bootstrap) {
+                return ImportModuleWithImportLib(context, bootstrap, globals, modName, bottom, level);
+            }
 
             if (modName.Contains(Path.DirectorySeparatorChar)) {
                 throw PythonOps.ImportError("Import by filename is not supported.");
@@ -222,7 +237,6 @@ namespace IronPython.Runtime {
                             context.ShowCls = true;
                         }
                     }
-
                 }
             }
 
@@ -277,6 +291,147 @@ namespace IronPython.Runtime {
 
             return bottom ? next : newmod;
         }
+
+#nullable enable
+
+        /// <summary>
+        /// Imports a module using importlib, like importlib's __import__ but with a fast path for
+        /// imports of modules that are already in sys.modules.
+        /// </summary>
+        private static object? ImportModuleWithImportLib(CodeContext context, PythonModule bootstrap, object? globals, string modName, bool bottom, int level) {
+            PythonContext pc = context.LanguageContext;
+            var modules = pc.SystemStateModules;
+
+            // TODO: strip the importlib._bootstrap frames from the traceback of exceptions raised during import (like CPython's remove_importlib_frames)
+            string? absName = modName;
+            if (level != 0) {
+                Debug.Assert(level > 0);
+                if (globals is not PythonDictionary dict || !TryCalcPackage(context, dict, out object? package)) {
+                    package = PythonOps.Invoke(context, bootstrap, "_calc___package__", globals ?? new PythonDictionary());
+                }
+                // resolve the name like CPython 3.6, so that the 3.4 bootstrap's _sanity_check doesn't require the package to be loaded
+                if (package is not string strPackage) throw PythonOps.TypeError("package must be a string");
+#if !PYTHON_36_OR_GREATER
+                // force a SystemError like CPython 3.4
+                if (!modules.ContainsKey(strPackage)) {
+                    throw PythonOps.SystemError("Parent module {0} not loaded, cannot perform relative import", PythonOps.Repr(context, strPackage));
+                }
+#endif
+                if (strPackage.Length == 0) throw PythonOps.ImportError("attempted relative import with no known parent package");
+                if (!TryResolveName(modName, strPackage, level, out absName)) {
+                    throw PythonOps.ValueError("attempted relative import beyond top-level package");
+                }
+            }
+
+            if (modules.TryGetValue(absName, out object? module) && module is not null) {
+                WaitForInitializing(module, absName);
+            } else {
+                // anything unusual goes through _gcd_import for its errors
+                try {
+                    module = PythonOps.Invoke(context, bootstrap, "_gcd_import", absName);
+                } catch (ImportException e) when (level == 0 && !modName.Contains('.')
+                    && e.GetPythonException() is PythonExceptions._ImportError { name: string errName } && errName == modName
+                    && PythonOps.ScopeTryGetMember(context, pc.DomainManager.Globals, modName, out _)) {
+                    // IronPython: fall back on runtime globals (e.g. COM type libraries), unless the ImportError came from a module that was found
+                    module = ImportReflected(context, modName);
+                }
+            }
+
+            object? top = module;
+            if (level == 0) {
+                int firstDot = modName.IndexOf('.');
+                if (firstDot == -1) {
+                    // IronPython: refresh .NET namespaces and types, clr.AddReference could have invalidated them
+                    if (IsReflected(module)) {
+                        module = top = ImportReflected(context, modName, allowSourceFile: false) ?? module;
+                    }
+                } else if (!bottom) {
+                    // import the top-level package like CPython, it may have been removed from sys.modules
+                    top = ImportModuleWithImportLib(context, bootstrap, globals, modName.Substring(0, firstDot), bottom: true, level: 0);
+                }
+                // IronPython: importing clr or a .NET namespace or type makes .NET members visible on builtin types in this module (e.g. "abc".Trim())
+                if (top is MemberTracker || top is PythonType { IsSystemType: true } || top == pc.ClrModule) {
+                    context.ShowCls = true;
+                }
+            } else if (!bottom && modName.Length != 0) {
+                // slice the resolved name like CPython's C implementation, not __name__ like _bootstrap.__import__
+                int firstDot = modName.IndexOf('.');
+                int cutOff = firstDot == -1 ? 0 : modName.Length - firstDot;
+                string topName = absName.Substring(0, absName.Length - cutOff);
+                if (!modules.TryGetValue(topName, out top)) {
+                    throw PythonOps.KeyError($"{PythonOps.Repr(context, topName)} not in sys.modules as expected");
+                }
+            }
+
+            return bottom ? module : top;
+
+            void WaitForInitializing(object module, string name) {
+                // skip .NET namespaces and types, where the __spec__ lookup is a slow miss
+                if (module is PythonModule
+                    && PythonOps.TryGetBoundAttr(context, module, "__spec__", out object? spec)
+                    && PythonOps.TryGetBoundAttr(context, spec, "_initializing", out object? initializing)
+                    && PythonOps.IsTrue(initializing)) {
+                    // the module may still be initializing in another thread, wait for it like CPython does
+#if !PYTHON_36_OR_GREATER
+                    // 3.4's _lock_unlock_module expects the import lock to be held and releases it
+                    PythonImport.acquire_lock(context);
+#endif
+                    PythonOps.Invoke(context, bootstrap, "_lock_unlock_module", name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Same as importlib._bootstrap._calc___package__. Returns false where it would warn or raise,
+        /// so that the Python version can do it.
+        /// </summary>
+        private static bool TryCalcPackage(CodeContext context, PythonDictionary globals, out object? package) {
+#if PYTHON_36_OR_GREATER
+            globals.TryGetValue("__package__", out package);
+            globals.TryGetValue("__spec__", out object? spec);
+            if (package is not null) {
+                // warns when __package__ != __spec__.parent
+                return spec is null || package is string strPackage
+                    && PythonOps.TryGetBoundAttr(context, spec, "parent", out object? parent)
+                    && parent is string strParent && strPackage == strParent;
+            }
+            if (spec is not null) {
+                return PythonOps.TryGetBoundAttr(context, spec, "parent", out package);
+            }
+            // warns when falling back on __name__ and __path__
+            return false;
+#else
+            globals.TryGetValue("__package__", out package);
+            if (package is null) {
+                if (!globals.TryGetValue("__name__", out package)) return false;
+                if (!globals.ContainsKey("__path__")) {
+                    if (package is not string strName) return false;
+                    package = strName.Substring(0, Math.Max(strName.LastIndexOf('.'), 0));
+                }
+            }
+            return true;
+#endif
+        }
+
+        /// <summary>
+        /// Same as importlib._bootstrap._resolve_name. Returns false for relative imports beyond the top-level package.
+        /// </summary>
+        private static bool TryResolveName(string name, string package, int level, [NotNullWhen(true)] out string? absName) {
+            int end = package.Length;
+            for (int i = 1; i < level; i++) {
+                end = end == 0 ? -1 : package.LastIndexOf('.', end - 1);
+                if (end == -1) {
+                    // attempted relative import beyond top-level package
+                    absName = null;
+                    return false;
+                }
+            }
+            string baseName = package.Substring(0, end);
+            absName = name.Length == 0 ? baseName : baseName + "." + name;
+            return true;
+        }
+
+#nullable restore
 
         /// <summary>
         /// Interrogates the importing module for __name__ and __path__, which determine
@@ -553,7 +708,7 @@ namespace IronPython.Runtime {
                 if (IsReflected(ret)) {
                     // Even though we found something in sys.modules, we need to check if a
                     // clr.AddReference has invalidated it. So try ImportReflected again.
-                    ret = ImportReflected(context, name) ?? ret;
+                    ret = ImportReflected(context, name, allowSourceFile: false) ?? ret;
                 }
 
                 if (ret is NamespaceTracker rp || ret == context.LanguageContext.ClrModule) {
@@ -667,11 +822,11 @@ namespace IronPython.Runtime {
             return pc.GetBuiltinModule(name);
         }
 
-        private static object ImportReflected(CodeContext/*!*/ context, string/*!*/ name) {
+        private static object ImportReflected(CodeContext/*!*/ context, string/*!*/ name, bool allowSourceFile = true) {
             object ret;
             PythonContext pc = context.LanguageContext;
             if (!PythonOps.ScopeTryGetMember(context, pc.DomainManager.Globals, name, out ret) &&
-                (ret = pc.TopNamespace.TryGetPackageAny(name)) == null) {
+                (ret = pc.TopNamespace.TryGetPackageAny(name)) == null && allowSourceFile) {
                 ret = TryImportSourceFile(pc, name);
             }
 
@@ -770,7 +925,7 @@ namespace IronPython.Runtime {
         private static bool IsReflected(object module) {
             // corresponds to the list of types that can be returned by ImportReflected
             return module is MemberTracker
-                || module is PythonType
+                || module is PythonType { IsSystemType: true }
                 || module is ReflectedEvent
                 || module is ReflectedField
                 || module is BuiltinFunction;

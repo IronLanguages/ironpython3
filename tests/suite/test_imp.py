@@ -4,6 +4,7 @@
 
 import gc
 import imp
+import importlib
 import os
 import sys
 import threading
@@ -31,13 +32,7 @@ class meta_importer(object):
     def find_module(self, fullname, path=None):
         self.s.assertIsNone(path)
         if fullname == 'does_not_exist_throw': raise Exception('hello')
-        elif fullname == 'does_not_exist_abc': return meta_loader('abc')
         elif fullname == 'does_not_exist_loader_throw': return meta_loader(Exception('loader'))
-        elif fullname == 'does_not_exist_None': return meta_loader(None)
-        elif fullname == 'does_not_exist_X':
-            class X(object):
-                abc = 3
-            return meta_loader(X)
 
 class ImpTest(IronPythonTestCase):
     def setUp(self):
@@ -595,9 +590,44 @@ called = 3.14
             get_builtins_dict()['__import__'] = old_import
 
     #TODO:@skip("multiple_execute") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=26829
+    @unittest.skipIf(not is_cli and sys.version_info[:2] == (3, 6), "CPython 3.6 doesn't raise when run as a script")
     def test_import_relative_error(self):
-        with self.assertRaises(SystemError):
+        with self.assertRaises(ImportError if sys.version_info >= (3, 6) else SystemError):
             exec('from . import *')
+
+    def test_import_relative_loaded(self):
+        """relative imports of modules that are already in sys.modules"""
+        import testpkg1.mod1
+        pkg, mod = sys.modules['testpkg1'], sys.modules['testpkg1.mod1']
+        glb = {'__name__': 'testpkg1.x', '__package__': 'testpkg1'}
+        try:
+            self.assertIs(__import__('mod1', glb, None, ['x'], 1), mod)
+            self.assertIs(__import__('mod1', glb, None, None, 1), mod)
+            self.assertIs(__import__('', glb, None, ['mod1'], 1), pkg)
+            self.assertIs(__import__('mod1', {'__name__': 'testpkg1.mod1.x', '__package__': 'testpkg1.mod1'}, None, ['x'], 2), mod)
+
+            sys.modules['testpkg1.mod1'] = None
+            self.assertRaises(ImportError, __import__, 'mod1', glb, None, ['x'], 1)
+
+            # the submodule is imported again once it's gone
+            del sys.modules['testpkg1.mod1']
+            self.assertIsNot(__import__('mod1', glb, None, ['x'], 1), mod)
+
+            del sys.modules['testpkg1']
+            if sys.version_info >= (3, 5):
+                self.assertIs(__import__('mod1', glb, None, ['x'], 1), sys.modules['testpkg1.mod1'])
+
+                # the parent of the resolved name is imported, __package__ doesn't need to exist
+                sys.modules.pop('testpkg1', None)
+                del sys.modules['testpkg1.mod1']
+                self.assertIs(__import__('mod1', {'__name__': 'testpkg1.missing.x', '__package__': 'testpkg1.missing'}, None, ['x'], 2), sys.modules['testpkg1.mod1'])
+
+                self.assertRaises(ImportError, __import__, 'mod1', {'__name__': 'missing_pkg.x', '__package__': 'missing_pkg'}, None, ['x'], 1)
+            else:
+                self.assertRaises(SystemError, __import__, 'mod1', glb, None, ['x'], 1)
+        finally:
+            sys.modules.pop('testpkg1', None)
+            sys.modules.pop('testpkg1.mod1', None)
 
     @unittest.skip('No access to CPython stdlib')
     def test_import_hooks_import_precence(self):
@@ -744,10 +774,6 @@ called = 3.14
 
             self.assertRaisesMessage(Exception, 'hello again', f)
 
-            if is_cli:
-                def f(): import does_not_exist_return_none
-                self.assertRaises(ImportError, f)
-
             import does_not_exist_create
             self.assertEqual(does_not_exist_create.__file__, '<myloader file 1>')
             self.assertEqual(does_not_exist_create.fullname, 'does_not_exist_create')
@@ -796,10 +822,7 @@ called = 3.14
             # returning None
             def hook(*args): pass
             prepare(hook)
-            if is_cli:
-                f()
-            else:
-                self.assertRaises(ImportError, f)
+            self.assertRaises(ImportError, f)
         finally:
             sys.path_hooks = old_path_hooks
 
@@ -807,19 +830,11 @@ called = 3.14
         def f(): import does_not_exist_throw
         self.assertRaisesMessage(Exception, 'hello', f)
 
-        if is_cli:
-            import does_not_exist_abc
-            self.assertEqual(does_not_exist_abc, 'abc')
-
         def f(): import does_not_exist_loader_throw
         self.assertRaisesMessage(Exception, 'loader', f)
 
         def f(): import does_not_exist_loader_None
         self.assertRaisesMessage(ImportError, "No module named 'does_not_exist_loader_None'", f)
-
-        if is_cli:
-            from does_not_exist_X import abc
-            self.assertEqual(abc, 3)
 
     def test_path_hooks_importer_and_loader(self):
         path = list(sys.path)
@@ -874,7 +889,7 @@ called = 3.14
             # dynamically resolve find_module to None
             with self.assertRaises(TypeError):
                 import xyz
-            self.assertEqual(loaderInst.calls, ['find_module'] if is_cli else ['find_spec', 'find_module'])
+            self.assertEqual(loaderInst.calls, ['find_spec', 'find_module'])
             loaderInst.calls = []
 
             # dynamically resolve find_module to a function,
@@ -882,14 +897,14 @@ called = 3.14
             finder = ok_finder
             with self.assertRaises(TypeError):
                 import xyz
-            self.assertEqual(loaderInst.calls, ['find_module', ('xyz', None), 'load_module'] if is_cli else ['find_spec', 'find_module', ('xyz', None), 'get_filename', 'is_package', 'exec_module', 'load_module'])
+            self.assertEqual(loaderInst.calls, ['find_spec', 'find_module', ('xyz', None), 'get_filename', 'is_package', 'exec_module', 'load_module'])
             loaderInst.calls = []
 
             loader = ok_loader
             import xyz
 
             self.assertEqual(xyz, 'abc')
-            self.assertEqual(loaderInst.calls, ['find_module', ('xyz', None), 'load_module', 'xyz'] if is_cli else ['find_spec', 'find_module', ('xyz', None), 'get_filename', 'is_package', 'exec_module', 'load_module', 'xyz'])
+            self.assertEqual(loaderInst.calls, ['find_spec', 'find_module', ('xyz', None), 'get_filename', 'is_package', 'exec_module', 'load_module', 'xyz'])
         finally:
             sys.meta_path.remove(loaderInst)
 
@@ -943,6 +958,7 @@ called = 3.14
             import os
             with open(os.path.join(tmpdir, 'test_coding_mod.py'), 'wb+') as f:
                 f.write(b"# coding: utf-8\nx = '\xc3\xa6ble'\n")
+            importlib.invalidate_caches()
             with path_modifier(tmpdir):
                 import test_coding_mod
                 self.assertEqual(test_coding_mod.x[0], '\xe6')
@@ -953,6 +969,7 @@ called = 3.14
             with open(os.path.join(tmpdir, 'test_coding_2.py'), 'wb+') as f:
                 f.write(b"\xef\xbb\xbf# -*- coding: utf-8 -*-\n")
                 f.write(b"x = u'ABCDE'\n")
+            importlib.invalidate_caches()
             with path_modifier(tmpdir):
                 import test_coding_2
                 self.assertEqual(test_coding_2.x, 'ABCDE')
@@ -964,6 +981,7 @@ called = 3.14
                 f.write(b"# -*- coding: utf-8 -*-\n")
                 f.write(b"raise Exception()")
             f.close()
+            importlib.invalidate_caches()
             try:
                 with path_modifier(tmpdir):
                     import test_coding_3
@@ -1166,6 +1184,23 @@ class Test(object):
             del runtime_globals.System
             sys.modules['System'] = system
 
+    @skipUnlessIronPython()
+    def test_clr_importer_globals_import_error(self):
+        # an ImportError from a module that was found isn't replaced by the runtime's globals
+        import clr
+        runtime_globals = clr.GetCurrentRuntime().Globals
+        self.write_to_file(os.path.join(self._imptestdir, 'globals_import_error.py'), 'import globals_missing_dependency')
+        importlib.invalidate_caches()
+        runtime_globals.globals_import_error = object()
+        try:
+            with path_modifier(self._imptestdir):
+                with self.assertRaises(ImportError) as cm:
+                    exec("import globals_import_error", {})
+            self.assertEqual(cm.exception.name, 'globals_missing_dependency')
+        finally:
+            del runtime_globals.globals_import_error
+            sys.modules.pop('globals_import_error', None)
+
     def test_get_frozen_object(self):
         # frozen objects not supported, this always fails
         self.assertRaises(ImportError, imp.get_frozen_object, 'foo')
@@ -1326,7 +1361,8 @@ X = 3.14
 
         # __setattr__/__delattr__ no non-derived type
         m = type(sys)('foo')
-        self.assertRaisesMessage(TypeError, "__class__ assignment: only for heap types", m.__setattr__, '__class__', int)
+        msg = "__class__ assignment only supported for heap types or ModuleType subclasses" if is_cli or sys.version_info >= (3, 5) else "__class__ assignment: only for heap types"
+        self.assertRaisesMessage(TypeError, msg, m.__setattr__, '__class__', int)
         self.assertRaisesMessage(AttributeError, "readonly attribute", m.__setattr__, '__dict__', int)
         self.assertRaisesMessage(TypeError, "can't delete __class__ attribute", m.__delattr__, '__class__')
         self.assertRaisesMessage(AttributeError, "readonly attribute", m.__delattr__, '__dict__')
@@ -1350,6 +1386,57 @@ X = 3.14
 
     def test_import_string_from_list_cp26098(self):
         self.assertEqual(__import__('email.mime.application', globals(), locals(), 'MIMEApplication').__name__, 'email.mime.application')
+
+    def test_import_fromlist_iterable(self):
+        sys.modules.pop('testpkg1', None)
+        sys.modules.pop('testpkg1.mod1', None)
+        try:
+            # a string is iterated by character, so no submodule named 'mod1' is imported
+            m = __import__('testpkg1', fromlist='mod1')
+            self.assertEqual(m.__name__, 'testpkg1')
+            self.assertNotIn('testpkg1.mod1', sys.modules)
+
+            # an empty fromlist returns the top-level package
+            self.assertEqual(__import__('testpkg1.mod1', fromlist='').__name__, 'testpkg1')
+
+            # any iterable is accepted
+            m = __import__('testpkg1', fromlist={'mod1': None}.keys())
+            self.assertIs(m.mod1, sys.modules['testpkg1.mod1'])
+
+            self.assertRaises(TypeError, __import__, 'testpkg1', fromlist=[1])
+        finally:
+            sys.modules.pop('testpkg1', None)
+            sys.modules.pop('testpkg1.mod1', None)
+
+    def test_import_from_sys_modules(self):
+        sys.modules.pop('testpkg1', None)
+        mod = imp.new_module('testpkg1.cached')
+        sys.modules['testpkg1.cached'] = mod
+        try:
+            # IronPython behaves like CPython 3.6, the submodule is found in sys.modules (e.g. circular imports)
+            if is_cli or sys.version_info >= (3, 5):
+                g = {}
+                exec('from testpkg1 import cached', g)
+                self.assertIs(g['cached'], mod)
+
+            with self.assertRaisesRegex(ImportError, "^cannot import name 'missing'$"):
+                exec('from testpkg1 import missing', {})
+        finally:
+            sys.modules.pop('testpkg1', None)
+            sys.modules.pop('testpkg1.cached', None)
+
+    def test_import_missing_parent(self):
+        mod = imp.new_module('missing_parent.child')
+        sys.modules['missing_parent.child'] = mod
+        try:
+            # the parent isn't needed when a fromlist is given
+            self.assertIs(__import__('missing_parent.child', fromlist=['x']), mod)
+
+            # otherwise the parent is imported again
+            with self.assertRaises(ImportError):
+                __import__('missing_parent.child')
+        finally:
+            sys.modules.pop('missing_parent.child', None)
 
     @skipUnlessIronPython()
     def test_new_builtin_modules(self):

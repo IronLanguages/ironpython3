@@ -308,6 +308,7 @@ namespace IronPython.Runtime {
 #endif
                     var moduleSpec = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "ModuleSpec");
                     (GetSystemStateValue("meta_path") as PythonList)?.append(new Importer.ClrImporter(moduleSpec));
+                    ImportLibBootstrap = _frozen_importlib;
                 } catch { }
 
                 PythonModule LoadModuleFromResource(string name, string resourceName) {
@@ -1146,6 +1147,12 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        /// <summary>
+        /// The _frozen_importlib module, which drives imports once it has been bootstrapped.
+        /// When null (e.g. NoImportLib), the legacy importer is used instead.
+        /// </summary>
+        internal PythonModule ImportLibBootstrap { get; private set; }
 
         private object copyRegModule;
 

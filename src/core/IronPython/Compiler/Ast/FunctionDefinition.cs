@@ -681,11 +681,9 @@ namespace IronPython.Compiler.Ast {
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
 
-            // Add beginning sequence point. For async functions this body is deferred into the nested Async/AsyncEnumerable lambda,
-            // and the outer factory (which runs first, and is the only one traced today) re-emits its own entry point at StartIndex;
-            // anchor this one at HeaderIndex (end of the signature) so the two occupy distinct source locations should the deferred
-            // body ever become traceable. For single-line signatures both still land on the same line (differing only in column).
-            statements.Add(MakeFunctionEntrySequencePoint(IsAsync ? HeaderIndex : StartIndex));
+            // Add beginning sequence point: the location of the 'call' trace event. Async functions included, since this is their body too;
+            // their outer factory, which only creates the coroutine, is not traced (as in CPython).
+            statements.Add(MakeFunctionEntrySequencePoint(StartIndex));
 
 
             // For generators/coroutines, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
@@ -740,7 +738,6 @@ namespace IronPython.Compiler.Ast {
                     var throwSlot = AsyncThrowSlot;
                     body = MSAst.Expression.Block(
                         [cts, excBox, sendSlot, throwSlot],
-                        MakeFunctionEntrySequencePoint(StartIndex),
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
                         MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         MSAst.Expression.Assign(sendSlot, MSAst.Expression.New(typeof(StrongBox<object>))),
@@ -760,7 +757,6 @@ namespace IronPython.Compiler.Ast {
                     // rather than whatever context happened to be current at construction.
                     body = MSAst.Expression.Block(
                         [cts, excBox],
-                        MakeFunctionEntrySequencePoint(StartIndex),
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
                         MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         Ast.Call(

@@ -373,6 +373,11 @@ namespace IronPython.Compiler {
             if (catchYields != tryYields) {
                 var block = new List<Expression>();
 
+                // A deferred handler runs if its variable is set, so the variables must be reset on each entry into the try: they are
+                // lifted, and would otherwise keep the exception of an earlier pass (e.g. of a loop) whose handler did not reach its end.
+                // A resumption into a deferred handler is routed past the reset, which keeps the exception for the rest of the handler.
+                var resetDeferredVars = new List<Expression>();
+
                 block.Add(MakeYieldRouter(node.Body.Type, tryYields, catchYields, tryStart));
                 block.Add(null); // empty slot to fill in later
 
@@ -395,7 +400,8 @@ namespace IronPython.Compiler {
                     // the catch block had one. It needs to be hoisted because
                     // the catch might contain yields.
                     var deferredVar = c.Variable ?? Expression.Variable(c.Test, null);
-                    LiftVariable(deferredVar);                    
+                    LiftVariable(deferredVar);
+                    resetDeferredVars.Add(DelayedAssign(Visit(deferredVar), AstUtils.Constant(null, deferredVar.Type)));
 
                     // We need to ensure that filters can access the exception
                     // variable
@@ -431,7 +437,8 @@ namespace IronPython.Compiler {
                     );
                 }
 
-                block[1] = Expression.MakeTry(null, @try, null, null, new ReadOnlyCollection<CatchBlock>(handlers));
+                resetDeferredVars.Add(Expression.MakeTry(null, @try, null, null, new ReadOnlyCollection<CatchBlock>(handlers)));
+                block[1] = Expression.Block(resetDeferredVars);
                 @try = Expression.Block(block);
                 Debug.Assert(@try.Type == node.Body.Type);
                 handlers = Array.Empty<CatchBlock>(); // so we don't reuse these

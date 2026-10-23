@@ -1126,7 +1126,7 @@ namespace IronPython.Compiler {
                 res = cls;
             } else if (PeekToken() == Tokens.KeywordAsyncToken) {
                 Eat(TokenKind.KeywordAsync);
-                FunctionDefinition fnc = ParseFuncDef(true);
+                FunctionDefinition fnc = ParseFuncDef(asyncStart: GetStart());
                 fnc.Decorators = decorators.ToArray();
                 res = fnc;
             } else {
@@ -1139,10 +1139,11 @@ namespace IronPython.Compiler {
 
         // funcdef: [decorators] 'def' NAME parameters ':' suite
         // parameters: '(' [typedargslist] ')'
-        // this gets called with "def" as the look-ahead
-        private FunctionDefinition ParseFuncDef(bool isAsync = false) {
+        // this gets called with "def" as the look-ahead; asyncStart is the start of the preceding 'async' keyword, if any
+        private FunctionDefinition ParseFuncDef(int? asyncStart = null) {
+            bool isAsync = asyncStart.HasValue;
             Eat(TokenKind.KeywordDef);
-            var start = GetStart();
+            var start = asyncStart ?? GetStart();   // like in CPython, an async function starts at its 'async' keyword
             string name = ReadName();
 
             Eat(TokenKind.LeftParenthesis);
@@ -1469,7 +1470,7 @@ namespace IronPython.Compiler {
 
             switch (PeekToken().Kind) {
                 case TokenKind.KeywordDef:
-                    return ParseFuncDef(true);
+                    return ParseFuncDef(asyncStart: start);
                 case TokenKind.KeywordWith:
                     if (onlyAllowDef) goto default;
                     return ParseAsyncWithStmt(start);

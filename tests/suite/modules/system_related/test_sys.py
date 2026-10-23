@@ -218,6 +218,21 @@ f()
 
         sys.settrace(None)
 
+    def test_class_body_after_settrace_none(self):
+        """A class body that has only run traced still runs after sys.settrace(None)."""
+        def f():
+            class Boom(Exception): pass
+            return Boom
+
+        sys.settrace(lambda *args: None)
+        try:
+            f()
+        finally:
+            sys.settrace(None)
+        # Before the fix, this failed (intermittently) with a TypeError about a Func`2[PythonFunction,Object] cast:
+        # sys.settrace(None) gave the class body a function's call target.
+        self.assertTrue(issubclass(f(), Exception))
+
     @skipUnlessIronPython()
     @unittest.expectedFailure # dummy getrefcount removed in https://github.com/IronLanguages/ironpython3/pull/577
     def test_getrefcount(self):

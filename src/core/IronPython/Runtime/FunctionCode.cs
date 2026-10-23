@@ -584,19 +584,21 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", co_freevars.__repr__(context));
             }
 
-            if (Target == null || (Target.GetMethodInfo()?.DeclaringType == typeof(PythonCallTargets))) {
-                UpdateDelegate(context.LanguageContext, true);
+            // Target is read only once, since switching tracing on or off on another thread may change it at any time.
+            Delegate target = Target;
+            if (target == null || (target.GetMethodInfo()?.DeclaringType == typeof(PythonCallTargets))) {
+                target = UpdateDelegate(context.LanguageContext, true);
             }
 
-            if (Target is Func<CodeContext, CodeContext> classTarget) {
+            if (target is Func<CodeContext, CodeContext> classTarget) {
                 return classTarget(context);
             }
 
-            if (Target is LookupCompilationDelegate moduleCode) {
+            if (target is LookupCompilationDelegate moduleCode) {
                 return moduleCode(context, this);
             }
 
-            if (Target is Func<FunctionCode, object> optimizedModuleCode) {
+            if (target is Func<FunctionCode, object> optimizedModuleCode) {
                 return optimizedModuleCode(this);
             }
 
@@ -678,21 +680,23 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Updates the delegate based upon current Python context settings for recursion enforcement
-        /// and for tracing.
+        ///   Updates the delegate based upon current Python context settings for recursion enforcement and for tracing.
         /// </summary>
-        internal void UpdateDelegate(PythonContext context, bool forceCreation) {
+        /// <returns>
+        ///   The delegate set as the target, or null if only a lazy target was set (only when <paramref name="forceCreation"/> is false).
+        ///   A caller that needs the delegate should use this result rather than read <see cref="Target"/> again: another thread may change
+        ///   it at any time, e.g. by switching tracing on or off.
+        /// </returns>
+        internal Delegate UpdateDelegate(PythonContext context, bool forceCreation) {
             Delegate finalTarget;
 
             if (context.EnableTracing && _lambda != null) {
                 if (_tracingLambda == null) {
                     if (!forceCreation) {
-                        if (_lambda is Compiler.Ast.ClassDefinition) return; // ClassDefinition does not have the same signature as call targets
                         // the user just called sys.settrace(), don't force re-compilation of every method in the system.  Instead
                         // we'll just re-compile them as they're invoked.
-                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
-                        SetTarget(target);
-                        return;
+                        SetLazyTarget();
+                        return null;
                     }
                     _tracingLambda = GetGeneratorOrNormalLambdaTracing(context);
                 }
@@ -708,9 +712,8 @@ namespace IronPython.Runtime {
                         // we cannot create the delegate when forceCreation is false because we hold the
                         // _CodeCreateAndUpdateDelegateLock and compiling the delegate may create a FunctionCode
                         // object which requires the lock.
-                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
-                        SetTarget(target);
-                        return;
+                        SetLazyTarget();
+                        return null;
                     }
                     _normalDelegate = CompileLambda(GetGeneratorOrNormalLambda(), new TargetUpdaterForCompilation(context, this).SetCompiledTarget);
                 }
@@ -721,6 +724,24 @@ namespace IronPython.Runtime {
             finalTarget = AddRecursionCheck(context, finalTarget);
 
             SetTarget(finalTarget);
+            return finalTarget;
+        }
+
+        /// <summary>
+        ///   Sets a target that creates the delegate for the current mode (tracing or not) when it is first needed.
+        /// </summary>
+        /// <remarks>
+        ///   A function gets a call target that compiles its delegate on the first call. A class body cannot get one, since its
+        ///   delegate has a different signature (<c>Func&lt;CodeContext, CodeContext&gt;</c>); it gets a null target instead, as when it
+        ///   has not been compiled yet, which makes <see cref="PythonOps.MakeClass"/> compile it the next time the class is created.
+        /// </remarks>
+        private void SetLazyTarget() {
+            if (_lambda is Compiler.Ast.ClassDefinition) {
+                SetTarget(null);
+            } else {
+                PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
+                SetTarget(target);
+            }
         }
 
         /// <summary>

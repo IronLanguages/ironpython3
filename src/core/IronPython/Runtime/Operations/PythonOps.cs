@@ -1589,10 +1589,10 @@ namespace IronPython.Runtime.Operations {
 
             static Func<CodeContext, CodeContext> GetClassCode(CodeContext/*!*/ context, FunctionCode funcCode, Func<CodeContext, CodeContext> body) {
                 if (body == null) {
-                    if (funcCode.Target == null) {
-                        funcCode.UpdateDelegate(context.LanguageContext, true);
-                    }
-                    return (Func<CodeContext, CodeContext>)funcCode.Target!;
+                    // Target is read only once, since switching tracing on or off on another thread may reset it to null at any time
+                    // (see FunctionCode.UpdateDelegate). If it is null, compile and use the delegate that compilation returns.
+                    var target = (Func<CodeContext, CodeContext>?)funcCode.Target;
+                    return target ?? (Func<CodeContext, CodeContext>)funcCode.UpdateDelegate(context.LanguageContext, true);
                 } else {
                     if (funcCode.Target == null) {
                         funcCode.SetTarget(body);

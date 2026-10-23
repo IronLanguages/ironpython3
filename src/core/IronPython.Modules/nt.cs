@@ -1533,9 +1533,14 @@ namespace IronPython.Modules {
             }
         }
 
+        private static readonly string[] ExecutableExtensions = [".com", ".exe", ".bat", ".cmd"]; // default PATHEXT order
+
+        [SupportedOSPlatform("windows")]
         private static bool HasExecutableExtension(string extension) {
-            extension = extension.ToLower(CultureInfo.InvariantCulture);
-            return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
+            foreach (string e in ExecutableExtensions) {
+                if (extension.Equals(e, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
         }
 
         private const int OPEN_EXISTING = 3;
@@ -1554,6 +1559,7 @@ namespace IronPython.Modules {
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile);
 
+        private const int FILE_TYPE_DISK = 0x0001;
         private const int FILE_TYPE_CHAR = 0x0002;
         private const int FILE_TYPE_PIPE = 0x0003;
 
@@ -1575,6 +1581,30 @@ namespace IronPython.Modules {
             public uint NumberOfLinks;
             public uint FileIndexHigh;
             public uint FileIndexLow;
+        }
+
+        private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+
+        [DllImport("kernel32.dll", EntryPoint = "FindFirstFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern IntPtr FindFirstFile(string lpFileName, out WIN32_FIND_DATA lpFindFileData);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool FindClose(IntPtr hFindFile);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WIN32_FIND_DATA {
+            public uint dwFileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftCreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftLastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftLastWriteTime;
+            public uint nFileSizeHigh;
+            public uint nFileSizeLow;
+            public uint dwReserved0;
+            public uint dwReserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string cFileName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+            public string cAlternateFileName;
         }
 
         [Documentation("stat(path, *, dir_fd=None, follow_symlinks=True) -> stat_result\n\n" +
@@ -1610,33 +1640,7 @@ namespace IronPython.Modules {
             VerifyPath(path, functionName: nameof(stat), argName: nameof(path));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                try {
-                    FileInfo fi = new FileInfo(path);
-                    if (fi.Exists) {
-                        // FileInfo trims trailing separators, so maybe it doesn't exist after all...
-                        if (path.EndsWith(Path.DirectorySeparatorChar) || path.EndsWith(Path.AltDirectorySeparatorChar)) {
-                            return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOTDIR, PythonExceptions._OSError.ERROR_DIRECTORY, path));
-                        }
-                        return statWindowsImpl(fi);
-                    }
-                    DirectoryInfo di = new DirectoryInfo(path);
-                    if (di.Exists) {
-                        return statWindowsImpl(di);
-                    }
-                    using var handle = CreateFile(path, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
-                    if (handle.IsInvalid) {
-                        return LightExceptions.Throw(GetWin32Error(Marshal.GetLastWin32Error(), path));
-                    }
-                    switch (GetFileType(handle)) {
-                        case FILE_TYPE_CHAR: return new stat_result(0x2000);
-                        case FILE_TYPE_PIPE: return new stat_result(0x1000);
-                    }
-                    return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path));
-                } catch (ArgumentException) {
-                    return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_INVALID_NAME, path));
-                } catch (Exception e) {
-                    return LightExceptions.Throw(ToPythonException(e, path));
-                }
+                return statWindows(path);
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 if (!follow_symlinks) return lstatUnix(path);
                 return statUnix(path);
@@ -1645,27 +1649,64 @@ namespace IronPython.Modules {
             }
         }
 
+        /// <summary>
+        /// Gets all the stat information from a single handle (like CPython's win32_xstat_slow_impl).
+        /// The information is about the path itself, reparse points are not followed (TODO).
+        /// </summary>
+        [SupportedOSPlatform("windows")]
+        private static object statWindows(string path) {
+            using var handle = CreateFile(path, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
+            if (handle.IsInvalid) {
+                int error = Marshal.GetLastWin32Error();
+                if (error == PythonExceptions._OSError.ERROR_ACCESS_DENIED || error == PythonExceptions._OSError.ERROR_SHARING_VIOLATION) {
+                    // the file exists but can't be opened, try reading the parent directory
+                    IntPtr findHandle = FindFirstFile(path, out WIN32_FIND_DATA findData);
+                    if (findHandle != INVALID_HANDLE_VALUE) {
+                        FindClose(findHandle);
+                        return MakeStatResult(findData.dwFileAttributes, findData.nFileSizeHigh, findData.nFileSizeLow, findData.ftLastAccessTime, findData.ftLastWriteTime, findData.ftCreationTime, fileIdx: 0);
+                    }
+                }
+                return LightExceptions.Throw(GetWin32Error(error, path));
+            }
+
+            switch (GetFileType(handle)) {
+                case FILE_TYPE_DISK:
+                    break;
+                case FILE_TYPE_CHAR:
+                    return new stat_result(0x2000);
+                case FILE_TYPE_PIPE:
+                    return new stat_result(0x1000);
+                default:
+                    return LightExceptions.Throw(GetOsOrWinError(PythonErrno.ENOENT, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, path));
+            }
+
+            if (!GetFileInformationByHandle(handle, out BY_HANDLE_FILE_INFORMATION info)) {
+                return LightExceptions.Throw(GetWin32Error(Marshal.GetLastWin32Error(), path));
+            }
+
+            return MakeStatResult(info.FileAttributes, info.FileSizeHigh, info.FileSizeLow, info.LastAccessTime, info.LastWriteTime, info.CreationTime, ((ulong)info.FileIndexHigh << 32) + info.FileIndexLow);
+
+            stat_result MakeStatResult(uint attributes, uint sizeHigh, uint sizeLow, System.Runtime.InteropServices.ComTypes.FILETIME atime, System.Runtime.InteropServices.ComTypes.FILETIME mtime, System.Runtime.InteropServices.ComTypes.FILETIME ctime, ulong fileIdx) {
+                bool isDirectory = ((FileAttributes)attributes & FileAttributes.Directory) != 0;
+                return MakeWindowsStatResult(
+                    (FileAttributes)attributes,
+                    isDirectory ? null : Path.GetExtension(path),
+                    isDirectory ? 0 : ((long)sizeHigh << 32) | sizeLow,
+                    ToUnixTimeNs(atime),
+                    ToUnixTimeNs(mtime),
+                    ToUnixTimeNs(ctime),
+                    fileIdx);
+            }
+
+            static long ToUnixTimeNs(System.Runtime.InteropServices.ComTypes.FILETIME ft) {
+                // FILETIME counts 100 nanosecond intervals since 1601-01-01 UTC
+                const long epochDifference = 116444736000000000;
+                return ((((long)ft.dwHighDateTime) << 32 | (uint)ft.dwLowDateTime) - epochDifference) * 100;
+            }
+        }
+
         [SupportedOSPlatform("windows")]
         private static stat_result statWindowsImpl(FileSystemInfo fsi) {
-            int mode = 0;
-            long size;
-            if (fsi is FileInfo fi) {
-                size = fi.Length;
-                mode = 0x8000;
-                if (HasExecutableExtension(fi.Extension)) {
-                    mode |= S_IEXEC;
-                }
-            } else {
-                Debug.Assert(fsi is DirectoryInfo);
-                size = 0;
-                mode = 0x4000 | S_IEXEC;
-            }
-
-            mode |= S_IREAD;
-            if ((fsi.Attributes & FileAttributes.ReadOnly) == 0) {
-                mode |= S_IWRITE;
-            }
-
             const long epochDifferenceLong = 62135596800 * TimeSpan.TicksPerSecond;
 
             // 1 tick = 100 nanoseconds
@@ -1677,6 +1718,31 @@ namespace IronPython.Modules {
             using var handle = CreateFile(fsi.FullName, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
             if (!handle.IsInvalid && GetFileInformationByHandle(handle, out BY_HANDLE_FILE_INFORMATION fileInfo)) {
                 fileIdx = (((ulong)fileInfo.FileIndexHigh) << 32) + fileInfo.FileIndexLow;
+            }
+
+            if (fsi is FileInfo fi) {
+                return MakeWindowsStatResult(fsi.Attributes, fi.Extension, fi.Length, st_atime_ns, st_mtime_ns, st_ctime_ns, fileIdx);
+            }
+            Debug.Assert(fsi is DirectoryInfo);
+            return MakeWindowsStatResult(fsi.Attributes, null, 0, st_atime_ns, st_mtime_ns, st_ctime_ns, fileIdx);
+        }
+
+        /// <param name="extension">The file extension, or null for a directory.</param>
+        [SupportedOSPlatform("windows")]
+        private static stat_result MakeWindowsStatResult(FileAttributes attributes, string? extension, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns, ulong fileIdx) {
+            int mode;
+            if (extension is null) {
+                mode = 0x4000 | S_IEXEC;
+            } else {
+                mode = 0x8000;
+                if (HasExecutableExtension(extension)) {
+                    mode |= S_IEXEC;
+                }
+            }
+
+            mode |= S_IREAD;
+            if ((attributes & FileAttributes.ReadOnly) == 0) {
+                mode |= S_IWRITE;
             }
 
             return new stat_result(mode, fileIdx, size, st_atime_ns, st_mtime_ns, st_ctime_ns);
@@ -2454,7 +2520,7 @@ the 'status' value."),
 
             // TODO: need revisit
             string sysdir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.System);
-            foreach (string suffix in new string[] { string.Empty, ".com", ".exe", "cmd", ".bat" }) {
+            foreach (string suffix in (string[])[string.Empty, ..ExecutableExtensions]) {
                 fullpath = Path.Combine(sysdir, baseCommand + suffix);
                 if (File.Exists(fullpath)) {
                     baseCommand = fullpath;

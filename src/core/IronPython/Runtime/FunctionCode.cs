@@ -755,8 +755,7 @@ namespace IronPython.Runtime {
             //  * plain async (Coroutine, no Generator) via AsyncExpression,
             //  * async generators (Generator+Coroutine) via AsyncEnumerableExpression.
             // As in CPython, calling an async function only creates the coroutine (or async generator) object, so the outer factory lambda
-            // is not traced at all. The lowered async body is traced instead, by its own transform, whenever it runs: its Async/AsyncEnumerable
-            // node is swapped for a copy carrying this code's DebugContext and payload. See async-tracing-proposal.md.
+            // is not traced at all. The async body is traced instead.
             if ((Flags & FunctionAttributes.Coroutine) != 0) {
                 var lambda = (LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda());
                 return (LambdaExpression)new AsyncDebugHookInjector(context.DebugContext, debugInfo).Visit(lambda);
@@ -794,7 +793,7 @@ namespace IronPython.Runtime {
         private LightLambdaExpression GetGeneratorOrNormalLambda() {
             LightLambdaExpression finalCode;
 #if FEATURE_NET_ASYNC
-            // See GetGeneratorOrNormalLambda's sibling in MakeDebuggableFunctionCode: only a plain generator
+            // See the sibling GetGeneratorOrNormalLambdaTracing: only a plain generator
             // (Generator without Coroutine) is rewritten; plain async and async generators are lowered earlier.
             if ((Flags & FunctionAttributes.Generator) == 0 || (Flags & FunctionAttributes.Coroutine) != 0) {
 #else

@@ -126,6 +126,9 @@ to Zip archives.";
                             path = buf;
                             break;
                         }
+                        if (pal.DirectoryExists(buf)) {
+                            break;
+                        }
                         buf = Path.GetDirectoryName(buf);
                     }
                 } catch {
@@ -230,7 +233,7 @@ module, or raises ZipImportError if it wasn't found.")]
                     ModuleOptions.None, out script);
 
                 dict = mod.__dict__;
-                // we do these here because we don't want CompileModule to initialize the module until we've set 
+                // we do these here because we don't want CompileModule to initialize the module until we've set
                 // up some additional stuff
                 dict.Add("__name__", fullname);
                 dict.Add("__loader__", this);
@@ -453,7 +456,7 @@ contain the module, but has no source for it.")]
 
                 if (data != null) {
                     if (isbytecode) {
-                        // would put in code to unmarshal the bytecode here...                                     
+                        // would put in code to unmarshal the bytecode here...
                     } else {
                         code = data;
                     }
@@ -464,7 +467,7 @@ contain the module, but has no source for it.")]
             /// <summary>
             /// Given a path to a Zip archive, build a dict, mapping file names
             /// (local to the archive, using SEP as a separator) to toc entries.
-            /// 
+            ///
             /// A toc_entry is a tuple:
             /// (__file__,      # value to use for __file__, available for all files
             ///  compress,      # compression kind; 0 for uncompressed
@@ -485,7 +488,7 @@ contain the module, but has no source for it.")]
                 BinaryReader fp = null;
                 int header_position, header_size, header_offset, count, compress;
                 int time, date, crc, data_size, name_size, file_size, file_offset;
-                int arc_offset; // offset from beginning of file to start of zip-archive 
+                int arc_offset; // offset from beginning of file to start of zip-archive
                 PythonDictionary files = null;
                 byte[] endof_central_dir = new byte[22];
 
@@ -577,13 +580,13 @@ contain the module, but has no source for it.")]
 
             /// <summary>
             /// Given a (sub)modulename, write the potential file path in the
-            /// archive (without extension) to the path buffer. 
+            /// archive (without extension) to the path buffer.
             /// </summary>
             /// <param name="prefix"></param>
             /// <param name="name"></param>
             /// <returns></returns>
             private string MakeFilename(CodeContext context, string prefix, string name) {
-                // self.prefix + name [+ SEP + "__init__"] + ".py[co]" 
+                // self.prefix + name [+ SEP + "__init__"] + ".py[co]"
                 if ((prefix.Length + name.Length + 13) >= MAXPATHLEN) {
                     throw MakeError(context, "path to long");
                 }

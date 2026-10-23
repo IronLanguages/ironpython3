@@ -132,16 +132,5 @@ namespace IronPython.Modules {
         private static void SetLockCount(CodeContext/*!*/ context, long lockCount) {
             context.LanguageContext.SetModuleState(_lockCountKey, lockCount);
         }
-
-        [PythonType]
-        public sealed class NullImporter {
-            public NullImporter(string path_string) {
-            }
-
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-            public object find_module([NotNone] params object[] args) {
-                return null;
-            }
-        }
     }
 }

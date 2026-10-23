@@ -564,8 +564,9 @@ namespace IronPython.Runtime {
             }
 
             if (TryLoadMetaPathModule(context, name, null, out ret)) {
-                // importlib's BuiltinImporter loads clr before ImportBuiltin gets a chance to
-                if (ret == context.LanguageContext.ClrModule) {
+                // importlib's BuiltinImporter loads clr before ImportBuiltin gets a chance to,
+                // and ClrImporter loads .NET namespaces and types
+                if (ret is MemberTracker || ret is PythonType { IsSystemType: true } || ret == context.LanguageContext.ClrModule) {
                     context.ShowCls = true;
                 }
                 return ret;
@@ -935,5 +936,73 @@ namespace IronPython.Runtime {
             Assert.NotNull(sourceCode, name, path);
             return context.LanguageContext.CompileModule(path, name, sourceCode, ModuleOptions.Initialize | ModuleOptions.Optimized);
         }
+
+#nullable enable
+
+        /// <summary>
+        /// sys.meta_path finder for .NET namespaces and types. It is added after importlib's PathFinder
+        /// so Python modules take precedence over .NET namespaces and types.
+        /// </summary>
+        [PythonType]
+        public sealed class ClrImporter {
+            private readonly object _moduleSpec;
+
+            internal ClrImporter(object moduleSpec) {
+                _moduleSpec = moduleSpec;
+            }
+
+            public object? find_spec(CodeContext/*!*/ context, [NotNone] string fullname, object? path = null, object? target = null) {
+                object? member = FindMember(context, fullname);
+                if (member is null) return null;
+
+                // load_module is used rather than exec_module since types don't support setting the
+                // module attributes (__name__, etc.)
+                return PythonCalls.CallWithKeywordArgs(context, _moduleSpec, [fullname, this, member is NamespaceTracker], ["is_package"]);
+            }
+
+            public object? find_module(CodeContext/*!*/ context, [NotNone] string fullname, object? path = null) {
+                return FindMember(context, fullname) is null ? null : this;
+            }
+
+            public object load_module(CodeContext/*!*/ context, [NotNone] string fullname) {
+                var modules = context.LanguageContext.SystemStateModules;
+                if (modules.TryGetValue(fullname, out object? existing) && existing is not null) {
+                    return existing;
+                }
+
+                object member = FindMember(context, fullname) ?? throw PythonOps.ImportError("No module named {0}", fullname);
+                modules[fullname] = member;
+                return member;
+            }
+
+            /// <summary>
+            /// Looks up a top-level namespace or type, or a child of a namespace that has been imported.
+            /// Returns the same object as attribute access on the namespace.
+            /// </summary>
+            private static object? FindMember(CodeContext/*!*/ context, string fullname) {
+                PythonContext pc = context.LanguageContext;
+                NamespaceTracker? parent;
+                string name;
+
+                int lastDot = fullname.LastIndexOf('.');
+                if (lastDot == -1) {
+                    // names in the runtime's globals (e.g. COM type libraries) take precedence over namespaces
+                    // and are left to the legacy importer
+                    if (PythonOps.ScopeTryGetMember(context, pc.DomainManager.Globals, fullname, out _)) return null;
+                    parent = pc.TopNamespace;
+                    name = fullname;
+                } else {
+                    parent = pc.SystemStateModules.TryGetValue(fullname.Substring(0, lastDot), out object? parentModule) ? parentModule as NamespaceTracker : null;
+                    name = fullname.Substring(lastDot + 1);
+                }
+
+                if (parent is null) return null;
+
+                object member = NamespaceTrackerOps.GetCustomMember(context, parent, name);
+                return member == OperationFailed.Value ? null : member;
+            }
+        }
+
+#nullable restore
     }
 }

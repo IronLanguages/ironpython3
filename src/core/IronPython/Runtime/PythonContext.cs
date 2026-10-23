@@ -306,6 +306,8 @@ namespace IronPython.Runtime {
 #if PYTHON_37_OR_GREATER
                     PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install_external_importers");
 #endif
+                    var moduleSpec = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "ModuleSpec");
+                    (GetSystemStateValue("meta_path") as PythonList)?.append(new Importer.ClrImporter(moduleSpec));
                 } catch { }
 
                 PythonModule LoadModuleFromResource(string name, string resourceName) {

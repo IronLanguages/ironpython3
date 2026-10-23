@@ -1064,12 +1064,82 @@ class Test(object):
         clr = sys.modules.pop('clr')
         try:
             g = {}
-            exec("r1 = hasattr('abc', 'Split')\nimport clr\nr2 = hasattr('abc', 'Split')", g)
+            exec(compile("r1 = hasattr('abc', 'Split')\nimport clr\nr2 = hasattr('abc', 'Split')", '<string>', 'exec', dont_inherit=True), g)
             self.assertFalse(g['r1'])
             self.assertTrue(g['r2'])
             self.assertIs(g['clr'], clr)
         finally:
             sys.modules['clr'] = clr
+
+    @skipUnlessIronPython()
+    def test_clr_importer(self):
+        import importlib
+        import System
+        import System.Collections.Generic
+
+        names = [type(finder).__name__ if not isinstance(finder, type) else finder.__name__ for finder in sys.meta_path]
+        self.assertLess(names.index('PathFinder'), names.index('ClrImporter'))
+
+        # namespaces and types are imported as the same objects as attribute access gives
+        self.assertIs(importlib.import_module('System.Collections.Generic'), System.Collections.Generic)
+        self.assertIs(importlib.import_module('System.Math'), System.Math)
+        self.assertIs(importlib.import_module('.Generic', 'System.Collections'), System.Collections.Generic)
+        self.assertRaises(ImportError, importlib.import_module, 'System.Nonexistent')
+
+        # the first import of a namespace goes through ClrImporter
+        index = names.index('ClrImporter')
+        finder = sys.meta_path[index]
+        found = []
+        class Spy:
+            def find_module(self, fullname, path=None):
+                found.append(fullname)
+                return finder.find_module(fullname, path)
+
+        system = sys.modules.pop('System')
+        sys.meta_path[index] = Spy()
+        try:
+            g = {}
+            exec(compile("r1 = hasattr('abc', 'Split')\nimport System\nr2 = hasattr('abc', 'Split')", '<string>', 'exec', dont_inherit=True), g)
+            self.assertEqual(found, ['System'])
+            self.assertFalse(g['r1'])
+            self.assertTrue(g['r2'])
+            self.assertIs(g['System'], system)
+        finally:
+            sys.meta_path[index] = finder
+            sys.modules['System'] = system
+
+    @skipUnlessIronPython()
+    def test_clr_importer_global_type(self):
+        # the first import of a type in the global namespace enables CLS members
+        import clr
+        from System.Reflection import AssemblyName, TypeAttributes
+        from System.Reflection.Emit import AssemblyBuilder, AssemblyBuilderAccess
+        ab = AssemblyBuilder.DefineDynamicAssembly(AssemblyName('ClrImporterGlobalType'), AssemblyBuilderAccess.Run)
+        ab.DefineDynamicModule('ClrImporterGlobalType').DefineType('ClrImporterGlobalType', TypeAttributes.Public).CreateType()
+        clr.AddReference(ab)
+
+        g = {}
+        exec(compile("r1 = hasattr('abc', 'Split')\nimport ClrImporterGlobalType\nr2 = hasattr('abc', 'Split')", '<string>', 'exec', dont_inherit=True), g)
+        self.assertFalse(g['r1'])
+        self.assertTrue(g['r2'])
+        self.assertEqual(g['ClrImporterGlobalType'].__name__, 'ClrImporterGlobalType')
+
+    @skipUnlessIronPython()
+    def test_clr_importer_globals(self):
+        # the runtime's globals take precedence over namespaces
+        import clr
+        import System
+        runtime_globals = clr.GetCurrentRuntime().Globals
+        value = object()
+        system = sys.modules.pop('System')
+        runtime_globals.System = value
+        try:
+            g = {}
+            exec("import System", g)
+            self.assertIs(g['System'], value)
+        finally:
+            del runtime_globals.System
+            sys.modules['System'] = system
 
     def test_get_frozen_object(self):
         # frozen objects not supported, this always fails

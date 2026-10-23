@@ -39,10 +39,17 @@ namespace IronPython.Runtime.Operations {
 
         public static string __str__(NamespaceTracker self) {
             if (self.PackageAssemblies.Count != 1) {
-                return string.Format("<module '{0}' (CLS module, {1} assemblies loaded)>", Get__name__(self.Name), self.PackageAssemblies.Count);
+                return string.Format("<module '{0}' (CLS module, {1} assemblies loaded)>", self.Name, self.PackageAssemblies.Count);
             }
-            return string.Format("<module '{0}' (CLS module from {1})>", Get__name__(self.Name), self.PackageAssemblies[0].FullName);
+            return string.Format("<module '{0}' (CLS module from {1})>", self.Name, self.PackageAssemblies[0].FullName);
         }
+
+        /// <summary>
+        /// Namespaces are packages for importlib, but their children are not found on the file system,
+        /// so there are no locations to search.
+        /// </summary>
+        [SpecialName, PropertyMethod]
+        public static PythonList Get__path__(NamespaceTracker self) => new PythonList();
 
         [SpecialName, PropertyMethod]
         public static PythonDictionary Get__dict__(CodeContext context, NamespaceTracker self) {
@@ -57,16 +64,12 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        /// <summary>
+        /// The full name of the namespace.
+        /// </summary>
         [SpecialName, PropertyMethod]
         public static string Get__name__(CodeContext context, NamespaceTracker self) {
-            return Get__name__(self.Name);
-        }
-
-        private static string Get__name__(string name) {
-            int lastDot = name.LastIndexOf('.');
-            if (lastDot == -1) return name;
-
-            return name.Substring(lastDot + 1);
+            return self.Name;
         }
 
         [SpecialName]

@@ -564,6 +564,10 @@ namespace IronPython.Runtime {
             }
 
             if (TryLoadMetaPathModule(context, name, null, out ret)) {
+                // importlib's BuiltinImporter loads clr before ImportBuiltin gets a chance to
+                if (ret == context.LanguageContext.ClrModule) {
+                    context.ShowCls = true;
+                }
                 return ret;
             }
 
@@ -825,7 +829,7 @@ namespace IronPython.Runtime {
                 return false;
             }
             importCache[path] = importer = FindImporterForPath(context, path);
-            if (importer is null || importer is PythonImport.NullImporter) {
+            if (importer is null) {
                 return false;
             }
             // for consistency with cpython, insert zip as a first entry into sys.path
@@ -869,10 +873,6 @@ namespace IronPython.Runtime {
                 } catch (ImportException) {
                     // we can't handle the path
                 }
-            }
-
-            if (!context.LanguageContext.DomainManager.Platform.DirectoryExists(dirname)) {
-                return new PythonImport.NullImporter(dirname);
             }
 
             return null;

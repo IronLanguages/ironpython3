@@ -1045,6 +1045,8 @@ class Test(object):
 
     def test_NullImporter(self):
         self.assertEqual(imp.NullImporter.__module__, 'imp')
+        import _imp
+        self.assertFalse(hasattr(_imp, 'NullImporter'))
 
         sys.path.append('directory_that_does_not_exist')
         try:
@@ -1055,6 +1057,19 @@ class Test(object):
             self.assertTrue(sys.path_importer_cache['directory_that_does_not_exist'] is None)
         finally:
             sys.path.remove('directory_that_does_not_exist')
+
+    @skipUnlessIronPython()
+    def test_import_clr_show_cls(self):
+        # the first import of clr goes through importlib's BuiltinImporter
+        clr = sys.modules.pop('clr')
+        try:
+            g = {}
+            exec("r1 = hasattr('abc', 'Split')\nimport clr\nr2 = hasattr('abc', 'Split')", g)
+            self.assertFalse(g['r1'])
+            self.assertTrue(g['r2'])
+            self.assertIs(g['clr'], clr)
+        finally:
+            sys.modules['clr'] = clr
 
     def test_get_frozen_object(self):
         # frozen objects not supported, this always fails

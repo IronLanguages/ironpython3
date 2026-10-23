@@ -564,6 +564,10 @@ namespace IronPython.Runtime {
             }
 
             if (TryLoadMetaPathModule(context, name, null, out ret)) {
+                // importlib's BuiltinImporter loads clr before ImportBuiltin gets a chance to
+                if (ret == context.LanguageContext.ClrModule) {
+                    context.ShowCls = true;
+                }
                 return ret;
             }
 

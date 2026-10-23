@@ -1058,6 +1058,19 @@ class Test(object):
         finally:
             sys.path.remove('directory_that_does_not_exist')
 
+    @skipUnlessIronPython()
+    def test_import_clr_show_cls(self):
+        # the first import of clr goes through importlib's BuiltinImporter
+        clr = sys.modules.pop('clr')
+        try:
+            g = {}
+            exec("r1 = hasattr('abc', 'Split')\nimport clr\nr2 = hasattr('abc', 'Split')", g)
+            self.assertFalse(g['r1'])
+            self.assertTrue(g['r2'])
+            self.assertIs(g['clr'], clr)
+        finally:
+            sys.modules['clr'] = clr
+
     def test_get_frozen_object(self):
         # frozen objects not supported, this always fails
         self.assertRaises(ImportError, imp.get_frozen_object, 'foo')

@@ -842,7 +842,8 @@ namespace IronPython.Runtime {
             // default behavior
             string pathname;
             try {
-                pathname = context.LanguageContext.DomainManager.Platform.CombinePaths(str, name);
+                // an empty path entry is the current working directory
+                pathname = context.LanguageContext.DomainManager.Platform.CombinePaths(str.Length == 0 ? "." : str, name);
             } catch (ArgumentException) {
                 return null; // ignore invalid paths
             }

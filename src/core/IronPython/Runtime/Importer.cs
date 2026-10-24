@@ -955,8 +955,9 @@ namespace IronPython.Runtime {
                 object? member = FindMember(context, fullname);
                 if (member is null) return null;
 
-                // load_module is used rather than exec_module since types don't support setting the
-                // module attributes (__name__, etc.)
+                // we return "this" as the loader for the module, which uses the legacy load_module
+                // rather than exec_module since types and namespaces don't support setting
+                // the module attributes (__name__, etc.)
                 return PythonCalls.CallWithKeywordArgs(context, _moduleSpec, [fullname, this, member is NamespaceTracker], ["is_package"]);
             }
 

@@ -2,9 +2,11 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import gc
 import imp
 import os
 import sys
+import threading
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, is_posix, path_modifier, run_test, skipUnlessIronPython
@@ -257,15 +259,38 @@ else:
         self.assertEqual(type({}), type(currentModule.__dict__))
         self.assertEqual(isinstance(currentModule.__dict__, dict), True)
 
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 6), "CPython < 3.6 leaks the import lock in test_load_package")
     def test_lock(self):
-        i=0
-        while i<5:
-            i+=1
-            if not imp.lock_held():
-                self.assertRaises(RuntimeError,imp.release_lock)
-                imp.acquire_lock()
-            else:
+        self.assertFalse(imp.lock_held())
+        self.assertRaises(RuntimeError, imp.release_lock)
+        imp.acquire_lock()
+        try:
+            self.assertTrue(imp.lock_held())
+            # re-entrant
+            imp.acquire_lock()
+            imp.release_lock()
+            self.assertTrue(imp.lock_held())
+        finally:
+            imp.release_lock()
+        self.assertFalse(imp.lock_held())
+
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 6), "CPython < 3.6 leaks the import lock in test_load_package")
+    def test_lock_gc_collect(self):
+        # weakref callbacks run on the finalizer thread; if one took the import lock (like importlib's
+        # module lock cleanup used to), gc.collect() would wait on it forever while the lock is held
+        def run():
+            imp.acquire_lock()
+            try:
+                sys.modules.pop('colorsys', None)
+                import colorsys # creates a module lock which dies once the import completes
+                gc.collect()
+            finally:
                 imp.release_lock()
+
+        t = threading.Thread(target=run, daemon=True)
+        t.start()
+        t.join(30)
+        self.assertFalse(t.is_alive(), "deadlock between the import lock and gc.collect()")
 
     def test_is_frozen(self):
         for name in self.temp_name:

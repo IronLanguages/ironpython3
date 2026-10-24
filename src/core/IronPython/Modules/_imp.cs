@@ -4,13 +4,10 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Threading;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
-using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_imp", typeof(IronPython.Modules.PythonImport))]
 namespace IronPython.Modules {
@@ -27,15 +24,6 @@ namespace IronPython.Modules {
         internal const int PythonCodeResource = 8;
         internal const int SearchError = 0;
         internal const int ImporterHook = 9;
-        private static readonly object _lockCountKey = new object();
-
-        [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            // set the lock count to zero on the 1st load, don't reset the lock count on reloads
-            if (!context.HasModuleState(_lockCountKey)) {
-                context.SetModuleState(_lockCountKey, 0L);
-            }
-        }
 
         public static PythonList extension_suffixes() {
             // TODO: support extensions?
@@ -43,23 +31,24 @@ namespace IronPython.Modules {
         }
 
         public static bool lock_held(CodeContext/*!*/ context) {
-            return GetLockCount(context) != 0;
+            // held by any thread
+            Lock importLock = context.LanguageContext.ImportLock;
+            if (importLock.IsHeldByCurrentThread) return true; // the current thread already holds the lock
+            if (!importLock.TryEnter()) return true; // try an exclusive lock, another thread might already hold the lock
+            importLock.Exit();
+            return false;
         }
 
         public static void acquire_lock(CodeContext/*!*/ context) {
-            lock (_lockCountKey) {
-                SetLockCount(context, GetLockCount(context) + 1);
-            }
+            context.LanguageContext.ImportLock.Enter();
         }
 
         public static void release_lock(CodeContext/*!*/ context) {
-            lock (_lockCountKey) {
-                long lockCount = GetLockCount(context);
-                if (lockCount == 0) {
-                    throw PythonOps.RuntimeError("not holding the import lock");
-                }
-                SetLockCount(context, lockCount - 1);
-            }            
+            Lock importLock = context.LanguageContext.ImportLock;
+            if (!importLock.IsHeldByCurrentThread) {
+                throw PythonOps.RuntimeError("not holding the import lock");
+            }
+            importLock.Exit();
         }
 
         public static object init_builtin(CodeContext/*!*/ context, [NotNone] string/*!*/ name) {
@@ -107,7 +96,7 @@ namespace IronPython.Modules {
                     return -1;
                 }
 
-                
+
                 return 1;
             }
             return 0;
@@ -123,14 +112,6 @@ namespace IronPython.Modules {
 
         public static void _fix_co_filename() {
             throw new NotImplementedException();
-        }
-
-        private static long GetLockCount(CodeContext/*!*/ context) {
-            return (long)context.LanguageContext.GetModuleState(_lockCountKey);
-        }
-
-        private static void SetLockCount(CodeContext/*!*/ context, long lockCount) {
-            context.LanguageContext.SetModuleState(_lockCountKey, lockCount);
         }
     }
 }

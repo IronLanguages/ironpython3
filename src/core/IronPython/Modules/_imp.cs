@@ -5,12 +5,10 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-
-using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_imp", typeof(IronPython.Modules.PythonImport))]
 namespace IronPython.Modules {
@@ -27,13 +25,15 @@ namespace IronPython.Modules {
         internal const int PythonCodeResource = 8;
         internal const int SearchError = 0;
         internal const int ImporterHook = 9;
-        private static readonly object _lockCountKey = new object();
+        private static readonly object _importLockKey = new object();
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            // set the lock count to zero on the 1st load, don't reset the lock count on reloads
-            if (!context.HasModuleState(_lockCountKey)) {
-                context.SetModuleState(_lockCountKey, 0L);
+            // create the lock on the 1st load, don't reset it on reloads
+            lock (_importLockKey) {
+                if (!context.HasModuleState(_importLockKey)) {
+                    context.SetModuleState(_importLockKey, new object());
+                }
             }
         }
 
@@ -43,23 +43,24 @@ namespace IronPython.Modules {
         }
 
         public static bool lock_held(CodeContext/*!*/ context) {
-            return GetLockCount(context) != 0;
+            // held by any thread
+            object importLock = GetImportLock(context);
+            if (Monitor.IsEntered(importLock)) return true; // the current thread already holds the lock
+            if (!Monitor.TryEnter(importLock)) return true; // try an exclusive lock, another thread might already hold the lock
+            Monitor.Exit(importLock);
+            return false;
         }
 
         public static void acquire_lock(CodeContext/*!*/ context) {
-            lock (_lockCountKey) {
-                SetLockCount(context, GetLockCount(context) + 1);
-            }
+            Monitor.Enter(GetImportLock(context));
         }
 
         public static void release_lock(CodeContext/*!*/ context) {
-            lock (_lockCountKey) {
-                long lockCount = GetLockCount(context);
-                if (lockCount == 0) {
-                    throw PythonOps.RuntimeError("not holding the import lock");
-                }
-                SetLockCount(context, lockCount - 1);
-            }            
+            object importLock = GetImportLock(context);
+            if (!Monitor.IsEntered(importLock)) {
+                throw PythonOps.RuntimeError("not holding the import lock");
+            }
+            Monitor.Exit(importLock);
         }
 
         public static object init_builtin(CodeContext/*!*/ context, [NotNone] string/*!*/ name) {
@@ -107,7 +108,7 @@ namespace IronPython.Modules {
                     return -1;
                 }
 
-                
+
                 return 1;
             }
             return 0;
@@ -125,12 +126,11 @@ namespace IronPython.Modules {
             throw new NotImplementedException();
         }
 
-        private static long GetLockCount(CodeContext/*!*/ context) {
-            return (long)context.LanguageContext.GetModuleState(_lockCountKey);
-        }
-
-        private static void SetLockCount(CodeContext/*!*/ context, long lockCount) {
-            context.LanguageContext.SetModuleState(_lockCountKey, lockCount);
+        /// <summary>
+        /// The global import lock, used with <see cref="Monitor"/> (re-entrant and owned by a thread).
+        /// </summary>
+        private static object GetImportLock(CodeContext/*!*/ context) {
+            return context.LanguageContext.GetModuleState(_importLockKey);
         }
     }
 }

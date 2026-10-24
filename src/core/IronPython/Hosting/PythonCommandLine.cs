@@ -176,7 +176,7 @@ namespace IronPython.Hosting {
             // the first entry in sys.path. If running a script file, however, the CWD should not be added;
             // instead, the script's containg folder should be added.
 
-            string fullPath = "."; // this is a valid path resolving to current working dir. Pinky-swear.
+            string fullPath = ""; // the current working directory, importlib resolves it with os.getcwd()
 
             if (Options.Command == null && Options.FileName != null) {
                 if (Options.FileName == "-") {

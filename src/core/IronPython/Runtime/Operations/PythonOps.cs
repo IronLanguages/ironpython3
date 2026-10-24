@@ -1595,8 +1595,8 @@ namespace IronPython.Runtime.Operations {
                     return target ?? (Func<CodeContext, CodeContext>)funcCode.UpdateDelegate(context.LanguageContext, true);
                 } else {
                     if (funcCode.Target == null) {
-                        funcCode.SetTarget(body);
                         funcCode._normalDelegate = body;
+                        funcCode.PublishTarget(context.LanguageContext, tracing: false, body);
                     }
                     return body;
                 }

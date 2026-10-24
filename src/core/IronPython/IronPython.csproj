@@ -21,6 +21,7 @@
       M:System.String.Contains(System.Char);
       M:System.String.EndsWith(System.Char);
       M:System.String.StartsWith(System.Char);
+      T:System.Threading.Lock;
       M:System.Text.Encoding.GetString(System.ReadOnlySpan{System.Byte});
     </MeziantouPolyfill_IncludedPolyfills>
   </PropertyGroup>

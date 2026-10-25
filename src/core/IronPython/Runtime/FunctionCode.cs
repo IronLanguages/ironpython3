@@ -682,15 +682,22 @@ namespace IronPython.Runtime {
         /// <summary>
         ///   Updates the delegate based upon current Python context settings for recursion enforcement and for tracing.
         /// </summary>
+        /// <remarks>
+        ///   With <paramref name="forceCreation"/> false, this is the update done by switching tracing on or off (<see cref="UpdateAllCode"/>)
+        ///   and it always sets the target. With <paramref name="forceCreation"/> true, the update is not synchronized with such a switch,
+        ///   so the delegate is set as the target only if the tracing mode it was built for is still current (see <see cref="PublishTarget"/>).
+        /// </remarks>
         /// <returns>
-        ///   The delegate set as the target, or null if only a lazy target was set (only when <paramref name="forceCreation"/> is false).
-        ///   A caller that needs the delegate should use this result rather than read <see cref="Target"/> again: another thread may change
-        ///   it at any time, e.g. by switching tracing on or off.
+        ///   The delegate for the tracing mode that was current when the update started, or null if only a lazy target was set (only when
+        ///   <paramref name="forceCreation"/> is false). A caller that needs the delegate should use this result rather than read
+        ///   <see cref="Target"/> again: another thread may change it at any time, e.g. by switching tracing on or off.
         /// </returns>
         internal Delegate UpdateDelegate(PythonContext context, bool forceCreation) {
+            // Read only once: the delegate is built for this mode, even if another thread switches tracing on or off meanwhile.
+            bool tracing = context.EnableTracing;
             Delegate finalTarget;
 
-            if (context.EnableTracing && _lambda != null) {
+            if (tracing && _lambda != null) {
                 if (_tracingLambda == null) {
                     if (!forceCreation) {
                         // the user just called sys.settrace(), don't force re-compilation of every method in the system.  Instead
@@ -723,9 +730,43 @@ namespace IronPython.Runtime {
 
             finalTarget = AddRecursionCheck(context, finalTarget);
 
-            SetTarget(finalTarget);
+            if (forceCreation) {
+                PublishTarget(context, tracing, finalTarget);
+            } else {
+                SetTarget(finalTarget);
+            }
             return finalTarget;
         }
+
+
+        /// <summary>
+        ///   Sets the target to a delegate built for the given tracing mode, unless that mode is no longer current.
+        /// </summary>
+        /// <remarks>
+        ///   Used for updates that are not synchronized with switching tracing on or off (<see cref="UpdateAllCode"/>), so that a delegate
+        ///   built for the previous mode cannot replace the target set for the new one. Such a delegate stays in its cache
+        ///   (<see cref="_normalDelegate"/> or <see cref="_tracingDelegate"/>) and is used when the mode switches back.
+        /// </remarks>
+        /// <param name="tracing">
+        ///   The tracing mode that <paramref name="target"/> was built for: true for the tracing delegate, false for the normal one.
+        /// </param>
+        /// <param name="target">
+        ///   The delegate for the target, with the recursion check already added (see <see cref="AddRecursionCheck"/>).
+        /// </param>
+        internal void PublishTarget(PythonContext context, bool tracing, Delegate target) {
+            if (context.EnableTracing != tracing) {
+                return;
+            }
+
+            SetTarget(target);
+            Thread.MemoryBarrier();
+            while (context.EnableTracing != tracing) {
+                tracing = context.EnableTracing;
+                UpdateDelegate(context, forceCreation: false);
+                Thread.MemoryBarrier();
+            }
+        }
+
 
         /// <summary>
         ///   Sets a target that creates the delegate for the current mode (tracing or not) when it is first needed.
@@ -751,7 +792,7 @@ namespace IronPython.Runtime {
         internal void SetDebugTarget(PythonContext context, Delegate target) {
             _normalDelegate = target;
 
-            SetTarget(AddRecursionCheck(context, target));
+            PublishTarget(context, tracing: false, AddRecursionCheck(context, target));
         }
 
         /// <summary>
@@ -963,11 +1004,11 @@ namespace IronPython.Runtime {
             }
 
             public void SetCompiledTarget(object sender, LightLambdaCompileEventArgs e) {
-                _code.SetTarget(_code.AddRecursionCheck(_context, _code._normalDelegate = e.Compiled));
+                _code.PublishTarget(_context, tracing: false, _code.AddRecursionCheck(_context, _code._normalDelegate = e.Compiled));
             }
 
             public void SetCompiledTargetTracing(object sender, LightLambdaCompileEventArgs e) {
-                _code.SetTarget(_code.AddRecursionCheck(_context, _code._tracingDelegate = e.Compiled));
+                _code.PublishTarget(_context, tracing: true, _code.AddRecursionCheck(_context, _code._tracingDelegate = e.Compiled));
             }
         }
 

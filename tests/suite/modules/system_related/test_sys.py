@@ -234,6 +234,26 @@ f()
         self.assertTrue(issubclass(f(), Exception))
 
     @skipUnlessIronPython()
+    def test_settrace_function_Xdebug(self):
+        """With -X:Debug, a function defined while tracing is on is traced."""
+        import subprocess
+        code = """import sys
+events = []
+def tracer(frame, event, arg):
+    events.append((event, frame.f_code.co_name))
+    return tracer
+sys.settrace(tracer)
+def f():
+    return 1
+f()
+sys.settrace(None)
+print(('call', 'f') in events)
+"""
+        # Before the fix, defining f under -X:Debug gave it its normal (untraced) delegate, even with tracing on.
+        out = subprocess.check_output([sys.executable, '-X:Debug', '-c', code])
+        self.assertEqual(out.strip(), b'True')
+
+    @skipUnlessIronPython()
     @unittest.expectedFailure # dummy getrefcount removed in https://github.com/IronLanguages/ironpython3/pull/577
     def test_getrefcount(self):
         import warnings

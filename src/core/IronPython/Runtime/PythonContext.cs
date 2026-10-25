@@ -3895,7 +3895,7 @@ namespace IronPython.Runtime {
                 var newCounted = newTraceListener?.IsDummyListener == false;
 
                 if (oldCounted != newCounted) {
-                    _tracebackListenersCount += newCounted ? 1 : -1;
+                    Interlocked.Add(ref _tracebackListenersCount, newCounted ? 1 : -1);
                 }
 
                 if (EnableTracing != oldEnableTracing) {

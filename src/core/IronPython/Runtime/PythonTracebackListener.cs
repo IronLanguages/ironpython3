@@ -64,7 +64,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        // dummy listener used to maintain the frame stack
+        // dummy listener used to maintain the frame stack on a thread without a trace function
         internal bool IsDummyListener { get; }
 
 #if PROFILE_SUPPORT
@@ -135,7 +135,7 @@ namespace IronPython.Runtime {
                     pyFrame._lineNo = sourceSpan.Start.Line;
                 }
 
-                if (traceDispatchObject != null && !_exceptionThrown) {
+                if (traceDispatchObject != null && !_exceptionThrown && !IsDummyListener) {
                     DispatchTrace(thread, kind, payload, traceDispatch, traceDispatchObject, pyFrame);
                 }
             } finally {

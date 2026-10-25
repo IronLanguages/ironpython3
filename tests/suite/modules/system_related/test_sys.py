@@ -253,6 +253,52 @@ print(('call', 'f') in events)
         out = subprocess.check_output([sys.executable, '-X:Debug', '-c', code])
         self.assertEqual(out.strip(), b'True')
 
+    def test_settrace_no_frames(self):
+        # A traced function that calls sys.settrace(None) leaves no frames behind on the frame stack
+        def stop():
+            sys.settrace(None)
+        def f():
+            stop()
+
+        sys.settrace(lambda *args: None)
+        try:
+            f()
+        finally:
+            sys.settrace(None)
+        self.assertEqual(sys._getframe(0).f_code.co_name, 'test_settrace_no_frames')
+
+    def test_no_trace_events_after_settrace_none(self):
+        # After sys.settrace(None), no trace events are delivered, not even to frames that have a local trace function,
+        # also while another thread is still being traced
+        import threading
+        events = []
+        def tracer(frame, event, arg):
+            events.append((event, frame.f_code.co_name))
+            return tracer
+        def stop():
+            sys.settrace(None)
+        def f():
+            stop()
+            return 1
+
+        traced, finished = threading.Event(), threading.Event()
+        def other():
+            sys.settrace(lambda *args: None)
+            traced.set()
+            finished.wait()
+            sys.settrace(None)
+        thread = threading.Thread(target=other)
+        thread.start()
+        traced.wait()
+        sys.settrace(tracer)
+        try:
+            f()
+        finally:
+            sys.settrace(None)
+            finished.set()
+            thread.join()
+        self.assertEqual(events, [('call', 'f'), ('line', 'f'), ('call', 'stop'), ('line', 'stop')])
+
     @skipUnlessIronPython()
     @unittest.expectedFailure # dummy getrefcount removed in https://github.com/IronLanguages/ironpython3/pull/577
     def test_getrefcount(self):

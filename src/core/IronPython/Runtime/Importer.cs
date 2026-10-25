@@ -1097,11 +1097,7 @@ namespace IronPython.Runtime {
         /// </summary>
         [PythonType]
         public sealed class ClrImporter {
-            private readonly object _moduleSpec;
-
-            internal ClrImporter(object moduleSpec) {
-                _moduleSpec = moduleSpec;
-            }
+            internal ClrImporter() { }
 
             public object? find_spec(CodeContext/*!*/ context, [NotNone] string fullname, object? path = null, object? target = null) {
                 object? member = FindMember(context, fullname);
@@ -1110,7 +1106,7 @@ namespace IronPython.Runtime {
                 // we return "this" as the loader for the module, which uses the legacy load_module
                 // rather than exec_module since types and namespaces don't support setting
                 // the module attributes (__name__, etc.)
-                return PythonCalls.CallWithKeywordArgs(context, _moduleSpec, [fullname, this, member is NamespaceTracker], ["is_package"]);
+                return PythonCalls.CallWithKeywordArgs(context, context.LanguageContext.ImportLibModuleSpec, [fullname, this, member is NamespaceTracker], ["is_package"]);
             }
 
             public object? find_module(CodeContext/*!*/ context, [NotNone] string fullname, object? path = null) {

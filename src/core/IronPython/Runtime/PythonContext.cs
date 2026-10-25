@@ -306,8 +306,9 @@ namespace IronPython.Runtime {
 #if PYTHON_37_OR_GREATER
                     PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install_external_importers");
 #endif
-                    var moduleSpec = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "ModuleSpec");
-                    (GetSystemStateValue("meta_path") as PythonList)?.append(new Importer.ClrImporter(moduleSpec));
+                    ImportLibModuleSpec = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "ModuleSpec");
+                    var metaPath = GetSystemStateValue("meta_path") as PythonList;
+                    metaPath?.append(new Importer.ClrImporter());
                     ImportLibBootstrap = _frozen_importlib;
                 } catch { }
 
@@ -1153,6 +1154,11 @@ namespace IronPython.Runtime {
         /// When null (e.g. NoImportLib), the legacy importer is used instead.
         /// </summary>
         internal PythonModule ImportLibBootstrap { get; private set; }
+
+        /// <summary>
+        /// importlib's ModuleSpec type, used by our sys.meta_path finders to create specs.
+        /// </summary>
+        internal object ImportLibModuleSpec { get; private set; }
 
         private object copyRegModule;
 

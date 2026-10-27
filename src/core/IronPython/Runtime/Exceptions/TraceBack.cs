@@ -105,13 +105,23 @@ namespace IronPython.Runtime.Exceptions {
             _back = back;
         }
 
-        internal TraceBackFrame(PythonTracebackListener traceAdapter, FunctionCode code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IDictionary<object, object>> scopeCallback) {
+        internal TraceBackFrame(PythonTracebackListener traceAdapter, FunctionCode code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IDictionary<object, object>> scopeCallback, bool pushedByCaller) {
             _traceAdapter = traceAdapter;
             _code = code;
             _back = back;
             _debugProperties = debugProperties;
             _scopeCallback = scopeCallback;
+            PushedByCaller = pushedByCaller;
         }
+
+        /// <summary>
+        ///   True if the frame stack entry of this frame was pushed, and is popped, by the caller of the code rather than the trace listener.
+        /// </summary>
+        /// <remarks>
+        ///   This is the case for module code run by <c>exec</c> or a script runner, which push the entry for it since module code has
+        ///   no frame push of its own (see <see cref="PythonTracebackListener"/>).
+        /// </remarks>
+        internal bool PushedByCaller { get; }
 
         [SpecialName, PropertyMethod]
         public object Getf_trace() {

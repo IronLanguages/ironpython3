@@ -1757,4 +1757,77 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
             else:
                 self.assertTrue(isinstance(res, t))
 
+    @skipUnlessIronPython()
+    def test_ipy3_gh1182(self):
+        # https://github.com/IronLanguages/ironpython3/issues/1182
+        import System
+        from System.Diagnostics import StackTrace
+
+        # leaving an except or finally clause with a jump, or raising an exception from a finally clause that
+        # is handled in the same function, must not grow the CLR stack
+        def except_continue(n):
+            depths = []
+            for _ in range(n):
+                try:
+                    int('x')
+                except ValueError:
+                    depths.append(StackTrace().FrameCount)
+                    continue
+            return depths
+
+        def except_break(n):
+            depths = []
+            for _ in range(n):
+                for _ in range(1):
+                    try:
+                        int('x')
+                    except ValueError:
+                        depths.append(StackTrace().FrameCount)
+                        break
+            return depths
+
+        def finally_break(n):
+            depths = []
+            for _ in range(n):
+                for _ in range(1):
+                    try:
+                        int('x')
+                    finally:
+                        depths.append(StackTrace().FrameCount)
+                        break
+            return depths
+
+        def finally_raise(n):
+            depths = []
+            for _ in range(n):
+                try:
+                    try:
+                        int('x')
+                    finally:
+                        depths.append(StackTrace().FrameCount)
+                        raise KeyError()
+                except KeyError:
+                    pass
+            return depths
+
+        for f in (except_continue, except_break, finally_break, finally_raise):
+            # fewer iterations than the default compilation threshold, so that the loops stay interpreted
+            depths = f(25)
+            # the stack grew by a frame per iteration; call sites being set up account for small differences
+            self.assertLess(depths[-1] - depths[5], 5, f.__name__)
+
+        # an exception rethrown by interpreted code keeps its .NET stack trace
+        def parse():
+            try:
+                System.Int32.Parse('x')
+            finally:
+                pass
+
+        def call():
+            parse()
+
+        with self.assertRaises(System.FormatException) as cm:
+            call()
+        self.assertTrue(any(name in cm.exception.StackTrace for name in ('Int32.Parse', 'ParseInt32')))
+
 run_test(__name__)

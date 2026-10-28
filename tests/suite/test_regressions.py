@@ -1828,6 +1828,6 @@ plistlib.loads(plistlib.dumps({})) # check that this does not fail
 
         with self.assertRaises(System.FormatException) as cm:
             call()
-        self.assertIn('Int32.Parse', cm.exception.StackTrace)
+        self.assertTrue(any(name in cm.exception.StackTrace for name in ('Int32.Parse', 'ParseInt32')))
 
 run_test(__name__)

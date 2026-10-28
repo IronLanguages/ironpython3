@@ -249,6 +249,7 @@ f()
 sys.settrace(None)
 print(('call', 'f') in events)
 """
+        # Before PR #2118, defining f under -X:Debug gave it its normal (untraced) delegate, even with tracing on.
         out = subprocess.check_output([sys.executable, '-X:Debug', '-c', code])
         self.assertEqual(out.strip(), b'True')
 

@@ -101,16 +101,25 @@ namespace IronPython.Runtime {
 
                     var properties = (PythonDebuggingPayload)customPayload;
 
-                    // push the new frame
+                    // Module code has no frame push of its own: when exec or a script runner runs it, the caller has just pushed an entry
+                    // for it. That entry gets the new frame, rather than a second entry being pushed for the same code.
+                    bool pushedByCaller = IsPushedByCaller(thread, properties.Code);
+
                     pyFrame = new TraceBackFrame(
                         this,
                         properties.Code,
-                        thread.Count == 0 ? null : thread[thread.Count - 1].Frame,
+                        GetFrame(thread, pushedByCaller ? thread.Count - 2 : thread.Count - 1),
                         properties,
-                        scopeCallback
+                        scopeCallback,
+                        pushedByCaller
                     );
 
-                    thread.Add(new FunctionStack(pyFrame));
+                    if (pushedByCaller) {
+                        FunctionStack entry = thread[thread.Count - 1];
+                        thread[thread.Count - 1] = new FunctionStack(entry.Context, entry.Code, pyFrame);
+                    } else {
+                        thread.Add(new FunctionStack(pyFrame));
+                    }
 
                     if (traceDispatchObject == null) {
                         return;
@@ -140,8 +149,9 @@ namespace IronPython.Runtime {
                 }
             } finally {
                 if (kind == Debugging.TraceEventKind.FrameExit && thread.Count > 0) {
-                    // don't pop frames we didn't push
-                    if (thread[thread.Count - 1].Code == ((PythonDebuggingPayload)customPayload).Code) {
+                    // don't pop frames we didn't push, nor an entry that the caller of module code pushed (the caller pops it)
+                    FunctionStack top = thread[thread.Count - 1];
+                    if (top.Code == ((PythonDebuggingPayload)customPayload).Code && top.Frame is not { PushedByCaller: true }) {
                         thread.RemoveAt(thread.Count - 1);
                     }
                 }
@@ -149,6 +159,39 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+
+        /// <summary>
+        ///   Determines whether the entry on top of the frame stack was pushed for <paramref name="code"/> by the caller of that code.
+        /// </summary>
+        /// <remarks>
+        ///   Module code has no frame push of its own, so <c>exec</c> and the script runners push an entry for it just before running it.
+        ///   No frame object has been created for that entry yet, since no code has run in between.
+        /// </remarks>
+        private static bool IsPushedByCaller(List<FunctionStack> thread, FunctionCode code) {
+            if (!code.IsModule || thread.Count == 0) {
+                return false;
+            }
+
+            FunctionStack top = thread[thread.Count - 1];
+            return top.Code == code && top.Frame is null;
+        }
+
+
+        /// <summary>
+        ///   Gets the frame object of the frame stack entry at <paramref name="index"/>, creating it if needed.
+        /// </summary>
+        /// <remarks>
+        ///   An entry pushed by code that is not traced has no frame object until one is asked for.
+        ///   Creating it here gives the frame of traced code called from there its <see cref="TraceBackFrame.f_back"/>.
+        /// </remarks>
+        private static TraceBackFrame GetFrame(List<FunctionStack> thread, int index) {
+            if (index < 0) {
+                return null;
+            }
+
+            return thread[index].Frame ?? SysModule._getframeImpl(thread[index].Context, thread.Count - 1 - index, thread);
+        }
 
         
         private void DispatchTrace(List<FunctionStack> thread, Debugging.TraceEventKind kind, object payload, TracebackDelegate traceDispatch, object traceDispatchObject, TraceBackFrame pyFrame) {

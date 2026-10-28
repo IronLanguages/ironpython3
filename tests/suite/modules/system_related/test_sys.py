@@ -249,7 +249,7 @@ f()
 sys.settrace(None)
 print(('call', 'f') in events)
 """
-        # Before the fix, defining f under -X:Debug gave it its normal (untraced) delegate, even with tracing on.
+        # Before PR #2118, defining f under -X:Debug gave it its normal (untraced) delegate, even with tracing on.
         out = subprocess.check_output([sys.executable, '-X:Debug', '-c', code])
         self.assertEqual(out.strip(), b'True')
 
@@ -298,6 +298,36 @@ print(('call', 'f') in events)
             finished.set()
             thread.join()
         self.assertEqual(events, [('call', 'f'), ('line', 'f'), ('call', 'stop'), ('line', 'stop')])
+
+    def test_settrace_f_back(self):
+        # The frame of a traced function called from code that is not traced has the frame of that code as f_back
+        def g():
+            return sys._getframe(0).f_back
+
+        sys.settrace(lambda *args: None)
+        try:
+            back = g()
+        finally:
+            sys.settrace(None)
+        self.assertIs(back, sys._getframe(0))
+
+    def test_settrace_exec_f_back(self):
+        # Code run by exec while tracing is on has a single frame, whose f_back is the frame that called exec
+        ns = {'sys': sys}
+        sys.settrace(lambda *args: None)
+        try:
+            exec("back = sys._getframe(0).f_back", ns)
+        finally:
+            sys.settrace(None)
+        self.assertIs(ns['back'], sys._getframe(0))
+
+    @skipUnlessIronPython()
+    def test_settrace_Xtracing_module_frame(self):
+        # With -X:Tracing, the main module has a single frame
+        import subprocess
+        code = "import traceback\ndef g():\n    return [entry[2] for entry in traceback.extract_stack()]\nprint(g())\n"
+        out = subprocess.check_output([sys.executable, '-X:Tracing', '-c', code])
+        self.assertEqual(out.strip(), b"['<module>', 'g']")
 
     @skipUnlessIronPython()
     @unittest.expectedFailure # dummy getrefcount removed in https://github.com/IronLanguages/ironpython3/pull/577

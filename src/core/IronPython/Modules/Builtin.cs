@@ -58,7 +58,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 object module = Importer.ImportModule(context, globals, name, hasFromList, level);
                 if (module is null) return ModuleNotFound(context, name);
 
-                if (hasFromList && HasPath(module)) {
+                if (hasFromList && HasPath(context, module)) {
                     return PythonOps.Invoke(context, bootstrap, "_handle_fromlist", module, fromlist, PythonOps.GetBoundAttr(context, bootstrap, "_gcd_import"))!;
                 }
                 return module;
@@ -92,7 +92,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return module;
             }
 
-            bool HasPath(object module) {
+            static bool HasPath(CodeContext context, object module) {
                 // the module type has no __path__ or __getattr__, so only the dict matters (and a miss through HasAttr is slow)
                 if (module is PythonModule mod && mod.GetType() == typeof(PythonModule)) return mod.__dict__._storage.TryGetPath(out _);
                 return PythonOps.HasAttr(context, module, "__path__");

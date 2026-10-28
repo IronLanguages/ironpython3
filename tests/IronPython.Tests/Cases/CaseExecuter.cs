@@ -157,6 +157,11 @@ namespace IronPythonTest.Cases {
             return string.Empty;
         }
 
+        // the module name of a StdLib file, for packages with relative imports to run with -m
+        private static string GetModuleName(string path) {
+            return Path.GetRelativePath(IRONPYTHONPATH, Path.ChangeExtension(path, null)).Replace(Path.DirectorySeparatorChar, '.');
+        }
+
         private string ReplaceVariables(string input, Dictionary<string, string> replacements) {
             Regex variableRegex = new Regex(@"\$\(([^}]+)\)", RegexOptions.Compiled);
 
@@ -189,7 +194,8 @@ namespace IronPythonTest.Cases {
             int exitCode = -1;
             var argReplacements = new Dictionary<string, string>() {
                 { "TEST_FILE", testcase.Path },
-                { "TEST_FILE_DIR", Path.GetDirectoryName(testcase.Path) }
+                { "TEST_FILE_DIR", Path.GetDirectoryName(testcase.Path) },
+                { "TEST_MODULE", GetModuleName(testcase.Path) }
             };
 
             var wdReplacements = new Dictionary<string, string>() {

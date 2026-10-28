@@ -16,6 +16,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Compiler;
 using IronPython.Modules;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -1172,6 +1173,121 @@ namespace IronPython.Runtime {
                 object member = NamespaceTrackerOps.GetCustomMember(context, parent, name);
                 return member == OperationFailed.Value ? null : member;
             }
+        }
+
+        /// <summary>
+        /// sys.path_hooks entry and path entry finder for Python source files served by a host-provided PAL.
+        /// </summary>
+        [PythonType]
+        public sealed class PalImporter {
+            private readonly string _path;
+
+            public PalImporter(CodeContext/*!*/ context, object? path) {
+                if (path is null || path is "") path = "."; // like FileFinder
+                if (path is not string strPath || GetFullDirectoryPath(context.LanguageContext.DomainManager.Platform, strPath) is not string fullPath) {
+                    throw PythonOps.ImportError("only directories are supported");
+                }
+                _path = fullPath; // like FileFinder since 3.8, so that a later chdir doesn't change the directory
+
+                static string? GetFullDirectoryPath(PlatformAdaptationLayer pal, string path) {
+                    try {
+                        return pal.DirectoryExists(path) ? pal.GetFullPath(path) : null;
+                    } catch (Exception) {
+                        return null; // host PALs could throw anything, PathFinder only expects ImportError
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Like importlib's FileFinder, packages take precedence over modules, and modules over namespace
+            /// package portions (directories without __init__.py).
+            /// </summary>
+            public object? find_spec(CodeContext/*!*/ context, [NotNone] string fullname, object? target = null) {
+                PythonContext pc = context.LanguageContext;
+
+                if (FindSourceFile(pc, fullname, out string? packageDir) is string filename) {
+                    return CreateSpec(filename, packageDir);
+                }
+
+                if (packageDir is not null) {
+                    // PathFinder collects the portions into a namespace package
+                    object? spec = PythonCalls.Call(context, pc.ImportLibModuleSpec, fullname, null);
+                    PythonOps.SetAttr(context, spec, "submodule_search_locations", PythonList.FromArrayNoCopy(packageDir));
+                    return spec;
+                }
+
+                return null;
+
+                object? CreateSpec(string filename, string? packageDir) {
+                    // like importlib's spec_from_file_location, so that importlib sets __file__ and __path__
+                    object? spec = PythonCalls.CallWithKeywordArgs(context, pc.ImportLibModuleSpec, [fullname, this, filename], ["origin"]);
+                    PythonOps.SetAttr(context, spec, "has_location", ScriptingRuntimeHelpers.True);
+                    if (packageDir is not null) {
+                        PythonOps.SetAttr(context, spec, "submodule_search_locations", PythonList.FromArrayNoCopy(packageDir));
+                    }
+                    return spec;
+                }
+            }
+
+            /// <summary>
+            /// Returns the __init__.py of a package (with packageDir set) or the .py file of a module. When neither
+            /// exists, packageDir is set if the directory is a namespace package portion.
+            /// </summary>
+            private string? FindSourceFile(PythonContext pc, string fullname, out string? packageDir) {
+                PlatformAdaptationLayer pal = pc.DomainManager.Platform;
+                packageDir = null;
+
+                string candidate;
+                try {
+                    candidate = pal.CombinePaths(_path, fullname.Substring(fullname.LastIndexOf('.') + 1));
+                } catch (ArgumentException) {
+                    return null; // invalid name
+                }
+
+                string? dir = GetFullPathAndValidateCase(pc, candidate, true);
+                if (dir is not null && GetFullPathAndValidateCase(pc, pal.CombinePaths(dir, "__init__.py"), false) is string initFile) {
+                    packageDir = dir;
+                    return initFile;
+                }
+
+                if (GetFullPathAndValidateCase(pc, candidate + ".py", false) is string moduleFile) {
+                    return moduleFile;
+                }
+
+                packageDir = dir;
+                return null;
+            }
+
+            /// <summary>
+            /// Like importlib's InspectLoader, used by linecache for traceback and inspect source lines.
+            /// </summary>
+            public string get_source(CodeContext/*!*/ context, [NotNone] string fullname) {
+                PythonContext pc = context.LanguageContext;
+                string filename = FindSourceFile(pc, fullname, out _) ?? throw PythonOps.ImportError("can't find source for {0}", fullname);
+                return pc.CreateFileUnit(filename, pc.DefaultEncoding, SourceCodeKind.Statements).GetCode();
+            }
+
+            public object? create_module(object? spec) => null; // importlib creates the module
+
+            /// <summary>
+            /// Runs the source file at __spec__.origin in the module, like importlib's SourceLoader,
+            /// so that reload runs it again in the same module.
+            /// </summary>
+            public void exec_module(CodeContext/*!*/ context, [NotNone] PythonModule module) {
+                if (!PythonOps.TryGetBoundAttr(context, module, "__spec__", out object? spec)
+                    || !PythonOps.TryGetBoundAttr(context, spec, "origin", out object? origin) || origin is not string filename) {
+                    throw PythonOps.ImportError("module {0} has no __spec__.origin", PythonOps.Repr(context, module.GetName()));
+                }
+
+                PythonContext pc = context.LanguageContext;
+                // like compile(), SourceCodeKind.File would replace __name__
+                SourceUnit sourceUnit = pc.CreateFileUnit(filename, pc.DefaultEncoding, SourceCodeKind.Statements);
+                PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, false, 0);
+                var code = FunctionCode.FromSourceUnit(sourceUnit, compilerOptions, register: true);
+                Builtin.exec(context, code, module.__dict__);
+            }
+
+            public string __repr__(CodeContext/*!*/ context) => $"PalImporter({PythonOps.Repr(context, _path)})";
         }
 
 #nullable restore

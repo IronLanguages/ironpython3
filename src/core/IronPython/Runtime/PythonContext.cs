@@ -316,6 +316,11 @@ namespace IronPython.Runtime {
                     // Python modules take precedence over .NET namespaces and types; namespace packages come last,
                     // so that a directory on sys.path doesn't hide a .NET namespace
                     metaPath.insert(metaPath.index(pathFinder), new Importer.ClrImporter(pathFinder));
+
+                    if (DomainManager.Platform.GetType() != typeof(PlatformAdaptationLayer)) {
+                        ((PythonList)GetSystemStateValue("path_hooks")).append(DynamicHelpers.GetPythonTypeFromType(typeof(Importer.PalImporter)));
+                    }
+
                     ImportLibBootstrap = _frozen_importlib;
                 } catch {
                     Debug.Fail("Failed to bootstrap importlib");

@@ -1201,6 +1201,36 @@ class Test(object):
             del runtime_globals.globals_import_error
             sys.modules.pop('globals_import_error', None)
 
+    @skipUnlessIronPython()
+    def test_clr_importer_globals_blocked(self):
+        # a None in sys.modules blocks the import even if the name is in the runtime's globals
+        import clr
+        runtime_globals = clr.GetCurrentRuntime().Globals
+        sys.modules['blocked_name'] = None
+        runtime_globals.blocked_name = object()
+        try:
+            with self.assertRaises(ImportError) as cm:
+                import blocked_name
+            self.assertEqual(cm.exception.name, 'blocked_name')
+            self.assertIsNone(sys.modules['blocked_name'])
+        finally:
+            del runtime_globals.blocked_name
+            sys.modules.pop('blocked_name', None)
+
+    @skipUnlessIronPython()
+    def test_clr_importer_globals_import_module(self):
+        # names in the runtime's globals are visible to importlib too
+        import clr
+        runtime_globals = clr.GetCurrentRuntime().Globals
+        value = object()
+        runtime_globals.globals_import_module = value
+        try:
+            self.assertIs(importlib.import_module('globals_import_module'), value)
+            self.assertIs(sys.modules['globals_import_module'], value)
+        finally:
+            del runtime_globals.globals_import_module
+            sys.modules.pop('globals_import_module', None)
+
     def test_get_frozen_object(self):
         # frozen objects not supported, this always fails
         self.assertRaises(ImportError, imp.get_frozen_object, 'foo')

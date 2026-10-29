@@ -326,15 +326,8 @@ namespace IronPython.Runtime {
             if (modules.TryGetValue(absName, out object? module) && module is not null) {
                 WaitForInitializing(module, absName);
             } else {
-                // anything unusual goes through _gcd_import for its errors
-                try {
-                    module = PythonOps.Invoke(context, bootstrap, "_gcd_import", absName);
-                } catch (ImportException e) when (level == 0 && !modName.Contains('.')
-                    && e.GetPythonException() is PythonExceptions._ImportError { name: string errName } && errName == modName
-                    && PythonOps.ScopeTryGetMember(context, pc.DomainManager.Globals, modName, out _)) {
-                    // IronPython: fall back on runtime globals (e.g. COM type libraries), unless the ImportError came from a module that was found
-                    module = ImportReflected(context, modName);
-                }
+                // not imported yet (or blocked by None): _gcd_import finds and loads it, or raises
+                module = PythonOps.Invoke(context, bootstrap, "_gcd_import", absName);
             }
 
             object? top = module;
@@ -740,7 +733,7 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        private static string [] SubArray(string[] t, int len) {
+        private static string[] SubArray(string[] t, int len) {
             var ret = new string[len];
             Array.Copy(t, ret, len);
             return ret;
@@ -1080,7 +1073,7 @@ namespace IronPython.Runtime {
                 return null;
             }
 
-            if(context.LanguageContext.DomainManager.Platform.DirectoryExists(path) && !context.LanguageContext.DomainManager.Platform.FileExists(context.LanguageContext.DomainManager.Platform.CombinePaths(path, "__init__.py"))) {
+            if (context.LanguageContext.DomainManager.Platform.DirectoryExists(path) && !context.LanguageContext.DomainManager.Platform.FileExists(context.LanguageContext.DomainManager.Platform.CombinePaths(path, "__init__.py"))) {
                 PythonOps.Warn(context, PythonExceptions.ImportWarning, "Not importing directory '{0}': missing __init__.py", path);
             }
 
@@ -1095,8 +1088,8 @@ namespace IronPython.Runtime {
 #nullable enable
 
         /// <summary>
-        /// sys.meta_path finder for .NET namespaces and types. It is added after importlib's PathFinder
-        /// so Python modules take precedence over .NET namespaces and types.
+        /// sys.meta_path finder for the runtime's globals and .NET namespaces and types. It is added after
+        /// importlib's PathFinder so Python modules take precedence over them.
         /// </summary>
         [PythonType]
         public sealed class ClrImporter {
@@ -1132,7 +1125,7 @@ namespace IronPython.Runtime {
             }
 
             /// <summary>
-            /// Looks up a top-level namespace or type, or a child of a namespace that has been imported.
+            /// Looks up a name in the runtime's globals, a top-level namespace or type, or a child of a namespace that has been imported.
             /// Returns the same object as attribute access on the namespace.
             /// </summary>
             private static object? FindMember(CodeContext/*!*/ context, string fullname) {
@@ -1143,8 +1136,10 @@ namespace IronPython.Runtime {
                 int lastDot = fullname.LastIndexOf('.');
                 if (lastDot == -1) {
                     // names in the runtime's globals (e.g. COM type libraries) take precedence over namespaces
-                    // and are left to the legacy importer
-                    if (PythonOps.ScopeTryGetMember(context, pc.DomainManager.Globals, fullname, out _)) return null;
+                    if (PythonOps.ScopeTryGetMember(context, pc.DomainManager.Globals, fullname, out object? value)) {
+                        // use the shared CLS context to avoid setting ShowCls on importlib._bootstrap
+                        return MemberTrackerToPython(pc.SharedClsContext, value);
+                    }
                     parent = pc.TopNamespace;
                     name = fullname;
                 } else {

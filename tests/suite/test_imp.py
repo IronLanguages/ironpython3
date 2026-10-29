@@ -642,8 +642,7 @@ called = 3.14
             for name in names:
                 sys.modules.pop(name, None)
 
-    @unittest.skip('No access to CPython stdlib')
-    def test_import_hooks_import_precence(self):
+    def test_import_hooks_import_precedence(self):
         """__import__ takes precedence over import hooks"""
         global myimpCalled
         myimpCalled = None
@@ -658,7 +657,7 @@ called = 3.14
         import distutils
         import distutils.command
         mi = myimp()
-        sys.meta_path.append(mi)
+        sys.meta_path.insert(0, mi)
         builtinimp = get_builtins_dict()['__import__']
         try:
             get_builtins_dict()['__import__'] = myimport
@@ -666,16 +665,18 @@ called = 3.14
             import abc
             self.assertEqual(abc, 'myimport')
             self.assertEqual(myimpCalled, None)
+        finally:
+            get_builtins_dict()['__import__'] = builtinimp
 
-            # reload on a built-in hits the loader protocol
+        try:
+            # reload hits the import hooks
             imp.reload(distutils)
             self.assertEqual(myimpCalled, ('distutils', None))
 
             imp.reload(distutils.command)
             self.assertEqual(myimpCalled[0], 'distutils.command')
-            self.assertEqual(myimpCalled[1][0][-7:], 'distutils')
+            self.assertEqual(myimpCalled[1][0][-9:], 'distutils')
         finally:
-            get_builtins_dict()['__import__'] = builtinimp
             sys.meta_path.remove(mi)
 
     def test_import_hooks_bad_importer(self):

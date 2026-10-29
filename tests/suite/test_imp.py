@@ -642,6 +642,16 @@ called = 3.14
             for name in names:
                 sys.modules.pop(name, None)
 
+    def test_import_empty_name(self):
+        """an absolute import of an empty name raises, even if it's in sys.modules"""
+        self.assertRaises(ValueError, __import__, '')
+        sys.modules[''] = sys
+        try:
+            self.assertRaises(ValueError, __import__, '')
+            self.assertRaises(ValueError, __import__, '', None, None, ['x'])
+        finally:
+            del sys.modules['']
+
     def test_import_hooks_import_precedence(self):
         """__import__ takes precedence over import hooks"""
         global myimpCalled

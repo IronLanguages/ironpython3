@@ -321,6 +321,9 @@ namespace IronPython.Runtime {
                 if (!TryResolveName(modName, strPackage, level, out absName)) {
                     throw PythonOps.ValueError("attempted relative import beyond top-level package");
                 }
+            } else if (modName.Length == 0) {
+                // check before the sys.modules lookup, like CPython
+                throw PythonOps.ValueError("Empty module name");
             }
 
             if (modules.TryGetValue(absName, out object? module) && module is not null) {
@@ -346,13 +349,14 @@ namespace IronPython.Runtime {
                 if (top is MemberTracker || top is PythonType { IsSystemType: true } || top == pc.ClrModule) {
                     context.ShowCls = true;
                 }
-            } else if (!bottom && modName.Length != 0) {
+            } else if (!bottom) {
                 // slice the resolved name like CPython's C implementation, not __name__ like _bootstrap.__import__
                 int firstDot = modName.IndexOf('.');
-                int cutOff = firstDot == -1 ? 0 : modName.Length - firstDot;
-                string topName = absName.Substring(0, absName.Length - cutOff);
-                if (!modules.TryGetValue(topName, out top)) {
-                    throw PythonOps.KeyError($"{PythonOps.Repr(context, topName)} not in sys.modules as expected");
+                if (firstDot != -1) {
+                    string topName = absName.Substring(0, absName.Length - (modName.Length - firstDot));
+                    if (!modules.TryGetValue(topName, out top)) {
+                        throw PythonOps.KeyError($"{PythonOps.Repr(context, topName)} not in sys.modules as expected");
+                    }
                 }
             }
 

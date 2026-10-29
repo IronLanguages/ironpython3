@@ -198,7 +198,9 @@ namespace IronPython.Runtime.Exceptions {
 
         public object f_builtins {
             get {
-                return _context.LanguageContext.BuiltinModuleDict;
+                // a frame created by the trace listener has no context of its own, but the listener knows the language context
+                PythonContext context = _context?.LanguageContext ?? _traceAdapter.PythonContext;
+                return context.BuiltinModuleDict;
             }
         }
 

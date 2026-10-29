@@ -56,7 +56,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 var hasFromList = PythonOps.IsTrue(fromlist);
 
                 object module = Importer.ImportModule(context, globals, name, hasFromList, level);
-                if (module is null) return ModuleNotFound(context, name);
 
                 if (hasFromList && HasPath(context, module)) {
                     return PythonOps.Invoke(context, bootstrap, "_handle_fromlist", module, fromlist, PythonOps.GetBoundAttr(context, bootstrap, "_gcd_import"))!;

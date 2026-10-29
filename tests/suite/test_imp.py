@@ -629,6 +629,19 @@ called = 3.14
             sys.modules.pop('testpkg1', None)
             sys.modules.pop('testpkg1.mod1', None)
 
+    def test_import_relative_blocked_top(self):
+        """a relative import without a fromlist returns the top module from sys.modules, even if it's None"""
+        import types
+        names = ['p', 'p.a', 'p.a.b']
+        for name in names:
+            sys.modules[name] = types.ModuleType(name)
+        try:
+            sys.modules['p.a'] = None
+            self.assertIsNone(__import__('a.b', {'__package__': 'p'}, None, None, 1))
+        finally:
+            for name in names:
+                sys.modules.pop(name, None)
+
     @unittest.skip('No access to CPython stdlib')
     def test_import_hooks_import_precence(self):
         """__import__ takes precedence over import hooks"""

@@ -1092,16 +1092,25 @@ namespace IronPython.Runtime {
 #nullable enable
 
         /// <summary>
-        /// sys.meta_path finder for the runtime's globals and .NET namespaces and types. It is added after
-        /// importlib's PathFinder so Python modules take precedence over them.
+        /// sys.meta_path finder for the runtime's globals and .NET namespaces and types. It can optionally be
+        /// given importlib's PathFinder, in which case it should be added before PathFinder so that these take
+        /// precedence over namespace packages, but defers to it for Python modules and regular packages.
         /// </summary>
         [PythonType]
         public sealed class ClrImporter {
-            internal ClrImporter() { }
+            private readonly object? _pathFinder;
+
+            internal ClrImporter(object? pathFinder = null) {
+                _pathFinder = pathFinder;
+            }
 
             public object? find_spec(CodeContext/*!*/ context, [NotNone] string fullname, object? path = null, object? target = null) {
                 object? member = FindMember(context, fullname);
                 if (member is null) return null;
+
+                // a Python module or regular package takes precedence, so return its spec rather than
+                // deferring, which would run the path finder a second time
+                if (FindPathSpec(context, fullname, path, target) is object spec) return spec;
 
                 // we return "this" as the loader for the module, which uses the legacy load_module
                 // rather than exec_module since types and namespaces don't support setting
@@ -1110,7 +1119,18 @@ namespace IronPython.Runtime {
             }
 
             public object? find_module(CodeContext/*!*/ context, [NotNone] string fullname, object? path = null) {
-                return FindMember(context, fullname) is null ? null : this;
+                object? spec = find_spec(context, fullname, path);
+                if (spec is null) return null;
+                return PythonOps.GetBoundAttr(context, spec, "loader");
+            }
+
+            /// <summary>
+            /// Returns the spec of a Python module or regular package found by the path finder, ignoring namespace packages.
+            /// </summary>
+            private object? FindPathSpec(CodeContext/*!*/ context, string fullname, object? path, object? target) {
+                if (_pathFinder is null) return null;
+                object? spec = PythonOps.Invoke(context, _pathFinder, "find_spec", fullname, path, target);
+                return spec is not null && PythonOps.GetBoundAttr(context, spec, "loader") is not null ? spec : null;
             }
 
             public object load_module(CodeContext/*!*/ context, [NotNone] string fullname) {

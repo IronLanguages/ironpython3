@@ -1145,7 +1145,7 @@ class Test(object):
         import System.Collections.Generic
 
         names = [type(finder).__name__ if not isinstance(finder, type) else finder.__name__ for finder in sys.meta_path]
-        self.assertLess(names.index('PathFinder'), names.index('ClrImporter'))
+        self.assertLess(names.index('ClrImporter'), names.index('PathFinder'))
 
         # namespaces and types are imported as the same objects as attribute access gives
         self.assertIs(importlib.import_module('System.Collections.Generic'), System.Collections.Generic)
@@ -1224,6 +1224,33 @@ class Test(object):
         finally:
             del runtime_globals.globals_import_error
             sys.modules.pop('globals_import_error', None)
+
+    @skipUnlessIronPython()
+    def test_clr_importer_namespace_package(self):
+        # .NET namespaces take precedence over namespace packages, but not over regular packages and modules
+        import clr
+        from System.Reflection import AssemblyName, TypeAttributes
+        from System.Reflection.Emit import AssemblyBuilder, AssemblyBuilderAccess
+        names = ['ClrImporterNsDir', 'ClrImporterNsPkg', 'ClrImporterNsMod']
+        ab = AssemblyBuilder.DefineDynamicAssembly(AssemblyName('ClrImporterNamespace'), AssemblyBuilderAccess.Run)
+        mb = ab.DefineDynamicModule('ClrImporterNamespace')
+        for name in names:
+            mb.DefineType(name + '.Type', TypeAttributes.Public).CreateType()
+        clr.AddReference(ab)
+
+        self.ensure_directory_present(os.path.join(self._imptestdir, 'ClrImporterNsDir'))
+        self.write_to_file(os.path.join(self._imptestdir, 'ClrImporterNsPkg', '__init__.py'), 'value = 1')
+        self.write_to_file(os.path.join(self._imptestdir, 'ClrImporterNsMod.py'), 'value = 2')
+        importlib.invalidate_caches()
+        try:
+            with path_modifier(self._imptestdir):
+                import ClrImporterNsDir, ClrImporterNsPkg, ClrImporterNsMod
+            self.assertTrue(hasattr(ClrImporterNsDir, 'Type'))
+            self.assertEqual(ClrImporterNsPkg.value, 1)
+            self.assertEqual(ClrImporterNsMod.value, 2)
+        finally:
+            for name in names:
+                sys.modules.pop(name, None)
 
     @skipUnlessIronPython()
     def test_clr_importer_globals_blocked(self):

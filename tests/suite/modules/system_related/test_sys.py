@@ -329,6 +329,20 @@ print(('call', 'f') in events)
         out = subprocess.check_output([sys.executable, '-X:Tracing', '-c', code])
         self.assertEqual(out.strip(), b"['<module>', 'g']")
 
+    def test_settrace_f_builtins(self):
+        # The frame of a traced function has the same builtins as the frame of code that is not traced
+        import builtins
+        def g():
+            return sys._getframe(0).f_builtins
+
+        sys.settrace(lambda *args: None)
+        try:
+            traced = g()
+        finally:
+            sys.settrace(None)
+        self.assertIs(traced, builtins.__dict__)
+        self.assertIs(sys._getframe(0).f_builtins, builtins.__dict__)
+
     @skipUnlessIronPython()
     @unittest.expectedFailure # dummy getrefcount removed in https://github.com/IronLanguages/ironpython3/pull/577
     def test_getrefcount(self):

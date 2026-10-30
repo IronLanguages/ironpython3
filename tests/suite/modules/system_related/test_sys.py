@@ -361,4 +361,22 @@ print(('call', 'f') in events)
             See issue https://github.com/IronLanguages/ironpython3/issues/875 for full details '''
         self.assertTrue(sys.builtin_module_names == tuple(sorted(sys.builtin_module_names)))
 
+    def test_setrecursionlimit_existing_function(self):
+        # Setting a recursion limit is enforced also for functions that were already called before
+        # (in a new process, where IronPython enforces no limit by default)
+        import subprocess
+        code = """import sys
+def f(n):
+    return f(n - 1) if n else 0
+f(10)
+sys.setrecursionlimit(50)
+try:
+    f(100)
+    print(False)
+except RecursionError:
+    print(True)
+"""
+        out = subprocess.check_output([sys.executable, '-c', code])
+        self.assertEqual(out.strip(), b'True')
+
 run_test(__name__)

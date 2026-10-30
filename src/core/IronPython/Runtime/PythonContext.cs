@@ -348,6 +348,7 @@ namespace IronPython.Runtime {
 
         private void ManagerAssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
             TopNamespace.LoadAssembly(e.Assembly);
+            Importer.ClrImporter.RefreshModules(this);
         }
 
         /// <summary>

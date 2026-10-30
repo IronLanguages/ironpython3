@@ -337,12 +337,7 @@ namespace IronPython.Runtime {
             object? top = module;
             if (level == 0) {
                 int firstDot = modName.IndexOf('.');
-                if (firstDot == -1) {
-                    // IronPython: refresh .NET namespaces and types, clr.AddReference could have invalidated them
-                    if (IsReflected(module)) {
-                        module = top = ImportReflected(context, modName, allowSourceFile: false) ?? module;
-                    }
-                } else if (!bottom) {
+                if (firstDot != -1 && !bottom) {
                     // import the top-level package like CPython, it may have been removed from sys.modules
                     top = ImportModuleWithImportLib(context, bootstrap, globals, modName.Substring(0, firstDot), bottom: true, level: 0);
                 }
@@ -1132,6 +1127,24 @@ namespace IronPython.Runtime {
                 if (_pathFinder is null) return null;
                 object? spec = PythonOps.Invoke(context, _pathFinder, "find_spec", fullname, path, target);
                 return spec is not null && PythonOps.GetBoundAttr(context, spec, "loader") is not null ? spec : null;
+            }
+
+            public void invalidate_caches(CodeContext/*!*/ context) {
+                RefreshModules(context.LanguageContext);
+            }
+
+            /// <summary>
+            /// Replaces the .NET types and runtime globals in sys.modules that changed, e.g. a type that
+            /// became a type group when another assembly was loaded. Namespaces are live and are kept.
+            /// </summary>
+            internal static void RefreshModules(PythonContext pc) {
+                // enumerating sys.modules takes a snapshot, this can run on any thread
+                foreach (var pair in pc.SystemStateModules) {
+                    if (pair.Key is string name && pair.Value is not NamespaceTracker && IsReflected(pair.Value)
+                        && FindMember(pc.SharedClsContext, name) is object member && member != pair.Value) {
+                        pc.SystemStateModules[name] = member;
+                    }
+                }
             }
 
             public object load_module(CodeContext/*!*/ context, [NotNone] string fullname) {

@@ -49,15 +49,55 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
         [LightThrowing]
         public static object __import__(CodeContext/*!*/ context, [NotNone] string name, object? globals = null, object? locals = null, object? fromlist = null, int level = 0) {
-            if (fromlist is string || fromlist is Extensible<string>) {
-                fromlist = new List<object> { fromlist };
+            PythonContext pc = context.LanguageContext;
+            PythonModule? bootstrap = pc.ImportLibBootstrap;
+
+            if (bootstrap is not null) {
+                var hasFromList = PythonOps.IsTrue(fromlist);
+
+                object module = Importer.ImportModule(context, globals, name, hasFromList, level);
+
+                if (hasFromList && HasPath(context, module)) {
+                    return PythonOps.Invoke(context, bootstrap, "_handle_fromlist", module, fromlist, PythonOps.GetBoundAttr(context, bootstrap, "_gcd_import"))!;
+                }
+                return module;
+            } else {
+                if (fromlist is string || fromlist is Extensible<string>) {
+                    fromlist = new List<object> { fromlist };
+                }
+                IList? from = fromlist as IList;
+                var hasFromList = from != null && from.Count > 0;
+
+                object module = Importer.ImportModule(context, globals, name, hasFromList, level);
+                if (module is null) return ModuleNotFound(context, name);
+
+                if (hasFromList && from is not null && module is PythonModule mod && mod.__dict__._storage.TryGetPath(out _)) {
+                    string strAttrName;
+                    for (int i = 0; i < from.Count; i++) {
+                        object? attrName = from[i];
+
+                        if (pc.TryConvertToString(attrName, out strAttrName) &&
+                            !string.IsNullOrEmpty(strAttrName) &&
+                            strAttrName != "*") {
+                            try {
+                                Importer.ImportFrom(context, mod, strAttrName);
+                            } catch (ImportException) {
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                return module;
             }
 
-            IList? from = fromlist as IList;
-            PythonContext pc = context.LanguageContext;
+            static bool HasPath(CodeContext context, object module) {
+                // the module type has no __path__ or __getattr__, so only the dict matters (and a miss through HasAttr is slow)
+                if (module is PythonModule mod && mod.GetType() == typeof(PythonModule)) return mod.__dict__._storage.TryGetPath(out _);
+                return PythonOps.HasAttr(context, module, "__path__");
+            }
 
-            object ret = Importer.ImportModule(context, globals, name, from != null && from.Count > 0, level);
-            if (ret == null) {
+            static object ModuleNotFound(CodeContext context, string name) {
 #if PYTHON_36_OR_GREATER // ModuleNotFoundError since Python 3.6
                 var err = PythonOps.ModuleNotFoundError("No module named {0}", PythonOps.Repr(context, name));
 #else
@@ -66,25 +106,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 ((PythonExceptions._ImportError)err.GetPythonException()!).name = name;
                 return LightExceptions.Throw(err);
             }
-
-            if (ret is PythonModule mod && from != null) {
-                string strAttrName;
-                for (int i = 0; i < from.Count; i++) {
-                    object? attrName = from[i];
-
-                    if (pc.TryConvertToString(attrName, out strAttrName) &&
-                        !string.IsNullOrEmpty(strAttrName) &&
-                        strAttrName != "*") {
-                        try {
-                            Importer.ImportFrom(context, mod, strAttrName);
-                        } catch (ImportException) {
-                            continue;
-                        }
-                    }
-                }
-            }
-
-            return ret;
         }
 
         [Documentation("abs(number) -> number\n\nReturn the absolute value of the argument.")]

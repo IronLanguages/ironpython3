@@ -4,6 +4,8 @@
 
 "module doc"
 
+import importlib
+
 from iptest import IronPythonTestCase, is_cli, path_modifier, retryOnFailure, run_test, skipUnlessIronPython
 
 class DocTest(IronPythonTestCase):
@@ -208,11 +210,13 @@ class DocTest(IronPythonTestCase):
         try:
             with path_modifier('.'):
                 self.write_to_file(temp_filename_empty, "")
+                importlib.invalidate_caches()
                 import cp21360_empty
                 self.assertEqual(cp21360_empty.__doc__, None)
 
             with path_modifier('.'):
                 self.write_to_file(temp_filename, "x = 3.14")
+                importlib.invalidate_caches()
                 import cp21360
                 self.assertEqual(cp21360.__doc__, None)
                 self.assertEqual(cp21360.x, 3.14)

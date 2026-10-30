@@ -300,15 +300,26 @@ namespace IronPython.Runtime {
                 try {
                     var _frozen_importlib = LoadModuleFromResource("_frozen_importlib", "IronPython.Modules._bootstrap.py");
 #if PYTHON_36_OR_GREATER
-                    LoadModuleFromResource("_frozen_importlib_external", "IronPython.Modules._bootstrap_external.py");
+                    var _frozen_importlib_external = LoadModuleFromResource("_frozen_importlib_external", "IronPython.Modules._bootstrap_external.py");
 #endif
                     PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install", SystemState, GetBuiltinModule("_imp"));
 #if PYTHON_37_OR_GREATER
                     PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install_external_importers");
 #endif
-                    var moduleSpec = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "ModuleSpec");
-                    (GetSystemStateValue("meta_path") as PythonList)?.append(new Importer.ClrImporter(moduleSpec));
-                } catch { }
+                    ImportLibModuleSpec = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "ModuleSpec");
+                    var metaPath = (PythonList)GetSystemStateValue("meta_path");
+#if PYTHON_36_OR_GREATER
+                    var pathFinder = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib_external, "PathFinder");
+#else
+                    var pathFinder = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "PathFinder");
+#endif
+                    // Python modules take precedence over .NET namespaces and types; namespace packages come last,
+                    // so that a directory on sys.path doesn't hide a .NET namespace
+                    metaPath.insert(metaPath.index(pathFinder), new Importer.ClrImporter(pathFinder));
+                    ImportLibBootstrap = _frozen_importlib;
+                } catch {
+                    Debug.Fail("Failed to bootstrap importlib");
+                }
 
                 PythonModule LoadModuleFromResource(string name, string resourceName) {
                     var sourceUnit = CreateSourceUnit(new ResourceStreamContentProvider(resourceName), null, DefaultEncoding, SourceCodeKind.File);
@@ -1146,6 +1157,17 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        /// <summary>
+        /// The _frozen_importlib module, which drives imports once it has been bootstrapped.
+        /// When null (e.g. NoImportLib), the legacy importer is used instead.
+        /// </summary>
+        internal PythonModule ImportLibBootstrap { get; private set; }
+
+        /// <summary>
+        /// importlib's ModuleSpec type, used by our sys.meta_path finders to create specs.
+        /// </summary>
+        internal object ImportLibModuleSpec { get; private set; }
 
         private object copyRegModule;
 

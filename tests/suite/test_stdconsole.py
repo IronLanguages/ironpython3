@@ -267,7 +267,7 @@ class StdConsoleTest(IronPythonTestCase):
             with open(tmpscript2, "w") as f:
                 f.write("print(2+2)\n")
 
-            self.TestCommandLine(('-E', tmpscript2), "4\n")
+            self.TestCommandLine(('-E', '-S', tmpscript2), "4\n")
 
             tmpscript3 = os.path.join(self.tmpdir, "startupdie.py")
             with open(tmpscript3, "w") as f:

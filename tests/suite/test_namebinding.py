@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import importlib
 import sys
 import unittest
 
@@ -1093,6 +1094,7 @@ class NameBindingTest(IronPythonTestCase):
             fname = module_name + '.py'
             with open(fname, 'w+') as f:
                 f.write('foo = 42')
+            importlib.invalidate_caches()
             try:
                 with path_modifier('.'):
                     foo = __import__(module_name).foo

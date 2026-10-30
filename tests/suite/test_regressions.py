@@ -14,6 +14,7 @@ where 'cp' refers to the fact that the test case is for a regression on CodePlex
 Work Item number.
 """
 
+import importlib
 import os
 import sys
 import unittest
@@ -434,6 +435,7 @@ with open(r"%s", "w") as f:
         try:
             self.write_to_file(stuff_mod, "Keys = 3")
             self.write_to_file(check_mod, "def check(module):\n    return module.Keys")
+            importlib.invalidate_caches()
             stuff = __import__(stuff_name)
             check = __import__(check_name).check
             self.assertEqual(check(stuff), 3)
@@ -643,6 +645,7 @@ class C:
             cp20174_property = os.path.join(cp20174_path, "property.py")
             self.write_to_file(cp20174_property, "x=1")
 
+            importlib.invalidate_caches()
             import cp20174
             self.assertEqual(cp20174.property.x, 1)
 

@@ -1,13 +1,14 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
-
-using IKVM.Reflection.Emit;
 
 using Microsoft.Scripting.Runtime;
 
@@ -17,8 +18,8 @@ namespace IronPython.Compiler {
         public Config() {
             Embed = false;
             Files = new List<string>();
-            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly;
-            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
+            Platform = PortableExecutableKinds.ILOnly;
+            Machine = ImageFileMachine.I386;
             Standalone = false;
             Target = PEFileKinds.Dll;
             UseMta = false;
@@ -106,6 +107,11 @@ namespace IronPython.Compiler {
             private set;
         }
 
+        public bool NoLogo {
+            get;
+            private set;
+        }
+
         public List<string> Files {
             get;
             private set;
@@ -126,12 +132,12 @@ namespace IronPython.Compiler {
             internal set;
         }
 
-        public IKVM.Reflection.ImageFileMachine Machine {
+        public ImageFileMachine Machine {
             get;
             private set;
         }
 
-        public IKVM.Reflection.PortableExecutableKinds Platform {
+        public PortableExecutableKinds Platform {
             get;
             private set;
         }
@@ -154,7 +160,7 @@ namespace IronPython.Compiler {
                 } else if (arg.StartsWith("/out:", StringComparison.Ordinal)) {
                     Output = arg.Substring(5).Trim('"');
                 } else if (arg.StartsWith("/target:", StringComparison.Ordinal)) {
-                    string tgt = arg.Substring(8).Trim('"');
+                    string tgt = arg.Substring(8).Trim('"').ToLowerInvariant();
                     switch (tgt) {
                         case "exe":
                             Target = PEFileKinds.ConsoleApplication;
@@ -162,24 +168,51 @@ namespace IronPython.Compiler {
                         case "winexe":
                             Target = PEFileKinds.WindowApplication;
                             break;
+                        case "library":
+                        case "dll":
                         default:
                             Target = PEFileKinds.Dll;
                             break;
                     }
                 } else if (arg.StartsWith("/platform:", StringComparison.Ordinal)) {
-                    string plat = arg.Substring(10).Trim('"');
+                    string plat = arg.Substring(10).Trim('"').ToLowerInvariant();
                     switch (plat) {
                         case "x86":
-                            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly | IKVM.Reflection.PortableExecutableKinds.Required32Bit;
-                            Machine = IKVM.Reflection.ImageFileMachine.I386;
+                        case "i386":
+                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit;
+                            Machine = ImageFileMachine.I386;
                             break;
                         case "x64":
-                            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly | IKVM.Reflection.PortableExecutableKinds.PE32Plus;
-                            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
+                        case "amd64":
+                            Platform = PortableExecutableKinds.ILOnly | PortableExecutableKinds.PE32Plus;
+                            Machine = ImageFileMachine.AMD64;
+                            break;
+                        case "ia64":
+                        case "itanium":
+                            Platform = PortableExecutableKinds.ILOnly;
+                            Machine = ImageFileMachine.IA64;
+                            break;
+                        case "arm":
+                        case "arm32":
+                            Platform = PortableExecutableKinds.ILOnly;
+                            Machine = ImageFileMachine.ARM;
+                            break;
+                        case "arm64":
+                            Platform = PortableExecutableKinds.ILOnly;
+                            Machine = (ImageFileMachine)0xAA64;
+                            break;
+                        case "anycpu":
+                            Platform = PortableExecutableKinds.ILOnly;
+                            Machine = ImageFileMachine.I386;
                             break;
                         default:
-                            Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly;
-                            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
+                            try {
+                                int machine = (int)new Int32Converter().ConvertFromInvariantString(plat);
+                                Platform = PortableExecutableKinds.ILOnly;
+                                Machine = (ImageFileMachine)machine;
+                            } catch {
+                                goto case "anycpu";
+                            }
                             break;
                     }
                 } else if (arg.StartsWith("/win32icon:", StringComparison.Ordinal)) {
@@ -210,6 +243,8 @@ namespace IronPython.Compiler {
                     foreach (var f in Directory.EnumerateFiles(Environment.CurrentDirectory, pattern)) {
                         Files.Add(Path.GetFullPath(f));
                     }
+                } else if (arg.Equals("/nologo", StringComparison.Ordinal)) {
+                    NoLogo = true;
                 } else if (Array.IndexOf(helpStrings, arg) >= 0) {
                     ConsoleOps.Usage(true);
                 } else if (arg.StartsWith("/py:", StringComparison.Ordinal)) {
@@ -306,12 +341,25 @@ namespace IronPython.Compiler {
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(Output) && !string.IsNullOrWhiteSpace(MainName)) {
-                Output = Path.GetFileNameWithoutExtension(MainName);
-                OutputPath = Path.GetDirectoryName(MainName);
-            } else if (string.IsNullOrWhiteSpace(Output) && Files != null && Files.Count > 0) {
-                Output = Path.GetFileNameWithoutExtension(Files[0]);
-                OutputPath = Path.GetDirectoryName(Files[0]);
+            if (string.IsNullOrWhiteSpace(Output)) {
+                if (!string.IsNullOrWhiteSpace(MainName)) {
+                    Output = Path.GetFileNameWithoutExtension(MainName);
+                    OutputPath = Path.GetDirectoryName(MainName);
+                } else if (Files != null && Files.Count > 0) {
+                    Output = Path.GetFileNameWithoutExtension(Files[0]);
+                    OutputPath = Path.GetDirectoryName(Files[0]);
+                }
+            }
+            else {
+                OutputPath = Path.GetDirectoryName(Output);
+                Output = Path.GetFileName(Output);
+                if (string.IsNullOrWhiteSpace(Output)) {
+                    if (!string.IsNullOrWhiteSpace(MainName)) {
+                        Output = Path.GetFileNameWithoutExtension(MainName);
+                    } else if (Files != null && Files.Count > 0) {
+                        Output = Path.GetFileNameWithoutExtension(Files[0]);
+                    }
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(Win32Icon) && Target == PEFileKinds.Dll) {
@@ -334,7 +382,7 @@ namespace IronPython.Compiler {
             res.AppendLine($"Output:\n\t{Output}");
             res.AppendLine($"OutputPath:\n\t{OutputPath}");
             res.AppendLine($"Target:\n\t{Target}");
-            res.AppendLine($"Platform:\n\t{Machine}");
+            res.AppendLine($"Platform:\n\t{Machine} ({Platform})");
             if (Target == PEFileKinds.WindowApplication) {
                 res.AppendLine("Threading:");
                 if (UseMta) {

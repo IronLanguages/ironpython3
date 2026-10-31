@@ -155,18 +155,21 @@ print(final)"""
         sys.settrace(None)
         self.assertEqual(sys.gettrace(), None)
 
-    @unittest.expectedFailure # https://github.com/IronLanguages/main/issues/740
     def test_cp24381(self):
+        # https://github.com/IronLanguages/main/issues/740
         CP24381_MESSAGES = []
 
         import sys
         orig_sys_trace_func = sys.gettrace()
-        def f(*args):
-            CP24381_MESSAGES.extend(args[1:])
-            return f
-
         cp24381_module = "cp24381_%d" % os.getpid()
         cp24381_file_name = cp24381_module + ".py"
+
+        def f(frame, event, arg):
+            # the import machinery (importlib) is Python code too, and is traced as well; keep the events of the module only
+            if os.path.basename(frame.f_code.co_filename) == cp24381_file_name:
+                CP24381_MESSAGES.extend((event, arg))
+            return f
+
         cp24381_contents  = """
 print('a')
 print('b')
@@ -185,12 +188,52 @@ f()
                 __import__(cp24381_module)
         finally:
             sys.settrace(orig_sys_trace_func)
+            sys.modules.pop(cp24381_module, None)
             os.unlink(cp24381_file_name)
 
         self.assertEqual(CP24381_MESSAGES,
                 ['call', None, 'line', None, 'line', None, 'line', None, 'line',
                 None, 'line', None, 'call', None, 'line', None, 'return', None,
                 'return', None])
+
+    def test_settrace_first_line(self):
+        # The first statement of module code gets a 'line' event of its own, as in a function.
+        # The 'call' event of module code is on the line of its first statement, as in Python 3.4.
+        # CPython changed that later: 3.10 puts it always on line 1, and 3.11 on line 0
+        check_module_call_line = is_cli or sys.version_info < (3, 10)
+
+        cases = [
+            ("x = 1\ny = 2\n",          "exec",   [('call', 1), ('line', 1), ('line', 2), ('return', 2)]),
+            ("\n\nx = 1\ny = 2\n",      "exec",   [('call', 3), ('line', 3), ('line', 4), ('return', 4)]),
+            ("'doc'\nx = 1\n",          "exec",   [('call', 1), ('line', 1), ('line', 2), ('return', 2)]),
+            ("def g(): pass\ng()\n",    "exec",   [('call', 1), ('line', 1), ('line', 2), ('call', 1), ('line', 1), ('return', 1), ('return', 2)]),
+            ("1 + 2",                   "eval",   [('call', 1), ('line', 1), ('return', 1)]),
+            ("x = 1",                   "single", [('call', 1), ('line', 1), ('return', 1)]),
+        ]
+
+        orig_sys_trace_func = sys.gettrace()
+        for source, mode, expected in cases:
+            events = []
+            def f(frame, event, arg):
+                if frame.f_code.co_filename == '<traced>':
+                    module_call = event == 'call' and frame.f_code.co_name == '<module>'
+                    events.append((event, None if module_call and not check_module_call_line else frame.f_lineno))
+                return f
+
+            if not check_module_call_line:
+                expected = [('call', None)] + expected[1:]
+
+            code = compile(source, '<traced>', mode)
+            try:
+                sys.settrace(f)
+                if mode == 'eval':
+                    eval(code, {})
+                else:
+                    exec(code, {})
+            finally:
+                sys.settrace(orig_sys_trace_func)
+
+            self.assertEqual(events, expected, (source, mode))
 
     def test_cp30130(self):
         def f(frame, event, arg):

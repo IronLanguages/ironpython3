@@ -369,6 +369,7 @@ namespace IronPython.Compiler.Ast {
                 var end = IndexToLocation(ret.Expression.EndIndex);
 
                 return Ast.Block(
+                    MakeEntrySequencePoint(ret.Expression.StartIndex),
                     Ast.DebugInfo(
                         _document,
                         start.Line,
@@ -381,6 +382,10 @@ namespace IronPython.Compiler.Ast {
             }
 
             ReadOnlyCollectionBuilder<MSAst.Expression> block = new ReadOnlyCollectionBuilder<MSAst.Expression>();
+
+            // Add beginning sequence point: the location of the 'call' trace event, as in FunctionDefinition.
+            // Without it, the first statement would take that role, and fire no 'line' event of its own.
+            block.Add(MakeEntrySequencePoint(_body is SuiteStatement { Statements: [var first, ..] } ? first.StartIndex : _body.StartIndex));
             AddInitialization(block);
 
             string doc = GetDocumentation(_body);
@@ -415,6 +420,13 @@ namespace IronPython.Compiler.Ast {
 
             return body;
         }
+
+        private MSAst.Expression MakeEntrySequencePoint(int index) {
+            var loc = index >= 0 ? IndexToLocation(index) : new SourceLocation(0, 1, 1);
+            return AstUtils.AddDebugInfo(
+                AstUtils.Empty(), _document, new SourceLocation(0, loc.Line, loc.Column), new SourceLocation(0, loc.Line, int.MaxValue));
+        }
+
 
         private void AddInitialization(ReadOnlyCollectionBuilder<MSAst.Expression> block) {
             if (IsModule) {

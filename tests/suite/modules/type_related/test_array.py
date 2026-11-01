@@ -481,12 +481,8 @@ class ArrayTest(IronPythonTestCase):
             test_cases[('l', b"\x12\x34\x45\x67\x89\xab\xcd\xef")] = "array('l', [-1167088121787632622])"
             test_cases[('L', b"\x12\x34\x45\x67\x89\xab\xcd\xef")] = "array('L', [17279655951921918994])"
 
-        if is_cli: # https://github.com/IronLanguages/ironpython2/issues/102
-            test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.9522485325887698e+189])"
-            test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.3126672485384569e+23])"
-        else:
-            test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.95224853258877e+189])"
-            test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.312667248538457e+23])"
+        test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.95224853258877e+189])"
+        test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.312667248538457e+23])"
 
         for key in test_cases.keys():
             type_code, param = key

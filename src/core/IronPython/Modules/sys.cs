@@ -119,7 +119,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             throw PythonOps.NotImplementedError("IronPython does not support sys.setcheckinterval");
         }
 
-        // warnoptions is set by PythonContext and updated on each reload        
+        // warnoptions is set by PythonContext and updated on each reload
 
         public static PythonTuple exc_info(CodeContext/*!*/ context) {
             return PythonOps.GetExceptionInfo(context);
@@ -294,7 +294,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
 #if PROFILE_SUPPORT
         // not enabled because we don't yet support tracing built-in functions.  Doing so is a little
-        // difficult because it's hard to flip tracing on/off for them w/o a perf overhead in the 
+        // difficult because it's hard to flip tracing on/off for them w/o a perf overhead in the
         // non-profiling case.
         public static void setprofile(CodeContext/*!*/ context, TracebackDelegate o) {
             PythonContext pyContext = context.LanguageContext;
@@ -489,11 +489,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             }
         }
 
-#if NETCOREAPP3_1_OR_GREATER
         public static string float_repr_style = "short";
-#else
-        public static string float_repr_style = "legacy";
-#endif
 
         public static floatinfo float_info = new floatinfo(
             Double.MaxValue,    // DBL_MAX
@@ -603,7 +599,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
             dict["platform"] = PythonContext.GetPlatform();
 
-            // !!! These fields do need to be reset on "reload(sys)". However, the initial value is specified by the 
+            // !!! These fields do need to be reset on "reload(sys)". However, the initial value is specified by the
             // engine elsewhere. For now, we initialize them just once to some default value
             dict["warnoptions"] = new PythonList(0);
 

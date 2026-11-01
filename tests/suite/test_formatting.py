@@ -393,21 +393,6 @@ class FormattingTest(IronPythonTestCase):
         """the following is borrowed from stdlib"""
 
         expected_failures = []
-        if is_cli:
-            expected_failures = """
-%r 0.03 -> 0.03
-%r 0.04 -> 0.04
-%r 0.05 -> 0.05
-%r 9999999999999999 -> 1e+16
-%r 1e16 -> 1e+16
-%r 1.001e-4 -> 0.0001001
-%r 1.00000000001e-4 -> 0.000100000000001
-%r 1.0000000001e-4 -> 0.00010000000001
-%r 0.9999999999999999e-4 -> 9.999999999999999e-05
-%r 0.999999999999e-4 -> 9.99999999999e-05
-%r 0.999e-4 -> 9.99e-05
-%r 1e-5 -> 1e-05
-""".strip().split("\n")
 
         if not format_rounds_to_even:
             expected_failures += """

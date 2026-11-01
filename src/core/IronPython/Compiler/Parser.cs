@@ -246,7 +246,7 @@ namespace IronPython.Compiler {
                 // TODO: move from source unit  .TrimStart(' ', '\t')
                 _globalParent = new PythonAst(false, _languageFeatures, false, _context);
                 ReturnStatement ret = new ReturnStatement(ParseTestListAsExpression());
-                ret.SetLoc(_globalParent, 0, 0);
+                ret.SetLoc(_globalParent, ret.Expression.IndexSpan);
                 return FinishParsing(ret);
             } catch (DecoderFallbackException dfe) {
                 throw BadSourceError(dfe);

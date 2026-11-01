@@ -65,5 +65,6 @@
   <Project Path="src/extensions/IronPython.SQLite/IronPython.SQLite.csproj" />
   <Project Path="src/extensions/IronPython.Wpf/IronPython.Wpf.csproj" />
   <Project Path="src/roslyn/IronPython.Analyzer/IronPython.Analyzer.csproj" />
+  <Project Path="src/roslyn/IronPython.SourceGenerator/IronPython.SourceGenerator.csproj" />
   <Project Path="tests/IronPython.Tests/IronPython.Tests.csproj" />
 </Solution>

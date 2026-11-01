@@ -733,27 +733,8 @@ namespace IronPython.Runtime.Operations {
             return x != y;
         }
 
-        internal static string Repr(CodeContext/*!*/ context, double self, bool trailingZeroAfterWholeFloat) {
-            if (double.IsNaN(self)) {
-                return "nan";
-            }
-
-            // first format using Python's specific formatting rules...
-            string res = StringFormatter.Format(context, "%.17g", self, trailingZeroAfterWholeFloat: trailingZeroAfterWholeFloat);
-            if (LiteralParser.ParseFloat(res) == self) {
-                return res;
-            }
-#if NETCOREAPP3_1_OR_GREATER
-            Debug.Assert(false);
-#endif
-
-            // if it's not round trippable though use .NET's round-trip format
-            res = self.ToString("R", CultureInfo.InvariantCulture);
-            if (trailingZeroAfterWholeFloat && !res.Contains('.')) {
-                res += ".0";
-            }
-            return res;
-        }
+        internal static string Repr(CodeContext/*!*/ context, double self, bool trailingZeroAfterWholeFloat)
+            => Schubfach.dtoa(self, trailingZeroAfterWholeFloat);
 
         public static string __repr__(CodeContext/*!*/ context, double self)
             => Repr(context, self, trailingZeroAfterWholeFloat: true);

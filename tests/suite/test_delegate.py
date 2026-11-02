@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, retryOnFailure, run_test, skipUnlessIronPython
 
 myfuncCalled = False
 passedarg = None
@@ -722,8 +722,7 @@ class DelegateTest(IronPythonTestCase):
             # ensure as long as the objects are still alive the event
             # handler remains alive
             import gc
-            for i in range(10):
-                gc.collect()
+            gc.collect()
 
             a.CallInstance()
             self.assertEqual(called, 2)
@@ -734,12 +733,15 @@ class DelegateTest(IronPythonTestCase):
 
         # now all references are dead, the function should be collectible
         import gc
-        for i in range(10):
-            gc.collect()
+        gc.collect()
 
         self.assertTrue(not hasattr(func_ref, "abc"))
         self.assertEqual(func_ref(), None)
         self.assertEqual(called, 2)
+
+    if is_mono:
+        # conservative stack scanning can keep foo alive
+        test_event_lifetime = retryOnFailure(test_event_lifetime)
 
     def test_reflected_event_ops(self):
         '''

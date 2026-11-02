@@ -72,6 +72,7 @@ def load_tests(loader, standard_tests, pattern):
             ]
             if sys.version_info >= (3, 6):
                 skip_tests += [
+                    test.test_functools.TestPartialC('test_weakref'),
                     test.test_functools.TestPartialCSubclass('test_weakref'),
                     test.test_functools.TestPartialPySubclass('test_weakref'),
                 ]

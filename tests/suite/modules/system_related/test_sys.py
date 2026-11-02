@@ -200,6 +200,7 @@ f()
         # The first statement of module code gets a 'line' event of its own, as in a function.
         # The 'call' event of module code is on the line of its first statement, as in Python 3.4.
         # CPython changed that later: 3.10 puts it always on line 1, and 3.11 on line 0
+        # That line is also the co_firstlineno of module code, which 3.10 and later set to 1.
         check_module_call_line = is_cli or sys.version_info < (3, 10)
 
         cases = [
@@ -210,6 +211,10 @@ f()
             ("1 + 2",                   "eval",   [('call', 1), ('line', 1), ('return', 1)]),
             ("x = 1",                   "single", [('call', 1), ('line', 1), ('return', 1)]),
         ]
+        # Before 3.7, CPython folds constants in the peephole optimizer, which places the folded constant
+        # on the line of the last operand (here 4); 3.7 moved folding to the AST, keeping the line of the expression.
+        if is_cli or sys.version_info >= (3, 7):
+            cases.append(("\n\n(1 +\n 2)",  "eval",   [('call', 3), ('line', 3), ('return', 3)]))
 
         orig_sys_trace_func = sys.gettrace()
         for source, mode, expected in cases:
@@ -224,6 +229,9 @@ f()
                 expected = [('call', None)] + expected[1:]
 
             code = compile(source, '<traced>', mode)
+            if check_module_call_line:
+                self.assertEqual(code.co_firstlineno, expected[0][1], (source, mode))
+
             try:
                 sys.settrace(f)
                 if mode == 'eval':
@@ -234,6 +242,36 @@ f()
                 sys.settrace(orig_sys_trace_func)
 
             self.assertEqual(events, expected, (source, mode))
+
+    def test_settrace_jump_in_module(self):
+        # A trace function can set f_lineno anywhere within module code, not only on its first line
+        source = "\n\nout.append(3)\nout.append(4)\n\nout.append(6)\n"
+        cases = [
+            (6, 4, [3, 4, 4, 6]),   # backward
+            (3, 6, [6]),            # forward
+        ]
+
+        orig_sys_trace_func = sys.gettrace()
+        for jump_from, jump_to, expected in cases:
+            # TODO: On IronPython, a jump works only in the code compiled first under a given file name, hence a unique name for each case
+            filename = '<jump from %d to %d>' % (jump_from, jump_to)
+            jumped = False
+            def f(frame, event, arg):
+                nonlocal jumped
+                if frame.f_code.co_filename == filename and event == 'line' and frame.f_lineno == jump_from and not jumped:
+                    jumped = True
+                    frame.f_lineno = jump_to
+                return f
+
+            out = []
+            code = compile(source, filename, 'exec')
+            try:
+                sys.settrace(f)
+                exec(code, {'out': out})
+            finally:
+                sys.settrace(orig_sys_trace_func)
+
+            self.assertEqual(out, expected, (jump_from, jump_to))
 
     def test_cp30130(self):
         def f(frame, event, arg):

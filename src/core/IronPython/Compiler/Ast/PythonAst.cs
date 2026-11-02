@@ -141,6 +141,10 @@ namespace IronPython.Compiler.Ast {
             _body = body;
             _lineLocations = lineLocations;
             _languageFeatures = languageFeatures;
+
+            // As in CPython 3.4, the code starts at its first statement (which gives co_firstlineno) and ends with its body.
+            int start = Math.Max(body is SuiteStatement { Statements: [var first, ..] } ? first.StartIndex : body.StartIndex, 0);
+            IndexSpan = new IndexSpan(start, Math.Max(body.EndIndex - start, 0));
         }
 
         /// <summary>
@@ -369,7 +373,7 @@ namespace IronPython.Compiler.Ast {
                 var end = IndexToLocation(ret.Expression.EndIndex);
 
                 return Ast.Block(
-                    MakeEntrySequencePoint(ret.Expression.StartIndex),
+                    MakeEntrySequencePoint(),
                     Ast.DebugInfo(
                         _document,
                         start.Line,
@@ -385,7 +389,7 @@ namespace IronPython.Compiler.Ast {
 
             // Add beginning sequence point: the location of the 'call' trace event, as in FunctionDefinition.
             // Without it, the first statement would take that role, and fire no 'line' event of its own.
-            block.Add(MakeEntrySequencePoint(_body is SuiteStatement { Statements: [var first, ..] } ? first.StartIndex : _body.StartIndex));
+            block.Add(MakeEntrySequencePoint());
             AddInitialization(block);
 
             string doc = GetDocumentation(_body);
@@ -421,10 +425,14 @@ namespace IronPython.Compiler.Ast {
             return body;
         }
 
-        private MSAst.Expression MakeEntrySequencePoint(int index) {
-            var loc = index >= 0 ? IndexToLocation(index) : new SourceLocation(0, 1, 1);
-            return AstUtils.AddDebugInfo(
-                AstUtils.Empty(), _document, new SourceLocation(0, loc.Line, loc.Column), new SourceLocation(0, loc.Line, int.MaxValue));
+        /// <summary>
+        ///   Makes the sequence point of the 'call' trace event, at the start of the code (see <see cref="ParsingFinished"/>).
+        /// </summary>
+        private MSAst.Expression MakeEntrySequencePoint() {
+            var loc = Start;
+            return AddDebugInfo(
+                AstUtils.Empty(),
+                new SourceSpan(new SourceLocation(0, loc.Line, loc.Column), new SourceLocation(0, loc.Line, int.MaxValue)));
         }
 
 

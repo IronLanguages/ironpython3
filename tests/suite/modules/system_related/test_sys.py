@@ -209,9 +209,12 @@ f()
             ("'doc'\nx = 1\n",          "exec",   [('call', 1), ('line', 1), ('line', 2), ('return', 2)]),
             ("def g(): pass\ng()\n",    "exec",   [('call', 1), ('line', 1), ('line', 2), ('call', 1), ('line', 1), ('return', 1), ('return', 2)]),
             ("1 + 2",                   "eval",   [('call', 1), ('line', 1), ('return', 1)]),
-            ("\n\n(1 +\n 2)",           "eval",   [('call', 3), ('line', 3), ('return', 3)]),
             ("x = 1",                   "single", [('call', 1), ('line', 1), ('return', 1)]),
         ]
+        # Before 3.7, CPython folds constants in the peephole optimizer, which places the folded constant
+        # on the line of the last operand (here 4); 3.7 moved folding to the AST, keeping the line of the expression.
+        if is_cli or sys.version_info >= (3, 7):
+            cases.append(("\n\n(1 +\n 2)",  "eval",   [('call', 3), ('line', 3), ('return', 3)]))
 
         orig_sys_trace_func = sys.gettrace()
         for source, mode, expected in cases:

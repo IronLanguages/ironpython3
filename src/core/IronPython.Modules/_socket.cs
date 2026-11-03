@@ -278,17 +278,17 @@ namespace IronPython.Modules {
                 + "\n"
                 + "Raises socket.error if the socket has been closed, the socket is listening, or\n"
                 + "another connection error occurred."
-                + "\n"
-                + "Difference from CPython: connect() does not support timeouts in blocking mode.\n"
-                + "If a timeout is set and the socket is in blocking mode, connect() will block\n"
-                + "indefinitely until a connection is made or an error occurs."
                 )]
             public void connect([NotNone] PythonTuple address) {
                 IPEndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
+                bool connected;
                 try {
-                    _socket.Connect(remoteEP);
+                    connected = TryConnect(remoteEP);
                 } catch (Exception e) {
                     throw MakeException(_context, e);
+                }
+                if (!connected) {
+                    throw PythonExceptions.CreateThrowable(timeout(_context), "timed out");
                 }
             }
 
@@ -299,19 +299,34 @@ namespace IronPython.Modules {
                 + "will still be raised.\n"
                 + "\n"
                 + "A return value of 0 indicates that the connect call was successful."
-                + "\n"
-                + "Difference from CPython: connect_ex() does not support timeouts in blocking\n"
-                + "mode. If a timeout is set and the socket is in blocking mode, connect_ex() will\n"
-                + "block indefinitely until a connection is made or an error occurs."
                 )]
             public int connect_ex([NotNone] PythonTuple address) {
                 IPEndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
-                    _socket.Connect(remoteEP);
+                    if (!TryConnect(remoteEP)) {
+                        return PythonErrno.EWOULDBLOCK;
+                    }
                 } catch (SocketException ex) {
                     return !ClrModule.IsMono ? ex.NativeErrorCode : MapMonoSocketErrorToErrno(ex.SocketErrorCode);
                 }
                 return PythonErrno.ENOERROR;
+            }
+
+            /// <summary>
+            /// Returns false if the timeout elapsed. The attempt is then left pending, as in CPython.
+            /// </summary>
+            private bool TryConnect(IPEndPoint remoteEP) {
+                if (_timeout == 0) {
+                    _socket.Connect(remoteEP);
+                    return true;
+                }
+
+                IAsyncResult result = _socket.BeginConnect(remoteEP, null, null);
+                if (!result.AsyncWaitHandle.WaitOne(_timeout)) {
+                    return false;
+                }
+                _socket.EndConnect(result);
+                return true;
             }
 
             public long detach() {

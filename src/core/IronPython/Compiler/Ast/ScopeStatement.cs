@@ -27,8 +27,6 @@ namespace IronPython.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class ScopeStatement : Statement {
-        private bool _forceCompile;                 // true if this scope should always be compiled
-
         private FunctionCode? _funcCode;            // the function code object created for this scope
 
         private ClosureInfo[]? _closureVariables;                       // closed over variables, bool indicates if we accessed it in this scope.
@@ -167,18 +165,12 @@ namespace IronPython.Compiler.Ast {
 
         internal bool ShouldInterpret {
             get {
-                if (_forceCompile) {
-                    return false;
-                }
                 if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
                     return true;
                 }
                 CompilerContext context = GlobalParent.CompilerContext;
 
                 return ((PythonContext)context.SourceUnit.LanguageContext).ShouldInterpret((PythonCompilerOptions)context.Options, context.SourceUnit);
-            }
-            set {
-                _forceCompile = !value;
             }
         }
 

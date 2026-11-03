@@ -6,6 +6,7 @@
 # test _socket
 #
 
+import errno
 import os
 import _socket
 import sys
@@ -691,5 +692,57 @@ finally:
         self.assertEqual(f.read(6), "stuff2")
 
         f.close()
+
+class SocketTimeoutTest(IronPythonTestCase):
+    BLACKHOLE = ('10.255.255.1', 22) # an unroutable address
+
+    def test_create_connection_timeout(self):
+        start = time.time()
+        try:
+            socket.create_connection(self.BLACKHOLE, timeout=1).close()
+        except socket.timeout:
+            pass
+        except OSError as e:
+            self.skipTest("create_connection failed without timing out: %s" % e)
+        else:
+            self.skipTest("create_connection succeeded")
+        self.assertLess(time.time() - start, 5)
+
+    def test_connect_timeout(self):
+        with socket.socket() as s:
+            s.settimeout(1)
+            start = time.time()
+            try:
+                s.connect(self.BLACKHOLE)
+            except socket.timeout:
+                pass
+            except OSError as e:
+                self.skipTest("connect failed without timing out: %s" % e)
+            else:
+                self.skipTest("connect succeeded")
+            self.assertLess(time.time() - start, 5)
+            self.assertEqual(s.gettimeout(), 1)
+
+    def test_connect_ex_timeout(self):
+        with socket.socket() as s:
+            s.settimeout(1)
+            start = time.time()
+            err = s.connect_ex(self.BLACKHOLE)
+            self.assertLess(time.time() - start, 5)
+            if err != errno.EWOULDBLOCK:
+                self.skipTest("connect_ex returned %d instead of timing out" % err)
+
+    def test_connect_within_timeout(self):
+        # make sure we still connect when timeout is set
+        with socket.socket() as server:
+            server.bind(('127.0.0.1', 0))
+            server.listen(1)
+            with socket.socket() as s:
+                s.settimeout(5)
+                s.connect(server.getsockname())
+                conn, _ = server.accept()
+                with conn:
+                    s.sendall(b'abc')
+                    self.assertEqual(conn.recv(3), b'abc')
 
 run_test(__name__)

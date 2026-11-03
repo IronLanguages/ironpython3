@@ -318,9 +318,14 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(max(1, 2.0, 3), 3)
         self.assertEqual(max(1.0, 2, 3), 3)
 
-        self.assertRaises(TypeError, max)
+        self.assertRaisesRegex(TypeError, "expected", max)
+        self.assertRaisesRegex(TypeError, "expected", max, key=int)
+        self.assertRaisesRegex(TypeError, "expected", max, default=None)
+        self.assertRaisesRegex(TypeError, "expected", max, default=None, key=int)
         self.assertRaises(TypeError, max, 42)
-        self.assertRaises(ValueError, max, ())
+        self.assertRaisesRegex(ValueError, "empty", max, ())
+        self.assertRaisesRegex(ValueError, "empty", max, iter(()))
+        self.assertRaisesRegex(ValueError, "empty", max, (), key=neg)
         self.assertRaises(TypeError, max, (1, 2), None)
         class BadSeq:
             def __getitem__(self, index):
@@ -358,6 +363,20 @@ class BuiltinsTest2(IronPythonTestCase):
         f = keys.__getitem__
         self.assertEqual(max(data, key=f), sorted(reversed(data), key=f)[-1])
 
+        # iterator with default and no key
+        self.assertEqual(max(iter([2, 1, 0]), default=None), 2)
+        self.assertEqual(max(iter([]), default=None), None)
+        self.assertEqual(max([], key=None, default=1), 1)
+
+        # first max item wins
+        self.assertIs(type(max(1, 1.0)), int)
+        self.assertIs(type(max(1, 1.0, key=neg)), int)
+        self.assertIs(type(max([1, 1.0])), int)
+        self.assertIs(type(max(0, 1, 1.0)), int)
+        self.assertIs(type(max(0, 1, 1.0, key=abs)), int)
+        self.assertIs(type(max([0, 1, 1.0], key=abs)), int)
+        self.assertTrue(math.isnan(max(float('nan'), 1)))
+        self.assertEqual(max(1, float('nan')), 1)
 
     def test_min(self):
         self.assertEqual(min('123123'), '1')
@@ -369,9 +388,14 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(min(1, 2.0, 3), 1)
         self.assertEqual(min(1.0, 2, 3), 1.0)
 
-        self.assertRaises(TypeError, min)
+        self.assertRaisesRegex(TypeError, "expected", min)
+        self.assertRaisesRegex(TypeError, "expected", min, key=int)
+        self.assertRaisesRegex(TypeError, "expected", min, default=None)
+        self.assertRaisesRegex(TypeError, "expected", min, default=None, key=int)
         self.assertRaises(TypeError, min, 42)
-        self.assertRaises(ValueError, min, ())
+        self.assertRaisesRegex(ValueError, "empty", min, ())
+        self.assertRaisesRegex(ValueError, "empty", min, iter(()))
+        self.assertRaisesRegex(ValueError, "empty", min, (), key=neg)
         class BadSeq:
             def __getitem__(self, index):
                 raise ValueError
@@ -409,6 +433,21 @@ class BuiltinsTest2(IronPythonTestCase):
         keys = dict((elem, random.randrange(50)) for elem in data)
         f = keys.__getitem__
         self.assertEqual(min(data, key=f), sorted(data, key=f)[0])
+
+        # iterator with default and no key
+        self.assertEqual(min(iter([0, 1, 2]), default=None), 0)
+        self.assertEqual(min(iter([]), default=None), None)
+        self.assertEqual(min([], key=None, default=1), 1)
+
+        # first min item wins
+        self.assertIs(type(min(1, 1.0)), int)
+        self.assertIs(type(min(1, 1.0, key=neg)), int)
+        self.assertIs(type(min([1, 1.0])), int)
+        self.assertIs(type(min(2, 1, 1.0)), int)
+        self.assertIs(type(min(2, 1, 1.0, key=abs)), int)
+        self.assertIs(type(min([2, 1, 1.0], key=abs)), int)
+        self.assertTrue(math.isnan(min(float('nan'), 1)))
+        self.assertEqual(min(1, float('nan')), 1)
 
     def test_abs(self):
         self.assertRaises(TypeError,abs,None)

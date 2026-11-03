@@ -893,7 +893,8 @@ namespace IronPython.Runtime {
                 return result;
             }
 
-            return code.Compile();
+            // LightLambdaExpression.Compile() would light-compile it with the default DLR threshold, so compile the reduced lambda instead
+            return ((LambdaExpression)code.Reduce()).Compile();
         }
 
         private Delegate CompileLambda(LambdaExpression code, EventHandler<LightLambdaCompileEventArgs> handler) {

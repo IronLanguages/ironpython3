@@ -741,7 +741,7 @@ class BuiltinsTest2(IronPythonTestCase):
             sys.stdout = sys.__stdout__
 
         for code in ["abc" + chr(0) + "def", chr(0) + "def", "def" + chr(0)]:
-            self.assertRaises(TypeError, compile, code, 'f', 'exec')
+            self.assertRaises(SyntaxError if sys.version_info >= (3, 11) else ValueError if sys.version_info >= (3, 5) else TypeError, compile, code, 'f', 'exec')
 
     def test_str_none(self):
         class foo(object):

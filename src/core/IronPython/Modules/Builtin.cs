@@ -228,7 +228,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             var sourceCodeKind = ValidateCompileMode(mode);
 
             if (source.Contains('\0')) {
-                throw PythonOps.TypeError("compile() expected string without null bytes");
+#if PYTHON_34
+                throw PythonOps.TypeError("source code string cannot contain null bytes");
+#else
+                // TODO: SyntaxError in 3.11
+                throw PythonOps.ValueError("source code string cannot contain null bytes");
+#endif
             }
 
             var sourceUnit = context.LanguageContext.CreateSnippet(source, sfilename, sourceCodeKind);

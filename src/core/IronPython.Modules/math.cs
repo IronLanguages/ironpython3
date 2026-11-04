@@ -32,8 +32,6 @@ namespace IronPython.Modules {
         private const double degreesToRadians = Math.PI / 180.0;
         private const double radiansToDegrees = 180.0 / Math.PI;
 
-        private const int Bias = 0x3FE;
-
         public static double degrees(double radians) {
             return Check(radians, radians * radiansToDegrees);
         }
@@ -106,24 +104,11 @@ namespace IronPython.Modules {
         }
 
         public static PythonTuple frexp(double v) {
-            if (Double.IsInfinity(v) || Double.IsNaN(v)) {
-                return PythonTuple.MakeTuple(v, 0.0);
-            }
-            int exponent = 0;
-            double mantissa = 0;
-
-            if (v == 0) {
-                mantissa = 0;
-                exponent = 0;
-            } else {
-                byte[] vb = BitConverter.GetBytes(v);
-                if (BitConverter.IsLittleEndian) {
-                    DecomposeLe(vb, out mantissa, out exponent);
-                } else {
-                    throw new NotImplementedException();
-                }
+            if (double.IsInfinity(v) || double.IsNaN(v) || v == 0) {
+                return PythonTuple.MakeTuple(v, 0);
             }
 
+            DecomposeDouble(v, out double mantissa, out int exponent);
             return PythonTuple.MakeTuple(mantissa, exponent);
         }
 
@@ -242,18 +227,16 @@ namespace IronPython.Modules {
             if (x <= 0) throw PythonOps.ValueError("math domain error");
             if (double.IsPositiveInfinity(x) || double.IsNaN(x)) return x;
 
-            if (!BitConverter.IsLittleEndian) return Math.Log(x, 2);
-
-            int exponent = 0;
-            double mantissa = 0;
-
-            byte[] vb = BitConverter.GetBytes(x);
-            DecomposeLe(vb, out mantissa, out exponent);
+#if NETCOREAPP
+            return Math.Log2(x);
+#else
+            DecomposeDouble(x, out double mantissa, out int exponent);
 
             if (x >= 1)
                 return Math.Log(mantissa * 2, 2) + (exponent - 1); // similar to CPython for precision
             else
                 return Math.Log(mantissa, 2) + exponent;
+#endif
         }
 
         public static double log2(BigInteger x) {
@@ -657,53 +640,17 @@ namespace IronPython.Modules {
 
         #region Private Implementation Details
 
-        private static void SetExponentLe(byte[] v, int exp) {
-            exp += Bias;
-            ushort oldExp = LdExponentLe(v);
-            ushort newExp = (ushort)(oldExp & 0x800f | (exp << 4));
-            StExponentLe(v, newExp);
-        }
+        private static void DecomposeDouble(double d, out double m, out int e) {
+            DoubleOps.DecomposeDouble(d, out int sign, out long mantissa, out int exponent);
 
-        private static int IntExponentLe(byte[] v) {
-            ushort exp = LdExponentLe(v);
-            return ((int)((exp & 0x7FF0) >> 4) - Bias);
-        }
-
-        private static ushort LdExponentLe(byte[] v) {
-            return (ushort)(v[6] | ((ushort)v[7] << 8));
-        }
-
-        private static long LdMantissaLe(byte[] v) {
-            int i1 = (v[0] | (v[1] << 8) | (v[2] << 16) | (v[3] << 24));
-            int i2 = (v[4] | (v[5] << 8) | ((v[6] & 0xF) << 16));
-
-            return i1 | (i2 << 32);
-        }
-
-        private static void StExponentLe(byte[] v, ushort e) {
-            v[6] = (byte)e;
-            v[7] = (byte)(e >> 8);
-        }
-
-        private static bool IsDenormalizedLe(byte[] v) {
-            ushort exp = LdExponentLe(v);
-            long man = LdMantissaLe(v);
-
-            return ((exp & 0x7FF0) == 0 && (man != 0));
-        }
-
-        private static void DecomposeLe(byte[] v, out double m, out int e) {
-            if (IsDenormalizedLe(v)) {
-                m = BitConverter.ToDouble(v, 0);
-                m *= Math.Pow(2.0, 1022);
-                v = BitConverter.GetBytes(m);
-                e = IntExponentLe(v) - 1022;
-            } else {
-                e = IntExponentLe(v);
+            if (mantissa < 1L << 52) {
+                // subnormal: scale into the normal range so the mantissa has 53 bits
+                DoubleOps.DecomposeDouble(d * (1L << 54), out sign, out mantissa, out exponent);
+                exponent -= 54;
             }
 
-            SetExponentLe(v, 0);
-            m = BitConverter.ToDouble(v, 0);
+            m = sign * mantissa / (double)(1L << 53);
+            e = exponent + 53;
         }
 
         private static double Check(double v) {

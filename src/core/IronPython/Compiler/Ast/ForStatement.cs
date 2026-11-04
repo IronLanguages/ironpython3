@@ -74,18 +74,26 @@ namespace IronPython.Compiler.Ast {
                     )
                 );
 
-            // while enumerator.MoveNext():
-            //    left = enumerator.Current
+            // iterator = enumerator.Key
+            // read once, because the interpreter calls a property getter of a struct through reflection
+            MSAst.ParameterExpression iterator = Ast.Variable(typeof(IEnumerator), "foreach_iterator");
+            MSAst.Expression initIterator = Ast.Assign(
+                    iterator,
+                    Ast.Property(
+                        enumerator,
+                        typeof(KeyValuePair<IEnumerator, IDisposable>).GetProperty("Key")
+                    )
+                );
+
+            // while iterator.MoveNext():
+            //    left = iterator.Current
             //    body
             // else:
             //    else
             MSAst.Expression ls = AstUtils.Loop(
                     parent.GlobalParent.AddDebugInfo(
                         Ast.Call(
-                            Ast.Property(
-                                enumerator,
-                                typeof(KeyValuePair<IEnumerator, IDisposable>).GetProperty("Key")
-                            ),
+                            iterator,
                             typeof(IEnumerator).GetMethod("MoveNext")
                         ),
                         left.Span
@@ -95,10 +103,7 @@ namespace IronPython.Compiler.Ast {
                         left.TransformSet(
                             SourceSpan.None,
                             Ast.Call(
-                                Ast.Property(
-                                    enumerator,
-                                    typeof(KeyValuePair<IEnumerator, IDisposable>).GetProperty("Key")
-                                ),
+                                iterator,
                                 typeof(IEnumerator).GetProperty("Current").GetGetMethod()
                             ),
                             PythonOperationKind.None
@@ -113,12 +118,15 @@ namespace IronPython.Compiler.Ast {
             );
 
             return Ast.Block(
+                [iterator],
                 init,
+                initIterator,
                 Ast.TryFinally(
                     ls,
                     Ast.Block(
                         Ast.Call(AstMethods.ForLoopDispose, enumerator),
-                        Ast.Assign(enumerator, Ast.New(typeof(KeyValuePair<IEnumerator, IDisposable>)))
+                        Ast.Assign(enumerator, Ast.New(typeof(KeyValuePair<IEnumerator, IDisposable>))),
+                        Ast.Assign(iterator, AstUtils.Constant(null, typeof(IEnumerator)))
                     )
                 )
             );

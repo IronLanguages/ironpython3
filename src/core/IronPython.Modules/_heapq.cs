@@ -28,17 +28,24 @@ namespace IronPython.Modules {
             }
         }
 
+        [Documentation("Maxheap variant of heapify.")]
+        public static void _heapify_max(CodeContext context, [NotNone] PythonList list) {
+            lock (list) {
+                DoHeapifyMax(context, list);
+            }
+        }
+
         [Documentation("Pop the smallest item off the heap, maintaining the heap invariant.")]
         public static object? heappop(CodeContext/*!*/ context, [NotNone] PythonList list) {
             lock (list) {
-                int last = list._size - 1;
-                if (last < 0) {
-                    throw PythonOps.IndexError("index out of range");
-                }
-                list.FastSwap(0, last);
-                list._size--;
-                SiftDown(context, list, 0, last - 1);
-                return list._data[list._size];
+                return DoHeapPop(context, list, max: false);
+            }
+        }
+
+        [Documentation("Maxheap variant of heappop.")]
+        public static object? _heappop_max(CodeContext context, [NotNone] PythonList list) {
+            lock (list) {
+                return DoHeapPop(context, list, max: true);
             }
         }
 
@@ -70,10 +77,14 @@ namespace IronPython.Modules {
             )]
         public static object? heapreplace(CodeContext/*!*/ context, [NotNone] PythonList list, object? item) {
             lock (list) {
-                object? ret = list._data[0];
-                list._data[0] = item;
-                SiftDown(context, list, 0, list._size - 1);
-                return ret;
+                return DoHeapReplace(context, list, item, max: false);
+            }
+        }
+
+        [Documentation("Maxheap variant of heapreplace.")]
+        public static object? _heapreplace_max(CodeContext context, [NotNone] PythonList list, object? item) {
+            lock (list) {
+                return DoHeapReplace(context, list, item, max: true);
             }
         }
 
@@ -160,6 +171,7 @@ namespace IronPython.Modules {
             }
         }
 
+#if PYTHON_34
         private static void HeapSort(CodeContext/*!*/ context, PythonList list) {
             HeapSort(context, list, false);
         }
@@ -186,6 +198,7 @@ namespace IronPython.Modules {
                 }
             }
         }
+#endif
 
         private static void DoHeapify(CodeContext/*!*/ context, PythonList list) {
             int last = list._size - 1;
@@ -207,6 +220,35 @@ namespace IronPython.Modules {
             }
         }
 
+        private static object? DoHeapPop(CodeContext context, PythonList list, bool max) {
+            int last = list._size - 1;
+            if (last < 0) {
+                throw PythonOps.IndexError("index out of range");
+            }
+            list.FastSwap(0, last);
+            list._size--;
+            if (max) {
+                SiftDownMax(context, list, 0, last - 1);
+            } else {
+                SiftDown(context, list, 0, last - 1);
+            }
+            return list._data[list._size];
+        }
+
+        private static object? DoHeapReplace(CodeContext context, PythonList list, object? item, bool max) {
+            if (list._size == 0) {
+                throw PythonOps.IndexError("index out of range");
+            }
+            object? ret = list._data[0];
+            list._data[0] = item;
+            if (max) {
+                SiftDownMax(context, list, 0, list._size - 1);
+            } else {
+                SiftDown(context, list, 0, list._size - 1);
+            }
+            return ret;
+        }
+
         private static object? DoPushPop(CodeContext/*!*/ context, PythonList heap, object? item) {
             object? first;
             if (heap._size == 0 || !IsLessThan(context, first = heap._data[0], item)) {
@@ -217,6 +259,7 @@ namespace IronPython.Modules {
             return first;
         }
 
+#if PYTHON_34
         private static object? DoPushPopMax(CodeContext/*!*/ context, PythonList heap, object? item) {
             object? first;
             if (heap._size == 0 || !IsLessThan(context, item, first = heap._data[0])) {
@@ -226,6 +269,7 @@ namespace IronPython.Modules {
             SiftDownMax(context, heap, 0, heap._size - 1);
             return first;
         }
+#endif
 
         private static void SiftDown(CodeContext/*!*/ context, PythonList heap, int start, int stop) {
             int parent = start;
@@ -275,6 +319,7 @@ namespace IronPython.Modules {
             }
         }
 
+        // TODO: this will get used in 3.14 (for heappush_max)
         private static void SiftUpMax(CodeContext/*!*/ context, PythonList heap, int index) {
             while (index > 0) {
                 int parent = (index - 1) / 2;

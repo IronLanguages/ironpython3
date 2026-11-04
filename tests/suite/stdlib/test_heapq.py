@@ -22,7 +22,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_heapq.TestErrorHandlingC('test_comparison_operator_modifiying_heap'), # TypeError: '<' not supported between instances of 'EvilClass' and 'int'
                 test.test_heapq.TestErrorHandlingC('test_comparison_operator_modifiying_heap_two_heaps'), # AssertionError: (<class 'IndexError'>, <class 'RuntimeError'>) not raised by heappush
                 test.test_heapq.TestErrorHandlingPython('test_comparison_operator_modifiying_heap'), # TypeError: '<' not supported between instances of 'EvilClass' and 'int'
-                test.test_heapq.TestModules('test_c_functions'), # AssertionError: 'heapq' != '_heapq'
             ]
 
         skip_tests = []

@@ -120,14 +120,7 @@ namespace IronPython.Runtime {
         [LightThrowing]
         private object @throw(object? type, object? value, object? traceback, bool finalizing) {
             // Do argument validation outside of the generator's body and do not update the state on failure
-            if (type is Exception || type is PythonExceptions.BaseException) {
-                if (value is not null)
-                    throw PythonOps.TypeError("instance exception may not have a separate value");
-            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
-                // ok
-            } else {
-                throw PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonOps.GetPythonTypeName(type));
-            }
+            if (PythonOps.ValidateThrowArguments(type, value) is Exception error) return LightExceptions.Throw(error);
 
             // Set fields which will then be used by CheckThrowable.
             // We create the actual exception from inside the generator so that if the exception's __init__ 

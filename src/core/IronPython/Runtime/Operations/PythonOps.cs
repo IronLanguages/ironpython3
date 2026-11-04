@@ -2551,6 +2551,20 @@ namespace IronPython.Runtime.Operations {
             return e;
         }
 
+        /// <summary>
+        /// Validates the arguments of generator/coroutine throw(). Returns the TypeError to raise, or null if valid.
+        /// </summary>
+        internal static Exception? ValidateThrowArguments(object? type, object? value) {
+            if (type is Exception || type is PythonExceptions.BaseException) {
+                if (value is not null) return TypeError("instance exception may not have a separate value");
+            } else if (type is PythonType pt && (typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType) || typeof(Exception).IsAssignableFrom(pt.UnderlyingSystemType))) {
+                // ok
+            } else {
+                return TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", GetPythonTypeName(type));
+            }
+            return null;
+        }
+
         private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause, bool suppressContext, bool forRethrow) {
             Exception throwable;
 
@@ -2560,6 +2574,8 @@ namespace IronPython.Runtime.Operations {
             if (type is Exception ex) {
                 // TODO: maybe add cause?
                 throwable = ex;
+            } else if (type is PythonType pt && typeof(Exception).IsAssignableFrom(pt.UnderlyingSystemType)) {
+                throwable = PythonExceptions.CreateClrExceptionForRaise(context, pt, value);
             } else {
                 throwable = GetBaseException(context, type, value).CreateClrExceptionWithCause(causeException, contextException, suppressContext);
             }

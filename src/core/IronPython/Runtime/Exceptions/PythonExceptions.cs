@@ -27,13 +27,13 @@ using MarshalByRefObject = System.Object;
 
 namespace IronPython.Runtime.Exceptions {
     /// <summary>
-    /// Implementation of the Python exceptions module and the IronPython/CLR exception mapping 
+    /// Implementation of the Python exceptions module and the IronPython/CLR exception mapping
     /// mechanism.  The exception module is the parent module for all Python exception classes
     /// and therefore is built-in to IronPython.dll instead of IronPython.Modules.dll.
-    /// 
+    ///
     /// The exception mapping mechanism is exposed as internal surface area available to only
     /// IronPython / IronPython.Modules.dll.  The actual exceptions themselves are all public.
-    /// 
+    ///
     /// Because the oddity of the built-in exception types all sharing the same physical layout
     /// (see also PythonExceptions.BaseException) some classes are defined as classes w/ their
     /// proper name and some classes are defined as PythonType fields.  When a class is defined
@@ -324,7 +324,7 @@ for x in f:
             if error[i] < '0' or error[i] > '9':
                 error = error[:i]
                 break
-            
+
         if not error:
             continue
 
@@ -332,12 +332,12 @@ for x in f:
         if errNo == 22 or errNo >= 10000:
             continue
         allErrors.append((justName, error))
-        
-        l = toError.get(errNo) 
+
+        l = toError.get(errNo)
         if l is None:
             toError[errNo] = l = []
         l.append(justName)
-        
+
 for name, err in allErrors:
     print('internal const int %s = %s;' % (name, err))
 
@@ -771,21 +771,31 @@ for k, v in toError.items():
 #nullable enable
 
         internal static BaseException CreateBaseExceptionForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object? value) {
-            object? pyEx;
-
-            if (PythonOps.IsInstance(value, type)) {
-                pyEx = value;
-            } else if (value is PythonTuple pt) {
-                pyEx = PythonCalls.Call(context, type, pt.ToArray());
-            } else if (value != null) {
-                pyEx = PythonCalls.Call(context, type, value);
-            } else {
-                pyEx = PythonCalls.Call(context, type);
-            }
+            object? pyEx = CallForRaise(context, type, value);
 
             if (pyEx is BaseException be) return be;
 
             throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of BaseException, not {PythonOps.ToString(DynamicHelpers.GetPythonType(pyEx))}");
+        }
+
+        internal static Exception CreateClrExceptionForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object? value) {
+            object? clrEx = CallForRaise(context, type, value);
+
+            if (clrEx is Exception ex) return ex;
+
+            throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of Exception, not {PythonOps.ToString(DynamicHelpers.GetPythonType(clrEx))}");
+        }
+
+        private static object? CallForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object? value) {
+            if (PythonOps.IsInstance(value, type)) {
+                return value;
+            } else if (value is PythonTuple pt) {
+                return PythonCalls.Call(context, type, pt.ToArray());
+            } else if (value != null) {
+                return PythonCalls.Call(context, type, value);
+            } else {
+                return PythonCalls.Call(context, type);
+            }
         }
 
         /// <summary>
@@ -1002,7 +1012,7 @@ for k, v in toError.items():
 
         /// <summary>
         /// Creates a PythonType for a built-in module, where the type may inherit
-        /// from multiple bases.  These types are mutable like normal user types. 
+        /// from multiple bases.  These types are mutable like normal user types.
         /// </summary>
         [PythonHidden]
         public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType[] baseTypes, Type underlyingType, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
@@ -1015,8 +1025,8 @@ for k, v in toError.items():
 
         /// <summary>
         /// Creates a new type for a built-in exception which derives from another Python
-        /// type.  .  These types are built-in and immutable like any other normal type.  For 
-        /// example StandardError.x = 3 is illegal.  This isn't for module exceptions which 
+        /// type.  .  These types are built-in and immutable like any other normal type.  For
+        /// example StandardError.x = 3 is illegal.  This isn't for module exceptions which
         /// are like user defined types.  thread.error.x = 3 is legal.
         /// </summary>
         private static PythonType CreateSubType(PythonType baseType, string name, Func<string, Exception, Exception> exceptionMaker) {
@@ -1024,7 +1034,7 @@ for k, v in toError.items():
         }
 
         /// <summary>
-        /// Creates a new type for a built-in exception which is the root concrete type.  
+        /// Creates a new type for a built-in exception which is the root concrete type.
         /// </summary>
         private static PythonType/*!*/ CreateSubType(PythonType/*!*/ baseType, Type/*!*/ concreteType, Func<string, Exception, Exception> exceptionMaker) {
             Assert.NotNull(baseType, concreteType);

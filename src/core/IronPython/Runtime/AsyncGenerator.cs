@@ -103,17 +103,7 @@ namespace IronPython.Runtime {
         /// </remarks>
         [LightThrowing]
         public object athrow(object? type, object? value, object? traceback) {
-            // Validate shape (mirrors PythonGenerator/PythonCoroutine.throw).
-            if (type is Exception || type is PythonExceptions.BaseException) {
-                if (value is not null)
-                    return LightExceptions.Throw(PythonOps.TypeError("instance exception may not have a separate value"));
-            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
-                // ok — class form
-            } else {
-                return LightExceptions.Throw(PythonOps.TypeError(
-                    "exceptions must be classes or instances deriving from BaseException, not {0}",
-                    PythonOps.GetPythonTypeName(type)));
-            }
+            if (PythonOps.ValidateThrowArguments(type, value) is Exception error) return LightExceptions.Throw(error);
 
             Exception ex = PythonOps.MakeExceptionForGenerator(DefaultContext.Default, type, value, traceback, cause: null);
             _started = true;

@@ -1079,4 +1079,32 @@ finally:
 
         self.assertRaises(error, f)
 
+    @skipUnlessIronPython()
+    def test_ipy3_gh1816(self):
+        import System
+
+        with self.assertRaises(System.InvalidOperationException):
+            raise System.InvalidOperationException
+
+        with self.assertRaises(SystemError):
+            raise System.InvalidOperationException
+
+        class MyException(System.Exception): pass
+
+        with self.assertRaises(MyException):
+            raise MyException
+
+        with self.assertRaises(TypeError): # constructor requires arguments
+            raise System.Reflection.ReflectionTypeLoadException
+
+        def gen():
+            try:
+                yield
+            except System.InvalidOperationException as e:
+                yield e.Message
+
+        g = gen()
+        next(g)
+        self.assertEqual(g.throw(System.InvalidOperationException, "abc"), "abc")
+
 run_test(__name__)

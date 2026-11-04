@@ -97,18 +97,8 @@ namespace IronPython.Runtime {
         /// </remarks>
         [LightThrowing]
         public object @throw(object? type, object? value, object? traceback) {
-            // Validate the shape of (type, value, traceback) up front. Mirrors PythonGenerator.@throw
-            // so we don't mutate any state on bad input.
-            if (type is Exception || type is PythonExceptions.BaseException) {
-                if (value is not null)
-                    return LightExceptions.Throw(PythonOps.TypeError("instance exception may not have a separate value"));
-            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
-                // ok — class form, MakeExceptionForGenerator will construct.
-            } else {
-                return LightExceptions.Throw(PythonOps.TypeError(
-                    "exceptions must be classes or instances deriving from BaseException, not {0}",
-                    PythonOps.GetPythonTypeName(type)));
-            }
+            // Validate up front so we don't mutate any state on bad input.
+            if (PythonOps.ValidateThrowArguments(type, value) is Exception error) return LightExceptions.Throw(error);
 
             // Construct the actual exception object. DefaultContext.Default suffices here — throw()'s
             // CodeContext role is limited to resolving class-form exception construction, and the

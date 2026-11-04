@@ -519,28 +519,24 @@ namespace IronPython.Runtime.Operations {
             if (double.IsNaN(d)) return 0;
             if (d == 0) return 0;
 
-            // it's an integer!
-            if (d == Math.Truncate(d)) {
-                // Use this constant since long.MaxValue doesn't cast precisely to a double
-                const double maxValue = (ulong)long.MaxValue + 1;
-                if (long.MinValue <= d && d < maxValue) {
-                    return Int64Ops.__hash__((long)d);
-                }
-                return BigIntegerOps.__hash__((BigInteger)d);
-            }
+            // Python defines hash(d) as s * (m * 2**e mod P) with P = 2**31 - 1 for 32-bit hashes.
+            // Since 2**31 == 1 (mod P), we have:
+            //   2**e == 2**(e % 31) (mod P)        -> multiplying by 2**e is a shift by e % 31 (made non-negative)
+            //   x == (x & P) + (x >> 31) (mod P)   -> reducing mod P needs no division
+            const ulong P = int.MaxValue;
 
-            DecomposeDouble(d, out int sign, out long mantissa, out int exponent);
+            DecomposeDouble(d, out int s, out long m, out int e);
 
-            // make sure the mantissa is not even
-            while ((mantissa & 1) == 0) {
-                mantissa >>= 1;
-                exponent++;
-            }
-            Debug.Assert(exponent <= 0);
+            int shift = e % 31;
+            if (shift < 0) shift += 31;
 
-            var exp = exponent % 31;
-            var invmod = exp == 0 ? 1 : (1 << (31 + exp));
-            var hash = unchecked((int)(sign * (((mantissa % int.MaxValue) * invmod) % int.MaxValue)));
+            ulong x = ((ulong)m & P) + ((ulong)m >> 31); // < 2**32
+            x <<= shift;                                 // < 2**62
+            x = (x & P) + (x >> 31);                     // < 2**32
+            x = (x & P) + (x >> 31);                     // <= P + 1
+            if (x >= P) x -= P;
+
+            var hash = s * (int)x;
             return hash == -1 ? -2 : hash;
         }
 

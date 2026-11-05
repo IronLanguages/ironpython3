@@ -4421,6 +4421,14 @@ namespace IronPython.Runtime.Operations {
             return stack;
         }
 
+        /// <summary>
+        ///   Pushes the frame of a generator body on the current thread, and hands it over to <paramref name="generator"/>, which removes
+        ///   it at each suspension, adds it back at each resumption, and removes it when the body finishes.
+        /// </summary>
+        public static void PushGeneratorFrame(CodeContext/*!*/ context, PythonGenerator generator, FunctionCode function) {
+            generator.PushFrame(context, function);
+        }
+
         internal static LightLambdaExpression ToGenerator(this LightLambdaExpression code, bool shouldInterpret, bool debuggable, int compilationThreshold, bool isCoroutine = false) {
 #pragma warning disable CA2263 // Prefer generic overload when type is known
             return Utils.LightLambda(

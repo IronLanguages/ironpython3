@@ -686,16 +686,19 @@ namespace IronPython.Compiler.Ast {
             statements.Add(MakeFunctionEntrySequencePoint(StartIndex));
 
 
+            // Whether the body runs in a PythonGenerator, which drives it through the generator rewriter's state machine.
+#if FEATURE_NET_ASYNC
+            // Async functions and async generators have no backing PythonGenerator: they lower to a Task via AsyncExpression,
+            // or to an IAsyncEnumerable via AsyncEnumerableExpression.
+            bool inPythonGenerator = IsGenerator && !IsAsync;
+#else
+            bool inPythonGenerator = IsGenerator || IsAsync;
+#endif
+
             // For generators/coroutines, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
             // from inside the generator.
-#if FEATURE_NET_ASYNC
-            // Async generators have no backing PythonGenerator (they lower to IAsyncEnumerable via AsyncEnumerableExpression),
-            // so skip the $generator.CheckThrowable() prologue for them.
-            if (IsGenerator && !IsAsync) {
-#else
-            if (IsGenerator || IsAsync) {
-#endif
+            if (inPythonGenerator) {
                 MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(SourceSpan.None);
                 statements.Add(s1);
             }
@@ -708,8 +711,13 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression body = Ast.Block(statements);
 
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
-                body = AddFrame(LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty(nameof(PythonFunction.__code__))), body);
-                locals.Add(FunctionStackVariable);
+                MSAst.Expression codeObject = Ast.Property(_functionParam, typeof(PythonFunction).GetProperty(nameof(PythonFunction.__code__)));
+                if (inPythonGenerator) {
+                    body = AddGeneratorFrame(LocalContext, codeObject, body);
+                } else {
+                    body = AddFrame(LocalContext, codeObject, body);
+                    locals.Add(FunctionStackVariable);
+                }
             }
 
             body = AddProfiling(body);

@@ -39,6 +39,7 @@ Compressor objects support compress() and flush() methods; decompressor
 objects support decompress() and flush().";
 
         public const string ZLIB_VERSION = "1.2.3";     // just match the zlib version in Python 2.6
+        public const string ZLIB_RUNTIME_VERSION = ZLIB_VERSION;
 
         internal const int Z_OK = (int)ZLibResultCode.Z_OK;
         internal const int Z_STREAM_END = (int)ZLibResultCode.Z_STREAM_END;
@@ -68,21 +69,22 @@ objects support decompress() and flush().";
         public const int MAX_WBITS = ZLibUtil.MAX_WBITS;
 
         internal const int DEFAULTALLOC = 16 * 1024;
+        public const int DEF_BUF_SIZE = DEFAULTALLOC;
 
         [Documentation(@"adler32(data[, value]) -- Compute an Adler-32 checksum of data.
 
-An optional starting value can be specified.  The returned checksum is
-a signed integer.")]
-        public static int adler32([NotNone] IBufferProtocol data, long value=1L)
+An optional starting value can be specified.  The returned checksum is an integer.")]
+        public static object adler32([NotNone] IBufferProtocol data, long value=1L)
         {
             using var buffer = data.GetBuffer();
-            return (int)Adler32.GetAdler32Checksum(value, buffer.AsUnsafeArray() ?? buffer.ToArray(), 0, buffer.NumBytes());
+            var res = (uint)Adler32.GetAdler32Checksum(value, buffer.AsUnsafeArray() ?? buffer.ToArray(), 0, buffer.NumBytes());
+            if (res <= int.MaxValue) return (int)res;
+            return (BigInteger)res;
         }
 
         [Documentation(@"crc32(data[, value]) -- Compute a CRC-32 checksum of data.
 
-An optional starting value can be specified.  The returned checksum is
-a signed integer.")]
+An optional starting value can be specified.  The returned checksum is an integer.")]
         public static object crc32([NotNone] IBufferProtocol data, uint value = 0)
             // TODO: [PythonIndex(overflow=mask)] uint value = 0
             => IronPython.Modules.PythonBinaryAscii.crc32(data, value);
@@ -108,11 +110,11 @@ Optional arg level is the compression level, in 1-9.")]
             {
                 case (Z_OK):
                     break;
-                
+
                 case (Z_STREAM_ERROR):
                     throw PythonOps.CreateThrowable(error,
                                     "Bad compression level");
-                
+
                 default:
                     zst.deflateEnd();
                     zlib_error(zst, err, "while compressing data");
@@ -211,7 +213,7 @@ Optional arg wbits is the window buffer size.")]
         }
 
         [PythonHidden]
-        internal static byte[] Decompress(byte[] input, int wbits=MAX_WBITS, int bufsize=DEFAULTALLOC) 
+        internal static byte[] Decompress(byte[] input, int wbits=MAX_WBITS, int bufsize=DEFAULTALLOC)
         {
             byte[] outputBuffer = new byte[bufsize];
             byte[] output = new byte[bufsize];

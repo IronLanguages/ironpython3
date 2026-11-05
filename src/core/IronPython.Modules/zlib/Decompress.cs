@@ -90,19 +90,20 @@ the unconsumed_tail attribute.")]
                 err = zst.inflate(FlushStrategy.Z_SYNC_FLUSH);
             }
 
-            if(max_length > 0)
-            {
-                unconsumed_tail = GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
-            }
-
+            var remaining = GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
             if(err == Z_STREAM_END)
             {
-                unused_data += GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
+                unused_data += remaining;
+                unconsumed_tail = Bytes.Empty;
                 eof = true;
             }
-            else if(err != Z_OK && err != Z_BUF_ERROR)
+            else
             {
-                throw ZlibModule.zlib_error(this.zst, err, "while decompressing");
+                unconsumed_tail = remaining;
+                if(err != Z_OK && err != Z_BUF_ERROR)
+                {
+                    throw ZlibModule.zlib_error(this.zst, err, "while decompressing");
+                }
             }
 
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));

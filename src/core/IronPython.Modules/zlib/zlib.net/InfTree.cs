@@ -84,7 +84,7 @@ namespace ComponentAce.Compression.Libs.ZLib
         /// Given a list of code lengths and a maximum table size, make a set of
         /// tables to decode that set of codes.  
         /// </summary>
-        /// <returns>Return (int)ZLibResultCode.Z_OK on success, (int)ZLibResultCode.Z_DATA_ERROR if the given code set is incomplete (the tables are still built in this case), (int)ZLibResultCode.Z_DATA_ERROR if the input is invalid (an over-subscribed set of lengths), or (int)ZLibResultCode.Z_DATA_ERROR if not enough memory.
+        /// <returns>Return (int)ZLibResultCode.Z_OK on success, (int)ZLibResultCode.Z_BUF_ERROR if the given code set is incomplete (the tables are still built in this case), (int)ZLibResultCode.Z_DATA_ERROR if the input is invalid (an over-subscribed set of lengths), or (int)ZLibResultCode.Z_MEM_ERROR if not enough memory.
         /// </returns>
         private static int huft_build(int[] b, int bindex, int n, int s, int[] d, int[] e, int[] t, int[] m, int[] hp, int[] hn, int[] v)
 		{
@@ -293,7 +293,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 					}
 				}
 			}
-			// Return (int)ZLibResultCode.Z_DATA_ERROR if we were given an incomplete table
+			// Return (int)ZLibResultCode.Z_BUF_ERROR if we were given an incomplete table
             return y != 0 && g != 1 ? (int)ZLibResultCode.Z_BUF_ERROR : (int)ZLibResultCode.Z_OK;
 		}
 		
@@ -337,7 +337,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 				{
 					z.msg = "oversubscribed literal/length tree";
 				}
-				else if (r != (int)ZLibResultCode.Z_DATA_ERROR)
+				else if (r != (int)ZLibResultCode.Z_MEM_ERROR)
 				{
 					z.msg = "incomplete literal/length tree";
 					r = (int)ZLibResultCode.Z_DATA_ERROR;
@@ -359,7 +359,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 					z.msg = "incomplete distance tree";
 					r = (int)ZLibResultCode.Z_DATA_ERROR;
 				}
-				else if (r != (int)ZLibResultCode.Z_DATA_ERROR)
+				else if (r != (int)ZLibResultCode.Z_MEM_ERROR)
 				{
 					z.msg = "empty distance tree with lengths";
 					r = (int)ZLibResultCode.Z_DATA_ERROR;

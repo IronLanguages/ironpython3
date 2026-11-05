@@ -243,35 +243,38 @@ f()
 
             self.assertEqual(events, expected, (source, mode))
 
-    def test_settrace_jump_in_module(self):
-        # A trace function can set f_lineno anywhere within module code, not only on its first line
-        source = "\n\nout.append(3)\nout.append(4)\n\nout.append(6)\n"
+    def test_settrace_jump(self):
+        # A trace function can set f_lineno to any line of the code, in module code as well as in a function.
+        # All the code is compiled under the same file name, since a jump must work in code compiled again under a file name too.
+        sources = [
+            "\n\nout.append(3)\nout.append(4)\n\nout.append(6)\n",
+            "def g(out):\n\n    out.append(3)\n    out.append(4)\n\n    out.append(6)\ng(out)\n",
+        ]
         cases = [
             (6, 4, [3, 4, 4, 6]),   # backward
             (3, 6, [6]),            # forward
         ]
 
         orig_sys_trace_func = sys.gettrace()
-        for jump_from, jump_to, expected in cases:
-            # TODO: On IronPython, a jump works only in the code compiled first under a given file name, hence a unique name for each case
-            filename = '<jump from %d to %d>' % (jump_from, jump_to)
-            jumped = False
-            def f(frame, event, arg):
-                nonlocal jumped
-                if frame.f_code.co_filename == filename and event == 'line' and frame.f_lineno == jump_from and not jumped:
-                    jumped = True
-                    frame.f_lineno = jump_to
-                return f
+        for source in sources:
+            for jump_from, jump_to, expected in cases:
+                jumped = False
+                def f(frame, event, arg):
+                    nonlocal jumped
+                    if frame.f_code.co_filename == '<traced>' and event == 'line' and frame.f_lineno == jump_from and not jumped:
+                        jumped = True
+                        frame.f_lineno = jump_to
+                    return f
 
-            out = []
-            code = compile(source, filename, 'exec')
-            try:
-                sys.settrace(f)
-                exec(code, {'out': out})
-            finally:
-                sys.settrace(orig_sys_trace_func)
+                out = []
+                code = compile(source, '<traced>', 'exec')
+                try:
+                    sys.settrace(f)
+                    exec(code, {'out': out})
+                finally:
+                    sys.settrace(orig_sys_trace_func)
 
-            self.assertEqual(out, expected, (jump_from, jump_to))
+                self.assertEqual(out, expected, (source, jump_from, jump_to))
 
     def test_cp30130(self):
         def f(frame, event, arg):

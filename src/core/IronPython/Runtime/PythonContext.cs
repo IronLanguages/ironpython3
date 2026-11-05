@@ -774,14 +774,16 @@ namespace IronPython.Runtime {
             flags.utf8_mode = PythonOptions.Utf8Mode ? 1 : 0;
         }
 
-        internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
-            if (IsAdaptiveCompilationDisabled(source)) {
+        internal bool ShouldInterpret(PyAst.PythonAst ast) {
+            if (ast.IsAdaptiveCompilationDisabled) {
                 return false;
             }
 
+            CompilerContext context = ast.CompilerContext;
+
             // We have to turn off adaptive compilation in debug mode to
             // support mangaged debuggers.
-            return options.Interpreted || !EmitDebugSymbols(source);
+            return ((PythonCompilerOptions)context.Options).Interpreted || !EmitDebugSymbols(context.SourceUnit);
         }
 
         /// <summary>

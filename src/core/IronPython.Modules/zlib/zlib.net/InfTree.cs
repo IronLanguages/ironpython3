@@ -312,7 +312,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 			{
 				z.msg = "oversubscribed dynamic bit lengths tree";
 			}
-			else if (r == (int)ZLibResultCode.Z_DATA_ERROR || bb[0] == 0)
+			else if (r == (int)ZLibResultCode.Z_BUF_ERROR || bb[0] == 0)
 			{
 				z.msg = "incomplete dynamic bit lengths tree";
 				r = (int)ZLibResultCode.Z_DATA_ERROR;

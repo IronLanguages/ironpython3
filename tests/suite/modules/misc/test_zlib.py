@@ -76,6 +76,16 @@ Curabitur non eros. Nullam hendrerit bibendum justo. Fusce iaculis, est quis lac
         self.assertEqual(do.decompress(self.deflate_data), self.text)
         self.assertEqual(zlib.decompress(self.deflate_data, -zlib.MAX_WBITS), self.text)
 
+    def test_invalid_bit_length_trees(self):
+        # These dynamic blocks have incomplete and oversubscribed code-length alphabets.
+        for data in (b'\x05\x00\x00\x01', b'\x05\x00\x92\x00'):
+            with self.subTest(data=data, api='decompress'):
+                with self.assertRaisesRegex(zlib.error, r'Error -3\b'):
+                    zlib.decompress(data, -zlib.MAX_WBITS)
+            with self.subTest(data=data, api='decompressobj'):
+                with self.assertRaisesRegex(zlib.error, r'Error -3\b'):
+                    zlib.decompressobj(-zlib.MAX_WBITS).decompress(data)
+
     def test_gzip_stream(self):
         """gzip header, uncomplete header"""
         for delta in range(1, 25):

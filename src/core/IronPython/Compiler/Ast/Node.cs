@@ -317,7 +317,18 @@ namespace IronPython.Compiler.Ast {
         /// Creates a method frame for tracking purposes and enforces recursion
         /// </summary>
         internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body)
-            => new FramedCodeExpression(localContext, codeObject, body);
+            => new FramedCodeExpression(localContext, codeObject, body, inGenerator: false);
+
+        /// <summary>
+        ///   Creates a method frame for the body of a generator, which hands the frame over to its <see cref="PythonGenerator"/>.
+        /// </summary>
+        /// <remarks>
+        ///   A generator body can suspend and resume on another thread, so it cannot pop its frame itself: it would pop it from the thread
+        ///   it started on. The generator removes the frame from the current thread at each suspension, adds it back at each resumption,
+        ///   and removes it when the body finishes.
+        /// </remarks>
+        internal static MSAst.Expression AddGeneratorFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body)
+            => new FramedCodeExpression(localContext, codeObject, body, inGenerator: true);
 
         /// <summary>
         /// Removes the frames from generated code for when we're compiling the tracing delegate
@@ -337,10 +348,12 @@ namespace IronPython.Compiler.Ast {
 
         private sealed class FramedCodeExpression : MSAst.Expression {
             private readonly MSAst.Expression _localContext, _codeObject;
+            private readonly bool _inGenerator;
 
-            public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
+            public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body, bool inGenerator) {
                 _localContext = localContext;
                 _codeObject = codeObject;
+                _inGenerator = inGenerator;
                 Body = body;
             }
 
@@ -349,6 +362,18 @@ namespace IronPython.Compiler.Ast {
             public MSAst.Expression Body { get; }
 
             public override MSAst.Expression Reduce() {
+                if (_inGenerator) {
+                    return Ast.Block(
+                        Ast.Call(
+                            AstMethods.PushGeneratorFrame,
+                            _localContext,
+                            GeneratorRewriter._generatorParam,
+                            _codeObject
+                        ),
+                        Body
+                    );
+                }
+
                 return AstUtils.Try(
                     Ast.Assign(
                         FunctionStackVariable,
@@ -384,7 +409,7 @@ namespace IronPython.Compiler.Ast {
                 var body = visitor.Visit(Body);
 
                 if (localContext != _localContext || _codeObject != codeObject || body != Body) {
-                    return new FramedCodeExpression(localContext, codeObject, body);
+                    return new FramedCodeExpression(localContext, codeObject, body, _inGenerator);
                 }
 
                 return this;

@@ -354,7 +354,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 				{
 					z.msg = "oversubscribed distance tree";
 				}
-				else if (r == (int)ZLibResultCode.Z_DATA_ERROR)
+				else if (r == (int)ZLibResultCode.Z_BUF_ERROR)
 				{
 					z.msg = "incomplete distance tree";
 					r = (int)ZLibResultCode.Z_DATA_ERROR;

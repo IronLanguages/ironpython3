@@ -9,7 +9,7 @@ import os
 import unittest
 import zlib
 
-from iptest import IronPythonTestCase, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
 def create_gzip(text, path):
     import gzip
@@ -75,6 +75,18 @@ Curabitur non eros. Nullam hendrerit bibendum justo. Fusce iaculis, est quis lac
         do = zlib.decompressobj(-zlib.MAX_WBITS)
         self.assertEqual(do.decompress(self.deflate_data), self.text)
         self.assertEqual(zlib.decompress(self.deflate_data, -zlib.MAX_WBITS), self.text)
+
+    def test_incomplete_distance_tree(self):
+        # The literal tree is complete, but the distance alphabet has only one code of length two.
+        data = bytes.fromhex('05c0010900000080a06dfe3f65')
+        message = 'incomplete distance tree' if is_cli else 'invalid distances set'
+        for streaming in (False, True):
+            with self.subTest(streaming=streaming):
+                with self.assertRaisesRegex(zlib.error, message):
+                    if streaming:
+                        zlib.decompressobj(-zlib.MAX_WBITS).decompress(data)
+                    else:
+                        zlib.decompress(data, -zlib.MAX_WBITS)
 
     def test_invalid_bit_length_trees(self):
         # These dynamic blocks have incomplete and oversubscribed code-length alphabets.

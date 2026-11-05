@@ -166,11 +166,11 @@ namespace IronPython.Compiler.Ast {
         internal bool ShouldInterpret {
             get {
                 if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
-                    return true;
+                    // code from compile, exec and eval is compiled adaptively, unless -X NoAdaptiveCompilation applies to it
+                    return !GlobalParent.IsAdaptiveCompilationDisabled;
                 }
-                CompilerContext context = GlobalParent.CompilerContext;
 
-                return ((PythonContext)context.SourceUnit.LanguageContext).ShouldInterpret((PythonCompilerOptions)context.Options, context.SourceUnit);
+                return PyContext.ShouldInterpret(GlobalParent);
             }
         }
 

@@ -349,27 +349,54 @@ namespace IronPython.Runtime {
             }
         }
 
-        private FunctionStack? fnStack = null;
+        /// <summary>
+        ///   The body's entry on the frame stack, from the moment the body pushes it until the body finishes.
+        /// </summary>
+        /// <remarks>
+        ///   <para>The body can suspend on one thread and resume on another, so the generator owns the entry once the body has pushed it:
+        ///   the entry is on the frame stack of the thread running the body, and on no thread's stack while the body is suspended.</para>
+        ///
+        ///   <para>It stays null for a body that doesn't push its own entry: with frames disabled, or when the body was compiled for tracing,
+        ///   where the trace listener pushes and pops an entry at each step. This is decided when the body is compiled, so it doesn't change
+        ///   when tracing is switched on or off while the generator is suspended.</para>
+        /// </remarks>
+        private FunctionStack? _stackEntry;
+
+        /// <summary>
+        ///   Called by the body when it starts, to push its entry on the current thread's frame stack and hand the entry over to the generator.
+        /// </summary>
+        internal void PushFrame(CodeContext context, FunctionCode code) {
+            Debug.Assert(_stackEntry is null, "the body of a generator starts only once");
+
+            // The entry never keeps a frame object, since the frame's f_back changes whenever the body resumes.
+            var entry = new FunctionStack(context, code);
+            PythonOps.GetFunctionStack().Add(entry);
+            _stackEntry = entry;
+        }
 
         private void SaveFunctionStack(bool done) {
-            if (!Context.LanguageContext.PythonOptions.Frames || Context.LanguageContext.EnableTracing) return;
-            if (!done) {
-                var stack = PythonOps.GetFunctionStack();
-                var functionStack = stack[stack.Count - 1];
-                stack.RemoveAt(stack.Count - 1);
-                Debug.Assert(functionStack.Context is not null);
-                fnStack = new FunctionStack(functionStack.Context!, functionStack.Code); // don't keep the frame since f_back may be invalid
+            if (_stackEntry is not { } entry) return;
+
+            // The entry is on top, unless something the body called has left an entry of its own behind. Then remove only this
+            // body's entry, if it is there at all. sys._getframe replaces entries by copies with frame objects, so compare the parts.
+            var stack = PythonOps.GetFunctionStack();
+            int index = stack.Count - 1;
+            while (index >= 0 && !(stack[index].Code == entry.Code && stack[index].Context == entry.Context)) {
+                index--;
             }
-            else {
-                fnStack = null;
+            Debug.Assert(index >= 0 && index == stack.Count - 1, "the entry of a suspending generator body should be on top of the frame stack");
+            if (index >= 0) {
+                stack.RemoveAt(index);
+            }
+
+            if (done) {
+                _stackEntry = null;
             }
         }
 
         private void RestoreFunctionStack() {
-            if (!Context.LanguageContext.PythonOptions.Frames) return;
-            if (fnStack != null) {
-                var stack = PythonOps.GetFunctionStack();
-                stack.Add(fnStack.Value);
+            if (_stackEntry is { } entry) {
+                PythonOps.GetFunctionStack().Add(entry);
             }
         }
 

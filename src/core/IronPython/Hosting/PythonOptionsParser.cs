@@ -269,6 +269,18 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Debug"] = ScriptingRuntimeHelpers.True;
                     break;
 
+                case "NoAdaptiveCompilation":
+                    LanguageSetup.Options["NoAdaptiveCompilation"] = ScriptingRuntimeHelpers.True;
+                    if (val != null) {
+                        if (val.Length == 0) throw new InvalidOptionException($"Argument expected for the -X {arg}= option.");
+                        try {
+                            LanguageSetup.Options["NoAdaptiveCompilationFilter"] = new Regex(val);
+                        } catch {
+                            throw new InvalidOptionException($"The argument for the -X {arg} option must be a valid regex pattern.");
+                        }
+                    }
+                    break;
+
                 case "NoDebug":
                     if (string.IsNullOrEmpty(val)) throw new InvalidOptionException($"Argument expected for the -X NoDebug option.");
                     try {
@@ -324,7 +336,8 @@ namespace IronPython.Hosting {
             // only keep the implementation-specific options from the DLR
             List<KeyValuePair<string, string>> standardOptionsList = new();
             for (var i = 0; i < standardOptions.GetLength(0); i++) {
-                if (standardOptions[i, 0].StartsWith("-X:", StringComparison.Ordinal)) {
+                // -X NoAdaptiveCompilation takes an optional argument here, so it is described below
+                if (standardOptions[i, 0].StartsWith("-X:", StringComparison.Ordinal) && standardOptions[i, 0] != "-X:NoAdaptiveCompilation") {
                     standardOptionsList.Add(new KeyValuePair<string, string>(standardOptions[i, 0].Replace(' ', '=').Replace(':', ' '), standardOptions[i, 1]));
                 }
             }
@@ -363,6 +376,8 @@ namespace IronPython.Hosting {
                 { "-X MaxRecursion=<level>","Set the maximum recursion level" },
                 { "-X Debug",               "Enable application debugging (preferred over -D)" },
                 { "-X NoDebug=<regex>",     "Provides a regular expression of files which should not be emitted in debug mode"},
+                { "-X NoAdaptiveCompilation[=<regex>]",
+                                            "Disable adaptive compilation (compiles immediately), in all code or only in files matching the regular expression" },
                 { "-X MTA",                 "Run in multithreaded apartment" },
                 { "-X EnableProfiler",      "Enables profiling support in the compiler" },
                 { "-X LightweightScopes",   "Generate optimized scopes that can be garbage collected" },

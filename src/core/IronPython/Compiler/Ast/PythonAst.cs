@@ -46,6 +46,7 @@ namespace IronPython.Compiler.Ast {
         private CompilationMode.ConstantInfo _contextInfo;
         private Dictionary<PythonVariable, MSAst.Expression> _globalVariables = new Dictionary<PythonVariable, MSAst.Expression>();
         internal readonly Profiler _profiler;                            // captures timing data if profiling
+        private bool? _adaptiveCompilationDisabled;                      // whether -X NoAdaptiveCompilation applies to this source, once known
 
         internal const string GlobalContextName = "$globalContext";
         internal static MSAst.ParameterExpression _functionCode = Ast.Variable(typeof(FunctionCode), "$functionCode");
@@ -556,6 +557,15 @@ namespace IronPython.Compiler.Ast {
                 return _mode;
             }
         }
+
+        /// <summary>
+        /// Returns whether -X NoAdaptiveCompilation applies to this source.
+        /// </summary>
+        /// <remarks>
+        /// It depends only on the options and the source unit, so it is evaluated once and remains valid in <see cref="MakeLookupCode"/>.
+        /// </remarks>
+        internal bool IsAdaptiveCompilationDisabled
+            => _adaptiveCompilationDisabled ??= PyContext.IsAdaptiveCompilationDisabled(_compilerContext.SourceUnit);
 
         private MSAst.Expression GetGlobalContext() {
             if (_contextInfo != null) {

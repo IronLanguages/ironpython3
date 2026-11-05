@@ -2,7 +2,20 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import sys
+import threading
+
 from iptest import IronPythonTestCase, is_cli, run_test
+
+def _frame_names():
+    """The names of the calling thread's frames, outermost first, without the frame of this function."""
+    frame = sys._getframe(1)
+    names = []
+    while frame is not None:
+        names.append(frame.f_code.co_name)
+        frame = frame.f_back
+    names.reverse()
+    return names
 
 def ifilter(iterable):
     def predicate(x):
@@ -582,5 +595,104 @@ def fetest(%s):
         with self.assertRaises(KeyError) as cm:
             next(g)
         self.assertEqual(cm.exception.args, ('k',))
+
+    def test_generator_finished_on_other_thread(self):
+        # A generator started on a thread that has exited can be finished on another thread, whichever way it finishes
+        def gen(fail):
+            yield 1
+            yield 2
+            if fail:
+                raise KeyError('fail')
+
+        def started_on_other_thread(g):
+            t = threading.Thread(target=lambda: next(g))
+            t.start()
+            t.join()
+            return g
+
+        expected = _frame_names()
+
+        g = started_on_other_thread(gen(False))
+        self.assertEqual(list(g), [2])
+        self.assertEqual(_frame_names(), expected)
+
+        g = started_on_other_thread(gen(True))
+        self.assertEqual(next(g), 2)
+        self.assertRaises(KeyError, next, g)
+        self.assertEqual(_frame_names(), expected)
+
+        g = started_on_other_thread(gen(False))
+        g.close()
+        self.assertEqual(_frame_names(), expected)
+
+    def test_generator_finished_while_starting_thread_runs(self):
+        # A generator finished on another thread than the one it started on leaves the frames of both threads intact
+        def gen():
+            yield 1
+            yield 2
+
+        def finish(g):
+            return list(g)
+
+        g = gen()
+        started, done = threading.Event(), threading.Event()
+        seen = []
+
+        def wait_here():
+            started.set()
+            done.wait()
+            seen.append(_frame_names()[-2:])
+
+        def worker():
+            next(g)     # the generator starts on this thread
+            wait_here() # and the thread keeps running Python code
+
+        expected = _frame_names()
+        t = threading.Thread(target=worker)
+        t.start()
+        started.wait()
+        try:
+            self.assertEqual(finish(g), [2]) # the generator finishes on this thread
+            self.assertEqual(_frame_names(), expected)
+        finally:
+            done.set()
+            t.join()
+        self.assertEqual(seen, [['worker', 'wait_here']])
+
+    def test_generator_resumed_after_settrace(self):
+        # A generator suspended while tracing is switched on or off leaves the frames of the thread resuming it intact
+        def gen():
+            yield 1
+            yield 2
+
+        def tracer(frame, event, arg):
+            return None
+
+        def resume(g):
+            next(g)
+            return _frame_names()
+
+        expected = _frame_names() + ['resume']
+
+        # started untraced, resumed traced
+        g = gen()
+        next(g)
+        sys.settrace(tracer)
+        try:
+            names = resume(g)
+        finally:
+            sys.settrace(None)
+        self.assertEqual(names, expected)
+        self.assertEqual(_frame_names(), expected[:-1])
+
+        # started traced, resumed untraced
+        sys.settrace(tracer)
+        try:
+            g = gen()
+            next(g)
+        finally:
+            sys.settrace(None)
+        self.assertEqual(resume(g), expected)
+        self.assertEqual(_frame_names(), expected[:-1])
 
 run_test(__name__)

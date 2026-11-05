@@ -123,7 +123,7 @@ namespace IronPython.Compiler {
         }
 
         private bool ShouldInterpret(PythonContext pc) {
-            return pc.ShouldInterpret((PythonCompilerOptions)Ast.CompilerContext.Options, Ast.CompilerContext.SourceUnit);
+            return pc.ShouldInterpret(Ast);
         }
 
         private static PythonConstantExpression ExtractConstant(LightExpression<LookupCompilationDelegate> lambda) {

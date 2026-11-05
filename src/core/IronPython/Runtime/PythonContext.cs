@@ -774,12 +774,24 @@ namespace IronPython.Runtime {
             flags.utf8_mode = PythonOptions.Utf8Mode ? 1 : 0;
         }
 
-        internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
-            // We have to turn off adaptive compilation in debug mode to
-            // support mangaged debuggers. Also turn off in optimized mode.
-            bool adaptiveCompilation = !PythonOptions.NoAdaptiveCompilation && !EmitDebugSymbols(source);
+        internal bool ShouldInterpret(PyAst.PythonAst ast) {
+            if (ast.IsAdaptiveCompilationDisabled) {
+                return false;
+            }
 
-            return options.Interpreted || adaptiveCompilation;
+            CompilerContext context = ast.CompilerContext;
+
+            // We have to turn off adaptive compilation in debug mode to
+            // support mangaged debuggers.
+            return ((PythonCompilerOptions)context.Options).Interpreted || !EmitDebugSymbols(context.SourceUnit);
+        }
+
+        /// <summary>
+        /// Returns whether -X NoAdaptiveCompilation applies to the source, even if it was compiled by compile, exec or eval.
+        /// </summary>
+        internal bool IsAdaptiveCompilationDisabled(SourceUnit source) {
+            var filter = PythonOptions.NoAdaptiveCompilationFilter;
+            return PythonOptions.NoAdaptiveCompilation && (filter == null || source.HasPath && filter.IsMatch(source.Path));
         }
 
         private static PyAst.PythonAst ParseAndBindAst(CompilerContext context) {

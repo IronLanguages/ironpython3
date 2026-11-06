@@ -298,6 +298,34 @@ class NumberTest(IronPythonTestCase):
             self.assertIs(type(clone), Half)
             self.assertTrue(Half.IsNaN(clone))
 
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_format(self):
+        from System import Half
+
+        # Half is formatted like float with the same (exact) value
+        values = [Half(0.1), Half(-0.0), Half(1.5), Half(-2.25), Half(1/3), Half.MaxValue, Half.MinValue, Half.Epsilon,
+                  Half.PositiveInfinity, Half.NegativeInfinity, Half.NaN]
+        specs = ['.2f', '10.3f', '<10', '^12.4e', '+g', '.3g', 'G', '.1%', ',.1f', 'e', '010.2f', ' f']
+        for h in values:
+            for spec in specs:
+                self.assertEqual(format(h, spec), format(float(h), spec))
+
+        self.assertEqual(format(Half(0.1), '.2f'), '0.10')
+        self.assertEqual(format(Half(0.1), '.6f'), '0.099976')
+        self.assertEqual(format(Half(-1.5), '+.3e'), '-1.500e+00')
+        self.assertEqual(format(Half(65504), ',.1f'), '65,504.0')
+        self.assertEqual(format(Half(2.5), '*^9.1f'), '***2.5***')
+        self.assertEqual('{:.1f}'.format(Half(2.375)), '2.4')
+        self.assertEqual(f'{Half(2.25):>6.2f}', '  2.25')
+
+        # empty format spec is the same as str()
+        for h in values:
+            self.assertEqual(format(h, ''), str(h))
+            self.assertEqual(f'{h}', str(h))
+
+        self.assertRaises(ValueError, format, Half(1.5), 's')
+        self.assertRaises(ValueError, format, Half(1.5), 'x')
+
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):
         def operator_add(a, b) :

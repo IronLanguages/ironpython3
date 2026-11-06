@@ -32,6 +32,13 @@ namespace IronPython.Runtime.Operations {
 
         public static PythonTuple __getnewargs__(Half self) => PythonTuple.MakeTuple((double)self);
 
+        public static string __format__(CodeContext/*!*/ context, Half self, [NotNone] string/*!*/ formatSpec) {
+            // format(x, '') must be equal to str(x), which is not the same as str((double)x)
+            if (formatSpec.Length == 0) return PythonOps.ToString(context, self);
+
+            return DoubleOps.__format__(context, (double)self, formatSpec);
+        }
+
         private static void CheckHalfType(PythonType cls) {
             if (cls != DynamicHelpers.GetPythonTypeFromType(typeof(Half))) {
                 throw PythonOps.TypeError("Half.__new__: first argument must be Half type.");

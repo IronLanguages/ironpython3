@@ -274,6 +274,30 @@ class NumberTest(IronPythonTestCase):
         self.assertRaises(TypeError, Half.__new__, float, 1.0)
         self.assertRaises(TypeError, Half.__new__, Single, 1.0)
 
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_copy_pickle(self):
+        import copy, math, pickle
+        from System import Half
+
+        values = [Half(0), Half(-0.0), Half(1.5), Half(-2.25), Half(0.1), Half.MaxValue, Half.MinValue, Half.Epsilon,
+                  Half.PositiveInfinity, Half.NegativeInfinity]
+
+        self.assertEqual(Half(1.5).__getnewargs__(), (1.5,))
+        self.assertIs(type(Half(1.5).__getnewargs__()[0]), float)
+
+        for h in values:
+            clones = [copy.copy(h), copy.deepcopy(h)]
+            # like other CLR numeric types, Half cannot be pickled with protocols 0 and 1
+            clones += [pickle.loads(pickle.dumps(h, protocol)) for protocol in range(2, pickle.HIGHEST_PROTOCOL + 1)]
+            for clone in clones:
+                self.assertIs(type(clone), Half)
+                self.assertEqual(clone, h)
+                self.assertEqual(math.copysign(1, clone), math.copysign(1, h))
+
+        for clone in [copy.copy(Half.NaN), pickle.loads(pickle.dumps(Half.NaN))]:
+            self.assertIs(type(clone), Half)
+            self.assertTrue(Half.IsNaN(clone))
+
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):
         def operator_add(a, b) :

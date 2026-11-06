@@ -30,6 +30,8 @@ namespace IronPython.Runtime.Operations {
             return (Half)(double)DoubleOps.NewFloat(context, TypeCache.Double, x);
         }
 
+        public static PythonTuple __getnewargs__(Half self) => PythonTuple.MakeTuple((double)self);
+
         private static void CheckHalfType(PythonType cls) {
             if (cls != DynamicHelpers.GetPythonTypeFromType(typeof(Half))) {
                 throw PythonOps.TypeError("Half.__new__: first argument must be Half type.");

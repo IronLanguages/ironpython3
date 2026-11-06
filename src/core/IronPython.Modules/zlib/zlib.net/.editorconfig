@@ -1,0 +1,9 @@
+root = true
+
+[*]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.cs]
+# leave upstream code formatting and style intact
+generated_code = true

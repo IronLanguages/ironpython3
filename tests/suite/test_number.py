@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netstandard, big, run_test, skipUnlessIronPython
 
 def get_builtins_dict():
     if type(__builtins__) is type(sys):
@@ -247,6 +247,32 @@ class NumberTest(IronPythonTestCase):
 
 
         self.assertEqual(int(Single(3.14159)), 3)
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_new(self):
+        import clr
+        from System import Half, Single, Int32
+
+        self.assertIsInstance(Half(), Half)
+        self.assertEqual(Half(), clr.Convert(0.0, Half))
+        self.assertIsInstance(Half(1.5), Half)
+        self.assertEqual(Half(1.5), clr.Convert(1.5, Half))
+        self.assertEqual(Half(3), clr.Convert(3.0, Half))
+        self.assertEqual(Half(big(3)), clr.Convert(3.0, Half))
+        self.assertEqual(Half(Int32(3)), clr.Convert(3.0, Half))
+        self.assertEqual(Half(Single(2.5)), clr.Convert(2.5, Half))
+        self.assertEqual(Half(clr.Convert(2.5, Half)), clr.Convert(2.5, Half))
+        self.assertEqual(Half("2.5"), clr.Convert(2.5, Half))
+        self.assertEqual(Half(1e10), Half.PositiveInfinity)
+        self.assertTrue(Half.IsNaN(Half("nan")))
+
+        self.assertRaises(TypeError, Half, 1.0, 2.0)
+        self.assertRaises(TypeError, Half, None)
+        self.assertRaises(ValueError, Half, "abc")
+
+        self.assertRaises(TypeError, Half.__new__, float)
+        self.assertRaises(TypeError, Half.__new__, float, 1.0)
+        self.assertRaises(TypeError, Half.__new__, Single, 1.0)
 
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):

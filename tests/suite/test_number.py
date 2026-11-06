@@ -384,6 +384,23 @@ class NumberTest(IronPythonTestCase):
                 shorter = '{:.{}e}'.format(float(h), len(digits) - 2)
                 self.assertNotEqual(Half(shorter), h, (s, shorter))
 
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_math_abs(self):
+        import math
+        from System import Half, Math
+
+        # Math has no Abs(Half); the lossless Abs(Double) must be selected, not Abs(Int32)
+        for value, expected in [(1.5, 1.5), (-2.75, 2.75), (-0.0, 0.0), (65504, 65504.0), (-1e5, math.inf)]:
+            res = Math.Abs(Half(value))
+            self.assertIs(type(res), float)
+            self.assertEqual(res, expected)
+
+            res = Half.Abs(Half(value))
+            self.assertIs(type(res), Half)
+            self.assertEqual(res, Half(expected))
+
+        self.assertTrue(math.isnan(Math.Abs(Half('nan'))))
+
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):
         def operator_add(a, b) :

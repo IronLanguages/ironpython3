@@ -751,9 +751,9 @@ namespace IronPython.Runtime {
                     if (IsPythonFloatingPoint(fromType) && !IsPythonFloatingPoint(toType)) return false;
                     return true;
                 }
-                if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
+                if (toType == Int32Type && !IsHalf(fromType) && HasPythonProtocol(fromType, "__int__")) return true;
                 if (toType == DoubleType && HasPythonProtocol(fromType, "__float__")) return true;
-                if (toType == BigIntegerType && HasPythonProtocol(fromType, "__int__")) return true;
+                if (toType == BigIntegerType && !IsHalf(fromType) && HasPythonProtocol(fromType, "__int__")) return true;
             }
 
             if (allowNarrowing >= PythonNarrowing.IndexOperator) {
@@ -927,6 +927,14 @@ namespace IronPython.Runtime {
             return ExtensibleBigIntegerType.IsAssignableFrom(t)
                 || ExtensibleDoubleType.IsAssignableFrom(t)
                 || ExtensibleComplexType.IsAssignableFrom(t);
+        }
+
+        private static bool IsHalf(Type t) {
+#if NET6_0_OR_GREATER
+            return t == typeof(Half);
+#else
+            return false;
+#endif
         }
 
         internal static bool IsPythonNumeric(Type t)

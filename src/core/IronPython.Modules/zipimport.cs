@@ -427,7 +427,7 @@ contain the module, but has no source for it.")]
                         data = raw_data;
                     } else {
                         // decompress with zlib
-                        data = ZlibModule.Decompress(raw_data, -15);
+                        data = ZlibModule.Decompress(context, raw_data, -15);
                     }
 
                 } finally {

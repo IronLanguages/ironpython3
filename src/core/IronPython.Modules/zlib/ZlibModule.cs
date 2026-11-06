@@ -92,7 +92,7 @@ An optional starting value can be specified.  The returned checksum is an intege
         [Documentation(@"compress(data[, level]) -- Returns a bytes object containing compressed data.
 
 Optional arg level is the compression level, in 1-9.")]
-        public static Bytes compress([NotNone] IBufferProtocol data,
+        public static Bytes compress(CodeContext context, [NotNone] IBufferProtocol data,
             int level = Z_DEFAULT_COMPRESSION) {
             using var buffer = data.GetBuffer();
             byte[] input = buffer.AsUnsafeArray() ?? buffer.ToArray();
@@ -110,20 +110,18 @@ Optional arg level is the compression level, in 1-9.")]
                     break;
 
                 case (Z_STREAM_ERROR):
-                    throw PythonOps.CreateThrowable(error,
-                                    "Bad compression level");
+                    throw MakeError(context, "Bad compression level");
 
                 default:
                     zst.deflateEnd();
-                    zlib_error(zst, err, "while compressing data");
-                    return null;
+                    throw zlib_error(context, zst, err, "while compressing data");
             }
 
             err = zst.deflate(FlushStrategy.Z_FINISH);
 
             if (err != Z_STREAM_END) {
                 zst.deflateEnd();
-                throw zlib_error(zst, err, "while compressing data");
+                throw zlib_error(context, zst, err, "while compressing data");
             }
 
             err = zst.deflateEnd();
@@ -134,51 +132,56 @@ Optional arg level is the compression level, in 1-9.")]
                 return Bytes.Make(res);
             }
 
-            throw zlib_error(zst, err, "while finishing compression");
+            throw zlib_error(context, zst, err, "while finishing compression");
         }
 
         [Documentation(@"compressobj([level]) -- Return a compressor object.
 
 Optional arg level is the compression level, in 1-9.")]
-        public static Compress compressobj(
+        public static Compress compressobj(CodeContext context,
             int level = Z_DEFAULT_COMPRESSION,
             int method = DEFLATED,
             int wbits = MAX_WBITS,
             int memlevel = DEF_MEM_LEVEL,
             int strategy = Z_DEFAULT_STRATEGY) {
-            return new Compress(level, method, wbits, memlevel, strategy);
+            return new Compress(context, level, method, wbits, memlevel, strategy);
         }
 
         [Documentation(@"decompress(data[, wbits[, bufsize]]) -- Returns a bytes object containing the uncompressed data.
 
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]
-        public static Bytes decompress([NotNone] IBufferProtocol data,
+        public static Bytes decompress(CodeContext context, [NotNone] IBufferProtocol data,
             int wbits = MAX_WBITS,
             int bufsize = DEFAULTALLOC) {
             using var buffer = data.GetBuffer();
-            var bytes = Decompress(buffer.AsUnsafeArray() ?? buffer.ToArray(), wbits, bufsize);
+            var bytes = Decompress(context, buffer.AsUnsafeArray() ?? buffer.ToArray(), wbits, bufsize);
             return Bytes.Make(bytes);
         }
 
         [Documentation(@"decompressobj([wbits]) -- Return a decompressor object.
 
 Optional arg wbits is the window buffer size.")]
-        public static Decompress decompressobj(int wbits = MAX_WBITS) {
-            return new Decompress(wbits);
+        public static Decompress decompressobj(CodeContext context, int wbits = MAX_WBITS) {
+            return new Decompress(context, wbits);
         }
+
+        private static readonly object _errorKey = new object();
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
-            error = context.EnsureModuleException("zlib.error", PythonExceptions.Exception, dict, "error", "zlib");
+            dict["error"] = GetErrorType(context);
         }
 
-        public static PythonType error;
-        internal static Exception MakeError(params object[] args) {
-            return PythonOps.CreateThrowable(error, args);
-        }
+        // zipimport raises zlib.error without importing zlib, so PerformModuleReload may not have run yet
+        private static PythonType GetErrorType(PythonContext context)
+            => context.GetOrCreateModuleState(_errorKey,
+                () => PythonExceptions.CreateSubType(context, PythonExceptions.Exception, "error", "zlib", null, PythonType.DefaultMakeException));
 
-        internal static Exception zlib_error(ZStream zst, int err, string msg) {
+        internal static Exception MakeError(CodeContext context, string message)
+            => PythonOps.CreateThrowable(GetErrorType(context.LanguageContext), message);
+
+        internal static Exception zlib_error(CodeContext context, ZStream zst, int err, string msg) {
             string zmsg = zst.msg;
             if (zmsg == null) {
                 switch (err) {
@@ -195,13 +198,13 @@ Optional arg wbits is the window buffer size.")]
             }
 
             if (zmsg == null)
-                return MakeError(string.Format("Error {0} {1}", err, msg));
+                return MakeError(context, string.Format("Error {0} {1}", err, msg));
             else
-                return MakeError(string.Format("Error {0} {1}: {2}", err, msg, zmsg));
+                return MakeError(context, string.Format("Error {0} {1}: {2}", err, msg, zmsg));
         }
 
         [PythonHidden]
-        internal static byte[] Decompress(byte[] input, int wbits = MAX_WBITS, int bufsize = DEFAULTALLOC) {
+        internal static byte[] Decompress(CodeContext context, byte[] input, int wbits = MAX_WBITS, int bufsize = DEFAULTALLOC) {
             byte[] outputBuffer = new byte[bufsize];
             byte[] output = new byte[bufsize];
             int outputOffset = 0;
@@ -215,7 +218,7 @@ Optional arg wbits is the window buffer size.")]
             int err = zst.inflateInit(wbits);
             if (err != Z_OK) {
                 zst.inflateEnd();
-                throw zlib_error(zst, err, "while preparing to decompress data");
+                throw zlib_error(context, zst, err, "while preparing to decompress data");
             }
 
             do {
@@ -223,7 +226,7 @@ Optional arg wbits is the window buffer size.")]
                 if (err != Z_STREAM_END) {
                     if (err == Z_BUF_ERROR && zst.avail_out > 0) {
                         zst.inflateEnd();
-                        throw zlib_error(zst, err, "while decompressing data");
+                        throw zlib_error(context, zst, err, "while decompressing data");
                     } else if (err == Z_OK || (err == Z_BUF_ERROR && zst.avail_out == 0)) {
                         // copy to the output and reset the buffer
                         if (outputOffset + outputBuffer.Length > output.Length)
@@ -237,7 +240,7 @@ Optional arg wbits is the window buffer size.")]
                         zst.next_out_index = 0;
                     } else {
                         zst.inflateEnd();
-                        throw zlib_error(zst, err, "while decompressing data");
+                        throw zlib_error(context, zst, err, "while decompressing data");
                     }
                 }
 
@@ -245,7 +248,7 @@ Optional arg wbits is the window buffer size.")]
 
             err = zst.inflateEnd();
             if (err != Z_OK) {
-                throw zlib_error(zst, err, "while finishing data decompression");
+                throw zlib_error(context, zst, err, "while finishing data decompression");
             }
 
             if (outputOffset + outputBuffer.Length - zst.avail_out > output.Length)

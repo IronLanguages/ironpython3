@@ -6,9 +6,7 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 using ComponentAce.Compression.Libs.ZLib;
 
@@ -16,7 +14,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 namespace IronPython.Zlib {
     [PythonType]
@@ -28,7 +25,11 @@ namespace IronPython.Zlib {
         private const int Z_SYNC_FLUSH = ZlibModule.Z_SYNC_FLUSH;
         private const int Z_FINISH = ZlibModule.Z_FINISH;
 
-        internal Decompress(int wbits) {
+        private readonly CodeContext _context;
+        private ZStream zst;
+
+        internal Decompress(CodeContext context, int wbits) {
+            _context = context;
             zst = new ZStream();
             int err = zst.inflateInit(wbits);
             switch (err) {
@@ -39,7 +40,7 @@ namespace IronPython.Zlib {
                     throw PythonOps.ValueError("Invalid initialization option");
 
                 default:
-                    throw ZlibModule.zlib_error(this.zst, err, "while creating decompression object");
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "while creating decompression object");
             }
 
             unused_data = Bytes.Empty;
@@ -95,7 +96,7 @@ the unconsumed_tail attribute.")]
             } else {
                 unconsumed_tail = remaining;
                 if (err != Z_OK && err != Z_BUF_ERROR) {
-                    throw ZlibModule.zlib_error(this.zst, err, "while decompressing");
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "while decompressing");
                 }
             }
 
@@ -134,20 +135,15 @@ The decompressor object can no longer be used after this call.")]
             if (err == Z_STREAM_END) {
                 err = zst.inflateEnd();
                 if (err != Z_OK) {
-                    throw ZlibModule.zlib_error(this.zst, err, "from inflateEnd()");
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "from inflateEnd()");
                 }
             }
 
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
-        //[Documentation("copy() -- Return a copy of the decompression object.")]
-        //public Compress copy()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        private ZStream zst;
+        // TODO: needs a deep clone of ZStream (zlib.NET has no deflateCopy/inflateCopy)
+        //public Decompress copy() => throw new NotImplementedException();
 
         private static Bytes GetBytes(byte[] bytes, int index, int count) {
             var res = new byte[count];

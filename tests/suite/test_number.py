@@ -401,6 +401,33 @@ class NumberTest(IronPythonTestCase):
 
         self.assertTrue(math.isnan(Math.Abs(Half('nan'))))
 
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_real_imag_conjugate(self):
+        import math
+        from System import Half
+
+        for value in [1.5, -2.25, 0.0, -0.0, 65504, math.inf, -math.inf]:
+            h = Half(value)
+            for res in (h.real, h.conjugate()):
+                self.assertIs(type(res), Half)
+                self.assertEqual(res, h)
+                self.assertEqual(math.copysign(1, res), math.copysign(1, h))
+            self.assertIs(type(h.imag), Half)
+            self.assertEqual(h.imag, Half(0))
+            self.assertEqual(math.copysign(1, h.imag), 1)
+            self.assertEqual(complex(h.real, h.imag), complex(float(h)))
+
+        nan = Half('nan')
+        self.assertTrue(Half.IsNaN(nan.real))
+        self.assertTrue(Half.IsNaN(nan.conjugate()))
+        self.assertEqual(nan.imag, Half(0))
+
+        # real and imag are read-only
+        with self.assertRaises(AttributeError):
+            Half(1).real = Half(2)
+        with self.assertRaises(AttributeError):
+            Half(1).imag = Half(2)
+
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):
         def operator_add(a, b) :

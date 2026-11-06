@@ -8,6 +8,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
@@ -33,6 +34,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static PythonTuple __getnewargs__(Half self) => PythonTuple.MakeTuple((double)self);
+
+        [PropertyMethod, SpecialName]
+        public static Half Getreal(Half self) => self;
+
+        [PropertyMethod, SpecialName]
+        public static Half Getimag(Half self) => default;
+
+        public static Half conjugate(Half self) => self;
 
         public static string __format__(CodeContext/*!*/ context, Half self, [NotNone] string/*!*/ formatSpec) {
             // format(x, '') must be equal to str(x), which is not the same as str((double)x)

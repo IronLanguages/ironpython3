@@ -326,6 +326,64 @@ class NumberTest(IronPythonTestCase):
         self.assertRaises(ValueError, format, Half(1.5), 's')
         self.assertRaises(ValueError, format, Half(1.5), 'x')
 
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_str_repr(self):
+        from System import Half, BitConverter, Int16
+        from System.Globalization import CultureInfo
+        from System.Threading import Thread
+
+        # expected values are the same as str(numpy.float16(value))
+        cases = [
+            (0.0, '0.0'),
+            (-0.0, '-0.0'),
+            (1.0, '1.0'),
+            (-1.5, '-1.5'),
+            (0.1, '0.1'),
+            (1/3, '0.3333'),
+            (3.0, '3.0'),
+            (100.0, '100.0'),
+            (999.5, '999.5'),
+            (1000.0, '1e+03'),
+            (2048.0, '2.048e+03'),
+            (2049.0, '2.048e+03'),
+            (12345.0, '1.2344e+04'),
+            (65504.0, '6.55e+04'),
+            (-65504.0, '-6.55e+04'),
+            (0.0001, '0.0001'),
+            (0.00011, '0.00011'),
+            (9.99e-05, '9.99e-05'),
+            (6.103515625e-05, '6.104e-05'),
+            (5.960464477539063e-08, '6e-08'),
+            (1.0009765625, '1.001'),
+            (float('inf'), 'inf'),
+            (float('-inf'), '-inf'),
+            (float('nan'), 'nan'),
+        ]
+        culture = Thread.CurrentThread.CurrentCulture
+        try:
+            for c in [culture, CultureInfo.InvariantCulture, CultureInfo('de-DE')]:
+                Thread.CurrentThread.CurrentCulture = c
+                for value, expected in cases:
+                    self.assertEqual(str(Half(value)), expected)
+                    self.assertEqual(repr(Half(value)), expected)
+        finally:
+            Thread.CurrentThread.CurrentCulture = culture
+
+        self.assertEqual(str(-Half.NaN), 'nan')
+        self.assertEqual(str([Half(0.5), Half(-2)]), '[0.5, -2.0]')
+
+        # every value round-trips through str, and with no more digits than necessary
+        for bits in range(-0x8000, 0x8000):
+            h = BitConverter.Int16BitsToHalf(Int16(bits))
+            if not Half.IsFinite(h): continue
+            s = str(h)
+            self.assertEqual(Half(s), h)
+            mantissa = s.lstrip('-').split('e')[0]
+            digits = mantissa.replace('.', '').strip('0')
+            if len(digits) > 1:
+                shorter = '{:.{}e}'.format(float(h), len(digits) - 2)
+                self.assertNotEqual(Half(shorter), h, (s, shorter))
+
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):
         def operator_add(a, b) :

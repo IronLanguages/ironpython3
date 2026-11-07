@@ -24,8 +24,6 @@ namespace IronPython.Modules {
         #region Public API
 
         public static object? ConnectNamedPipe(BigInteger handle, bool overlapped = false) {
-            if (overlapped) throw new NotImplementedException();
-
             if (overlapped) {
                 throw new NotImplementedException();
             }
@@ -115,11 +113,11 @@ namespace IronPython.Modules {
             tSecSA.nLength = Marshal.SizeOf(tSecSA);
 
             if (proc_attrs != null) {
-                /* If pSec paseed in from Python is not NULL 
+                /* If pSec paseed in from Python is not NULL
                  * there needs to be some conversion done here...*/
             }
             if (thread_attrs != null) {
-                /* If tSec paseed in from Python is not NULL 
+                /* If tSec paseed in from Python is not NULL
                  * there needs to be some conversion done here...*/
             }
 
@@ -173,7 +171,7 @@ namespace IronPython.Modules {
             int desired_access,
             bool inherit_handle,
             object? DUPLICATE_SAME_ACCESS) {
-            
+
             IntPtr currentProcessIntPtr = new IntPtr((long)source_process_handle);
             IntPtr handleIntPtr = new IntPtr((long)source_handle);
             IntPtr currentProcess2IntPtr = new IntPtr((long)target_process_handle);

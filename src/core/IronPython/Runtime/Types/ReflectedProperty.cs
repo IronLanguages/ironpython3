@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Types {
                         throw PythonOps.TypeErrorForProtectedMember(owner.UnderlyingSystemType, _info.Name);
                     }
                 }
-            } else if (instance != null) {
+            } else {
                 foreach (MethodInfo mi in Setter) {
                     if (mi.IsStatic) {
                         return false;
@@ -112,13 +112,13 @@ namespace IronPython.Runtime.Types {
                 owner = DynamicHelpers.GetPythonType(instance);
             }
 
-            // this matches the logic in the default binder when it does a property get.  We 
+            // this matches the logic in the default binder when it does a property get.  We
             // need to duplicate it here to be consistent for all gets.
             MethodInfo[] members = Getter;
 
             Type type = owner.UnderlyingSystemType;
             if (Getter.Length > 1) {
-                // if we were given multiple members pick the member closest to the type...                
+                // if we were given multiple members pick the member closest to the type...
                 Type bestMemberDeclaringType = Getter[0].DeclaringType;
                 MethodInfo bestMember = Getter[0];
 

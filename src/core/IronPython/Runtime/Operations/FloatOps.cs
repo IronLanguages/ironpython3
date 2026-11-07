@@ -438,8 +438,6 @@ namespace IronPython.Runtime.Operations {
                         return x;
                     }
                     return 0.0;
-                } else if (y == 0.0) {
-                    return 1.0;
                 } else if (double.IsNegativeInfinity(y)) {
                     return double.PositiveInfinity;
                 }

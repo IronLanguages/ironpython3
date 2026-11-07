@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, big, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netstandard, big, run_test, skipUnlessIronPython
 
 def get_builtins_dict():
     if type(__builtins__) is type(sys):
@@ -247,6 +247,204 @@ class NumberTest(IronPythonTestCase):
 
 
         self.assertEqual(int(Single(3.14159)), 3)
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_new(self):
+        import clr
+        from System import Half, Single, Int32
+
+        self.assertIsInstance(Half(), Half)
+        self.assertEqual(Half(), clr.Convert(0.0, Half))
+        self.assertIsInstance(Half(1.5), Half)
+        self.assertEqual(Half(1.5), clr.Convert(1.5, Half))
+        self.assertEqual(Half(3), clr.Convert(3.0, Half))
+        self.assertEqual(Half(big(3)), clr.Convert(3.0, Half))
+        self.assertEqual(Half(Int32(3)), clr.Convert(3.0, Half))
+        self.assertEqual(Half(Single(2.5)), clr.Convert(2.5, Half))
+        self.assertEqual(Half(clr.Convert(2.5, Half)), clr.Convert(2.5, Half))
+        self.assertEqual(Half("2.5"), clr.Convert(2.5, Half))
+        self.assertEqual(Half(1e10), Half.PositiveInfinity)
+        self.assertTrue(Half.IsNaN(Half("nan")))
+
+        self.assertRaises(TypeError, Half, 1.0, 2.0)
+        self.assertRaises(TypeError, Half, None)
+        self.assertRaises(ValueError, Half, "abc")
+
+        self.assertRaises(TypeError, Half.__new__, float)
+        self.assertRaises(TypeError, Half.__new__, float, 1.0)
+        self.assertRaises(TypeError, Half.__new__, Single, 1.0)
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_bool(self):
+        from System import Half
+
+        # like float: false only when equal to zero, so NaN is true
+        for h in [Half(0), Half(-0.0)]:
+            self.assertIs(bool(h), False)
+            self.assertIs(not h, True)
+            self.assertEqual(h or 'alt', 'alt')
+            self.assertIs(h and 'alt', h)
+
+        for h in [Half(1), Half(-1.5), Half.Epsilon, Half.MaxValue, Half.MinValue,
+                  Half.PositiveInfinity, Half.NegativeInfinity, Half.NaN]:
+            self.assertIs(bool(h), True)
+            self.assertIs(not h, False)
+            self.assertIs(h or 'alt', h)
+            self.assertEqual(h and 'alt', 'alt')
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_copy_pickle(self):
+        import copy, math, pickle
+        from System import Half
+
+        values = [Half(0), Half(-0.0), Half(1.5), Half(-2.25), Half(0.1), Half.MaxValue, Half.MinValue, Half.Epsilon,
+                  Half.PositiveInfinity, Half.NegativeInfinity]
+
+        self.assertEqual(Half(1.5).__getnewargs__(), (1.5,))
+        self.assertIs(type(Half(1.5).__getnewargs__()[0]), float)
+
+        for h in values:
+            clones = [copy.copy(h), copy.deepcopy(h)]
+            # like other CLR numeric types, Half cannot be pickled with protocols 0 and 1
+            clones += [pickle.loads(pickle.dumps(h, protocol)) for protocol in range(2, pickle.HIGHEST_PROTOCOL + 1)]
+            for clone in clones:
+                self.assertIs(type(clone), Half)
+                self.assertEqual(clone, h)
+                self.assertEqual(math.copysign(1, clone), math.copysign(1, h))
+
+        for clone in [copy.copy(Half.NaN), pickle.loads(pickle.dumps(Half.NaN))]:
+            self.assertIs(type(clone), Half)
+            self.assertTrue(Half.IsNaN(clone))
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_format(self):
+        from System import Half
+
+        # Half is formatted like float with the same (exact) value
+        values = [Half(0.1), Half(-0.0), Half(1.5), Half(-2.25), Half(1/3), Half.MaxValue, Half.MinValue, Half.Epsilon,
+                  Half.PositiveInfinity, Half.NegativeInfinity, Half.NaN]
+        specs = ['.2f', '10.3f', '<10', '^12.4e', '+g', '.3g', 'G', '.1%', ',.1f', 'e', '010.2f', ' f']
+        for h in values:
+            for spec in specs:
+                self.assertEqual(format(h, spec), format(float(h), spec))
+
+        self.assertEqual(format(Half(0.1), '.2f'), '0.10')
+        self.assertEqual(format(Half(0.1), '.6f'), '0.099976')
+        self.assertEqual(format(Half(-1.5), '+.3e'), '-1.500e+00')
+        self.assertEqual(format(Half(65504), ',.1f'), '65,504.0')
+        self.assertEqual(format(Half(2.5), '*^9.1f'), '***2.5***')
+        self.assertEqual('{:.1f}'.format(Half(2.375)), '2.4')
+        self.assertEqual(f'{Half(2.25):>6.2f}', '  2.25')
+
+        # empty format spec is the same as str()
+        for h in values:
+            self.assertEqual(format(h, ''), str(h))
+            self.assertEqual(f'{h}', str(h))
+
+        self.assertRaises(ValueError, format, Half(1.5), 's')
+        self.assertRaises(ValueError, format, Half(1.5), 'x')
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_str_repr(self):
+        from System import Half, BitConverter, Int16
+        from System.Globalization import CultureInfo
+        from System.Threading import Thread
+
+        # expected values are the same as str(numpy.float16(value))
+        cases = [
+            (0.0, '0.0'),
+            (-0.0, '-0.0'),
+            (1.0, '1.0'),
+            (-1.5, '-1.5'),
+            (0.1, '0.1'),
+            (1/3, '0.3333'),
+            (3.0, '3.0'),
+            (100.0, '100.0'),
+            (999.5, '999.5'),
+            (1000.0, '1e+03'),
+            (2048.0, '2.048e+03'),
+            (2049.0, '2.048e+03'),
+            (12345.0, '1.2344e+04'),
+            (65504.0, '6.55e+04'),
+            (-65504.0, '-6.55e+04'),
+            (0.0001, '0.0001'),
+            (0.00011, '0.00011'),
+            (9.99e-05, '9.99e-05'),
+            (6.103515625e-05, '6.104e-05'),
+            (5.960464477539063e-08, '6e-08'),
+            (1.0009765625, '1.001'),
+            (float('inf'), 'inf'),
+            (float('-inf'), '-inf'),
+            (float('nan'), 'nan'),
+        ]
+        culture = Thread.CurrentThread.CurrentCulture
+        try:
+            for c in [culture, CultureInfo.InvariantCulture, CultureInfo('de-DE')]:
+                Thread.CurrentThread.CurrentCulture = c
+                for value, expected in cases:
+                    self.assertEqual(str(Half(value)), expected)
+                    self.assertEqual(repr(Half(value)), expected)
+        finally:
+            Thread.CurrentThread.CurrentCulture = culture
+
+        self.assertEqual(str(-Half.NaN), 'nan')
+        self.assertEqual(str([Half(0.5), Half(-2)]), '[0.5, -2.0]')
+
+        # every value round-trips through str, and with no more digits than necessary
+        for bits in range(-0x8000, 0x8000):
+            h = BitConverter.Int16BitsToHalf(Int16(bits))
+            if not Half.IsFinite(h): continue
+            s = str(h)
+            self.assertEqual(Half(s), h)
+            mantissa = s.lstrip('-').split('e')[0]
+            digits = mantissa.replace('.', '').strip('0')
+            if len(digits) > 1:
+                shorter = '{:.{}e}'.format(float(h), len(digits) - 2)
+                self.assertNotEqual(Half(shorter), h, (s, shorter))
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_math_abs(self):
+        import math
+        from System import Half, Math
+
+        # Math has no Abs(Half); the lossless Abs(Double) must be selected, not Abs(Int32)
+        for value, expected in [(1.5, 1.5), (-2.75, 2.75), (-0.0, 0.0), (65504, 65504.0), (-1e5, math.inf)]:
+            res = Math.Abs(Half(value))
+            self.assertIs(type(res), float)
+            self.assertEqual(res, expected)
+
+            res = Half.Abs(Half(value))
+            self.assertIs(type(res), Half)
+            self.assertEqual(res, Half(expected))
+
+        self.assertTrue(math.isnan(Math.Abs(Half('nan'))))
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_real_imag_conjugate(self):
+        import math
+        from System import Half
+
+        for value in [1.5, -2.25, 0.0, -0.0, 65504, math.inf, -math.inf]:
+            h = Half(value)
+            for res in (h.real, h.conjugate()):
+                self.assertIs(type(res), Half)
+                self.assertEqual(res, h)
+                self.assertEqual(math.copysign(1, res), math.copysign(1, h))
+            self.assertIs(type(h.imag), Half)
+            self.assertEqual(h.imag, Half(0))
+            self.assertEqual(math.copysign(1, h.imag), 1)
+            self.assertEqual(complex(h.real, h.imag), complex(float(h)))
+
+        nan = Half('nan')
+        self.assertTrue(Half.IsNaN(nan.real))
+        self.assertTrue(Half.IsNaN(nan.conjugate()))
+        self.assertEqual(nan.imag, Half(0))
+
+        # real and imag are read-only
+        with self.assertRaises(AttributeError):
+            Half(1).real = Half(2)
+        with self.assertRaises(AttributeError):
+            Half(1).imag = Half(2)
 
     #TODO: @skip("interpreted") #Too slow
     def test_operators(self):

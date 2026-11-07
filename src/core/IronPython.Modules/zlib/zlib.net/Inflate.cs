@@ -309,7 +309,7 @@ namespace ComponentAce.Compression.Libs.ZLib
 						if ((z.istate.method >> 4) + 8 > z.istate.wbits)
 						{
 							z.istate.mode =  InflateMode.BAD;
-							z.msg = "invalid Window size";
+							z.msg = "invalid window size";
 							z.istate.marker = 5; // can't try inflateSync
 							break;
 						}

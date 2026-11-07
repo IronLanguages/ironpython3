@@ -6,33 +6,33 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+
 using ComponentAce.Compression.Libs.ZLib;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
-namespace IronPython.Zlib
-{
+using Microsoft.Scripting.Runtime;
+
+namespace IronPython.Zlib {
     [PythonType]
-    public class Compress
-    {
+    public class Compress {
         private const int Z_OK = ZlibModule.Z_OK;
         private const int Z_BUF_ERROR = ZlibModule.Z_BUF_ERROR;
         private const int Z_STREAM_END = ZlibModule.Z_STREAM_END;
-        
+
         private const int Z_NO_FLUSH = ZlibModule.Z_NO_FLUSH;
         private const int Z_FINISH = ZlibModule.Z_FINISH;
 
-        internal Compress(int level, int method, int wbits, int memlevel, int strategy)
-        {
+        private readonly CodeContext _context;
+        private ZStream zst;
+
+        internal Compress(CodeContext context, int level, int method, int wbits, int memlevel, int strategy) {
+            _context = context;
             zst = new ZStream();
             int err = zst.DeflateInit(level, wbits);
-            switch(err)
-            {
+            switch (err) {
                 case ZlibModule.Z_OK:
                     break;
 
@@ -40,7 +40,7 @@ namespace IronPython.Zlib
                     throw PythonOps.ValueError("Invalid initialization option");
 
                 default:
-                    throw ZlibModule.zlib_error(this.zst, err, "while creating compression object");
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "while creating compression object");
             }
         }
 
@@ -49,8 +49,7 @@ namespace IronPython.Zlib
 After calling this function, some of the input data may still
 be stored in internal buffers for later processing.
 Call the flush() method to clear these buffers.")]
-        public Bytes compress([NotNone] IBufferProtocol data)
-        {
+        public Bytes compress([NotNone] IBufferProtocol data) {
             using var buffer = data.GetBuffer();
             byte[] input = buffer.AsUnsafeArray() ?? buffer.ToArray();
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];
@@ -65,8 +64,7 @@ Call the flush() method to clear these buffers.")]
 
             int err = zst.deflate(Z_NO_FLUSH);
 
-            while(err == Z_OK && zst.avail_out == 0)
-            {
+            while (err == Z_OK && zst.avail_out == 0) {
                 int length = output.Length;
                 Array.Resize(ref output, output.Length * 2);
 
@@ -76,9 +74,8 @@ Call the flush() method to clear these buffers.")]
                 err = zst.deflate(Z_NO_FLUSH);
             }
 
-            if(err != Z_OK && err != Z_BUF_ERROR)
-            {
-                throw ZlibModule.zlib_error(this.zst, err, "while compressing");
+            if (err != Z_OK && err != Z_BUF_ERROR) {
+                throw ZlibModule.zlib_error(_context, this.zst, err, "while compressing");
             }
 
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
@@ -90,12 +87,10 @@ mode can be one of the constants Z_SYNC_FLUSH, Z_FULL_FLUSH, Z_FINISH; the
 default value used when mode is not specified is Z_FINISH.
 If mode == Z_FINISH, the compressor object can no longer be used after
 calling the flush() method.  Otherwise, more data can still be compressed.")]
-        public Bytes flush(int mode=Z_FINISH)
-        {
+        public Bytes flush(int mode = Z_FINISH) {
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];
 
-            if(mode == Z_NO_FLUSH)
-            {
+            if (mode == Z_NO_FLUSH) {
                 return Bytes.Empty;
             }
 
@@ -106,8 +101,7 @@ calling the flush() method.  Otherwise, more data can still be compressed.")]
             zst.avail_out = output.Length;
 
             int err = zst.deflate((FlushStrategy)mode);
-            while(err == Z_OK && zst.avail_out == 0)
-            {
+            while (err == Z_OK && zst.avail_out == 0) {
                 int old_length = output.Length;
                 Array.Resize(ref output, output.Length * 2);
 
@@ -117,32 +111,22 @@ calling the flush() method.  Otherwise, more data can still be compressed.")]
                 err = zst.deflate((FlushStrategy)mode);
             }
 
-            if(err == Z_STREAM_END && mode == Z_FINISH)
-            {
+            if (err == Z_STREAM_END && mode == Z_FINISH) {
                 err = zst.deflateEnd();
-                if(err != Z_OK)
-                {
-                    throw ZlibModule.zlib_error(this.zst, err, "from deflateEnd()");
+                if (err != Z_OK) {
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "from deflateEnd()");
                 }
-            }
-            else if(err != Z_OK && err != Z_BUF_ERROR)
-            {
-                throw ZlibModule.zlib_error(this.zst, err, "while flushing");
+            } else if (err != Z_OK && err != Z_BUF_ERROR) {
+                throw ZlibModule.zlib_error(_context, this.zst, err, "while flushing");
             }
 
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
-        //[Documentation("copy() -- Return a copy of the compression object.")]
-        //public Compress copy()
-        //{
-        //    throw new NotImplementedException();
-        //}
+        // TODO: needs a deep clone of ZStream (zlib.NET has no deflateCopy/inflateCopy)
+        //public Compress copy() => throw new NotImplementedException();
 
-        private ZStream zst;
-
-        private static Bytes GetBytes(byte[] bytes, int index, int count)
-        {
+        private static Bytes GetBytes(byte[] bytes, int index, int count) {
             var res = new byte[count];
             Array.Copy(bytes, index, res, 0, count);
             return Bytes.Make(res);

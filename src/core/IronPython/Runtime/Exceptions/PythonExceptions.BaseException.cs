@@ -281,6 +281,8 @@ namespace IronPython.Runtime.Exceptions {
                 }
             }
 
+            internal BaseException? RawContext => _context;
+
             public bool __suppress_context__ { get; set; }
 
             public TraceBack? __traceback__ {

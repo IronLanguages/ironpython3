@@ -743,7 +743,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(DBNull)] = new Type[] { typeof(DBNullOps) };
             res[typeof(List<>)] = new Type[] { typeof(ListOfTOps<>) };
             res[typeof(Dictionary<,>)] = new Type[] { typeof(DictionaryOfTOps<,>) };
-            res[typeof(Array)] = new Type[] { typeof(ArrayOps) };
+            res[typeof(Array)] = new Type[] { typeof(ArrayOps), typeof(NDArrayOps) };
             res[typeof(Assembly)] = new Type[] { typeof(PythonAssemblyOps) };
             res[typeof(Enum)] = new Type[] { typeof(EnumOps) };
             res[typeof(Delegate)] = new Type[] { typeof(DelegateOps) };

@@ -275,6 +275,24 @@ class NumberTest(IronPythonTestCase):
         self.assertRaises(TypeError, Half.__new__, Single, 1.0)
 
     @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
+    def test_half_bool(self):
+        from System import Half
+
+        # like float: false only when equal to zero, so NaN is true
+        for h in [Half(0), Half(-0.0)]:
+            self.assertIs(bool(h), False)
+            self.assertIs(not h, True)
+            self.assertEqual(h or 'alt', 'alt')
+            self.assertIs(h and 'alt', h)
+
+        for h in [Half(1), Half(-1.5), Half.Epsilon, Half.MaxValue, Half.MinValue,
+                  Half.PositiveInfinity, Half.NegativeInfinity, Half.NaN]:
+            self.assertIs(bool(h), True)
+            self.assertIs(not h, False)
+            self.assertIs(h or 'alt', h)
+            self.assertEqual(h and 'alt', 'alt')
+
+    @unittest.skipUnless(is_netcoreapp and not is_netstandard, "System.Half requires .NET 5+")
     def test_half_copy_pickle(self):
         import copy, math, pickle
         from System import Half

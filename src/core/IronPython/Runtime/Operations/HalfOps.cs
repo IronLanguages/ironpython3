@@ -33,6 +33,8 @@ namespace IronPython.Runtime.Operations {
             return (Half)(double)DoubleOps.NewFloat(context, TypeCache.Double, x);
         }
 
+        public static bool __bool__(Half self) => self != Half.Zero;
+
         public static PythonTuple __getnewargs__(Half self) => PythonTuple.MakeTuple((double)self);
 
         [PropertyMethod, SpecialName]

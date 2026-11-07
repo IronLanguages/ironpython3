@@ -695,4 +695,25 @@ def fetest(%s):
         self.assertEqual(resume(g), expected)
         self.assertEqual(_frame_names(), expected[:-1])
 
+    def test_entry_while_running_on_other_thread(self):
+        entered, release = threading.Event(), threading.Event()
+        def g():
+            entered.set()
+            release.wait()
+            yield 1
+            yield 2
+        gen = g()
+        results = []
+        t = threading.Thread(target=lambda: results.append(next(gen)))
+        t.start()
+        self.assertTrue(entered.wait(10))
+        self.assertEqual(gen.gi_running, 1)
+        for f in (lambda: next(gen), lambda: gen.send(None), lambda: gen.throw(KeyError), gen.close):
+            self.assertRaises(ValueError, f)
+        release.set()
+        t.join()
+        self.assertEqual(gen.gi_running, 0)
+        self.assertEqual(results, [1])
+        self.assertEqual(list(gen), [2])
+
 run_test(__name__)

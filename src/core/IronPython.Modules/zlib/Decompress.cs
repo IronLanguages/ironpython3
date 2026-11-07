@@ -81,9 +81,11 @@ the unconsumed_tail attribute.")]
                     break;
 
                 int old_length = output.Length;
-                Array.Resize(ref output, output.Length * 2);
+                int new_length = output.Length * 2;
+                if (max_length > 0 && new_length > max_length) new_length = max_length;
+                Array.Resize(ref output, new_length);
+                zst.avail_out = new_length - old_length;
                 zst.next_out = output;
-                zst.avail_out = old_length;
 
                 err = zst.inflate(FlushStrategy.Z_SYNC_FLUSH);
             }

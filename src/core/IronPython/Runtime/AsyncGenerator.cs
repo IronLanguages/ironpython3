@@ -103,9 +103,9 @@ namespace IronPython.Runtime {
         /// </remarks>
         [LightThrowing]
         public object athrow(object? type, object? value, object? traceback) {
-            if (PythonOps.ValidateThrowArguments(type, value) is Exception error) return LightExceptions.Throw(error);
+            if (PythonOps.ValidateThrowArguments(type, value, traceback) is Exception error) return LightExceptions.Throw(error);
 
-            Exception ex = PythonOps.MakeExceptionForGenerator(DefaultContext.Default, type, value, traceback, cause: null);
+            Exception ex = PythonOps.MakeExceptionForGenerator(DefaultContext.Default, type, value, traceback);
             _started = true;
             _throwSlot.Value = ex;
             _sendSlot.Value = null;

@@ -108,7 +108,7 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary(new CommonDictionaryStorage(data, true));
         }
 
-        public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)]object? o) {
+        public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)] object? o) {
             // This tells if an object can be called, but does not make a claim about the parameter list.
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated
             // in favor of dynamic sites.
@@ -407,7 +407,7 @@ namespace IronPython.Runtime.Operations {
             return typeinfo.__subclasscheck__(c);
         }
 
-        internal static bool IsSubClass(CodeContext/*!*/ context, PythonType c, [NotNull]object? typeinfo) {
+        internal static bool IsSubClass(CodeContext/*!*/ context, PythonType c, [NotNull] object? typeinfo) {
             if (c == null) throw PythonOps.TypeError("issubclass: arg 1 must be a class");
             if (typeinfo == null) throw PythonOps.TypeError("issubclass: arg 2 must be a class");
 
@@ -492,7 +492,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         // used by Ironclad
-        public static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNull]object? typeinfo) {
+        public static bool IsInstance(CodeContext/*!*/ context, object? o, [NotNull] object? typeinfo) {
             if (typeinfo == null) throw PythonOps.TypeError("isinstance: arg 2 must be a class, type, or tuple of classes and types");
 
             if (typeinfo is PythonTuple tt) {
@@ -521,7 +521,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        private static bool IsSubclassSlow([NotNullWhen(true)]object? cls, object typeinfo) {
+        private static bool IsSubclassSlow([NotNullWhen(true)] object? cls, object typeinfo) {
             if (cls == null) return false;
 
             // Same type
@@ -1662,7 +1662,7 @@ namespace IronPython.Runtime.Operations {
 #if DEBUG
                     Debug.Assert(attrdict._storage.IsMutable);
 #endif
-                };
+                }
                 return attrdict;
             }
 
@@ -2252,7 +2252,7 @@ namespace IronPython.Runtime.Operations {
             throw TypeErrorForNotIterable(o);
         }
 
-        private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)]out object? enumerator) {
+        private static bool TryGetEnumeratorObject(CodeContext/*!*/ context, object? o, [NotNullWhen(true)] out object? enumerator) {
             // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
             // which would make it "iterable" even though it is not.
             if (o is PythonType pt && !pt.IsIterable(context)) {
@@ -2286,7 +2286,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("iteration over non-sequence of type {0}", PythonOps.GetPythonTypeName(enumerable));
         }
 
-        internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)]object? enumerable, [NotNullWhen(true)]out IEnumerator? enumerator) {
+        internal static bool TryGetEnumerator(CodeContext/*!*/ context, [NotNullWhen(true)] object? enumerable, [NotNullWhen(true)] out IEnumerator? enumerator) {
             enumerator = null;
 
             // IronPython defines __getitem__ on PythonType (to support generics and .NET enums)
@@ -2516,37 +2516,37 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
-        /// helper function for re-raised exceptions.
+        /// Helper for a bare raise: re-raises the exception being handled.
         /// </summary>
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
-            PythonTuple t = GetExceptionInfo(context);
-            Debug.Assert(t[1] == GetRawContextException());
-            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, suppressContext: false, forRethrow: true);
-            return MakeRethrowExceptionWorker(e);
+            var current = GetCurrentException();
+            if (current is null) throw RuntimeError("No active exception to reraise");
+            Exception e = MakeExceptionWorker(context, PythonExceptions.ToPython(current), null, null, withCause: false);
+            return ExceptionHelpers.UpdateForRethrow(e);
         }
 
         /// <summary>
-        /// helper function for re-raised exception.
-        /// This entry point is used by 'raise' inside 'with' statement
+        /// Re-raises the exception of a 'with' block after __exit__ returned false.
         /// </summary>
-        /// <param name="e"></param>
-        /// <returns></returns>
         public static Exception MakeRethrowExceptionWorker(Exception e) {
             e.RemoveTraceBack();
-            ExceptionHelpers.UpdateForRethrow(e);
-            return e;
+            return ExceptionHelpers.UpdateForRethrow(e);
         }
 
         public static Exception MakeException(CodeContext/*!*/ context, object exception)
-            => MakeExceptionWorker(context, exception, null, null, null, suppressContext: false, forRethrow: false);
+            => MakeExceptionWorker(context, exception, null, null, withCause: false);
 
         public static Exception MakeExceptionWithCause(CodeContext/*!*/ context, object exception, object cause)
-            => MakeExceptionWorker(context, exception, null, null, cause, suppressContext: true, forRethrow: false);
+            => MakeExceptionWorker(context, exception, null, cause, withCause: true);
 
         internal static PythonExceptions.BaseException? GetRawContextException() => GetCurrentException()?.GetPythonException();
 
-        internal static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause) {
-            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, suppressContext: false, forRethrow: false);
+        internal static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object? type, object? value, object? traceback) {
+            // throw() does not chain the exception to the one being handled
+            Exception e = MakeExceptionWorker(context, type, value, null, withCause: false, keepContext: true);
+            if (traceback is TraceBack tb) {
+                e.SetTraceBack(tb);
+            }
             e.RemoveFrameList();
             return e;
         }
@@ -2554,7 +2554,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Validates the arguments of generator/coroutine throw(). Returns the TypeError to raise, or null if valid.
         /// </summary>
-        internal static Exception? ValidateThrowArguments(object? type, object? value) {
+        internal static Exception? ValidateThrowArguments(object? type, object? value, object? traceback) {
             if (type is Exception || type is PythonExceptions.BaseException) {
                 if (value is not null) return TypeError("instance exception may not have a separate value");
             } else if (type is PythonType pt && (typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType) || typeof(Exception).IsAssignableFrom(pt.UnderlyingSystemType))) {
@@ -2562,14 +2562,14 @@ namespace IronPython.Runtime.Operations {
             } else {
                 return TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", GetPythonTypeName(type));
             }
+            if (traceback is not null && traceback is not TraceBack) {
+                return TypeError("throw() third argument must be a traceback object");
+            }
             return null;
         }
 
-        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object? type, object? value, object? traceback, object? cause, bool suppressContext, bool forRethrow) {
+        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object? type, object? value, object? cause, bool withCause, bool keepContext = false) {
             Exception throwable;
-
-            var causeException = GetCause(context, cause);
-            var contextException = GetRawContextException();
 
             if (type is Exception ex) {
                 // TODO: maybe add cause?
@@ -2577,18 +2577,37 @@ namespace IronPython.Runtime.Operations {
             } else if (type is PythonType pt && typeof(Exception).IsAssignableFrom(pt.UnderlyingSystemType)) {
                 throwable = PythonExceptions.CreateClrExceptionForRaise(context, pt, value);
             } else {
-                throwable = GetBaseException(context, type, value).CreateClrExceptionWithCause(causeException, contextException, suppressContext);
-            }
+                var baseException = GetBaseException(context, type, value);
 
-            if (traceback != null) {
-                if (!forRethrow) {
-                    if (!(traceback is TraceBack tb)) throw PythonOps.TypeError("traceback argument must be a traceback object");
-
-                    throwable.SetTraceBack(tb);
+                PythonExceptions.BaseException? causeException;
+                bool suppressContext;
+                if (withCause) {
+                    causeException = GetCause(context, cause);
+                    suppressContext = true;
+                } else {
+                    // only raise ... from ... changes the cause
+                    causeException = baseException.__cause__;
+                    suppressContext = baseException.__suppress_context__;
                 }
-            } else {
-                throwable.RemoveTraceBack();
+
+                var contextException = GetRawContextException();
+                if (keepContext || contextException == baseException) {
+                    // throw() does not change the context, and raising the exception being handled
+                    // (including a bare raise) does not make it its own context
+                    contextException = baseException.RawContext;
+                } else {
+                    // avoid creating cycles through the context chain
+                    for (var o = contextException; o is not null; o = o.RawContext) {
+                        if (o.RawContext == baseException) {
+                            o.__context__ = null;
+                            break;
+                        }
+                    }
+                }
+                throwable = baseException.CreateClrExceptionWithCause(causeException, contextException, suppressContext);
             }
+
+            throwable.RemoveTraceBack();
 
             PerfTrack.NoteEvent(PerfTrack.Categories.Exceptions, throwable);
 
@@ -2605,7 +2624,7 @@ namespace IronPython.Runtime.Operations {
 
                 if (cause is PythonExceptions.BaseException be) return be;
 
-                throw PythonOps.TypeError("exception causes must derive from BaseException");
+                throw TypeError("exception causes must derive from BaseException");
             }
 
             static PythonExceptions.BaseException GetBaseException(CodeContext context, object? type, object? value) {
@@ -2614,7 +2633,7 @@ namespace IronPython.Runtime.Operations {
                 if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType))
                     return PythonExceptions.CreateBaseExceptionForRaise(context, pt, value);
 
-                throw PythonOps.TypeError("exceptions must derive from BaseException");
+                throw TypeError("exceptions must derive from BaseException");
             }
         }
 
@@ -2954,7 +2973,7 @@ namespace IronPython.Runtime.Operations {
         /// Helper to determine if the value is a simple numeric type (int or big int or bool) - used for OldInstance
         /// deprecated form of slicing.
         /// </summary>
-        public static bool IsNumericObject([NotNullWhen(true)]object? value) {
+        public static bool IsNumericObject([NotNullWhen(true)] object? value) {
             return value is int || value is BigInteger || value is Extensible<BigInteger> || value is bool;
         }
 
@@ -3018,8 +3037,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object ConvertToPythonPrimitive(object value) {
-            return value switch
-            {
+            return value switch {
                 float f => (double)f,
                 sbyte sb => (int)sb,
                 byte b => (int)b,
@@ -3331,7 +3349,7 @@ namespace IronPython.Runtime.Operations {
             Type tp = task.GetType();
             var tcs = new TaskCompletionSource<object?>();
             task.ContinueWith(t => {
-                if (t.IsCanceled)  tcs.SetCanceled();
+                if (t.IsCanceled) tcs.SetCanceled();
                 else if (t.IsFaulted) tcs.SetException(t.Exception!.InnerException ?? t.Exception);
                 else tcs.SetResult(!tp.IsGenericType ? null : (object?)tp.GetProperty("Result")!.GetValue(t));
             }, TaskContinuationOptions.ExecuteSynchronously);
@@ -4295,7 +4313,7 @@ namespace IronPython.Runtime.Operations {
                              methodName, expectedArgCount, expectedArgCount == 1 ? "" : "s", actualArgCount);
         }
 
-        public static Exception TypeErrorForOptionalArgumentCountMismatch(string methodName, int expectedArgCount, int actualArgCount, bool positional=false) {
+        public static Exception TypeErrorForOptionalArgumentCountMismatch(string methodName, int expectedArgCount, int actualArgCount, bool positional = false) {
             return TypeError("{0}() takes at most {1} {2}argument{3} ({4} given)",
                              methodName, expectedArgCount, positional ? "positional " : "", expectedArgCount == 1 ? "" : "s", actualArgCount);
         }

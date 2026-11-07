@@ -29,7 +29,7 @@ namespace IronPython.Runtime {
         //   _cts                   — CancellationTokenSource whose Token was passed into AsyncExpression. throw(exc) cancels this.
         //   _cancellationException — StrongBox<Exception?> shared with DriveAsync's `cancellationException` parameter;
         //                            when non-null at cancellation time, that exception is surfaced to the body
-        //                            instead of OperationCanceledException. 
+        //                            instead of OperationCanceledException.
         //
         // Lazy start: the body is not executed at construction. _factory is the thunk that creates (and thereby starts driving) the Task on
         // first access; _task caches the materialized Task. Calling an async def is therefore side-effect free until the coroutine is first
@@ -98,13 +98,12 @@ namespace IronPython.Runtime {
         [LightThrowing]
         public object @throw(object? type, object? value, object? traceback) {
             // Validate up front so we don't mutate any state on bad input.
-            if (PythonOps.ValidateThrowArguments(type, value) is Exception error) return LightExceptions.Throw(error);
+            if (PythonOps.ValidateThrowArguments(type, value, traceback) is Exception error) return LightExceptions.Throw(error);
 
             // Construct the actual exception object. DefaultContext.Default suffices here — throw()'s
             // CodeContext role is limited to resolving class-form exception construction, and the
             // coroutine's own context will re-bind the chain when the exception unwinds inside the body.
-            Exception ex = PythonOps.MakeExceptionForGenerator(
-                DefaultContext.Default, type, value, traceback, cause: null);
+            Exception ex = PythonOps.MakeExceptionForGenerator(DefaultContext.Default, type, value, traceback);
 
             var task = EnsureTask();
             if (task.IsCompleted) {

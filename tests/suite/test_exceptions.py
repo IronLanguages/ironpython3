@@ -1107,4 +1107,18 @@ finally:
         next(g)
         self.assertEqual(g.throw(System.InvalidOperationException, "abc"), "abc")
 
+    def test_context_cycle_broken(self):
+        a, b = KeyError(), ValueError()
+        try:
+            try:
+                raise a
+            except KeyError:
+                raise b
+        except ValueError:
+            try:
+                raise a
+            except KeyError as e:
+                self.assertIs(e.__context__, b)
+                self.assertIsNone(b.__context__)
+
 run_test(__name__)

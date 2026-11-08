@@ -159,12 +159,8 @@ namespace IronPython.Runtime {
                     // We create the actual exception from inside the generator so that if the exception's __init__
                     // throws, the traceback matches that which we get from CPython.
                     Debug.Assert(_sendValue == null);
-                    _excInfo = new object?[] { type, value, traceback };
-
-                    if (!MoveNextCore()) {
-                        return LightExceptions.Throw(PythonOps.StopIteration());
-                    }
-                    return CurrentValue;
+                    _excInfo = [ type, value, traceback ];
+                    return Next();
                 }
             } finally {
                 ClearActive();
@@ -492,7 +488,7 @@ namespace IronPython.Runtime {
                 // 1. return an item: _next() returns true and 'next' is set to the next item in the enumeration.
                 // 2. Exit normally: _next returns false.
                 // 3. Exit with a StopIteration exception: for-loops and other enumeration consumers will
-                //    catch this and terminate the loop without propogating the exception.
+                //    catch this and terminate the loop without propagating the exception.
                 // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propagates.
                 //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
                 if (!(ret = GetNext())) {

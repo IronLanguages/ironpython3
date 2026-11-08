@@ -1394,6 +1394,10 @@ namespace IronPython.Runtime {
         public override string FormatException(Exception exception) {
             ContractUtils.RequiresNotNull(exception, nameof(exception));
 
+            return FormatException(exception, new HashSet<object>(ReferenceEqualityComparer<object>.Instance));
+        }
+
+        private string FormatException(Exception exception, HashSet<object> seen) {
             if (exception is SyntaxErrorException syntax_error) {
                 return FormatPythonSyntaxError(syntax_error);
             }
@@ -1401,21 +1405,18 @@ namespace IronPython.Runtime {
             StringBuilder result = new StringBuilder();
 
             var pythonEx = PythonExceptions.ToPython(exception);
+            seen.Add(pythonEx);
 
-            if (exception.InnerException != null) {
-                if (exception.InnerException.GetPythonException() is PythonExceptions.BaseException pythonInnerException) {
-                    // add the nested/chained exception
-                    result.AppendLine(FormatException(exception.InnerException));
-                    result.AppendLine();
-
-                    // check whether this is implicit or explicit
-                    if (!((PythonExceptions.BaseException)pythonEx).IsImplicitException) {
-                        result.AppendLine("The above exception was the direct cause of the following exception.");
-                    } else {
-                        result.AppendLine("During handing of the above exception, another exception occurred:");
-                    }
-                    result.AppendLine();
+            var chained = pythonEx.HasCause ? pythonEx.__cause__ : pythonEx.__suppress_context__ ? null : pythonEx.RawContext;
+            if (chained is not null && !seen.Contains(chained)) {
+                result.AppendLine(FormatException(chained.GetClrException(), seen));
+                result.AppendLine();
+                if (pythonEx.HasCause) {
+                    result.AppendLine("The above exception was the direct cause of the following exception:");
+                } else {
+                    result.AppendLine("During handling of the above exception, another exception occurred:");
                 }
+                result.AppendLine();
             }
 
             result.Append(FormatStackTraces(exception));

@@ -538,4 +538,81 @@ cp11116_a.a()
             os.remove(_t_test)
             os.remove(_t_test_a)
 
+    def test_chained_exception_output(self):
+        try:
+            from test.support.script_helper import assert_python_failure
+        except ImportError: # Python 3.4
+            from test.script_helper import assert_python_failure
+
+        cause = "The above exception was the direct cause of the following exception:"
+        context = "During handling of the above exception, another exception occurred:"
+
+        def run_code(code):
+            _, _, err = assert_python_failure("-S", "-c", code)
+            return err.decode("ascii")
+
+        def run(raise_stmt):
+            return run_code("try:\n    {}['inner']\nexcept KeyError:\n    " + raise_stmt)
+
+        err = run("raise ValueError('outer')")
+        self.assertIn("KeyError", err)
+        self.assertIn(context, err)
+        self.assertNotIn(cause, err)
+        self.assertIn("ValueError: outer", err)
+
+        err = run("raise ValueError('outer') from TypeError('cause')")
+        self.assertNotIn("KeyError", err)
+        self.assertIn("TypeError: cause", err)
+        self.assertIn(cause, err)
+        self.assertNotIn(context, err)
+        self.assertIn("ValueError: outer", err)
+
+        err = run("raise ValueError('outer') from None")
+        self.assertNotIn("KeyError", err)
+        self.assertNotIn(cause, err)
+        self.assertNotIn(context, err)
+        self.assertIn("ValueError: outer", err)
+
+        # raising the same exception object again updates the chain
+        err = run_code("""
+e = ValueError('outer')
+try:
+    {}['inner']
+except KeyError:
+    try:
+        raise e
+    except ValueError:
+        pass
+raise e from TypeError('cause')
+""")
+        self.assertNotIn("KeyError", err)
+        self.assertIn("TypeError: cause", err)
+        self.assertIn(cause, err)
+
+        err = run_code("""
+e = ValueError('outer')
+try:
+    raise e
+except ValueError:
+    pass
+try:
+    {}['inner']
+except KeyError:
+    raise e
+""")
+        self.assertIn("KeyError", err)
+        self.assertIn(context, err)
+
+        # cause cycle
+        err = run_code("""
+a = ValueError('a')
+b = TypeError('b')
+a.__cause__ = b
+b.__cause__ = a
+raise a
+""")
+        self.assertEqual(err.count("ValueError: a"), 1)
+        self.assertEqual(err.count("TypeError: b"), 1)
+        self.assertEqual(err.count(cause), 1)
+
 run_test(__name__)

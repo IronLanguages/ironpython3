@@ -304,8 +304,6 @@ namespace IronPython.Runtime.Exceptions {
 
             internal bool HasCause => __cause__ != null;
 
-            internal bool IsImplicitException => __cause__ == null && __cause__ != __context__;
-
             void IPythonObject.SetPythonType(PythonType/*!*/ newType) {
                 if (_type.IsSystemType || newType.IsSystemType) {
                     throw PythonOps.TypeError("__class__ assignment can only be performed on user defined types");

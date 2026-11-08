@@ -2591,9 +2591,9 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 var contextException = GetRawContextException();
-                if (keepContext || contextException == baseException) {
-                    // throw() does not change the context, and raising the exception being handled
-                    // (including a bare raise) does not make it its own context
+                if (keepContext || contextException is null || contextException == baseException) {
+                    // throw() does not change the context, raising outside an except block keeps the previous context,
+                    // and raising the exception being handled (including a bare raise) does not make it its own context
                     contextException = baseException.RawContext;
                 } else {
                     // avoid creating cycles through the context chain

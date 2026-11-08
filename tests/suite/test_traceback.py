@@ -6,7 +6,12 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
+
+try:
+    from test.support.script_helper import assert_python_failure
+except ImportError: # Python 3.4
+    from test.script_helper import assert_python_failure
 
 FILE = __file__
 
@@ -539,11 +544,6 @@ cp11116_a.a()
             os.remove(_t_test_a)
 
     def test_chained_exception_output(self):
-        try:
-            from test.support.script_helper import assert_python_failure
-        except ImportError: # Python 3.4
-            from test.script_helper import assert_python_failure
-
         cause = "The above exception was the direct cause of the following exception:"
         context = "During handling of the above exception, another exception occurred:"
 
@@ -603,6 +603,21 @@ except KeyError:
         self.assertIn("KeyError", err)
         self.assertIn(context, err)
 
+        # raising outside an except block keeps the previous context
+        err = run_code("""
+e = ValueError('outer')
+try:
+    {}['inner']
+except KeyError:
+    try:
+        raise e
+    except ValueError:
+        pass
+raise e
+""")
+        self.assertIn("KeyError", err)
+        self.assertIn(context, err)
+
         # cause cycle
         err = run_code("""
 a = ValueError('a')
@@ -614,5 +629,18 @@ raise a
         self.assertEqual(err.count("ValueError: a"), 1)
         self.assertEqual(err.count("TypeError: b"), 1)
         self.assertEqual(err.count(cause), 1)
+
+    @skipUnlessIronPython()
+    def test_chained_exception_output_clr(self):
+        # a Python exception wrapped by .NET (AggregateException) is shown as the context
+        _, _, err = assert_python_failure("-S", "-c", """
+import System
+def f():
+    raise ValueError('inner')
+System.Threading.Tasks.Task.Run(System.Action(f)).Wait()
+""")
+        err = err.decode("ascii")
+        self.assertIn("ValueError: inner", err)
+        self.assertIn("During handling of the above exception, another exception occurred:", err)
 
 run_test(__name__)

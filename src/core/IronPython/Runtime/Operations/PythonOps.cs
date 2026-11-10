@@ -45,8 +45,51 @@ using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
 namespace IronPython.Runtime.Operations {
 
     internal class ExceptionState {
-        public Exception? Exception { get; set; }
+        public HandledException? Exception { get; set; }
         public ExceptionState? PrevException { get; set; }
+    }
+
+    /// <summary>
+    /// An exception being handled, along with its stack frames when the handler was entered. Raising the same
+    /// exception object again inside the handler (e.g. raise e or gen.throw) updates its frames, but sys.exc_info()
+    /// and a bare raise must still see the traceback from the handler's entry.
+    /// </summary>
+    internal sealed class HandledException {
+        private readonly List<DynamicStackFrame>? _frames;
+        private readonly int _frameCount;
+        private readonly TraceBack? _traceBack;
+
+        public HandledException(Exception exception) {
+            Exception = exception;
+            _frames = exception.GetFrameList();
+            _frameCount = _frames?.Count ?? 0;
+            _traceBack = exception.GetTraceBack();
+        }
+
+        public Exception Exception { get; }
+
+        private bool FramesChanged {
+            get {
+                var frames = Exception.GetFrameList();
+                return frames != _frames || (frames?.Count ?? 0) != _frameCount;
+            }
+        }
+
+        internal TraceBack? GetTraceBack() {
+            if (!FramesChanged) return PythonOps.CreateTraceBack(Exception);
+            if (_traceBack is not null) return _traceBack;
+            if (_frames is null) return null;
+            return PythonOps.CreateTraceBack(_frames, PythonOps.GetFunctionStackNoCreate(), _frameCount);
+        }
+
+        internal void RestoreFrames() {
+            if (!FramesChanged) return;
+            if (_frames is null) {
+                Exception.RemoveFrameList();
+            } else {
+                Exception.SetFrameList(_frames.GetRange(0, _frameCount));
+            }
+        }
     }
 
     /// <summary>
@@ -2370,11 +2413,11 @@ namespace IronPython.Runtime.Operations {
             }
 #endif
 
-            RestoreCurrentException(clrException);
+            SetCurrentExceptionState(new HandledException(clrException));
             return res;
         }
 
-        private static Exception? GetCurrentException() {
+        private static HandledException? GetCurrentHandledException() {
             var ex = CurrentExceptionState;
             while (ex != null && ex.Exception == null) {
                 ex = ex.PrevException;
@@ -2382,22 +2425,48 @@ namespace IronPython.Runtime.Operations {
             return ex?.Exception;
         }
 
+        private static Exception? GetCurrentException() => GetCurrentHandledException()?.Exception;
+
         // Clear the current exception. Most callers should restore the exception.
         public static void ClearCurrentException() {
-            RestoreCurrentException(null);
+            SetCurrentExceptionState(null);
         }
 
-        // Called by code-gen to save it. Codegen just needs to pass this back to RestoreCurrentException.
-        public static Exception? SaveCurrentException() {
+        // Called by code-gen to save it. Codegen just needs to pass this back to RestoreCurrentExceptionState.
+        public static object? SaveCurrentExceptionState() {
             return CurrentExceptionState?.Exception;
         }
 
-        // Called at function exit (like popping). Pass value from SaveCurrentException.
-        public static void RestoreCurrentException(Exception? clrException) {
+        // Called at function exit (like popping). Pass value from SaveCurrentExceptionState.
+        public static void RestoreCurrentExceptionState(object? state) {
+            SetCurrentExceptionState((HandledException?)state);
+        }
+
+        private static void SetCurrentExceptionState(HandledException? state) {
             if (CurrentExceptionState == null) {
                 CurrentExceptionState = new ExceptionState();
             }
-            CurrentExceptionState.Exception = clrException;
+            CurrentExceptionState.Exception = state;
+        }
+
+        /// <summary>
+        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
+        /// </summary>
+        [Obsolete("Remove when 3.4 is dropped")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static Exception? SaveCurrentException() {
+            return CurrentExceptionState?.Exception?.Exception;
+        }
+
+        /// <summary>
+        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
+        /// </summary>
+        [Obsolete("Remove when 3.4 is dropped")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static void RestoreCurrentException(Exception? clrException) {
+            var current = CurrentExceptionState?.Exception;
+            if (current?.Exception == clrException) return;
+            SetCurrentExceptionState(clrException is null ? null : new HandledException(clrException));
         }
 
         public static object? CheckException(CodeContext/*!*/ context, object exception, object? test) {
@@ -2425,7 +2494,7 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        private static TraceBack? CreateTraceBack(PythonContext pyContext, Exception e) {
+        internal static TraceBack? CreateTraceBack(Exception e) {
             // user provided trace back
             var tb = e.GetTraceBack();
             if (tb != null) {
@@ -2438,6 +2507,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static TraceBack? CreateTraceBack(Exception e, IList<DynamicStackFrame> frames, IList<FunctionStack>? stacks, int frameCount) {
+            var tb = CreateTraceBack(frames, stacks, frameCount);
+            e.SetTraceBack(tb);
+            return tb;
+        }
+
+        internal static TraceBack? CreateTraceBack(IList<DynamicStackFrame> frames, IList<FunctionStack>? stacks, int frameCount) {
             TraceBackFrame? lastTraceBackFrame = null;
             if (stacks != null) {
                 foreach (var stack in stacks) {
@@ -2486,7 +2561,6 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            e.SetTraceBack(tb);
             return tb;
         }
 
@@ -2494,7 +2568,13 @@ namespace IronPython.Runtime.Operations {
         /// Get an exception tuple for the "current" exception. This is used for sys.exc_info()
         /// </summary>
         public static PythonTuple GetExceptionInfo(CodeContext/*!*/ context) {
-            return GetExceptionInfoLocal(context, GetCurrentException());
+            var handled = GetCurrentHandledException();
+            if (handled is null) {
+                return PythonTuple.MakeTuple(null, null, null);
+            }
+
+            var pyExcep = PythonExceptions.ToPython(handled.Exception);
+            return PythonTuple.MakeTuple(((IPythonObject)pyExcep).PythonType, pyExcep, handled.GetTraceBack());
         }
 
         /// <summary>
@@ -2511,7 +2591,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             var pyExcep = PythonExceptions.ToPython(ex);
-            TraceBack? tb = CreateTraceBack(context.LanguageContext, ex);
+            TraceBack? tb = CreateTraceBack(ex);
             return PythonTuple.MakeTuple(((IPythonObject)pyExcep).PythonType, pyExcep, tb);
         }
 
@@ -2519,15 +2599,19 @@ namespace IronPython.Runtime.Operations {
         /// Helper for a bare raise: re-raises the exception being handled.
         /// </summary>
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
-            var current = GetCurrentException();
-            if (current is null) throw RuntimeError("No active exception to reraise");
-            Exception e = MakeExceptionWorker(context, PythonExceptions.ToPython(current), null, null, withCause: false);
+            var handled = GetCurrentHandledException();
+            if (handled is null) throw RuntimeError("No active exception to reraise");
+            handled.RestoreFrames();
+            Exception e = MakeExceptionWorker(context, PythonExceptions.ToPython(handled.Exception), null, null, withCause: false);
             return ExceptionHelpers.UpdateForRethrow(e);
         }
 
         /// <summary>
         /// Re-raises the exception of a 'with' block after __exit__ returned false.
+        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
         /// </summary>
+        [Obsolete("Remove when 3.4 is dropped")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Exception MakeRethrowExceptionWorker(Exception e) {
             e.RemoveTraceBack();
             return ExceptionHelpers.UpdateForRethrow(e);

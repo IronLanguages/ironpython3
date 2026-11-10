@@ -54,7 +54,7 @@ namespace IronPython.Compiler {
             if (scope == _optimizedContext.GlobalScope && !_optimizedContext.LanguageContext.EnableTracing) {
                 EnsureCompiled();
 
-                Exception e = PythonOps.SaveCurrentException();
+                object e = PythonOps.SaveCurrentExceptionState();
                 var funcCode = EnsureFunctionCode(_optimizedTarget, false, true);
                 PushFrame(_optimizedContext, funcCode);
                 try {
@@ -63,7 +63,7 @@ namespace IronPython.Compiler {
                     }
                     return _optimizedTarget(funcCode);
                 } finally {
-                    PythonOps.RestoreCurrentException(e);
+                    PythonOps.RestoreCurrentExceptionState(e);
                     PopFrame();
                 }
             }

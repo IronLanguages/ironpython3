@@ -327,6 +327,71 @@ def f():
         except:
             self.assert_traceback([(line_num + 11, 0, FILE, 'test_reraise'), (line_num + 2, 0, FILE, 'g'), (line_num + 6, 0, FILE, 'f')])
 
+    def test_with_exit_reraise(self):
+        """https://github.com/IronLanguages/ironpython3/issues/736"""
+        from contextlib import contextmanager
+        line_num = getlineno(lambda _: None)
+
+        @contextmanager
+        def cm():
+            yield
+
+        class Swallow:
+            def __enter__(self): return self
+            def __exit__(self, *args):
+                try:
+                    raise args[1]
+                except Exception:
+                    pass
+                return False
+
+        def g(mgr):
+            with mgr:
+                _raise_exception()
+
+        def f(mgr):
+            g(mgr)
+
+        for mgr in (cm(), Swallow()):
+            try:
+                f(mgr)
+            except:
+                self.assert_traceback([(line_num + 24, 0, FILE, 'test_with_exit_reraise'), (line_num + 20, 0, FILE, 'f'), (line_num + 17, 0, FILE, 'g'), _retb])
+
+        try:
+            with cm():
+                raise Exception
+        except:
+            self.assert_traceback([(line_num + 30, 0, FILE, 'test_with_exit_reraise')])
+
+    def test_reraise_after_handled_reraised(self):
+        """https://github.com/IronLanguages/ironpython3/issues/736"""
+        line_num = getlineno(lambda _: None)
+
+        def gen():
+            yield
+
+        def f(throw):
+            try:
+                _raise_exception()
+            except Exception as e:
+                try:
+                    if throw:
+                        gen().throw(type(e), e, e.__traceback__)
+                    raise e
+                except Exception:
+                    pass
+                self.assert_traceback([(line_num + 7, 0, FILE, 'f'), _retb])
+                raise
+
+        for throw in (True, False):
+            try:
+                f(throw)
+            except Exception:
+                self.assert_traceback([(line_num + 20, 0, FILE, 'test_reraise_after_handled_reraised'), (line_num + 7, 0, FILE, 'f'), _retb])
+            else:
+                self.fail()
+
     def test_reraise_finally(self):
         line_num = getlineno(lambda _: None)
         def g():

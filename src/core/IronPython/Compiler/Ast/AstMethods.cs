@@ -24,8 +24,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo ImportWithNames = GetMethod((Func<CodeContext, string, string[], int, object>)PythonOps.ImportWithNames);
         public static readonly MethodInfo ImportFrom = GetMethod((Func<CodeContext, object, string, object>)PythonOps.ImportFrom);
         public static readonly MethodInfo ImportStar = GetMethod((Action<CodeContext, string, int>)PythonOps.ImportStar);
-        public static readonly MethodInfo SaveCurrentException = GetMethod((Func<Exception>)PythonOps.SaveCurrentException);
-        public static readonly MethodInfo RestoreCurrentException = GetMethod((Action<Exception>)PythonOps.RestoreCurrentException);
+        public static readonly MethodInfo SaveCurrentExceptionState = GetMethod((Func<object>)PythonOps.SaveCurrentExceptionState);
+        public static readonly MethodInfo RestoreCurrentExceptionState = GetMethod((Action<object>)PythonOps.RestoreCurrentExceptionState);
         public static readonly MethodInfo MakeGeneratorExpression = GetMethod((Func<object, object, object>)PythonOps.MakeGeneratorExpression);
         public static readonly MethodInfo ListAddForComprehension = GetMethod((Action<PythonList, object>)PythonOps.ListAddForComprehension);
         public static readonly MethodInfo SetAddForComprehension = GetMethod((Action<SetCollection, object>)PythonOps.SetAddForComprehension);
@@ -37,7 +37,6 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo RemoveModule = GetMethod((Action<CodeContext, string, object>)PythonOps.RemoveModule);
         public static readonly MethodInfo ModuleStarted = GetMethod((Action<CodeContext, ModuleOptions>)PythonOps.ModuleStarted);
         public static readonly MethodInfo MakeRethrownException = GetMethod((Func<CodeContext, Exception>)PythonOps.MakeRethrownException);
-        public static readonly MethodInfo MakeRethrowExceptionWorker = GetMethod((Func<Exception, Exception>)PythonOps.MakeRethrowExceptionWorker);
         public static readonly MethodInfo MakeException = GetMethod((Func<CodeContext, object, Exception>)PythonOps.MakeException);
         public static readonly MethodInfo MakeExceptionWithCause = GetMethod((Func<CodeContext, object, object, Exception>)PythonOps.MakeExceptionWithCause);
         public static readonly MethodInfo MakeSlice = GetMethod((Func<object, object, object, Slice>)PythonOps.MakeSlice);

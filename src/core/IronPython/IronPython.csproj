@@ -16,6 +16,7 @@
       T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute;
       T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
       T:System.Index;
+      M:System.Int32.Parse(System.ReadOnlySpan{System.Char},System.IFormatProvider);
       T:System.Runtime.Versioning.SupportedOSPlatformAttribute;
       T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute;
       M:System.String.Contains(System.Char);

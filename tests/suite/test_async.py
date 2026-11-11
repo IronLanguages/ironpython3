@@ -519,6 +519,98 @@ class DotNetAsyncInteropTest(unittest.TestCase):
         self.assertTrue(token.IsCancellationRequested)
 
 
+@skipUnlessIronPython()
+@unittest.skipUnless(is_netcoreapp, "tests the .NET async implementation (FEATURE_NET_ASYNC)")
+class CoroutineThrowTest(unittest.TestCase):
+    """coro.throw(exc) raises exc once, at the await the coroutine is suspended at, and can be repeated."""
+
+    @staticmethod
+    def pending():
+        from System.Threading.Tasks import TaskCompletionSource
+        return TaskCompletionSource[object]().Task  # never completes
+
+    @staticmethod
+    def throw_at_pending_await(coro, exc):
+        import clr
+        coro.AsTask()   # runs the body up to its first await of a task that hasn't completed
+        return coro.throw(exc)
+
+    def test_caught(self):
+        async def coro():
+            try:
+                await self.pending()
+            except KeyError as e:
+                return 'caught %s' % e.args[0]
+        with self.assertRaises(StopIteration) as cm:
+            self.throw_at_pending_await(coro(), KeyError('k'))
+        self.assertEqual(cm.exception.value, 'caught k')
+
+    def test_not_caught(self):
+        async def coro():
+            await self.pending()
+        with self.assertRaises(KeyError):
+            self.throw_at_pending_await(coro(), KeyError('k'))
+
+    def test_awaits_after_caught(self):
+        # The exception interrupts the body once: its later awaits complete normally
+        from System.Threading.Tasks import Task
+        async def coro():
+            try:
+                await self.pending()
+            except KeyError:
+                pass
+            await Task.Delay(10)
+            return await Task.FromResult(42)
+        with self.assertRaises(StopIteration) as cm:
+            self.throw_at_pending_await(coro(), KeyError('k'))
+        self.assertEqual(cm.exception.value, 42)
+
+    def test_repeated(self):
+        # The body handles a throw() and continues; a later throw() interrupts it again
+        import threading
+        at_second = threading.Event()
+        async def coro():
+            caught = []
+            try:
+                await self.pending()
+            except KeyError:
+                caught.append('KeyError')
+            at_second.set()
+            try:
+                await self.pending()
+            except ValueError:
+                caught.append('ValueError')
+            return caught
+
+        c = coro()
+        c.AsTask()
+        first = []
+        def throw_first():
+            # throw() returns only when the coroutine finishes
+            try:
+                c.throw(KeyError('k'))
+            except StopIteration as e:
+                first.append(e.value)
+        t = threading.Thread(target=throw_first)
+        t.start()
+        self.assertTrue(at_second.wait(10))
+        with self.assertRaises(StopIteration) as cm:
+            c.throw(ValueError('v'))
+        t.join(10)
+        self.assertEqual(cm.exception.value, ['KeyError', 'ValueError'])
+        self.assertEqual(first, [['KeyError', 'ValueError']])
+
+    def test_not_started(self):
+        # As in CPython, the body doesn't run
+        ran = []
+        async def coro():
+            ran.append(True)
+            await self.pending()
+        with self.assertRaises(KeyError):
+            coro().throw(KeyError('k'))
+        self.assertEqual(ran, [])
+
+
 @unittest.skipUnless(is_netcoreapp, "ValueTask is not available on .NET Framework")
 class ValueTaskInteropTest(unittest.TestCase):
     def test_await_valuetask(self):

@@ -727,14 +727,7 @@ namespace IronPython.Compiler.Ast {
 
 #if FEATURE_NET_ASYNC
             // Under .NET-async, an `async def` body returns a PythonCoroutine wrapping a Task<object?>.
-            // We pre-allocate a CancellationTokenSource and a StrongBox<Exception?> here
-            // so the same instances are shared with both AsyncExpression, which threads them into AsyncHelpers.DriveAsync
-            // and PythonCoroutine, which uses them to implement coro.throw(exc) on a running coroutine:
-            // write the exception to the box, cancel the CTS, and DriveAsync surfaces that exception in place of OperationCanceledException.
             if (IsAsync) {
-                var cts = MSAst.Expression.Variable(typeof(CancellationTokenSource), "$cts");
-                var excBox = MSAst.Expression.Variable(typeof(StrongBox<Exception>), "$cancelExc");
-                var ctToken = MSAst.Expression.Property(cts, nameof(CancellationTokenSource.Token));
                 if (IsGenerator) {
                     // Async generator: the body has both `await` and `yield`. Lower it to an
                     // IAsyncEnumerable<object?> via AsyncEnumerableExpression, sharing the generator label so
@@ -742,18 +735,19 @@ namespace IronPython.Compiler.Ast {
                     // PythonAsyncGenerator. The send/throw slots are per-generator StrongBoxes captured by the
                     // generator (the body's yields read them) AND handed to the wrapper, which writes them
                     // before each resume — see AsyncSendSlot / AsyncThrowSlot.
+                    var cts = MSAst.Expression.Variable(typeof(CancellationTokenSource), "$cts");
+                    var ctToken = MSAst.Expression.Property(cts, nameof(CancellationTokenSource.Token));
                     var sendSlot = AsyncSendSlot;
                     var throwSlot = AsyncThrowSlot;
                     body = MSAst.Expression.Block(
-                        [cts, excBox, sendSlot, throwSlot],
+                        [cts, sendSlot, throwSlot],
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
-                        MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         MSAst.Expression.Assign(sendSlot, MSAst.Expression.New(typeof(StrongBox<object>))),
                         MSAst.Expression.Assign(throwSlot, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         Ast.Call(
                             AstMethods.MakeAsyncGenerator,
                             _functionParam,
-                            AstUtils.AsyncEnumerable(Name, body, GeneratorLabel, ctToken, excBox),
+                            AstUtils.AsyncEnumerable(Name, body, GeneratorLabel, interrupts: null, ctToken),
                             sendSlot,
                             throwSlot,
                             cts));
@@ -763,17 +757,18 @@ namespace IronPython.Compiler.Ast {
                     // so the body doesn't execute until the coroutine is first driven (send/AsTask).
                     // This makes calling an async def side-effect-free (PEP 492) and lets the body's first await capture the driver's SynchronizationContext
                     // rather than whatever context happened to be current at construction.
+                    // The AsyncInterruptSource is shared by AsyncExpression, which threads it into AsyncHelpers.DriveAsync,
+                    // and PythonCoroutine, which uses it to implement coro.throw(exc).
+                    var interrupts = MSAst.Expression.Variable(typeof(Microsoft.Scripting.Runtime.AsyncInterruptSource), "$interrupts");
                     body = MSAst.Expression.Block(
-                        [cts, excBox],
-                        MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
-                        MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
+                        [interrupts],
+                        MSAst.Expression.Assign(interrupts, MSAst.Expression.New(typeof(Microsoft.Scripting.Runtime.AsyncInterruptSource))),
                         Ast.Call(
                             AstMethods.MakeAsyncCoroutine,
                             _functionParam,
                             MSAst.Expression.Lambda<Func<Task<object>>>(
-                                AstUtils.Async(Name, body, ctToken, excBox)),
-                            cts,
-                            excBox));
+                                AstUtils.Async(Name, body, interrupts)),
+                            interrupts));
                 }
             }
 #endif

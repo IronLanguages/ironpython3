@@ -3345,12 +3345,11 @@ namespace IronPython.Runtime.Operations {
         /// <remarks>
         ///   The thunk is invoked lazily on first drive (send/AsTask), so calling an <c>async def</c> is side-effect-free until the coroutine
         ///   is awaited (PEP 492).
-        ///   The supplied <see cref="CancellationTokenSource"/> and exception-override box are pre-bound
-        ///   to <see cref="Microsoft.Scripting.Runtime.AsyncHelpers.DriveAsync"/>'s cancellation channel — the coroutine uses them to implement
-        ///   <c>coro.throw(exc)</c> on a running body (set the box, cancel the CTS).
+        ///   The supplied <see cref="AsyncInterruptSource"/> is the one the body's driver,
+        ///   <see cref="Microsoft.Scripting.Runtime.AsyncHelpers.DriveAsync"/>, uses — the coroutine uses it to implement <c>coro.throw(exc)</c>.
         /// </remarks>
-        public static PythonCoroutine MakeAsyncCoroutine(PythonFunction function, Func<Task<object?>> taskFactory, CancellationTokenSource cts, StrongBox<System.Exception?> cancellationException) {
-            return new PythonCoroutine(taskFactory, function.__name__, function.__code__, cts, cancellationException);
+        public static PythonCoroutine MakeAsyncCoroutine(PythonFunction function, Func<Task<object?>> taskFactory, AsyncInterruptSource interrupts) {
+            return new PythonCoroutine(taskFactory, function.__name__, function.__code__, interrupts);
         }
 
 

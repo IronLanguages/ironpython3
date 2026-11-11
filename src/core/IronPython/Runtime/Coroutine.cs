@@ -6,7 +6,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Scripting.Runtime;
@@ -24,12 +23,8 @@ namespace IronPython.Runtime {
 #if FEATURE_NET_ASYNC
 
         // Under .NET async, `async def` is compiled directly to a Task<object?> via the DLR's AsyncExpression + AsyncHelpers.
-        // PythonCoroutine is a wrapper over the Task with two cancellation channels pre-bound at the codegen level:
-        //
-        //   _cts                   — CancellationTokenSource whose Token was passed into AsyncExpression. throw(exc) cancels this.
-        //   _cancellationException — StrongBox<Exception?> shared with DriveAsync's `cancellationException` parameter;
-        //                            when non-null at cancellation time, that exception is surfaced to the body
-        //                            instead of OperationCanceledException.
+        // PythonCoroutine is a wrapper over the Task. _interrupts is the AsyncInterruptSource passed into AsyncExpression;
+        // throw(exc) interrupts the body with it.
         //
         // Lazy start: the body is not executed at construction. _factory is the thunk that creates (and thereby starts driving) the Task on
         // first access; _task caches the materialized Task. Calling an async def is therefore side-effect free until the coroutine is first
@@ -38,18 +33,14 @@ namespace IronPython.Runtime {
         private Task<object?>? _task;
         private readonly string _name;
         private readonly FunctionCode? _code;
-        private readonly CancellationTokenSource _cts;
-        private readonly StrongBox<Exception?> _cancellationException;
+        private readonly AsyncInterruptSource _interrupts;
         private WeakRefTracker? _tracker;
 
-        internal PythonCoroutine(Func<Task<object?>> factory, string name, FunctionCode? code,
-                                  CancellationTokenSource cts,
-                                  StrongBox<Exception?> cancellationException) {
+        internal PythonCoroutine(Func<Task<object?>> factory, string name, FunctionCode? code, AsyncInterruptSource interrupts) {
             _factory = factory;
             _name = name;
             _code = code;
-            _cts = cts;
-            _cancellationException = cancellationException;
+            _interrupts = interrupts;
         }
 
         private Task<object?> EnsureTask() => _task ??= _factory();
@@ -105,22 +96,18 @@ namespace IronPython.Runtime {
             // coroutine's own context will re-bind the chain when the exception unwinds inside the body.
             Exception ex = PythonOps.MakeExceptionForGenerator(DefaultContext.Default, type, value, traceback);
 
-            var task = EnsureTask();
-            if (task.IsCompleted) {
-                // Case 1: coroutine has finished. throw() raises the exception immediately —
+            // The body sees `ex` raised at the await it is suspended at, or at its next await if it is running.
+            // If the body hasn't started, it doesn't run at all: its task fails with `ex`, as in CPython.
+            if (!_interrupts.Interrupt(ex)) {
+                // The coroutine has finished. throw() raises the exception immediately —
                 // the body has nothing left to observe it. Matches CPython.
                 return LightExceptions.Throw(ex);
             }
 
-            // Case 2: body is still running (or suspended at an await). Stash the exception in the
-            // shared StrongBox so DriveAsync surfaces it (instead of OCE) the moment it observes the
-            // cancellation, then cancel. The body sees `ex` rethrown at its next resume point.
-            _cancellationException.Value = ex;
-            _cts.Cancel();
-
             // Wait for the body to settle. After this the task is in a terminal state — dispatch via
             // the same logic as send() so the body's reaction (catch-and-return, propagate, etc.) is
             // reflected back to the caller of throw().
+            var task = EnsureTask();
             ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
             return SettleCompletedTask(task);
         }

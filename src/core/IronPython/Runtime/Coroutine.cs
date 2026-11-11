@@ -89,13 +89,12 @@ namespace IronPython.Runtime {
         [LightThrowing]
         public object @throw(object? type, object? value, object? traceback) {
             // Validate up front so we don't mutate any state on bad input.
-            if (PythonOps.ValidateThrowArguments(type, value) is Exception error) return LightExceptions.Throw(error);
+            if (PythonOps.ValidateThrowArguments(type, value, traceback) is Exception error) return LightExceptions.Throw(error);
 
             // Construct the actual exception object. DefaultContext.Default suffices here — throw()'s
             // CodeContext role is limited to resolving class-form exception construction, and the
             // coroutine's own context will re-bind the chain when the exception unwinds inside the body.
-            Exception ex = PythonOps.MakeExceptionForGenerator(
-                DefaultContext.Default, type, value, traceback, cause: null);
+            Exception ex = PythonOps.MakeExceptionForGenerator(DefaultContext.Default, type, value, traceback);
 
             // The body sees `ex` raised at the await it is suspended at, or at its next await if it is running.
             // If the body hasn't started, it doesn't run at all: its task fails with `ex`, as in CPython.

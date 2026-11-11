@@ -833,6 +833,10 @@ for k, v in toError.items():
 #endif
 
                 res = ToPythonNewStyle(clrException);
+                if (clrException.InnerException?.GetPythonException() is BaseException inner) {
+                    // e.g. a Python exception wrapped in a AggregateException
+                    res.__context__ = inner;
+                }
                 clrException.SetPythonException(res);
             }
 

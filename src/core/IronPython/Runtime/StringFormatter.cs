@@ -43,8 +43,6 @@ namespace IronPython.Runtime {
         // This is a ThreadStatic since so that formatting operations on one thread do not interfere with other threads
         [ThreadStatic]
         private static NumberFormatInfo? NumberFormatInfoForThreadLower;
-        [ThreadStatic]
-        private static NumberFormatInfo? NumberFormatInfoForThreadUpper;
 
         private static NumberFormatInfo nfil {
             get {
@@ -58,20 +56,6 @@ namespace IronPython.Runtime {
                     NumberFormatInfoForThreadLower = numberFormatInfo;
                 }
                 return NumberFormatInfoForThreadLower;
-            }
-        }
-        private static NumberFormatInfo nfiu {
-            get {
-                if (NumberFormatInfoForThreadUpper == null) {
-                    NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
-                    // The CLI formats as "Infinity", but CPython formats differently
-                    numberFormatInfo.PositiveInfinitySymbol = "INF";
-                    numberFormatInfo.NegativeInfinitySymbol = "-INF";
-                    numberFormatInfo.NaNSymbol = "NAN";
-
-                    NumberFormatInfoForThreadUpper = numberFormatInfo;
-                }
-                return NumberFormatInfoForThreadUpper;
             }
         }
 
@@ -325,11 +309,11 @@ namespace IronPython.Runtime {
                 // floating point decimal
                 case 'f':
                 // Same as "e" if exponent is less than -4 or more than precision, "f" otherwise.
-                case 'g': AppendFloat(_curCh); return;
+                case 'g':
                 // same as 3 above but uppercase
                 case 'E':
                 case 'F':
-                case 'G': _nfi = nfiu; AppendFloat(_curCh); _nfi = nfil; return;
+                case 'G': AppendFloat(_curCh); return;
                 // single character (int or single char str)
                 case 'c': AppendChar(); return;
                 // string (repr() version)
@@ -543,82 +527,6 @@ namespace IronPython.Runtime {
             return res;
         }
 
-        private static readonly char[] zero = new char[] { '0' };
-
-        // With .NET Framework "F" formatting is truncated after 15 digits:
-        private static readonly bool truncatedToString = (1.0 / 3).ToString("F17", CultureInfo.InvariantCulture) == "0.33333333333333300";
-
-        // Return the new type char to use
-        private char AdjustForG(char type, double v) {
-            if (type != 'G' && type != 'g')
-                return type;
-            if (double.IsNaN(v) || double.IsInfinity(v))
-                return type;
-
-            double absV = Math.Abs(v);
-
-            if (_opts.Precision == 0) {
-                _opts.Precision = 1;
-            }
-
-            if ((v != 0.0) && // 0.0 should not be displayed as scientific notation
-                absV < 1e-4 || // Values less than 0.0001 will need scientific notation
-                absV >= Math.Pow(10, _opts.Precision)) { // Values bigger than 1e<precision> will need scientific notation
-
-                type = (type == 'G') ? 'E' : 'e';
-
-                // For e/E formatting, precision means the number of digits after the decimal point.
-                // One digit is displayed before the decimal point.
-                int fractionDigitsRequired = _opts.Precision - 1;
-                string expForm = absV.ToString("E" + fractionDigitsRequired, CultureInfo.InvariantCulture);
-                string mantissa = expForm.Substring(0, expForm.IndexOf('E')).TrimEnd(zero);
-                if (mantissa.Length == 1) {
-                    _opts.Precision = 0;
-                } else {
-                    // We do -2 to ignore the digit before the decimal point and the decimal point itself
-                    Debug.Assert(mantissa[1] == '.');
-                    _opts.Precision = mantissa.Length - 2;
-                }
-            } else {
-                string fixedPointForm;
-                bool convertType = true;
-                if (truncatedToString) {
-                    // "0.000ddddd" is allowed when the precision is 5. The 3 leading zeros are not counted
-                    int numberDecimalDigits = _opts.Precision;
-                    if (absV < 1e-3) numberDecimalDigits += 3;
-                    else if (absV < 1e-2) numberDecimalDigits += 2;
-                    else if (absV < 1e-1) numberDecimalDigits += 1;
-
-                    fixedPointForm = absV.ToString("F" + numberDecimalDigits, CultureInfo.InvariantCulture).TrimEnd(zero);
-                    if (numberDecimalDigits > 15) {
-                        // System.Double(0.33333333333333331).ToString("F17") == "0.33333333333333300"
-                        string fixedPointFormG = absV.ToString("G" + _opts.Precision, CultureInfo.InvariantCulture);
-                        if (fixedPointFormG.Length > fixedPointForm.Length) {
-                            fixedPointForm = fixedPointFormG;
-                            convertType = false;
-                        }
-                    }
-                } else {
-                    fixedPointForm = absV.ToString("G" + _opts.Precision, CultureInfo.InvariantCulture);
-                }
-                if (convertType) {
-                    type = (type == 'G') ? 'F' : 'f';
-
-                    // For f/F formatting, precision means the number of digits after the decimal point.
-                    var mostSignificantDigit = 1 + (absV == 0 ? 0 : (int)Math.Floor(Math.Log10(absV)));
-                    if (_opts.AltForm) {
-                        _opts.Precision -= mostSignificantDigit;
-                    } else {
-                        var decimalPointIdx = fixedPointForm.IndexOf('.');
-                        var fractionLength = decimalPointIdx == -1 ? 0 : (fixedPointForm.Length - decimalPointIdx - 1);
-                        _opts.Precision = Math.Min(_opts.Precision - mostSignificantDigit, fractionLength);
-                    }
-                }
-            }
-
-            return type;
-        }
-
         private void AppendFloat(char format) {
             double val;
             if (!Converter.TryConvertToDouble(_opts.Value, out val))
@@ -633,10 +541,22 @@ namespace IronPython.Runtime {
                 _opts.Precision = 6;
             }
 
-            format = AdjustForG(format, val);
-
             var fPos = DoubleOps.Sign(val) >= 0 || double.IsNaN(val);
-            var str = FormatWithPrecision(val, fPos, format);
+            var str = FloatFormatter.Format(val, format, _opts.Precision, _opts.AltForm);
+
+            // str(System.Single) uses "%.6g" but needs "ddd.0" for whole numbers
+            if (_trailingZeroAfterWholeFloat && !double.IsNaN(val) && !double.IsInfinity(val) && str.IndexOfAny(['.', 'e', 'E']) == -1) {
+                str += ".0";
+            }
+
+            if (!fPos) {
+                str = "-" + str;
+            } else if (_opts.SignChar) {
+                str = "+" + str;
+            } else if (_opts.Space) {
+                str = " " + str;
+            }
+
             var pad = _opts.FieldWidth - str.Length;
 
             // then append
@@ -659,81 +579,6 @@ namespace IronPython.Runtime {
             } else {
                 if (pad > 0) _buf.Append(' ', pad);
                 _buf.Append(str);
-            }
-        }
-
-        private static readonly bool needsFixupFloatMinus = $"{-0.1:f0}" == "0"; // fixed in .NET Core 3.1
-
-        private string FormatWithPrecision(double val, bool fPos, char format) {
-            string res;
-            if (double.IsNaN(val) || double.IsInfinity(val)) {
-                res = val.ToString(_nfi);
-                if (fPos) {
-                    if (_opts.SignChar) {
-                        res = "+" + res;
-                    } else if (_opts.Space) {
-                        res = " " + res;
-                    }
-                }
-                return res;
-            } else {
-                if (_opts.Precision < 100 || supportsPrecisionGreaterThan99) {
-                    res = val.ToString($"{format}{_opts.Precision}", _nfi);
-                } else {
-                    res = val.ToString($"{format}99", _nfi);
-                    res += new string('0', _opts.Precision - 99);
-                }
-                res = FixupFloatMinus(val, fPos, res);
-                if (fPos) {
-                    if (_opts.SignChar) {
-                        res = "+" + res;
-                    } else if (_opts.Space) {
-                        res = " " + res;
-                    }
-                }
-            }
-
-            if (format == 'e' || format == 'E') {
-                res = AdjustExponent(res);
-                if (_opts.Precision == 0 && _opts.AltForm) {
-                    res = res.Insert(res.IndexOf(format), ".");
-                }
-            } else {
-                if (_opts.Precision == 0 && _opts.AltForm) {
-                    res += ".";
-                }
-            }
-
-            // If AdjustForG() sets opts.Precision == 0, it means that no significant digits should be displayed after
-            // the decimal point. ie. 123.4 should be displayed as "123", not "123.4". However, we might still need a
-            // decorative ".0". ie. to display "123.0"
-            if (_trailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
-                res += ".0";
-
-            return res;
-
-            // Ensure negative values rounded to 0 show up as -0.
-            static string FixupFloatMinus(double val, bool fPos, string x) {
-                if (needsFixupFloatMinus && !fPos && val >= -0.5 && x[0] != '-') {
-                    Debug.Assert(x[0] == '0');
-                    return "-" + x;
-                }
-                return x;
-            }
-
-            // A strange string formatting bug requires that we use Standard Numeric Format and
-            // not Custom Numeric Format. Standard Numeric Format produces always a 3 digit exponent
-            // which needs to be taken care off.
-            // Example: 9.3126672485384569e+23, precision=16
-            //  format string "e16" ==> "9.3126672485384569e+023", but we want "e+23", not "e+023"
-            //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
-            //  so, we have to format with "e16" and strip the zero manually
-            static string AdjustExponent(string val) {
-                if (val[val.Length - 3] == '0') {
-                    return val.Remove(val.Length - 3, 1);
-                } else {
-                    return val;
-                }
             }
         }
 

@@ -26,7 +26,6 @@ def load_tests(loader, standard_tests, pattern):
         ]
         if not is_netcoreapp:
             failing_tests += [
-                test.test_float.FormatTestCase('test_format_testfile'),
                 test.test_float.ReprTestCase('test_short_repr'),
             ]
         if sys.version_info >= (3, 6):

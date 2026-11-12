@@ -204,10 +204,14 @@ class FormattingTest(IronPythonTestCase):
         self.assertEqual(str(f), "1.1")
         self.assertEqual("%g" % f, "1.1")
         f = IronPythonTest.DoubleToFloat.ToFloat(1.2345678)
-        self.assertEqual(str(f), "1.23457")
+        self.assertEqual(str(f), "1.2345678")
+        self.assertEqual(format(f), "1.2345678")
         self.assertEqual("%g" % f, "1.23457")
+        f = IronPythonTest.DoubleToFloat.ToFloat(123456.0)
+        self.assertEqual(str(f), "123456.0")
+        self.assertEqual("%g" % f, "123456")
         f = IronPythonTest.DoubleToFloat.ToFloat(1234567.8)
-        self.assertEqual(str(f), "1.23457e+06")
+        self.assertEqual(str(f), "1.2345678e+06")
         self.assertEqual("%g" % f, "1.23457e+06")
 
     def test_long(self):

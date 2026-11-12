@@ -1132,17 +1132,17 @@ namespace IronPython.Runtime.Operations {
             return (float)(double)DoubleOps.NewFloat(context, TypeCache.Single, x);
         }
 
-        public static string __str__(CodeContext/*!*/ context, float x) {
-            // Python does not natively support System.Single. However, we try to provide
-            // formatting consistent with System.Double.
-            return StringFormatter.Format(context, "%.6g", x, trailingZeroAfterWholeFloat: true);
-        }
+        public static string __str__(CodeContext/*!*/ context, float x)
+            => Schubfach.ftoa(x);
 
         public static string __repr__(CodeContext/*!*/ context, float self) {
             return __str__(context, self);
         }
 
         public static string __format__(CodeContext/*!*/ context, float self, [NotNone] string/*!*/ formatSpec) {
+            // format(x, '') must be equal to str(x), which is not the same as str((double)x)
+            if (formatSpec.Length == 0) return __str__(context, self);
+
             return DoubleOps.__format__(context, self, formatSpec);
         }
 

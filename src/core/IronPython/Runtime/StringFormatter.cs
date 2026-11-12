@@ -33,8 +33,6 @@ namespace IronPython.Runtime {
 
         // The options for formatting the current formatting specifier in the format string
         private FormatSettings _opts;
-        // Should ddd.0 be displayed as "ddd" or "ddd.0". "'%g' % ddd.0" needs "ddd", but str(ddd.0) needs "ddd.0"
-        private bool _trailingZeroAfterWholeFloat;
 
         private bool _asBytes;
 
@@ -75,8 +73,8 @@ namespace IronPython.Runtime {
 
         #region Public API Surface
 
-        public static string Format(CodeContext/*!*/ context, string str, object? data, bool trailingZeroAfterWholeFloat = false)
-            => new StringFormatter(context, str, data) { _trailingZeroAfterWholeFloat = trailingZeroAfterWholeFloat }.Format();
+        public static string Format(CodeContext/*!*/ context, string str, object? data)
+            => new StringFormatter(context, str, data).Format();
 
         internal static byte[] FormatBytes(CodeContext/*!*/ context, ReadOnlySpan<byte> str, object? data)
             => new StringFormatter(context, str.MakeString(), data) { _asBytes = true }.Format().MakeByteArray();
@@ -543,11 +541,6 @@ namespace IronPython.Runtime {
 
             var fPos = DoubleOps.Sign(val) >= 0 || double.IsNaN(val);
             var str = FloatFormatter.Format(val, format, _opts.Precision, _opts.AltForm);
-
-            // str(System.Single) uses "%.6g" but needs "ddd.0" for whole numbers
-            if (_trailingZeroAfterWholeFloat && !double.IsNaN(val) && !double.IsInfinity(val) && str.IndexOfAny(['.', 'e', 'E']) == -1) {
-                str += ".0";
-            }
 
             if (!fPos) {
                 str = "-" + str;

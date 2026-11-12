@@ -7,6 +7,7 @@
 #nullable enable
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace IronPython.Runtime {
     internal static partial class Schubfach {
@@ -95,11 +96,11 @@ namespace IronPython.Runtime {
         ];
 
         // Rewrites the digits in buffer[start..pos] in fixed notation if Python's
-        // repr would, i.e. for -4 < dec_point <= 16.
-        private static bool try_write_fixed(Span<char> buffer, ref int pos, int start, int dec_exp, bool add_dot_0) {
+        // repr would, i.e. for -4 < dec_point <= max_dec_point (16 for double).
+        private static bool try_write_fixed(Span<char> buffer, ref int pos, int start, int dec_exp, int max_dec_point, bool add_dot_0) {
             int num_digits = pos - start;
             int dec_point = dec_exp + 1;
-            if (dec_point <= -4 || dec_point > 16) return false;
+            if (dec_point <= -4 || dec_point > max_dec_point) return false;
 
             if (dec_point <= 0) {
                 // 0.000ddd
@@ -127,7 +128,7 @@ namespace IronPython.Runtime {
         }
 
         // Writes the decimal FP number dec_sig * 10**dec_exp to buffer.
-        private static string write(bool is_negative, ulong dec_sig, int dec_exp, bool add_dot_0) {
+        private static string write(bool is_negative, ulong dec_sig, int dec_exp, int max_dec_point, bool add_dot_0) {
             Span<char> buffer = stackalloc char[buffer_size];
             int pos = 0;
             if (is_negative) buffer[pos++] = '-';
@@ -149,7 +150,7 @@ namespace IronPython.Runtime {
             // Remove trailing zeros.
             while (buffer[pos - 1] == '0') --pos;
 
-            if (try_write_fixed(buffer, ref pos, start, dec_exp, add_dot_0)) {
+            if (try_write_fixed(buffer, ref pos, start, dec_exp, max_dec_point, add_dot_0)) {
                 return buffer.Slice(0, pos).ToString();
             }
 
@@ -202,11 +203,44 @@ namespace IronPython.Runtime {
             bin_sig ^= implicit_bit;
             bin_exp -= num_sig_bits + 1023;  // Remove the exponent bias.
 
+            return to_decimal(is_negative, bin_sig, bin_exp, regular, num_sig_bits, 16, add_dot_0);
+        }
+
+        /// Returns the shortest decimal representation of `value` that round-trips as a float,
+        /// formatted like Python's repr but switching to exponent notation from 1e6 like numpy.
+        public static string ftoa(float value, bool add_dot_0 = true) {
+            int bitsInt = Unsafe.As<float, int>(ref value);
+            bool is_negative = bitsInt < 0;
+            ulong bits = unchecked((uint)bitsInt);
+
+            const int num_sig_bits = 24 - 1; // 24 = std::numeric_limits<float>::digits
+            const int exp_mask = 0xff;
+            int bin_exp = (int)(bits >> num_sig_bits) & exp_mask;
+
+            const ulong implicit_bit = (ulong)1 << num_sig_bits;
+            ulong bin_sig = bits & (implicit_bit - 1);  // binary significand
+
+            bool regular = bin_sig != 0;
+            if (((bin_exp + 1) & exp_mask) <= 1) {
+                if (bin_exp != 0) return bin_sig != 0 ? "nan" : is_negative ? "-inf" : "inf";
+                if (bin_sig == 0) return is_negative ? (add_dot_0 ? "-0.0" : "-0") : (add_dot_0 ? "0.0" : "0");
+                // Handle subnormals.
+                bin_sig ^= implicit_bit;
+                ++bin_exp;
+                regular = true;
+            }
+            bin_sig ^= implicit_bit;
+            bin_exp -= num_sig_bits + 127;  // Remove the exponent bias.
+
+            return to_decimal(is_negative, bin_sig, bin_exp, regular, num_sig_bits, 6, add_dot_0);
+        }
+
+        private static string to_decimal(bool is_negative, ulong bin_sig, int bin_exp, bool regular, int num_sig_bits, int max_dec_point, bool add_dot_0) {
             // Handle small integers.
             if ((bin_exp < 0) & (bin_exp >= -num_sig_bits)) {
                 ulong f = bin_sig >> -bin_exp;
                 if (f << -bin_exp == bin_sig) {
-                    return write(is_negative, f, 0, add_dot_0);
+                    return write(is_negative, f, 0, max_dec_point, add_dot_0);
                 }
             }
 
@@ -260,7 +294,7 @@ namespace IronPython.Runtime {
                 bool under_in2 = lower + bin_sig_lsb <= (dec_sig_under2 << 2);
                 bool over_in2 = (dec_sig_over2 << 2) + bin_sig_lsb <= upper;
                 if (under_in2 != over_in2) {
-                    return write(is_negative, under_in2 ? dec_sig_under2 : dec_sig_over2, dec_exp, add_dot_0);
+                    return write(is_negative, under_in2 ? dec_sig_under2 : dec_sig_over2, dec_exp, max_dec_point, add_dot_0);
                 }
             }
 
@@ -269,13 +303,13 @@ namespace IronPython.Runtime {
             bool over_in = (dec_sig_over << 2) + bin_sig_lsb <= upper;
             if (under_in != over_in) {
                 // Only one of dec_sig_under or dec_sig_over are in the rounding interval.
-                return write(is_negative, under_in ? dec_sig_under : dec_sig_over, dec_exp, add_dot_0);
+                return write(is_negative, under_in ? dec_sig_under : dec_sig_over, dec_exp, max_dec_point, add_dot_0);
             }
 
             // Both dec_sig_under and dec_sig_over are in the interval - pick the closest.
             int cmp = unchecked((int)(scaled_sig - ((dec_sig_under + dec_sig_over) << 1)));
             bool under_closer = cmp < 0 || cmp == 0 && (dec_sig_under & 1) == 0;
-            return write(is_negative, under_closer ? dec_sig_under : dec_sig_over, dec_exp, add_dot_0);
+            return write(is_negative, under_closer ? dec_sig_under : dec_sig_over, dec_exp, max_dec_point, add_dot_0);
         }
 
         // std::countl_zero

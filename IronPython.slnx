@@ -67,4 +67,5 @@
   <Project Path="src/roslyn/IronPython.Analyzer/IronPython.Analyzer.csproj" />
   <Project Path="src/roslyn/IronPython.SourceGenerator/IronPython.SourceGenerator.csproj" />
   <Project Path="tests/IronPython.Tests/IronPython.Tests.csproj" />
+  <Project Path="tests/IronPythonTest/IronPythonTest.csproj" />
 </Solution>

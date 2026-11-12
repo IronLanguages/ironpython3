@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462;net8.0;net10.0</TargetFrameworks>
+    <PreventStaging>true</PreventStaging>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\core\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\..\src\core\IronPython.Modules\IronPython.Modules.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ensure ClrAssembly is built before IronPythonTest -->
+    <ProjectReference Include="..\..\src\dlr\tests\ClrAssembly\ClrAssembly.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="CopyRowanTestFiles" AfterTargets="AfterBuild">
+    <ItemGroup>
+      <RowanTestFiles Include="..\..\src\dlr\bin\$(Configuration)\net462\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net462' " />
+      <RowanTestFiles Include="..\..\src\dlr\bin\$(Configuration)\netstandard2.0\rowantest.*.dll" Condition=" '$(TargetFramework)' != 'net462' " />
+    </ItemGroup>
+    <Copy SourceFiles="@(RowanTestFiles)" DestinationFolder="$(TargetDir)" />
+  </Target>
+
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+
+</Project>

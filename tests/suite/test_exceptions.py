@@ -724,7 +724,7 @@ finally:
         import System
         from IronPythonTest import ExceptionsTest
         path = clr.GetClrType(ExceptionsTest).Assembly.Location
-        mbro = System.AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(path, "IronPythonTest.EngineTest")
+        mbro = System.AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(path, "IronPythonTest.ScriptRunner")
         self.assertRaises(AssertionError, mbro.Run, 'raise AssertionError')
         import builtins
 

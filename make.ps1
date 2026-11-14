@@ -45,6 +45,9 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
 #       <Parameter name="FRAMEWORK" value="net462" />
 #       <Parameter name="CONFIGURATION" value="Release" />
 #     </TestRunParameters>
+#     <NUnit>
+#       <Verbosity>-1</Verbosity>
+#     </NUnit>
 #   </RunSettings>
 
     $dec = $doc.CreateXmlDeclaration("1.0","UTF-8",$null)
@@ -80,6 +83,12 @@ function GenerateRunSettings([String] $framework, [String] $platform, [String] $
         $testRunParameters.AppendChild($parameter) | Out-Null
     }
 
+    $nunit = $doc.CreateElement("NUnit")
+    $runSettings.AppendChild($nunit) | Out-Null
+    $verbosity = $doc.CreateElement("Verbosity")
+    $verbosity.InnerText = "-1"
+    $nunit.AppendChild($verbosity) | Out-Null
+
     $doc.AppendChild($runSettings) | Out-Null
 
     $fileName = [System.IO.Path]::Combine($_BASEDIR, "tests", "IronPython.Tests", "runsettings.$framework.xml")
@@ -113,6 +122,7 @@ function RunTestTasks($tasks) {
     }
 
     $testScript = {
+        [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
         & dotnet test $args
         # pass the status out in case of failure
         if($LastExitCode -ne 0) {
@@ -123,46 +133,55 @@ function RunTestTasks($tasks) {
     # create initial jobs
     $bgJobs = @{}
     $nextJob = 0
-    for ($i = 0; $i -lt $maxJobs; $i++) {
-        $j = Start-Job -ScriptBlock $testScript -ArgumentList $tasks[$nextJob].params
-        $bgJobs[$j] = $nextJob;
-        $nextJob += 1
-    }
-
-    $failedTests = @()
-    while ($bgJobs.values.Count -gt 0) {
-        $finished = Wait-Job -Any -Timeout 10 -Job @($bgJobs.keys)
-
-        # redirect output
-        foreach ($j in $bgJobs.keys) {
-            Receive-Job $j | ForEach-Object { "$($tasks[$bgJobs.$j].name)  $_" }
+    try {
+        for ($i = 0; $i -lt $maxJobs; $i++) {
+            $j = Start-Job -ScriptBlock $testScript -ArgumentList $tasks[$nextJob].params
+            $bgJobs[$j] = $nextJob;
+            $nextJob += 1
         }
 
-        # clean up finished jobs and create new ones
-        if ($null -ne $finished) {
-            $testName = $tasks[$bgJobs.$finished].name
-            Write-Host
-            if ($finished.State -eq 'Failed') {
-                Write-Host -ForegroundColor Red  "$testName failed"
-                $global:Result = $finished.ChildJobs[0].JobStateInfo.Reason.ErrorRecord.TargetObject
-                $failedTests += $testName
-            } else {
-                Write-Host "$testName succeeded"
+        $failedTests = @()
+        while ($bgJobs.values.Count -gt 0) {
+            $finished = Wait-Job -Any -Timeout 10 -Job @($bgJobs.keys)
+
+            # redirect output
+            foreach ($j in $bgJobs.keys) {
+                Receive-Job $j | ForEach-Object { "$($tasks[$bgJobs.$j].name)  $_" }
             }
 
-            $bgJobs.Remove($finished)
-            Remove-Job $finished
-            if ($nextJob -lt $tasks.Count) {
-                $j = Start-Job -ScriptBlock $testScript -ArgumentList $tasks[$nextJob].params
-                $bgJobs[$j] = $nextJob;
-                $nextJob += 1
+            # clean up finished jobs and create new ones
+            if ($null -ne $finished) {
+                $testName = $tasks[$bgJobs.$finished].name
+                Write-Host
+                if ($finished.State -eq 'Failed') {
+                    Write-Host -ForegroundColor Red  "$testName failed"
+                    $global:Result = $finished.ChildJobs[0].JobStateInfo.Reason.ErrorRecord.TargetObject
+                    $failedTests += $testName
+                } else {
+                    Write-Host "$testName succeeded"
+                }
+
+                $bgJobs.Remove($finished)
+                Remove-Job $finished
+                if ($nextJob -lt $tasks.Count) {
+                    $j = Start-Job -ScriptBlock $testScript -ArgumentList $tasks[$nextJob].params
+                    $bgJobs[$j] = $nextJob;
+                    $nextJob += 1
+                }
+                Write-Host "$($bgJobs.Count) jobs running: $(($bgJobs.values | ForEach-Object {$tasks[$_].name}) -Join ", ")"
+                Write-Host "$($tasks.Count - $nextJob) jobs pending: $(($nextJob..$tasks.Count | ForEach-Object {$tasks[$_].name}) -Join ", ")"
+                if ($failedTests) {
+                    Write-Host -ForegroundColor Red  "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
+                }
+                Write-Host
             }
-            Write-Host "$($bgJobs.Count) jobs running: $(($bgJobs.values | ForEach-Object {$tasks[$_].name}) -Join ", ")"
-            Write-Host "$($tasks.Count - $nextJob) jobs pending: $(($nextJob..$tasks.Count | ForEach-Object {$tasks[$_].name}) -Join ", ")"
-            if ($failedTests) {
-                Write-Host -ForegroundColor Red  "$($failedTests.Count) jobs failed: $($failedTests -Join ", ")"
-            }
-            Write-Host
+        }
+    } finally {
+        # on Ctrl+C, the jobs and the test processes they started would otherwise keep running
+        if ($bgJobs.Count -gt 0) {
+            Write-Host -ForegroundColor Yellow "Stopping $($bgJobs.Count) running job(s)"
+            $bgJobs.Keys | Stop-Job
+            $bgJobs.Keys | Remove-Job
         }
     }
 }
@@ -177,7 +196,7 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         $runSettings = GenerateRunSettings $framework $platform $configuration $runIgnored
 
         function createTask($filtername, $filter) {
-            [Object[]] $args = @("$_BASEDIR/tests/IronPython.Tests/IronPython.Tests.csproj", '-f', "$framework", '-o', "$_BASEDIR/bin/$configuration/$framework", '-c', "$configuration", '--no-build', '-v', 'n', '-l', "trx;LogFileName=$filtername-$framework-$configuration-result.trx", '-s', "$runSettings", "--filter=$filter");
+            [Object[]] $args = @('--project', "$_BASEDIR/tests/IronPython.Tests/IronPython.Tests.csproj", '-f', "$framework", '-c', "$configuration", '--no-build', '--output', 'Detailed', '--show-stdout', 'All', '--show-stderr', 'All', '--report-trx', '--report-trx-filename', "$filtername-$framework-$configuration-result.trx", '--results-directory', "$_BASEDIR/tests/IronPython.Tests/TestResults", '--settings', "$runSettings", '--filter', "$filter");
             Write-Host "Enqueue [$framework $filtername]:"
             Write-Host "dotnet test $args"
             Write-Host
@@ -196,9 +215,9 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
             "cpython"    { $tasks += createTask "cpython" "TestCategory=CPython" }
             default      {
                 if ($filter.ToLower().StartsWith('ironpython')) {
-                    $tasks += createTask "query" "TestCategory=IronPython&Name=$framework.$filter"
+                    $tasks += createTask "query" "TestCategory=IronPython&Name=$framework.IronPython$($filter.Substring(10))"
                 } elseif ($filter.ToLower().StartsWith('cpython')) {
-                    $tasks += createTask "query" "TestCategory=CPython&Name=$framework.$filter"
+                    $tasks += createTask "query" "TestCategory=CPython&Name=$framework.CPython$($filter.Substring(7))"
                 } else {
                     $tasks += createTask "query" $filter
                 }

@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>net462;net8.0;net10.0</TargetFrameworks>
     <PreventStaging>true</PreventStaging>
+    <OutputType>Exe</OutputType>
+    <EnableNUnitRunner>true</EnableNUnitRunner>
+
     <MeziantouPolyfill_IncludedPolyfills>
       M:System.IO.Path.GetRelativePath(System.String, System.String);
     </MeziantouPolyfill_IncludedPolyfills>
@@ -15,9 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUnitLite" Version="3.14.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageReference Include="NUnit" Version="4.5.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.3.1" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.VSTestBridge" Version="2.5.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +36,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <!-- Run .NET Framework tests with Mono on Linux/macOS -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net462' and '$(OS)' != 'Windows_NT'">
+    <RunCommand Condition="'$(RunCommand)' == ''">mono</RunCommand>
+    <RunArguments Condition="'$(RunArguments)' == ''">"$(TargetPath)" $(StartArguments)</RunArguments>
+  </PropertyGroup>
 
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />

@@ -17,9 +17,9 @@ namespace IronPython.Runtime {
     /// Provides a representation and parsing for the default formatting specification.  This is used
     /// by object.__format__, int.__format__, long.__format__, and float.__format__ to do the common
     /// format spec parsing.
-    /// 
+    ///
     /// The default specification is:
-    /// 
+    ///
     /// format_spec =  [[fill]align][sign][#][0][width][,][.precision][type]
     /// fill        =  a character other than }
     /// align       =  "&lt;" | "&gt;" | "=" | "^"

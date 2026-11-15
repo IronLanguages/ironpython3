@@ -26,8 +26,9 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Formats the absolute value of <paramref name="value"/>; the caller is responsible for the sign.
         /// </summary>
-        /// <param name="type">One of e, E, f, F, g or G.</param>
-        public static string Format(double value, char type, int precision, bool altForm = false) {
+        /// <param name="type">One of e, E, f, F, g, G or r (repr, <paramref name="precision"/> is ignored).</param>
+        /// <param name="addDot0">Append ".0" to integral fixed-point results (Py_DTSF_ADD_DOT_0).</param>
+        public static string Format(double value, char type, int precision, bool altForm = false, bool addDot0 = false) {
             Debug.Assert(precision >= 0);
 
             value = Math.Abs(value);
@@ -51,7 +52,15 @@ namespace IronPython.Runtime {
                     }
                 case 'g':
                 case 'G':
-                    return FormatGeneral(value, precision, altForm, upper);
+                    return FormatGeneral(value, precision, altForm, addDot0, upper);
+                case 'r': {
+                        string res = Schubfach.dtoa(value, addDot0);
+                        if (altForm && !res.Contains('.')) {
+                            int idx = res.IndexOf('e');
+                            res = idx == -1 ? res + "." : res.Insert(idx, ".");
+                        }
+                        return res;
+                    }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type));
             }
@@ -61,12 +70,12 @@ namespace IronPython.Runtime {
         /// Rounds to <paramref name="precision"/> significant digits and uses exponent notation if the exponent is below -4 or at least the precision.
         /// Trailing zeros are removed unless <paramref name="altForm"/> is set.
         /// </summary>
-        private static string FormatGeneral(double value, int precision, bool altForm, bool upper) {
+        private static string FormatGeneral(double value, int precision, bool altForm, bool addDot0, bool upper) {
             if (precision == 0) precision = 1;
 
             string mantissa = FormatSignificant(value, precision, out int exp);
 
-            if (exp < -4 || exp >= precision) {
+            if (exp < -4 || exp >= (addDot0 ? precision - 1 : precision)) {
                 if (!altForm) mantissa = TrimFraction(mantissa);
                 else if (precision == 1) mantissa += ".";
                 return mantissa + FormatExponent(exp, upper);
@@ -85,6 +94,7 @@ namespace IronPython.Runtime {
 
             if (fraction.Length > 0) return intPart + "." + fraction;
             if (altForm) return intPart + ".";
+            if (addDot0) return intPart + ".0";
             return intPart;
 
             static string TrimFraction(string mantissa)
@@ -197,5 +207,62 @@ namespace IronPython.Runtime {
             }
             return res.ToString();
         }
+
+        private static readonly int[] DefaultGroupSizes = [3];
+
+        public static string AddGrouping(string digits, string separator, int minWidth = 0)
+            => AddGrouping(digits, separator, DefaultGroupSizes, minWidth);
+
+        /// <summary>
+        /// Inserts <paramref name="separator"/> into the leading run of digits, zero padding it so the result is at least <paramref name="minWidth"/> long.
+        /// </summary>
+        /// <param name="groupSizes">As in <see cref="NumberFormatInfo.NumberGroupSizes"/>: the last size repeats and 0 ends grouping.</param>
+        public static string AddGrouping(string digits, string separator, int[] groupSizes, int minWidth = 0) {
+            int end = 0;
+            while (end < digits.Length && char.IsDigit(digits[end])) end++;
+            if (end == 0) return digits;
+
+            // zero pad the integer part until the grouped result is wide enough
+            int tailLength = digits.Length - end;
+            int count = end;
+            int intLength = GroupedLength(ref count, minWidth - tailLength);
+            string intPart = digits.Substring(0, end).PadLeft(count, '0');
+
+            // copy groups from the right, with a separator in front of each one except the leftmost
+            var res = new char[intLength + tailLength];
+            digits.CopyTo(end, res, intLength, tailLength);
+            int pos = intLength;
+            int i = count;
+            for (int k = 0; ; k++) {
+                int size = GroupSize(groupSizes, k);
+                if (size == 0 || size >= i) break;
+                i -= size;
+                pos -= size;
+                intPart.CopyTo(i, res, pos, size);
+                pos -= separator.Length;
+                separator.CopyTo(0, res, pos, separator.Length);
+            }
+            Debug.Assert(pos == i);
+            intPart.CopyTo(0, res, 0, i);
+            return new string(res);
+
+            // grows digitCount (zero padding) until the grouped length is at least minWidth, returns that length
+            int GroupedLength(ref int digitCount, int minWidth) {
+                int placed = 0, length = 0;
+                for (int k = 0; ; k++) {
+                    int size = GroupSize(groupSizes, k);
+                    int last = Math.Max(Math.Max(digitCount - placed, minWidth - length), 1);
+                    if (size == 0 || size >= last) {
+                        digitCount = placed + last;
+                        return length + last;
+                    }
+                    placed += size;
+                    length += size + separator.Length;
+                }
+            }
+        }
+
+        private static int GroupSize(int[] groupSizes, int k)
+            => groupSizes.Length == 0 ? 0 : groupSizes[Math.Min(k, groupSizes.Length - 1)];
     }
 }

@@ -17,8 +17,6 @@ def load_tests(loader, standard_tests, pattern):
 
     if is_ironpython:
         failing_tests = [
-            test.test_float.FormatTestCase('test_format'),
-            test.test_float.FormatTestCase('test_issue5864'),
             test.test_float.InfNanTest('test_nan_signs'),
             test.test_float.RoundTestCase('test_large_n'),
             test.test_float.RoundTestCase('test_matches_float_format'),

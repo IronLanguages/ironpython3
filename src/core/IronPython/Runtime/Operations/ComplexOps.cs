@@ -290,21 +290,7 @@ namespace IronPython.Runtime.Operations {
             return StringOps.__format__(context, res, $"{spec.Fill ?? ' '}{spec.Alignment ?? '>'}{spec.Width}s");
 
             string FormatPart(double value, bool imag) {
-                string digits;
-                if (hasType) {
-                    digits = DoubleOps.DoubleToFormatString(context, value, spec);
-                } else {
-                    // like str(), but no ".0" is added to integral values
-                    digits = spec.Precision.HasValue
-                        ? FloatFormatter.Format(value, 'g', spec.Precision.Value, spec.AlternateForm)
-                        : FloatFormatter.Format(value, 'r', 0, spec.AlternateForm);
-                    if (spec.ThousandsComma) {
-                        digits = FloatFormatter.AddGrouping(digits, ",");
-                    } else if (spec.ThousandsUnderscore) {
-                        digits = FloatFormatter.AddGrouping(digits, "_");
-                    }
-                }
-
+                string digits = DoubleOps.DoubleToFormatString(context, value, spec, addDot0: false);
                 if (!double.IsNaN(value) && DoubleOps.Sign(value) < 0) return "-" + digits;
                 if (imag || spec.Sign == '+') return "+" + digits;
                 if (spec.Sign == ' ') return " " + digits;

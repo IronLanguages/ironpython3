@@ -261,7 +261,7 @@ namespace IronPython.Runtime.Operations {
                 case 'F':
                 case 'g':
                 case 'G':
-                    digits = DoubleOps.DoubleToFormatString(context, val, spec);
+                    digits = DoubleOps.DoubleToFormatString(context, self, spec);
                     break;
                 case 'X':
                     if (spec.Precision != null) {

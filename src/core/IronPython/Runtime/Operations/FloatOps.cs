@@ -770,20 +770,15 @@ namespace IronPython.Runtime.Operations {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
             string digits = DoubleToFormatString(context, self, spec);
 
-            if (spec.Sign == null) {
-                // This is special because its not "-nan", it's nan.
-                // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
-            } else {
-                // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Double.IsNaN(self) ? true : Sign(self) > 0);
-            }
+            // nan never gets a "-"; isZero is false so that -0.0 keeps its sign
+            return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
         }
 
         /// <summary>
         /// Returns the digits for the format spec, no sign is included.
         /// </summary>
-        internal static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec) {
+        /// <param name="addDot0">Without a type, append ".0" to integral values like str() does.</param>
+        internal static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec, bool addDot0 = true) {
             const int DefaultPrecision = 6;
             int precision = spec.Precision ?? DefaultPrecision;
             int minWidth = spec.Fill == '0' && spec.Alignment == '=' && spec.Width is { } width ? ((spec.Sign != null && spec.Sign != '-' || Sign(self) < 0) ? width - 1 : width) : 0;
@@ -812,7 +807,7 @@ namespace IronPython.Runtime.Operations {
                     return digits;
                 case '\0':
                 case null:
-                    digits = FloatFormatter.Format(self, spec.Precision.HasValue ? 'g' : 'r', precision, spec.AlternateForm, addDot0: true);
+                    digits = FloatFormatter.Format(self, spec.Precision.HasValue ? 'g' : 'r', precision, spec.AlternateForm, addDot0);
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'float'", spec.TypeRepr);

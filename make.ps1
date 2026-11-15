@@ -122,6 +122,7 @@ function RunTestTasks($tasks) {
     }
 
     $testScript = {
+        Set-Location $using:_BASEDIR
         [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
         & dotnet test $args
         # pass the status out in case of failure

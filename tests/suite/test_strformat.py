@@ -604,6 +604,19 @@ class StrFormatTest(IronPythonTestCase):
         for value, errorFmt, errorMsg in errors:
             self.assertRaisesMessage(ValueError, errorMsg, value.__format__, errorFmt)
 
+    def test_complex___format___errors(self):
+        self.assertEqual(format(1+2j, '\0'), '(1+2j)')
+        for spec, errorMsg in [
+                ('%', "Unknown format code '%' for object of type 'complex'"),
+                ('d', "Unknown format code 'd' for object of type 'complex'"),
+                ('0%', "Unknown format code '%' for object of type 'complex'"),
+                ('05', "Zero padding is not allowed in complex format specifier"),
+                ('0>5', "Zero padding is not allowed in complex format specifier"),
+                ('0=5', "Zero padding is not allowed in complex format specifier"),
+                ('=5', "'=' alignment flag is not allowed in complex format specifier"),
+            ]:
+            self.assertRaisesMessage(ValueError, errorMsg, format, 1j, spec)
+
     def test_int___format__(self):
         tests = [
                 (0,    '+',        '+0'),

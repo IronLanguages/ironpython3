@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
 
-using IronPython;
 using IronPython.Hosting;
 
 using NUnit.Framework;

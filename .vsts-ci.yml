@@ -158,6 +158,7 @@ jobs:
         displayName: ReadyToRun
         condition: and(succeeded(), ne(variables.framework, 'net462'))
       - powershell: |
+          dotnet --info
           $ipy = "bin/Release/$(framework)/ipy"
           if ('$(framework)' -ne 'net462') { dotnet "$ipy.dll" -VV }
           elseif ('$(osName)' -eq 'Windows') { & "$ipy.exe" -VV }

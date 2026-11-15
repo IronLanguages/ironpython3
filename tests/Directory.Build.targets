@@ -1,0 +1,9 @@
+<Project>
+
+  <!-- Run .NET Framework tests with Mono on Linux/macOS -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net462' and '$(OS)' != 'Windows_NT'">
+    <RunCommand Condition="'$(RunCommand)' == ''">mono</RunCommand>
+    <RunArguments Condition="'$(RunArguments)' == ''">"$(TargetPath)" $(StartArguments)</RunArguments>
+  </PropertyGroup>
+
+</Project>

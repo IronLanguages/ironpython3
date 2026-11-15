@@ -54,12 +54,12 @@ def load_tests(loader, standard_tests, pattern):
             ]
         if is_mono:
             skip_tests += [
+                test.test_functools.TestPartialC('test_weakref'),
+                test.test_functools.TestPartialCSubclass('test_weakref'),
                 test.test_functools.TestPartialPy('test_weakref'),
             ]
             if sys.version_info >= (3, 6):
                 skip_tests += [
-                    test.test_functools.TestPartialC('test_weakref'),
-                    test.test_functools.TestPartialCSubclass('test_weakref'),
                     test.test_functools.TestPartialPySubclass('test_weakref'),
                 ]
 

@@ -768,193 +768,57 @@ namespace IronPython.Runtime.Operations {
             if (formatSpec == string.Empty) return __str__(context, self);
 
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
-            string digits;
+            string digits = DoubleToFormatString(context, self, spec);
 
-            if (Double.IsPositiveInfinity(self) || Double.IsNegativeInfinity(self)) {
-                if (spec.Type != null && char.IsUpper(spec.Type.Value)) {
-                    digits = "INF";
-                } else {
-                    digits = "inf";
-                }
-            } else if (Double.IsNaN(self)) {
-                if (spec.Type != null && char.IsUpper(spec.Type.Value)) {
-                    digits = "NAN";
-                } else {
-                    digits = "nan";
-                }
-            } else {
-                digits = DoubleToFormatString(context, self, spec);
-            }
-
-            if (spec.Sign == null) {
-                // This is special because its not "-nan", it's nan.
-                // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
-            } else {
-                // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Double.IsNaN(self) ? true : Sign(self) > 0);
-            }
+            // nan never gets a "-"; isZero is false so that -0.0 keeps its sign
+            return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
         }
 
         /// <summary>
         /// Returns the digits for the format spec, no sign is included.
         /// </summary>
-        internal static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec) {
-            self = Math.Abs(self);
+        /// <param name="addDot0">Without a type, append ".0" to integral values like str() does.</param>
+        internal static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec, bool addDot0 = true) {
             const int DefaultPrecision = 6;
             int precision = spec.Precision ?? DefaultPrecision;
+            int minWidth = spec.Fill == '0' && spec.Alignment == '=' && spec.Width is { } width ? ((spec.Sign != null && spec.Sign != '-' || Sign(self) < 0) ? width - 1 : width) : 0;
 
             string digits;
             switch (spec.Type) {
-                case '%': {
-                        string fmt = "0." + new string('0', precision) + "%";
-                        if (spec.ThousandsComma) {
-                            fmt = "#," + fmt;
-                        }
-                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
-                        break;
-                    }
-                case 'f':
-                case 'F': {
-                        string fmt = "0." + new string('0', precision);
-                        if (spec.ThousandsComma) {
-                            fmt = "#," + fmt;
-                        }
-                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
-                        break;
-                    }
+                case '%':
+                    digits = FloatFormatter.Format(self * 100, 'f', precision, spec.AlternateForm) + "%";
+                    break;
                 case 'e':
-                case 'E': {
-                        string fmt = "0." + new string('0', precision) + spec.Type + "+00";
-                        if (spec.ThousandsComma) {
-                            fmt = "#," + fmt;
-                        }
-                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
-                        break;
-                    }
-                case '\0':
-                case null:
-                    if (spec.Precision != null) {
-                        // precision applies to the combined digits before and after the decimal point
-                        // so we first need find out how many digits we have before...
-                        int digitCnt = 1;
-                        double cur = self;
-                        while (cur >= 10) {
-                            cur /= 10;
-                            digitCnt++;
-                        }
-
-                        // Use exponents if we don't have enough room for all the digits before.  If we
-                        // only have as single digit avoid exponents.
-                        if (digitCnt > spec.Precision.Value && digitCnt != 1) {
-                            // first round off the decimal value
-                            self = MathUtils.Round(self, 0 , MidpointRounding.ToEven);
-
-                            // then remove any insignificant digits
-                            double pow = Math.Pow(10, digitCnt - Math.Max(spec.Precision.Value, 1));
-                            self = self - (self % pow);
-
-                            // finally format w/ the requested precision
-                            string fmt = "0.0" + new string('#', spec.Precision.Value);
-
-                            digits = self.ToString(fmt + "e+00", CultureInfo.InvariantCulture);
-                        } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly
-                            // round to match CPython's behavior
-                            int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
-
-                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
-                            digits = self.ToString("0.0" + new string('#', decimalPoints), CultureInfo.InvariantCulture);
-                        }
-                    } else {
-                        // just the default formatting
-                        if (IncludeExponent(self)) {
-                            digits = self.ToString("0.#e+00", CultureInfo.InvariantCulture);
-                        } else if (spec.ThousandsComma) {
-                            digits = self.ToString("#,0.0###", CultureInfo.InvariantCulture);
-                        } else {
-                            digits = self.ToString("0.0###", CultureInfo.InvariantCulture);
-                        }
-                    }
+                case 'E':
+                case 'f':
+                case 'F':
+                case 'g':
+                case 'G':
+                    digits = FloatFormatter.Format(self, spec.Type.Value, precision, spec.AlternateForm);
                     break;
                 case 'n':
-                case 'g':
-                case 'G': {
-                        // precision applies to the combined digits before and after the decimal point
-                        // so we first need find out how many digits we have before...
-                        int digitCnt = 1;
-                        double cur = self;
-                        while (cur >= 10) {
-                            cur /= 10;
-                            digitCnt++;
-                        }
-
-                        // Use exponents if we don't have enough room for all the digits before.  If we
-                        // only have as single digit avoid exponents.
-                        if (digitCnt > precision && digitCnt != 1) {
-                            // first round off the decimal value
-                            self = MathUtils.Round(self, 0, MidpointRounding.ToEven);
-
-                            // then remove any insignificant digits
-                            double pow = Math.Pow(10, digitCnt - Math.Max(precision, 1));
-                            double rest = self / pow;
-                            self = self - self % pow;
-                            if ((rest % 1) >= .5) {
-                                // round up
-                                self += pow;
-                            }
-
-                            string fmt;
-                            if (spec.Precision > 1 || digitCnt > 6) {
-                                // include the requested precision to the right of the decimal
-                                fmt = "0.#" + new string('#', precision);
-                            } else {
-                                // zero precision, no decimal
-                                fmt = "0";
-                            }
-                            if (spec.ThousandsComma) {
-                                fmt = "#," + fmt;
-                            }
-
-                            digits = self.ToString(fmt + (spec.Type == 'G' ? "E+00" : "e+00"), CultureInfo.InvariantCulture);
-                        } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly
-                            // round to match CPython's behavior
-                            if (self < 1) {
-                                // no implicit 0
-                                digitCnt--;
-                            }
-                            int decimalPoints = Math.Max(precision - digitCnt, 0);
-
-                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
-
-                            if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
-                                if (digitCnt != precision && (self % 1) != 0) {
-                                    digits = self.ToString("#,0.0" + new string('#', decimalPoints), context.LanguageContext.NumericCulture);
-                                } else {
-                                    // leave out the decimal if the precision == # of digits or we have a whole number
-                                    digits = self.ToString("#,0", context.LanguageContext.NumericCulture);
-                                }
-                            } else {
-                                if (digitCnt != precision && (self % 1) != 0) {
-                                    digits = self.ToString("0.0" + new string('#', decimalPoints), CultureInfo.InvariantCulture);
-                                } else {
-                                    // leave out the decimal if the precision == # of digits or we have a whole number
-                                    digits = self.ToString("0", CultureInfo.InvariantCulture);
-                                }
-                            }
-                        }
+                    digits = FloatFormatter.Format(self, 'g', precision, spec.AlternateForm);
+                    CultureInfo culture = context.LanguageContext.NumericCulture;
+                    if (culture != PythonContext.CCulture) {
+                        NumberFormatInfo nfi = culture.NumberFormat;
+                        digits = digits.Replace(".", nfi.NumberDecimalSeparator);
+                        digits = FloatFormatter.AddGrouping(digits, nfi.NumberGroupSeparator, nfi.NumberGroupSizes, minWidth);
                     }
+                    return digits;
+                case '\0':
+                case null:
+                    digits = FloatFormatter.Format(self, spec.Precision.HasValue ? 'g' : 'r', precision, spec.AlternateForm, addDot0);
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'float'", spec.TypeRepr);
             }
 
+            if (spec.ThousandsComma) {
+                digits = FloatFormatter.AddGrouping(digits, ",", minWidth);
+            } else if (spec.ThousandsUnderscore) {
+                digits = FloatFormatter.AddGrouping(digits, "_", minWidth);
+            }
             return digits;
-        }
-
-        private static bool IncludeExponent(double self) {
-            return self >= 1e12 || (self != 0 && self <= 0.00009);
         }
 
         private static string DefaultFloatFormat() {

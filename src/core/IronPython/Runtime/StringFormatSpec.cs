@@ -17,9 +17,9 @@ namespace IronPython.Runtime {
     /// Provides a representation and parsing for the default formatting specification.  This is used
     /// by object.__format__, int.__format__, long.__format__, and float.__format__ to do the common
     /// format spec parsing.
-    /// 
+    ///
     /// The default specification is:
-    /// 
+    ///
     /// format_spec =  [[fill]align][sign][#][0][width][,][.precision][type]
     /// fill        =  a character other than }
     /// align       =  "&lt;" | "&gt;" | "=" | "^"
@@ -33,9 +33,8 @@ namespace IronPython.Runtime {
         internal readonly int? Width, Precision;
         internal readonly bool AlternateForm, ThousandsComma, ThousandsUnderscore;
         internal readonly bool IsEmpty;
-        internal readonly bool AlignmentIsZeroPad;
 
-        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, bool thousandsUnderscore, int? precision, char? type, bool alternateForm, bool isEmpty, bool alignmentIsZeroPad) {
+        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, bool thousandsUnderscore, int? precision, char? type, bool alternateForm, bool isEmpty) {
             Fill = fill;
             Alignment = alignment;
             Sign = sign;
@@ -46,7 +45,6 @@ namespace IronPython.Runtime {
             Type = type;
             AlternateForm = alternateForm;
             IsEmpty = isEmpty;
-            AlignmentIsZeroPad = alignmentIsZeroPad;
         }
 
         internal string TypeRepr => (0x20 < Type && Type < 0x80) ? Type.ToString() : $"\\x{(int)Type:x}";
@@ -62,32 +60,16 @@ namespace IronPython.Runtime {
             bool alternateForm = false, thousandsComma = false;
             bool thousandsUnderscore = false;
             bool isEmpty = formatSpec.Length == 0;
-            bool alignmentIsZeroPad = false;
 
             int curOffset = 0;
-            if (formatSpec.Length >= 2) {
-                // check 2nd character for alignment first, then 1st character
-                switch (formatSpec[1]) {
-                    case '<':
-                    case '>':
-                    case '=':
-                    case '^':
-                        fill = formatSpec[0];
-                        align = formatSpec[1];
-                        curOffset = 2;
-                        break;
-                    default:
-                        switch (formatSpec[0]) {
-                            case '<':
-                            case '>':
-                            case '=':
-                            case '^':
-                                align = formatSpec[0];
-                                curOffset = 1;
-                                break;
-                        }
-                        break;
-                }
+            // check 2nd character for alignment first, then 1st character
+            if (formatSpec.Length >= 2 && IsAlignment(formatSpec[1])) {
+                fill = formatSpec[0];
+                align = formatSpec[1];
+                curOffset = 2;
+            } else if (formatSpec.Length >= 1 && IsAlignment(formatSpec[0])) {
+                align = formatSpec[0];
+                curOffset = 1;
             }
 
             // read sign
@@ -111,10 +93,7 @@ namespace IronPython.Runtime {
                 if (align == null) {
                     align = '=';
                 }
-                if (fill == null) {
-                    fill = '0';
-                    alignmentIsZeroPad = true;
-                }
+                fill ??= '0';
                 curOffset++;
             }
 
@@ -137,7 +116,7 @@ namespace IronPython.Runtime {
                 thousandsUnderscore = true;
                 curOffset++;
                 if (thousandsComma || curOffset != formatSpec.Length && formatSpec[curOffset] == ',') {
-                    throw PythonOps.ValueError("Cannot specify both ',' and '_'");
+                    throw PythonOps.ValueError("Cannot specify both ',' and '_'.");
                 }
             }
 
@@ -177,7 +156,7 @@ namespace IronPython.Runtime {
                         case '%':
                             break;
                         default:
-                            throw PythonOps.ValueError("Cannot specify ',' with '{0}'", type);
+                            throw PythonOps.ValueError("Cannot specify ',' with '{0}'.", type);
                     }
                 } else if (thousandsUnderscore) {
                     switch (type) {
@@ -198,7 +177,7 @@ namespace IronPython.Runtime {
                         case '%':
                             break;
                         default:
-                            throw PythonOps.ValueError("Cannot specify '_' with '{0}'", type);
+                            throw PythonOps.ValueError("Cannot specify '_' with '{0}'.", type);
                     }
                 }
             }
@@ -217,9 +196,10 @@ namespace IronPython.Runtime {
                 precision,
                 type,
                 alternateForm,
-                isEmpty,
-                alignmentIsZeroPad
+                isEmpty
             );
+
+            static bool IsAlignment(char c) => c is '<' or '>' or '=' or '^';
         }
 
         internal string/*!*/ AlignText(string/*!*/ text) {
@@ -324,7 +304,7 @@ namespace IronPython.Runtime {
                 text = FinishText(text, sign, type);
             }
 
-            
+
             return text;
         }
 

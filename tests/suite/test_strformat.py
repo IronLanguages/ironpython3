@@ -317,50 +317,27 @@ class StrFormatTest(IronPythonTestCase):
 
     def test_float___format__(self):
         tests = []
-        if is_cpython: #In large part due to http://ironpython.codeplex.com/workitem/28206
-            tests+= [   (2.0,              '6.1',      ' 2e+00'),
-                        (2.5,              '6.1',      ' 2e+00'),
-                        (2.25,             '6.1',      ' 2e+00'),
-                        (23.0,             '.1',       '2e+01'),
-                        (23.0,             '.2',       '2.3e+01'),
-                        (230.5,            '.3',       '2.3e+02'),
-                        (11230.54,         '.5',       '1.1231e+04'),
-                        (111230.54,        '.1',       '1e+05'),
-                        (100000.0,           '.5',     '1e+05'),
-                        (0.0,              '1.1',      '0e+00'),
-                        (0.0,              '1.0',      '0e+00'),
-                        (1.0,              '.0',       '1e+00'),
-                        (1.1,              '.0',       '1e+00'),
-                        (1.1,              '.1',       '1e+00'),
-                        (10.0,             '.1',       '1e+01'),
-                        (10.0,             '.0',       '1e+01'),
-                        (1000000000.12,    '1.10',     '1e+09'),
-                        (1000000000.12,    '1.3',      '1e+09'),
-                        (999999999999.9,   '1.0',      '1e+12'),
-                        (999999999999.9,   '1.2',      '1e+12'),
-                    ]
-        else:
-            tests+= [   (2.0,              '6.1',      '   2.0'),
-                        (2.5,              '6.1',      '   2.0'),
-                        (2.25,             '6.1',      '   2.0'),
-                        (23.0,             '.1',       '2.0e+01'),
-                        (23.0,             '.2',       '23.0'),
-                        (230.5,            '.3',       '230.0'),
-                        (11230.54,         '.5',       '11231.0'),
-                        (111230.54,        '.1',       '1.0e+05'),
-                        (100000.0,           '.5',     '1.0e+05'),
-                        (0.0,              '1.1',      '0.0'),
-                        (0.0,              '1.0',      '0.0'),
-                        (1.0,              '.0',       '1.0'),
-                        (1.1,              '.0',       '1.0'),
-                        (1.1,              '.1',       '1.0'),
-                        (10.0,             '.1',       '1.0e+01'),
-                        (10.0,             '.0',       '1.0e+01'),
-                        (1000000000.12,    '1.10',     '1000000000.0'),
-                        (1000000000.12,    '1.3',      '1.0e+09'),
-                        (999999999999.9,   '1.0',      '1.0e+12'),
-                        (999999999999.9,   '1.2',      '1.0e+12'),
-                    ]
+        tests+= [   (2.0,              '6.1',      ' 2e+00'),
+                    (2.5,              '6.1',      ' 2e+00'),
+                    (2.25,             '6.1',      ' 2e+00'),
+                    (23.0,             '.1',       '2e+01'),
+                    (23.0,             '.2',       '2.3e+01'),
+                    (230.5,            '.3',       '2.3e+02'),
+                    (11230.54,         '.5',       '1.1231e+04'),
+                    (111230.54,        '.1',       '1e+05'),
+                    (100000.0,           '.5',     '1e+05'),
+                    (0.0,              '1.1',      '0e+00'),
+                    (0.0,              '1.0',      '0e+00'),
+                    (1.0,              '.0',       '1e+00'),
+                    (1.1,              '.0',       '1e+00'),
+                    (1.1,              '.1',       '1e+00'),
+                    (10.0,             '.1',       '1e+01'),
+                    (10.0,             '.0',       '1e+01'),
+                    (1000000000.12,    '1.10',     '1e+09'),
+                    (1000000000.12,    '1.3',      '1e+09'),
+                    (999999999999.9,   '1.0',      '1e+12'),
+                    (999999999999.9,   '1.2',      '1e+12'),
+                ]
 
         tests+= [ (2.0,              '',         '2.0'),
                     (2.0,              'g',         '2'),
@@ -537,6 +514,17 @@ class StrFormatTest(IronPythonTestCase):
                     (10e667,           '',         'inf'),
                     (-10e667,          '',         '-inf'),
                     (10e667/10e667,    '',         'nan'),
+
+                    # zero padding is grouped too
+                    (1.5,              '010,',     '0,000,001.5'),
+                    (-1.5,             '010,',     '-000,001.5'),
+                    (-0.0,             '08,',      '-0,000.0'),
+                    (1234.5,           '0=10,',    '0,001,234.5'),
+                    (1234.5,           '0<12,',    '1,234.500000'),
+                    (1234.5,           '012,.1e',  '00,001.2e+03'),
+                    (0.5,              '012,%',    '0,050.000000%'),
+                    (1234567.5,        '015,.2f',  '0,001,234,567.50'),
+                    (10e667/10e667,    '010,',     '0000000nan'),
                     ]
 
         upper_spec_trans = str.maketrans({"f": "F", "e": "E", "g": "G"})
@@ -551,6 +539,12 @@ class StrFormatTest(IronPythonTestCase):
                 actual = value.__format__(upper_spec)
                 result = result.upper()
                 self.assertEqual(actual, result, "value:{0}, spec:{1}, (expected) result:{2}, actual:{3}, expr:({0}).__format__('{1}')".format(value, upper_spec, result, actual))
+
+        # padding is computed per group, not per character
+        actual = format(1.5, '01000000,')
+        self.assertEqual(len(actual), 1000000)
+        self.assertTrue(actual.startswith('00,000,'))
+        self.assertTrue(actual.endswith(',000,001.5'))
 
         if is_netcoreapp21: return # https://github.com/IronLanguages/ironpython3/issues/751
 
@@ -573,6 +567,10 @@ class StrFormatTest(IronPythonTestCase):
                         (100000.5,            '.7n',       '100,000.5'),
                         (100000.5,            'n',         '100,000'),
                         (100000.5,            '.6n',       '100,000'),
+
+                        (1.5,                 '010n',      '0,000,001.5'),
+                        (-1234.5,             '012n',      '-0,001,234.5'),
+                        (1234.5,              '0<12n',     '1,234.500000'),
                     ]
 
             for value, spec, result in tests:
@@ -605,6 +603,19 @@ class StrFormatTest(IronPythonTestCase):
 
         for value, errorFmt, errorMsg in errors:
             self.assertRaisesMessage(ValueError, errorMsg, value.__format__, errorFmt)
+
+    def test_complex___format___errors(self):
+        self.assertEqual(format(1+2j, '\0'), '(1+2j)')
+        for spec, errorMsg in [
+                ('%', "Unknown format code '%' for object of type 'complex'"),
+                ('d', "Unknown format code 'd' for object of type 'complex'"),
+                ('0%', "Unknown format code '%' for object of type 'complex'"),
+                ('05', "Zero padding is not allowed in complex format specifier"),
+                ('0>5', "Zero padding is not allowed in complex format specifier"),
+                ('0=5', "Zero padding is not allowed in complex format specifier"),
+                ('=5', "'=' alignment flag is not allowed in complex format specifier"),
+            ]:
+            self.assertRaisesMessage(ValueError, errorMsg, format, 1j, spec)
 
     def test_int___format__(self):
         tests = [
@@ -653,6 +664,11 @@ class StrFormatTest(IronPythonTestCase):
                 (-2,   'x^ 10',    'xxxx-2xxxx'),
                 (-2,   'x^ 9',     'xxx-2xxxx'),
                 (2,    '\0^ 9',    '\0\0\0 2\0\0\0\0'),
+
+                (-1,   '08,g',     '-000,001'),
+                (-1,   '08,.0%',   '-00,100%'),
+                (-1234,'012,.1f',  '-0,001,234.0'),
+                (-10**20, '030,.0f', '-0,100,000,000,000,000,000,000'),
 
                 (2,    'c',         '\x02'),
                 (2,    '<5c',       '\x02    '),

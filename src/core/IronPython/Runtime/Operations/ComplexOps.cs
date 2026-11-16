@@ -270,36 +270,32 @@ namespace IronPython.Runtime.Operations {
 
         public static string __format__(CodeContext/*!*/ context, Complex self, string formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
-            if (spec.AlignmentIsZeroPad) throw PythonOps.ValueError("Zero padding is not allowed in complex format specifier");
+            bool hasType = spec.Type is not (null or '\0');
+            if (hasType && spec.Type is not ('e' or 'E' or 'f' or 'F' or 'g' or 'G' or 'n')) throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'complex'", spec.TypeRepr);
+            if (spec.Fill == '0') throw PythonOps.ValueError("Zero padding is not allowed in complex format specifier");
             if (spec.Alignment == '=') throw PythonOps.ValueError("'=' alignment flag is not allowed in complex format specifier");
 
-            var sb = new StringBuilder();
-            if (spec.AlternateForm) sb.Append('#');
-            if (spec.ThousandsComma) sb.Append(',');
-            if (spec.Precision.HasValue) {
-                sb.Append('.');
-                sb.Append(spec.Precision.Value);
-            }
-            sb.Append(spec.Type ?? 'g');
-            var numberformat = sb.ToString();
-
             string res;
-            if (!spec.Type.HasValue) {
-                if (self.Real == 0) {
-                    res = DoubleOps.__format__(context, self.Imaginary, spec.Sign.HasValue ? spec.Sign.Value + numberformat : numberformat) + "j";
+            if (!hasType) {
+                if (self.Real == 0 && !DoubleOps.IsNegativeZero(self.Real)) {
+                    res = FormatPart(self.Imaginary, imag: false) + "j";
                 } else {
-                    var real = DoubleOps.__format__(context, self.Real, spec.Sign.HasValue ? spec.Sign.Value + numberformat : numberformat);
-                    var imag = DoubleOps.__format__(context, self.Imaginary, "+" + numberformat);
-                    res = "(" + real + imag + "j)";
+                    res = "(" + FormatPart(self.Real, imag: false) + FormatPart(self.Imaginary, imag: true) + "j)";
                 }
             } else {
-                var real = DoubleOps.__format__(context, self.Real, spec.Sign.HasValue ? spec.Sign.Value + numberformat : numberformat);
-                var imag = DoubleOps.__format__(context, self.Imaginary, "+" + numberformat);
-                res = real + imag + "j";
+                res = FormatPart(self.Real, imag: false) + FormatPart(self.Imaginary, imag: true) + "j";
             }
 
             if (spec.Width is null) return res;
             return StringOps.__format__(context, res, $"{spec.Fill ?? ' '}{spec.Alignment ?? '>'}{spec.Width}s");
+
+            string FormatPart(double value, bool imag) {
+                string digits = DoubleOps.DoubleToFormatString(context, value, spec, addDot0: false);
+                if (!double.IsNaN(value) && DoubleOps.Sign(value) < 0) return "-" + digits;
+                if (imag || spec.Sign == '+') return "+" + digits;
+                if (spec.Sign == ' ') return " " + digits;
+                return digits;
+            }
         }
 
         // report the same errors as CPython for these invalid conversions

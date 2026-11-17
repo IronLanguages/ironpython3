@@ -65,7 +65,7 @@ namespace IronPython.Compiler {
                 return target(ctx, _code);
             } finally {
                 PythonOps.RestoreCurrentExceptionState(e);
-                PopFrame();
+                PopFrame(ctx, _code);
             }
         }
 

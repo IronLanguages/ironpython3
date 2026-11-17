@@ -64,7 +64,7 @@ namespace IronPython.Compiler {
                     return _optimizedTarget(funcCode);
                 } finally {
                     PythonOps.RestoreCurrentExceptionState(e);
-                    PopFrame();
+                    PopFrame(_optimizedContext, funcCode);
                 }
             }
 

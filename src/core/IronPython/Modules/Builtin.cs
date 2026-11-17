@@ -323,6 +323,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 try {
                     return code.Call(evalContext);
                 } finally {
+                    PythonOps.AssertOwnFrameOnTop(evalContext, code, stack);
                     stack.RemoveAt(stack.Count - 1);
                 }
             }
@@ -392,6 +393,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 try {
                     code.Call(execContext);
                 } finally {
+                    PythonOps.AssertOwnFrameOnTop(execContext, code, stack);
                     stack.RemoveAt(stack.Count - 1);
                 }
             } else {

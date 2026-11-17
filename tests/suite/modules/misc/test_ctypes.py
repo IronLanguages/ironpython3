@@ -42,5 +42,13 @@ class CtypesTest(unittest.TestCase):
         except Exception as ex:
             self.fail("Unexpected exception: %s" % ex)
 
+    def test_bytes_arg_nul_terminated(self):
+        libc = ctypes.CDLL(None) if is_posix else ctypes.cdll.msvcrt
+        for argtypes in (None, [ctypes.c_char_p], [ctypes.c_void_p]):
+            strlen = libc['strlen']
+            strlen.argtypes = argtypes
+            self.assertEqual(strlen(b''), 0)
+            self.assertEqual(strlen(b'abcdefgh'), 8)
+
 
 run_test(__name__)

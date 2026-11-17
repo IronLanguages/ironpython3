@@ -150,22 +150,21 @@ namespace IronPython.Modules {
             return null;
         }
 
-        private static readonly byte[] FakeZeroLength = { 42 };
-
         public static byte[] TryCheckBytes(object o) {
             if (o is Bytes bytes) {
-                if (bytes.Count == 0) {
-                    // OpCodes.Ldelema refuses to get address of empty array
-                    // So we feed it with a fake one (cp34892)
-                    return FakeZeroLength;
-                }
-                return bytes.UnsafeByteArray;
+                return GetBytes(bytes);
             }
             return null;
         }
 
+        /// <summary>
+        /// Returns a NUL-terminated copy, since native code may treat the argument as a C string.
+        /// </summary>
         public static byte[] GetBytes(Bytes bytes) {
-            return bytes.UnsafeByteArray;
+            var data = bytes.UnsafeByteArray;
+            var res = new byte[data.Length + 1];
+            Array.Copy(data, res, data.Length);
+            return res;
         }
 
         public static CTypes._Array TryCheckWCharArray(object o) {

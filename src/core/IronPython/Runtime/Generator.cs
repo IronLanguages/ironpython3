@@ -427,17 +427,7 @@ namespace IronPython.Runtime {
         private void SaveFunctionStack(bool done) {
             if (_stackEntry is not { } entry) return;
 
-            // The entry is on top, unless something the body called has left an entry of its own behind. Then remove only this
-            // body's entry, if it is there at all. sys._getframe replaces entries by copies with frame objects, so compare the parts.
-            var stack = PythonOps.GetFunctionStack();
-            int index = stack.Count - 1;
-            while (index >= 0 && !(stack[index].Code == entry.Code && stack[index].Context == entry.Context)) {
-                index--;
-            }
-            Debug.Assert(index >= 0 && index == stack.Count - 1, "the entry of a suspending generator body should be on top of the frame stack");
-            if (index >= 0) {
-                stack.RemoveAt(index);
-            }
+            PythonOps.PopOwnFrame(entry);
 
             if (done) {
                 _stackEntry = null;

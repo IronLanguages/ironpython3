@@ -134,6 +134,11 @@ namespace IronPython.Compiler.Ast {
 
         internal MSAst.ParameterExpression AsyncSendSlot => _asyncSendSlot;
         internal MSAst.ParameterExpression AsyncThrowSlot => _asyncThrowSlot;
+
+        // The AsyncBodyFrame of an async body that pushes its own frame, one per call. Declared in the function that creates the coroutine
+        // or async generator, captured by the async body, which hands its frame over to it, and set as the observer of the body's driver,
+        // so that the frame moves along with the body.
+        private readonly MSAst.ParameterExpression _asyncFrame = MSAst.Expression.Variable(typeof(AsyncBodyFrame), "$asyncFrame");
 #else
         internal override bool IsGeneratorMethod => IsGenerator || IsAsync;
 #endif
@@ -710,10 +715,18 @@ namespace IronPython.Compiler.Ast {
             statements.Add(Body);
             MSAst.Expression body = Ast.Block(statements);
 
+#if FEATURE_NET_ASYNC
+            MSAst.ParameterExpression asyncFrame = null;
+#endif
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
                 MSAst.Expression codeObject = Ast.Property(_functionParam, typeof(PythonFunction).GetProperty(nameof(PythonFunction.__code__)));
                 if (inPythonGenerator) {
                     body = AddGeneratorFrame(LocalContext, codeObject, body);
+#if FEATURE_NET_ASYNC
+                } else if (IsAsync) {
+                    asyncFrame = _asyncFrame;
+                    body = AddAsyncFrame(LocalContext, asyncFrame, codeObject, body);
+#endif
                 } else {
                     body = AddFrame(LocalContext, codeObject, body);
                     locals.Add(FunctionStackVariable);
@@ -739,6 +752,10 @@ namespace IronPython.Compiler.Ast {
                     var ctToken = MSAst.Expression.Property(cts, nameof(CancellationTokenSource.Token));
                     var sendSlot = AsyncSendSlot;
                     var throwSlot = AsyncThrowSlot;
+                    var asyncBody = AstUtils.AsyncEnumerable(Name, body, GeneratorLabel, interrupts: null, ctToken);
+                    if (asyncFrame is not null) {
+                        asyncBody = asyncBody.WithObserver(asyncFrame);
+                    }
                     body = MSAst.Expression.Block(
                         [cts, sendSlot, throwSlot],
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
@@ -747,7 +764,7 @@ namespace IronPython.Compiler.Ast {
                         Ast.Call(
                             AstMethods.MakeAsyncGenerator,
                             _functionParam,
-                            AstUtils.AsyncEnumerable(Name, body, GeneratorLabel, interrupts: null, ctToken),
+                            asyncBody,
                             sendSlot,
                             throwSlot,
                             cts));
@@ -760,15 +777,25 @@ namespace IronPython.Compiler.Ast {
                     // The AsyncInterruptSource is shared by AsyncExpression, which threads it into AsyncHelpers.DriveAsync,
                     // and PythonCoroutine, which uses it to implement coro.throw(exc).
                     var interrupts = MSAst.Expression.Variable(typeof(Microsoft.Scripting.Runtime.AsyncInterruptSource), "$interrupts");
+                    var asyncBody = AstUtils.Async(Name, body, interrupts);
+                    if (asyncFrame is not null) {
+                        asyncBody = asyncBody.WithObserver(asyncFrame);
+                    }
                     body = MSAst.Expression.Block(
                         [interrupts],
                         MSAst.Expression.Assign(interrupts, MSAst.Expression.New(typeof(Microsoft.Scripting.Runtime.AsyncInterruptSource))),
                         Ast.Call(
                             AstMethods.MakeAsyncCoroutine,
                             _functionParam,
-                            MSAst.Expression.Lambda<Func<Task<object>>>(
-                                AstUtils.Async(Name, body, interrupts)),
+                            MSAst.Expression.Lambda<Func<Task<object>>>(asyncBody),
                             interrupts));
+                }
+                if (asyncFrame is not null) {
+                    // A new AsyncBodyFrame for each call, so that each coroutine or async generator moves its own frame.
+                    body = MSAst.Expression.Block(
+                        [asyncFrame],
+                        MSAst.Expression.Assign(asyncFrame, MSAst.Expression.New(typeof(AsyncBodyFrame))),
+                        body);
                 }
             }
 #endif

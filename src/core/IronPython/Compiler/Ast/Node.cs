@@ -330,6 +330,19 @@ namespace IronPython.Compiler.Ast {
         internal static MSAst.Expression AddGeneratorFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body)
             => new FramedCodeExpression(localContext, codeObject, body, inGenerator: true);
 
+#if FEATURE_NET_ASYNC
+        /// <summary>
+        ///   Creates a method frame for the body of an async function or async generator, which hands the frame over to
+        ///   <paramref name="asyncFrame"/>, an <see cref="AsyncBodyFrame"/>.
+        /// </summary>
+        /// <remarks>
+        ///   Like a generator body, an async body can suspend and resume on another thread, so it cannot pop its frame itself.
+        ///   The <see cref="AsyncBodyFrame"/>, the observer of the body's driver, moves the frame along with the body.
+        /// </remarks>
+        internal static MSAst.Expression AddAsyncFrame(MSAst.Expression localContext, MSAst.Expression asyncFrame, MSAst.Expression codeObject, MSAst.Expression body)
+            => new FramedCodeExpression(localContext, codeObject, body, inGenerator: false, asyncFrame);
+#endif
+
         /// <summary>
         /// Removes the frames from generated code for when we're compiling the tracing delegate
         /// which will track the frames it's self.
@@ -350,10 +363,14 @@ namespace IronPython.Compiler.Ast {
             private readonly MSAst.Expression _localContext, _codeObject;
             private readonly bool _inGenerator;
 
-            public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body, bool inGenerator) {
+            // For an async body: the AsyncBodyFrame the body hands its frame over to.
+            private readonly MSAst.Expression? _asyncFrame;
+
+            public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body, bool inGenerator, MSAst.Expression? asyncFrame = null) {
                 _localContext = localContext;
                 _codeObject = codeObject;
                 _inGenerator = inGenerator;
+                _asyncFrame = asyncFrame;
                 Body = body;
             }
 
@@ -373,6 +390,20 @@ namespace IronPython.Compiler.Ast {
                         Body
                     );
                 }
+
+#if FEATURE_NET_ASYNC
+                if (_asyncFrame is not null) {
+                    return Ast.Block(
+                        Ast.Call(
+                            AstMethods.PushAsyncFrame,
+                            _localContext,
+                            _asyncFrame,
+                            _codeObject
+                        ),
+                        Body
+                    );
+                }
+#endif
 
                 return AstUtils.Try(
                     Ast.Assign(
@@ -407,9 +438,10 @@ namespace IronPython.Compiler.Ast {
                 var localContext = visitor.Visit(_localContext);
                 var codeObject = visitor.Visit(_codeObject);
                 var body = visitor.Visit(Body);
+                var asyncFrame = visitor.Visit(_asyncFrame);
 
-                if (localContext != _localContext || _codeObject != codeObject || body != Body) {
-                    return new FramedCodeExpression(localContext, codeObject, body, _inGenerator);
+                if (localContext != _localContext || _codeObject != codeObject || body != Body || asyncFrame != _asyncFrame) {
+                    return new FramedCodeExpression(localContext, codeObject, body, _inGenerator, asyncFrame);
                 }
 
                 return this;

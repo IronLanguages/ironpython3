@@ -4546,6 +4546,36 @@ namespace IronPython.Runtime.Operations {
             generator.PushFrame(context, function);
         }
 
+#if FEATURE_NET_ASYNC
+        /// <summary>
+        ///   Pushes the frame of an async body on the current thread, and hands it over to <paramref name="frame"/>, which removes it each
+        ///   time the body suspends, adds it back each time the body resumes, and removes it when the body finishes.
+        /// </summary>
+        public static void PushAsyncFrame(CodeContext/*!*/ context, AsyncBodyFrame frame, FunctionCode function) {
+            frame.PushFrame(context, function);
+        }
+#endif
+
+        /// <summary>
+        ///   Removes the entry of a body that can suspend (a generator or an async body) from the current thread's frame stack.
+        /// </summary>
+        /// <remarks>
+        ///   The entry is on top, unless something the body called has left an entry of its own behind. Then this removes only the body's
+        ///   entry, if it is there at all. On a mismatch, debug builds assert.
+        /// </remarks>
+        internal static void PopOwnFrame(FunctionStack entry) {
+            // sys._getframe replaces entries by copies with frame objects, so compare the parts.
+            var stack = GetFunctionStack();
+            int index = stack.Count - 1;
+            while (index >= 0 && !(stack[index].Code == entry.Code && stack[index].Context == entry.Context)) {
+                index--;
+            }
+            Debug.Assert(index >= 0 && index == stack.Count - 1, "the entry of a suspending body should be on top of the frame stack");
+            if (index >= 0) {
+                stack.RemoveAt(index);
+            }
+        }
+
         internal static LightLambdaExpression ToGenerator(this LightLambdaExpression code, bool shouldInterpret, bool debuggable, int compilationThreshold, bool isCoroutine = false) {
 #pragma warning disable CA2263 // Prefer generic overload when type is known
             return Utils.LightLambda(

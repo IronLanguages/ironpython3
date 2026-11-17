@@ -4,7 +4,7 @@
 
 import sys
 
-from iptest import IronPythonTestCase, is_cli, is_net70, is_net80, is_net100, is_netstandard, is_mono, big, myint, skipUnlessIronPython, run_test
+from iptest import IronPythonTestCase, is_cli, is_net70_or_greater, is_net100_or_greater, is_netstandard, is_mono, big, myint, skipUnlessIronPython, run_test
 
 class IntNoClrTest(IronPythonTestCase):
     """Must be run before IntTest because it depends on CLR API not being visible."""
@@ -27,9 +27,9 @@ class IntTest(IronPythonTestCase):
             self.assertSetEqual(set(dir(j)) - set(dir(i)), {'GetByteCount', 'TryWriteBytes'})
             self.assertSetEqual(set(dir(int)) - set(dir(Int32)), {'GetByteCount', 'TryWriteBytes'})
 
-        if is_net70 or is_net80 or is_net100: # https://github.com/IronLanguages/ironpython3/issues/1485
+        if is_net70_or_greater: # https://github.com/IronLanguages/ironpython3/issues/1485
             diff = {'TryConvertToChecked', 'MinValue', 'TryConvertFromChecked', 'MaxValue', 'TryConvertFromTruncating', 'WriteBigEndian', 'GetShortestBitLength', 'TryWriteLittleEndian', 'WriteLittleEndian', 'TryConvertToSaturating', 'TryConvertFromSaturating', 'TryWriteBigEndian', 'TryConvertToTruncating'}
-            if is_net100:
+            if is_net100_or_greater:
                 diff.update({'BigMul'})
             self.assertSetEqual(set(dir(i)) - set(dir(j)), diff)
             self.assertSetEqual(set(dir(Int32)) - set(dir(int)), diff)

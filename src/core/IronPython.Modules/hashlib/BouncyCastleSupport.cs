@@ -24,7 +24,7 @@ namespace Org.BouncyCastle.Crypto {
             if (input.Length < len) throw new ArgumentException(message);
         }
 
-        internal static void OutputLength<T>(Span<T> output, int len, string message) {
+        internal static void OutputLength<T>(ReadOnlySpan<T> output, int len, string message) {
             if (output.Length < len) throw new ArgumentException(message);
         }
 #endif

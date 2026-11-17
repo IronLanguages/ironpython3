@@ -405,6 +405,33 @@ print(('call', 'f') in events)
             sys.settrace(None)
         self.assertIs(ns['back'], sys._getframe(0))
 
+    def test_eval_frame(self):
+        # Code run by eval has a frame of its own, whose f_back is the frame that called eval
+        def depth():
+            n, f = 0, sys._getframe(1)
+            while f:
+                n, f = n + 1, f.f_back
+            return n
+
+        before = depth()
+        frame = eval("sys._getframe(0)", {'sys': sys})
+        self.assertEqual(frame.f_code.co_filename, "<string>")
+        self.assertEqual(frame.f_back.f_code.co_name, "test_eval_frame")
+        self.assertEqual(eval("depth()", {'depth': depth}), before + 1)
+        self.assertEqual(eval("eval('depth()', {'depth': depth})", {'depth': depth}), before + 2)
+        self.assertEqual(depth(), before)
+
+        with self.assertRaises(ZeroDivisionError):
+            eval("1/0")
+        self.assertEqual(depth(), before)
+
+        sys.settrace(lambda *args: None)
+        try:
+            self.assertEqual(eval("depth()", {'depth': depth}), before + 1)
+        finally:
+            sys.settrace(None)
+        self.assertEqual(depth(), before)
+
     @skipUnlessIronPython()
     def test_settrace_Xtracing_module_frame(self):
         # With -X:Tracing, the main module has a single frame

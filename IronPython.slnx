@@ -21,6 +21,8 @@
     <File Path="eng/After.targets" />
     <File Path="eng/net10.0-windows.props" />
     <File Path="eng/net10.0.props" />
+    <File Path="eng/net11.0-windows.props" />
+    <File Path="eng/net11.0.props" />
     <File Path="eng/net462.props" />
     <File Path="eng/net8.0-windows.props" />
     <File Path="eng/net8.0.props" />

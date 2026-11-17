@@ -109,6 +109,12 @@ namespace IronPython.Modules {
                 res.MemHolder = new MemoryHolder(IntPtr.Size);
                 if (IsPointer(DynamicHelpers.GetPythonType(cdata))) {
                     res.MemHolder.WriteIntPtr(0, cdata.MemHolder.ReadIntPtr(0));
+                } else if (objHandle.Target is Bytes bytes) {
+                    // data points to a temporary managed copy that is only pinned for the duration of the call
+                    var copy = new MemoryHolder(bytes.UnsafeByteArray.Length + 1);
+                    copy.WriteSpan(0, bytes.UnsafeByteArray);
+                    res.MemHolder.WriteIntPtr(0, copy);
+                    res.MemHolder.AddObject(IdDispenser.GetId(copy), copy);
                 } else {
                     res.MemHolder.WriteIntPtr(0, data);
                 }

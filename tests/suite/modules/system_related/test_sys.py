@@ -246,35 +246,76 @@ f()
     def test_settrace_jump(self):
         # A trace function can set f_lineno to any line of the code, in module code as well as in a function.
         # All the code is compiled under the same file name, since a jump must work in code compiled again under a file name too.
-        sources = [
-            "\n\nout.append(3)\nout.append(4)\n\nout.append(6)\n",
-            "def g(out):\n\n    out.append(3)\n    out.append(4)\n\n    out.append(6)\ng(out)\n",
-        ]
+        # The line jumped to gets no 'line' event. The code that jumped still reports its return, with the value returned or
+        # None when an exception leaves it, and leaves the frame stack as it found it.
+        module = "\n\nout.append(3)\nout.append(4)\n\nout.append(6)\n"
+        function = "def g(out):\n\n    out.append(3)\n    out.append(4)\n\n    out.append(6)\n    return 7\nout.append(g(out))\n"
+        raising = "def g(out):\n\n    out.append(3)\n    out.append(4)\n\n    raise KeyError(6)\ng(out)\n"
+        M = '<module>'
         cases = [
-            (6, 4, [3, 4, 4, 6]),   # backward
-            (3, 6, [6]),            # forward
+            # backward
+            (module, 6, 4, [3, 4, 4, 6], [
+                (M, 'call'), (M, 'line', 3), (M, 'line', 4), (M, 'line', 6), (M, 'line', 6), (M, 'return', 6, None),
+            ]),
+            (function, 6, 4, [3, 4, 4, 6, 7], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 8),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'line', 4), ('g', 'line', 6), ('g', 'line', 6), ('g', 'line', 7), ('g', 'return', 7, 7),
+                (M, 'return', 8, None),
+            ]),
+            (raising, 6, 4, [3, 4, 4, KeyError], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 7),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'line', 4), ('g', 'line', 6), ('g', 'line', 6), ('g', 'exception', 6, KeyError), ('g', 'return', 6, None),
+                (M, 'exception', 7, KeyError), (M, 'return', 7, None),
+            ]),
+            # forward
+            (module, 3, 6, [6], [
+                (M, 'call'), (M, 'line', 3), (M, 'return', 6, None),
+            ]),
+            (function, 3, 6, [6, 7], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 8),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'line', 7), ('g', 'return', 7, 7),
+                (M, 'return', 8, None),
+            ]),
+            (raising, 3, 6, [KeyError], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 7),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'exception', 6, KeyError), ('g', 'return', 6, None),
+                (M, 'exception', 7, KeyError), (M, 'return', 7, None),
+            ]),
         ]
 
         orig_sys_trace_func = sys.gettrace()
-        for source in sources:
-            for jump_from, jump_to, expected in cases:
-                jumped = False
-                def f(frame, event, arg):
-                    nonlocal jumped
-                    if frame.f_code.co_filename == '<traced>' and event == 'line' and frame.f_lineno == jump_from and not jumped:
+        for source, jump_from, jump_to, expected_out, expected_events in cases:
+            jumped = False
+            events = []
+            def f(frame, event, arg):
+                nonlocal jumped
+                if frame.f_code.co_filename == '<traced>':
+                    # test_settrace_first_line checks the line of 'call' events, which differs between versions for module code
+                    event_info = (frame.f_code.co_name, event)
+                    if event != 'call':
+                        event_info += (frame.f_lineno,)
+                    if event in ('return', 'exception'):
+                        event_info += (arg[0] if event == 'exception' else arg,)
+                    events.append(event_info)
+
+                    if event == 'line' and frame.f_lineno == jump_from and not jumped:
                         jumped = True
                         frame.f_lineno = jump_to
-                    return f
+                return f
 
-                out = []
-                code = compile(source, '<traced>', 'exec')
-                try:
-                    sys.settrace(f)
-                    exec(code, {'out': out})
-                finally:
-                    sys.settrace(orig_sys_trace_func)
+            out = []
+            code = compile(source, '<traced>', 'exec')
+            try:
+                sys.settrace(f)
+                exec(code, {'out': out})
+            except KeyError:
+                out.append(KeyError)
+            finally:
+                sys.settrace(orig_sys_trace_func)
 
-                self.assertEqual(out, expected, (source, jump_from, jump_to))
+            self.assertEqual(out, expected_out, (source, jump_from, jump_to))
+            self.assertEqual(events, expected_events, (source, jump_from, jump_to))
+            self.assertEqual(sys._getframe(0).f_code.co_name, 'test_settrace_jump', (source, jump_from, jump_to))
 
     def test_cp30130(self):
         def f(frame, event, arg):

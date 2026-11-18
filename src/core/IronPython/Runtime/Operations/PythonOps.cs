@@ -4539,6 +4539,33 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
+        ///   Removes the entry that <see cref="PushFrame"/> pushed for code that can't suspend, after checking it in debug builds.
+        /// </summary>
+        /// <remarks>
+        ///   Generated code calls this only in debug builds. In release builds it removes the top entry itself, without checking.
+        /// </remarks>
+        public static void PopFrame(CodeContext/*!*/ context, FunctionCode function, List<FunctionStack> stack) {
+            AssertOwnFrameOnTop(context, function, stack);
+            stack.RemoveAt(stack.Count - 1);
+        }
+
+        /// <summary>
+        ///   Asserts that the entry on top of <paramref name="stack"/> is the one that <paramref name="function"/>, running in
+        ///   <paramref name="context"/>, pushed and is about to remove.
+        /// </summary>
+        /// <remarks>
+        ///   Code that can't suspend pushes its entry and removes it on the same thread, so the entry is on top when it is removed, unless
+        ///   other code has left an entry behind or removed one that wasn't its own. The assertion makes that fail where it happens,
+        ///   instead of showing up later as wrong frames. Calls to this method are compiled only in debug builds.
+        /// </remarks>
+        [Conditional("DEBUG")]
+        internal static void AssertOwnFrameOnTop(CodeContext/*!*/ context, FunctionCode function, List<FunctionStack> stack) {
+            // sys._getframe replaces entries by copies with frame objects, so compare the parts.
+            Debug.Assert(stack.Count > 0 && stack[stack.Count - 1].Code == function && stack[stack.Count - 1].Context == context,
+                "the entry of code that can't suspend should be on top of the frame stack when the code removes it");
+        }
+
+        /// <summary>
         ///   Pushes the frame of a generator body on the current thread, and hands it over to <paramref name="generator"/>, which removes
         ///   it at each suspension, adds it back at each resumption, and removes it when the body finishes.
         /// </summary>

@@ -405,6 +405,32 @@ namespace IronPython.Compiler.Ast {
                 }
 #endif
 
+#if DEBUG
+                // Debug builds check that the entry removed is the one pushed here. The check compares the code object pushed, since the
+                // function's __code__ can be reassigned while it runs. Release builds remove the top entry without checking.
+                var code = Ast.Variable(typeof(FunctionCode), "$frameCode");
+                return Ast.Block(
+                    new[] { code },
+                    AstUtils.Try(
+                        Ast.Assign(
+                            FunctionStackVariable,
+                            Ast.Call(
+                                AstMethods.PushFrame,
+                                _localContext,
+                                Ast.Assign(code, _codeObject)
+                            )
+                        ),
+                        Body
+                    ).Finally(
+                        Ast.Call(
+                            AstMethods.PopFrame,
+                            _localContext,
+                            code,
+                            FunctionStackVariable
+                        )
+                    )
+                );
+#else
                 return AstUtils.Try(
                     Ast.Assign(
                         FunctionStackVariable,
@@ -428,6 +454,7 @@ namespace IronPython.Compiler.Ast {
                         )
                     )
                 );
+#endif
             }
 
             public override Type Type => Body.Type;

@@ -90,9 +90,10 @@ namespace IronPython.Compiler {
             }
         }
 
-        protected void PopFrame() {
+        protected void PopFrame(CodeContext context, FunctionCode code) {
             if (((PythonContext)SourceUnit.LanguageContext).PythonOptions.Frames) {
                 List<FunctionStack> stack = PythonOps.GetFunctionStack();
+                PythonOps.AssertOwnFrameOnTop(context, code, stack);
                 stack.RemoveAt(stack.Count - 1);
             }
         }

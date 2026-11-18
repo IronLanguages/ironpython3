@@ -40,12 +40,12 @@ namespace IronPython.Compiler {
 
         public override object Run() {
             CodeContext ctx = CreateContext();
+            var funcCode = EnsureFunctionCode(_target, false, true);
+            PushFrame(ctx, funcCode);
             try {
-                var funcCode = EnsureFunctionCode(_target, false, true);
-                PushFrame(ctx, funcCode);
                 return _target(ctx, funcCode);
             } finally {
-                PopFrame();
+                PopFrame(ctx, funcCode);
             }
         }
 

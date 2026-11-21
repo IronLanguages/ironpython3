@@ -234,8 +234,6 @@ namespace IronPython.Runtime {
                 return false;
             if (ndim > 1 && (shape == null || shape.Count != ndim))
                 return false;
-            if (strides != null && strides.Count != ndim)
-                return false;
             if (strides == null && offset != 0)
                 return false;
             if (shape == null)

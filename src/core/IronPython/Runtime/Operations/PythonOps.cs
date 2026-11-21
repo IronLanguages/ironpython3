@@ -117,20 +117,14 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary();
         }
 
-        /// <summary>
-        /// Creates a new dictionary extracting the keys and values from the
-        /// provided data array.  Keys/values are adjacent in the array with
-        /// the value coming first.
-        /// </summary>
-        public static PythonDictionary MakeDictFromItems(params object[] data) {
-            return new PythonDictionary(new CommonDictionaryStorage(data, false));
-        }
-
         public static PythonDictionary MakeConstantDict(object items) {
             return new PythonDictionary((ConstantDictionaryStorage)items);
         }
 
-        public static object MakeConstantDictStorage(params object[] data) {
+        /// <summary>
+        /// Creates the storage for a constant dictionary from adjacent key/value pairs, with the key coming first.
+        /// </summary>
+        public static object MakeConstantDictStorageFromKeyValueItems(object[] data) {
             return new ConstantDictionaryStorage(new CommonDictionaryStorage(data, false));
         }
 
@@ -143,11 +137,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
-        /// Creates a new dictionary extracting the keys and values from the
-        /// provided data array.  Keys/values are adjacent in the array with
-        /// the value coming first.
+        /// Creates a new dictionary from adjacent key/value pairs in the array, with the key coming first.
         /// </summary>
-        public static PythonDictionary MakeHomogeneousDictFromItems(object[] data) {
+        public static PythonDictionary MakeDictFromKeyValueItems(object[] data) {
+            return new PythonDictionary(new CommonDictionaryStorage(data, false));
+        }
+
+        /// <summary>
+        /// Like <see cref="MakeDictFromKeyValueItems"/>, for keys that all have the same type.
+        /// </summary>
+        public static PythonDictionary MakeHomogeneousDictFromKeyValueItems(object[] data) {
             return new PythonDictionary(new CommonDictionaryStorage(data, true));
         }
 
@@ -2381,7 +2380,7 @@ namespace IronPython.Runtime.Operations {
         // So common codegen would be:
         //
         // function() {
-        //   $save = SaveCurrentException();
+        //   $save = SaveCurrentExceptionState();
         //   try {
         //      def foo():
         //              try:
@@ -2390,7 +2389,7 @@ namespace IronPython.Runtime.Operations {
         //                  <except body>
         //
         //   finally {
-        //      RestoreCurrentException($save)
+        //      RestoreCurrentExceptionState($save)
         //   }
 
         // Called at the start of the except handlers to set the current exception.
@@ -2447,26 +2446,6 @@ namespace IronPython.Runtime.Operations {
                 CurrentExceptionState = new ExceptionState();
             }
             CurrentExceptionState.Exception = state;
-        }
-
-        /// <summary>
-        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
-        /// </summary>
-        [Obsolete("Remove when 3.4 is dropped")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Exception? SaveCurrentException() {
-            return CurrentExceptionState?.Exception?.Exception;
-        }
-
-        /// <summary>
-        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
-        /// </summary>
-        [Obsolete("Remove when 3.4 is dropped")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void RestoreCurrentException(Exception? clrException) {
-            var current = CurrentExceptionState?.Exception;
-            if (current?.Exception == clrException) return;
-            SetCurrentExceptionState(clrException is null ? null : new HandledException(clrException));
         }
 
         public static object? CheckException(CodeContext/*!*/ context, object exception, object? test) {
@@ -2603,17 +2582,6 @@ namespace IronPython.Runtime.Operations {
             if (handled is null) throw RuntimeError("No active exception to reraise");
             handled.RestoreFrames();
             Exception e = MakeExceptionWorker(context, PythonExceptions.ToPython(handled.Exception), null, null, withCause: false);
-            return ExceptionHelpers.UpdateForRethrow(e);
-        }
-
-        /// <summary>
-        /// Re-raises the exception of a 'with' block after __exit__ returned false.
-        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
-        /// </summary>
-        [Obsolete("Remove when 3.4 is dropped")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Exception MakeRethrowExceptionWorker(Exception e) {
-            e.RemoveTraceBack();
             return ExceptionHelpers.UpdateForRethrow(e);
         }
 

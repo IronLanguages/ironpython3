@@ -29,7 +29,8 @@ def load_tests(loader, standard_tests, pattern):
         if is_mono:
             skip_tests += [
                 # On Mono, gc.collect() may return before collection is finished making some tests unreliable
-                test.test_memoryio.PyBytesIOTest('test_getbuffer')
+                test.test_memoryio.CBytesIOTest('test_getbuffer'),
+                test.test_memoryio.PyBytesIOTest('test_getbuffer'),
             ]
 
         return generate_suite(tests, failing_tests, skip_tests)

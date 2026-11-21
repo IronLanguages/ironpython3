@@ -909,6 +909,23 @@ class NameBindingTest(IronPythonTestCase):
 
         self._test_undefined(test)
 
+    def test_loop_body_not_run(self):
+        def test_while(c):
+            while c:
+                undefined = 1
+                c = False
+            return undefined
+
+        def test_for(c):
+            for _ in c:
+                undefined = 1
+            return undefined
+
+        self.assertEqual(test_while(True), 1)
+        self._test_undefined(test_while, False)
+        self.assertEqual(test_for([0]), 1)
+        self._test_undefined(test_for, [])
+
     def test_del_local_var(self):
         result = "Failed"
 

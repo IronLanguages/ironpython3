@@ -687,19 +687,18 @@ class GeneratorThrowTest(unittest.TestCase):
         f("abc").send(c)
         self.assertEqual(c.data, "abc")
 
+    @unittest.skipUnless(is_cli or sys.version_info >= (3, 5), "Requires Python 3.5 or higher")
     def test_exp_dict_literals(self):
         def f():
-            # Note eval order is: {2:1, 4:3}
-            d = {(yield 2): (yield 1), (yield): (yield)}
+            d = {(yield 1): (yield 2), (yield): (yield)}
             yield d
         g = f()
         self.assertEqual(next(g), 1)
-        self.assertEqual(g.send('a'), 2)
-        g.send(10)
-        g.send('b')
-        d2 = g.send(20)  # {10: 'a', 20: 'b'}
+        self.assertEqual(g.send(10), 2)
+        g.send('a')
+        g.send(20)
+        d2 = g.send('b')
         self.assertEqual(d2, {10: 'a', 20: 'b'})
-
 
     # Test yield expressions in compound comparisons
 

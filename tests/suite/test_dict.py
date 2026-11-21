@@ -1050,4 +1050,21 @@ class DictTest(IronPythonTestCase):
             self.assertNotIn(key, C.__dict__)
             self.assertIsNone(C.__dict__.get(key))
 
+    def test_display_evaluation_order(self):
+        order = []
+        def log(x):
+            order.append(x)
+            return x
+
+        self.assertEqual({log(1): log(2), log(3): log(4)}, {1: 2, 3: 4})
+        self.assertEqual(order, [1, 2, 3, 4])
+
+        order.clear()
+        self.assertEqual({log('a'): log(1), **log({}), log('b'): log(2)}, {'a': 1, 'b': 2})
+        self.assertEqual(order, ['a', 1, {}, 'b', 2])
+
+        order.clear()
+        self.assertEqual({log(1): log('a'), log('b'): log(2)}, {1: 'a', 'b': 2})
+        self.assertEqual(order, [1, 'a', 'b', 2])
+
 run_test(__name__)

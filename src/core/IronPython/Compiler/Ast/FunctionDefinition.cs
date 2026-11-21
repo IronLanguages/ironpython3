@@ -330,9 +330,8 @@ namespace IronPython.Compiler.Ast {
             var annotations = new List<MSAst.Expression>();
 
             if (ReturnAnnotation != null) {
-                // value needs to come before key in the array
-                annotations.Add(AstUtils.Convert(ReturnAnnotation, typeof(object)));
                 annotations.Add(Ast.Constant("return", typeof(string)));
+                annotations.Add(AstUtils.Convert(ReturnAnnotation, typeof(object)));
             }
 
             foreach (var param in _parameters) {
@@ -341,15 +340,13 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 if (param.Kind == ParameterKind.KeywordOnly && param.DefaultValue != null) {
-                    // value needs to come before key in the array
-                    kwdefaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
                     kwdefaults.Add(Ast.Constant(param.Name, typeof(string)));
+                    kwdefaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
                 }
 
                 if (param.Annotation != null) {
-                    // value needs to come before key in the array
-                    annotations.Add(AstUtils.Convert(param.Annotation, typeof(object)));
                     annotations.Add(Ast.Constant(param.Name, typeof(string)));
+                    annotations.Add(AstUtils.Convert(param.Annotation, typeof(object)));
                 }
             }
 
@@ -373,7 +370,7 @@ namespace IronPython.Compiler.Ast {
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
                     kwdefaults.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 5. kwdefaults
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 kwdefaults
@@ -381,7 +378,7 @@ namespace IronPython.Compiler.Ast {
                         ),
                     annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 6. annotations
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 annotations
@@ -408,7 +405,7 @@ namespace IronPython.Compiler.Ast {
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
                     kwdefaults.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 5. kwdefaults
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 kwdefaults
@@ -416,7 +413,7 @@ namespace IronPython.Compiler.Ast {
                         ),
                     annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 6. annotations
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 annotations

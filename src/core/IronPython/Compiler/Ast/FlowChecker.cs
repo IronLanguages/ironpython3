@@ -515,7 +515,7 @@ namespace IronPython.Compiler.Ast {
             // Walk the expression
             node.Test.Walk(this);
 
-            BitArray opte = node.ElseStatement != null ? new BitArray(_bits) : null;
+            BitArray opte = new BitArray(_bits);
             BitArray exit = new BitArray(_bits.Length, true);
 
             PushLoop(exit);
@@ -531,10 +531,10 @@ namespace IronPython.Compiler.Ast {
                 node.ElseStatement.Walk(this);
                 // Restore the bits
                 _bits = save;
-
-                // Intersect
-                _bits.And(opte);
             }
+
+            // Intersect
+            _bits.And(opte);
 
             return false;
         }

@@ -82,6 +82,7 @@ def gen_python_name_binder(cw):
                   "AssignmentStatement",
                   "RaiseStatement",
                   "ForStatement",
+                  "AsyncForStatement",
                   "WhileStatement",
                   "BreakStatement",
                   "ContinueStatement",

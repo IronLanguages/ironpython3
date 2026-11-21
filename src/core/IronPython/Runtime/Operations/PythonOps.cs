@@ -151,6 +151,20 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary(new CommonDictionaryStorage(data, true));
         }
 
+        /// <summary>
+        /// Like <see cref="MakeDictFromItems"/> but with the key coming first.
+        /// </summary>
+        public static PythonDictionary MakeDictFromKeyValueItems(object[] data) {
+            return new PythonDictionary(new CommonDictionaryStorage(data, false, keyFirst: true));
+        }
+
+        /// <summary>
+        /// Like <see cref="MakeHomogeneousDictFromItems"/> but with the key coming first.
+        /// </summary>
+        public static PythonDictionary MakeHomogeneousDictFromKeyValueItems(object[] data) {
+            return new PythonDictionary(new CommonDictionaryStorage(data, true, keyFirst: true));
+        }
+
         public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)] object? o) {
             // This tells if an object can be called, but does not make a claim about the parameter list.
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated

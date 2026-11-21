@@ -94,12 +94,8 @@ namespace IronPython.Compiler.Ast {
             bool heterogeneous = false;
             for (int index = 0; index < items.Length; index++) {
                 SliceExpression slice = items[index];
-                // Eval order should be:
-                //   { 2 : 1, 4 : 3, 6 :5 }
-                // This is backwards from parameter list eval, so create temporaries to swap ordering.
-
-                parts[index * 2] = TransformOrConstantNull(slice.SliceStop, typeof(object));
-                MSAst.Expression key = parts[index * 2 + 1] = TransformOrConstantNull(slice.SliceStart, typeof(object));
+                MSAst.Expression key = parts[index * 2] = TransformOrConstantNull(slice.SliceStart, typeof(object));
+                parts[index * 2 + 1] = TransformOrConstantNull(slice.SliceStop, typeof(object));
 
                 Type newType;
                 if (key.NodeType == MSAst.ExpressionType.Convert) {
@@ -118,7 +114,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             return Expression.Call(
-                heterogeneous ? AstMethods.MakeDictFromItems : AstMethods.MakeHomogeneousDictFromItems,
+                heterogeneous ? AstMethods.MakeDictFromKeyValueItems : AstMethods.MakeHomogeneousDictFromKeyValueItems,
                 Expression.NewArrayInit(
                     typeof(object),
                     parts

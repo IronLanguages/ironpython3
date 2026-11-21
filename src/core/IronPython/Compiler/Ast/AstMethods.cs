@@ -71,6 +71,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo MakeSet = GetMethod((Func<object[], SetCollection>)PythonOps.MakeSet);
         public static readonly MethodInfo MakeEmptySet = GetMethod((Func<SetCollection>)PythonOps.MakeEmptySet);
         public static readonly MethodInfo MakeHomogeneousDictFromItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeHomogeneousDictFromItems);
+        public static readonly MethodInfo MakeDictFromKeyValueItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeDictFromKeyValueItems);
+        public static readonly MethodInfo MakeHomogeneousDictFromKeyValueItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeHomogeneousDictFromKeyValueItems);
         public static readonly MethodInfo CreateLocalContext = GetMethod((Func<CodeContext, MutableTuple, string[], int, int, bool, CodeContext>)PythonOps.CreateLocalContext);
         public static readonly MethodInfo UpdateStackTrace = GetMethod((Action<Exception, CodeContext, FunctionCode, int>)PythonOps.UpdateStackTrace);
         public static readonly MethodInfo ForLoopDispose = GetMethod((Action<KeyValuePair<IEnumerator, IDisposable>>)PythonOps.ForLoopDispose);

@@ -77,19 +77,16 @@ namespace IronPython.Runtime {
         /// Creates a new dictionary getting keys/values from the
         /// items array
         /// </summary>
-        public CommonDictionaryStorage(object[] items, bool isHomogeneous, bool valueFirst = false)
+        public CommonDictionaryStorage(object[] items, bool isHomogeneous)
             : this(Math.Max(items.Length / 2, InitialBucketSize)) {
             // always called w/ items, and items should be even (key/value pairs)
             Debug.Assert(items.Length > 0 && (items.Length & 0x01) == 0);
 
-            int keyOffset = valueFirst ? 1 : 0;
-            int valueOffset = 1 - keyOffset;
-
-            PythonType t = DynamicHelpers.GetPythonType(items[keyOffset]);
+            PythonType t = DynamicHelpers.GetPythonType(items[0]);
 
             if (!isHomogeneous) {
                 for (int i = 1; i < items.Length / 2; i++) {
-                    if (DynamicHelpers.GetPythonType(items[i * 2 + keyOffset]) != t) {
+                    if (DynamicHelpers.GetPythonType(items[i * 2]) != t) {
                         SetHeterogeneousSites();
                         t = null;
                         break;
@@ -99,15 +96,15 @@ namespace IronPython.Runtime {
 
             if (t != null) {
                 // homogeneous collection
-                UpdateHelperFunctions(t, items[keyOffset]);
+                UpdateHelperFunctions(t, items[0]);
             }
 
             for (int i = 0; i < items.Length / 2; i++) {
-                object key = items[i * 2 + keyOffset];
+                object key = items[i * 2];
                 if (key != null) {
-                    AddOne(key, items[i * 2 + valueOffset]);
+                    AddOne(key, items[i * 2 + 1]);
                 } else {
-                    AddNull(items[i * 2 + valueOffset]);
+                    AddNull(items[i * 2 + 1]);
                 }
             }
         }

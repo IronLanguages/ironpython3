@@ -150,28 +150,6 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary(new CommonDictionaryStorage(data, true));
         }
 
-#if PYTHON_34
-        // Value-first versions of the helpers above. No longer emitted, but modules compiled by 3.4.2 and earlier still call them.
-
-        [Obsolete("Use MakeDictFromKeyValueItems")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static PythonDictionary MakeDictFromItems(params object[] data) {
-            return new PythonDictionary(new CommonDictionaryStorage(data, false, valueFirst: true));
-        }
-
-        [Obsolete("Use MakeHomogeneousDictFromKeyValueItems")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static PythonDictionary MakeHomogeneousDictFromItems(object[] data) {
-            return new PythonDictionary(new CommonDictionaryStorage(data, true, valueFirst: true));
-        }
-
-        [Obsolete("Use MakeConstantDictStorageFromKeyValueItems")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static object MakeConstantDictStorage(params object[] data) {
-            return new ConstantDictionaryStorage(new CommonDictionaryStorage(data, false, valueFirst: true));
-        }
-#endif
-
         public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)] object? o) {
             // This tells if an object can be called, but does not make a claim about the parameter list.
             // In 1.x, we could check for certain interfaces like ICallable*, but those interfaces were deprecated
@@ -2402,7 +2380,7 @@ namespace IronPython.Runtime.Operations {
         // So common codegen would be:
         //
         // function() {
-        //   $save = SaveCurrentException();
+        //   $save = SaveCurrentExceptionState();
         //   try {
         //      def foo():
         //              try:
@@ -2411,7 +2389,7 @@ namespace IronPython.Runtime.Operations {
         //                  <except body>
         //
         //   finally {
-        //      RestoreCurrentException($save)
+        //      RestoreCurrentExceptionState($save)
         //   }
 
         // Called at the start of the except handlers to set the current exception.
@@ -2468,26 +2446,6 @@ namespace IronPython.Runtime.Operations {
                 CurrentExceptionState = new ExceptionState();
             }
             CurrentExceptionState.Exception = state;
-        }
-
-        /// <summary>
-        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
-        /// </summary>
-        [Obsolete("Remove when 3.4 is dropped")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Exception? SaveCurrentException() {
-            return CurrentExceptionState?.Exception?.Exception;
-        }
-
-        /// <summary>
-        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
-        /// </summary>
-        [Obsolete("Remove when 3.4 is dropped")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void RestoreCurrentException(Exception? clrException) {
-            var current = CurrentExceptionState?.Exception;
-            if (current?.Exception == clrException) return;
-            SetCurrentExceptionState(clrException is null ? null : new HandledException(clrException));
         }
 
         public static object? CheckException(CodeContext/*!*/ context, object exception, object? test) {
@@ -2624,17 +2582,6 @@ namespace IronPython.Runtime.Operations {
             if (handled is null) throw RuntimeError("No active exception to reraise");
             handled.RestoreFrames();
             Exception e = MakeExceptionWorker(context, PythonExceptions.ToPython(handled.Exception), null, null, withCause: false);
-            return ExceptionHelpers.UpdateForRethrow(e);
-        }
-
-        /// <summary>
-        /// Re-raises the exception of a 'with' block after __exit__ returned false.
-        /// No longer emitted, but modules compiled by 3.4.2 and earlier still call it.
-        /// </summary>
-        [Obsolete("Remove when 3.4 is dropped")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Exception MakeRethrowExceptionWorker(Exception e) {
-            e.RemoveTraceBack();
             return ExceptionHelpers.UpdateForRethrow(e);
         }
 

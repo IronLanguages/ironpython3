@@ -59,6 +59,7 @@ namespace IronPython.Compiler {
         private string _privatePrefix;
         private bool _parsingStarted, _allowIncomplete;
         private bool _inLoop, _inFinally, _inFinallyLoop;
+        private bool _hasNamedExpressions, _hasStarExpressions;
         private SourceCodeReader _sourceReader;
         private int _errorCode;
         private readonly CompilerContext _context;
@@ -225,6 +226,9 @@ namespace IronPython.Compiler {
                 lineLocs = newLineMapping.ToArray();
             }
             res.ParsingFinished(lineLocs, ret, _languageFeatures);
+            res.SkipNamedExpressionCheck = !_hasNamedExpressions;
+            res.SkipStarredExpressionCheck = !_hasStarExpressions;
+            _hasNamedExpressions = _hasStarExpressions = false;
 
             return res;
         }
@@ -1644,6 +1648,7 @@ namespace IronPython.Compiler {
                 }
                 NamedExpression ret = new(name, ParseTest());
                 ret.SetLoc(_globalParent, expr.StartIndex, ret.Value.EndIndex);
+                _hasNamedExpressions = true;
                 return ret;
             }
             return expr;
@@ -2437,6 +2442,7 @@ namespace IronPython.Compiler {
                 Node a;
                 if (MaybeEat(TokenKind.Multiply)) {
                     var start = GetStart();
+                    // no _hasStarExpressions: *args in a call or class bases is always valid, so StarredExpressionChecker has nothing to report
                     a = new StarredExpression(ParseTest());
                     a.SetLoc(_globalParent, start, GetEnd());
                 } else if (MaybeEat(TokenKind.Power)) {
@@ -2520,6 +2526,7 @@ namespace IronPython.Compiler {
             var start = GetStart();
             var expr = new StarredExpression(ParseExpr());
             expr.SetLoc(_globalParent, start, GetEnd());
+            _hasStarExpressions = true;
             return expr;
         }
 

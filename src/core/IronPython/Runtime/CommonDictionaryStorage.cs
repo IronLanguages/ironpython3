@@ -20,17 +20,17 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     /// <summary>
     /// General purpose storage used for most PythonDictionarys.
-    /// 
+    ///
     /// This dictionary storage is thread safe for multiple readers or writers.
-    /// 
+    ///
     /// Mutations to the dictionary involves a simple locking strategy of
     /// locking on the DictionaryStorage object to ensure that only one
     /// mutation happens at a time.
-    /// 
+    ///
     /// Reads against the dictionary happen lock free.  When the dictionary is mutated
     /// it is either adding or removing buckets in a thread-safe manner so that the readers
     /// will either see a consistent picture as if the read occured before or after the mutation.
-    /// 
+    ///
     /// When resizing the dictionary the buckets are replaced atomically so that the reader
     /// sees the new buckets or the old buckets.  When reading the reader first reads
     /// the buckets and then calls a static helper function to do the read from the bucket
@@ -74,19 +74,15 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Creates a new dictionary geting values/keys from the
-        /// items arary
+        /// Creates a new dictionary getting keys/values from the
+        /// items array
         /// </summary>
-        public CommonDictionaryStorage(object[] items, bool isHomogeneous)
-            : this(items, isHomogeneous, keyFirst: false) {
-        }
-
-        internal CommonDictionaryStorage(object[] items, bool isHomogeneous, bool keyFirst)
+        public CommonDictionaryStorage(object[] items, bool isHomogeneous, bool valueFirst = false)
             : this(Math.Max(items.Length / 2, InitialBucketSize)) {
             // always called w/ items, and items should be even (key/value pairs)
             Debug.Assert(items.Length > 0 && (items.Length & 0x01) == 0);
 
-            int keyOffset = keyFirst ? 0 : 1;
+            int keyOffset = valueFirst ? 1 : 0;
             int valueOffset = 1 - keyOffset;
 
             PythonType t = DynamicHelpers.GetPythonType(items[keyOffset]);
@@ -226,7 +222,7 @@ namespace IronPython.Runtime {
 
                 _keyType = t;
             } else if (_keyType != HeterogeneousType) {
-                // 2nd time through, we're adding a new type so we have mutliple types now, 
+                // 2nd time through, we're adding a new type so we have mutliple types now,
                 // make a new site for this storage
 
                 SetHeterogeneousSites();
@@ -506,7 +502,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Static helper to try and get the value from the dictionary.
-        /// 
+        ///
         /// Used so the value lookup can run against a buckets while a writer
         /// replaces the buckets.
         /// </summary>
@@ -766,7 +762,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Used to store a single hashed key/value.
-        /// 
+        ///
         /// Bucket is not serializable because it stores the computed hash
         /// code which could change between serialization and deserialization.
         /// </summary>
@@ -875,7 +871,7 @@ namespace IronPython.Runtime {
         void IDeserializationCallback.OnDeserialization(object sender) {
             DeserializationNullValue bucket = GetDeserializationBucket();
             if (bucket == null) {
-                // we've received multiple OnDeserialization callbacks, only 
+                // we've received multiple OnDeserialization callbacks, only
                 // deserialize after the 1st one
                 return;
             }

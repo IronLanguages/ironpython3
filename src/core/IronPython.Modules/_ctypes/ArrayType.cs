@@ -362,7 +362,7 @@ namespace IronPython.Modules {
                     res = countDict[count] = new ArrayType(type.Context.SharedContext,
                         type.Name + "_Array_" + count,
                         PythonTuple.MakeTuple(Array),
-                        PythonOps.MakeDictFromItems(new object[] { type, "_type_", count, "_length_" })
+                        PythonOps.MakeDictFromKeyValueItems(["_type_", type, "_length_", count])
                     );
                 }
 

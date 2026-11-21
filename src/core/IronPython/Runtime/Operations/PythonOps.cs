@@ -117,20 +117,14 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary();
         }
 
-        /// <summary>
-        /// Creates a new dictionary extracting the keys and values from the
-        /// provided data array.  Keys/values are adjacent in the array with
-        /// the value coming first.
-        /// </summary>
-        public static PythonDictionary MakeDictFromItems(params object[] data) {
-            return new PythonDictionary(new CommonDictionaryStorage(data, false));
-        }
-
         public static PythonDictionary MakeConstantDict(object items) {
             return new PythonDictionary((ConstantDictionaryStorage)items);
         }
 
-        public static object MakeConstantDictStorage(params object[] data) {
+        /// <summary>
+        /// Creates the storage for a constant dictionary from adjacent key/value pairs, with the key coming first.
+        /// </summary>
+        public static object MakeConstantDictStorageFromKeyValueItems(object[] data) {
             return new ConstantDictionaryStorage(new CommonDictionaryStorage(data, false));
         }
 
@@ -143,27 +137,40 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
-        /// Creates a new dictionary extracting the keys and values from the
-        /// provided data array.  Keys/values are adjacent in the array with
-        /// the value coming first.
+        /// Creates a new dictionary from adjacent key/value pairs in the array, with the key coming first.
         /// </summary>
-        public static PythonDictionary MakeHomogeneousDictFromItems(object[] data) {
+        public static PythonDictionary MakeDictFromKeyValueItems(object[] data) {
+            return new PythonDictionary(new CommonDictionaryStorage(data, false));
+        }
+
+        /// <summary>
+        /// Like <see cref="MakeDictFromKeyValueItems"/>, for keys that all have the same type.
+        /// </summary>
+        public static PythonDictionary MakeHomogeneousDictFromKeyValueItems(object[] data) {
             return new PythonDictionary(new CommonDictionaryStorage(data, true));
         }
 
-        /// <summary>
-        /// Like <see cref="MakeDictFromItems"/> but with the key coming first.
-        /// </summary>
-        public static PythonDictionary MakeDictFromKeyValueItems(object[] data) {
-            return new PythonDictionary(new CommonDictionaryStorage(data, false, keyFirst: true));
+#if PYTHON_34
+        // Value-first versions of the helpers above. No longer emitted, but modules compiled by 3.4.2 and earlier still call them.
+
+        [Obsolete("Use MakeDictFromKeyValueItems")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static PythonDictionary MakeDictFromItems(params object[] data) {
+            return new PythonDictionary(new CommonDictionaryStorage(data, false, valueFirst: true));
         }
 
-        /// <summary>
-        /// Like <see cref="MakeHomogeneousDictFromItems"/> but with the key coming first.
-        /// </summary>
-        public static PythonDictionary MakeHomogeneousDictFromKeyValueItems(object[] data) {
-            return new PythonDictionary(new CommonDictionaryStorage(data, true, keyFirst: true));
+        [Obsolete("Use MakeHomogeneousDictFromKeyValueItems")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static PythonDictionary MakeHomogeneousDictFromItems(object[] data) {
+            return new PythonDictionary(new CommonDictionaryStorage(data, true, valueFirst: true));
         }
+
+        [Obsolete("Use MakeConstantDictStorageFromKeyValueItems")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static object MakeConstantDictStorage(params object[] data) {
+            return new ConstantDictionaryStorage(new CommonDictionaryStorage(data, false, valueFirst: true));
+        }
+#endif
 
         public static bool IsCallable(CodeContext/*!*/ context, [NotNullWhen(true)] object? o) {
             // This tells if an object can be called, but does not make a claim about the parameter list.

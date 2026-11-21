@@ -136,7 +136,7 @@ namespace IronPython.Modules {
                     address.WriteIntPtr(offset, new IntPtr((long)(BigInteger)value));
                 } else if ((ptr = value as Pointer) != null) {
                     address.WriteIntPtr(offset, ptr.MemHolder.ReadMemoryHolder(0));
-                    return PythonOps.MakeDictFromItems(ptr, "0", ptr._objects, "1");
+                    return PythonOps.MakeDictFromKeyValueItems(["0", ptr, "1", ptr._objects]);
                 } else if ((array = value as _Array) != null) {
                     address.WriteIntPtr(offset, array.MemHolder);
                     return array;
@@ -167,7 +167,7 @@ namespace IronPython.Modules {
 
                 method.MarkLabel(nextTry);
                 nextTry = method.DefineLabel();
-                
+
                 argIndex.Emit(method);
                 if (argumentType.IsValueType) {
                     method.Emit(OpCodes.Box, argumentType);
@@ -178,7 +178,7 @@ namespace IronPython.Modules {
                 MarshalCleanup res = null;
                 if (st != null && !argIndex.Type.IsValueType) {
                     if (st._type == SimpleTypeKind.Char || st._type == SimpleTypeKind.WChar) {
-                            
+
                         if (st._type == SimpleTypeKind.Char) {
                             SimpleType.TryToCharPtrConversion(method, argIndex, argumentType, done);
                         } else {

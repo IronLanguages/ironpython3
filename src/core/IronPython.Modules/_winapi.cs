@@ -113,11 +113,11 @@ namespace IronPython.Modules {
             tSecSA.nLength = Marshal.SizeOf(tSecSA);
 
             if (proc_attrs != null) {
-                /* If pSec paseed in from Python is not NULL
+                /* If pSec passed in from Python is not NULL
                  * there needs to be some conversion done here...*/
             }
             if (thread_attrs != null) {
-                /* If tSec paseed in from Python is not NULL
+                /* If tSec passed in from Python is not NULL
                  * there needs to be some conversion done here...*/
             }
 

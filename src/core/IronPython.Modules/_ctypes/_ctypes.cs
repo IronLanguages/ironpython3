@@ -231,7 +231,7 @@ namespace IronPython.Modules {
                         name = "LP_" + type.Name;
                     }
 
-                    dict[type] = res = MakePointer(context, name, PythonOps.MakeDictFromItems(new object[] { type, "_type_" }));
+                    dict[type] = res = MakePointer(context, name, PythonOps.MakeDictFromKeyValueItems(["_type_", type]));
                 }
 
                 return res as PythonType;
@@ -332,8 +332,8 @@ namespace IronPython.Modules {
 
         /// <summary>
         /// returns address of C instance internal buffer.
-        /// 
-        /// It is the callers responsibility to ensure that the provided instance will 
+        ///
+        /// It is the callers responsibility to ensure that the provided instance will
         /// stay alive if memory in the resulting address is to be used later.
         /// </summary>
         public static object addressof(CData data) {
@@ -411,13 +411,13 @@ namespace IronPython.Modules {
             SimpleType resType = new SimpleType(
                 context,
                 "int",
-                PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(SimpleCData))), PythonOps.MakeHomogeneousDictFromItems(new object[] { "i", "_type_" }));
+                PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(SimpleCData))), PythonOps.MakeHomogeneousDictFromKeyValueItems(["_type_", "i"]));
 
             CFuncPtrType funcType = new CFuncPtrType(
                 context,
                 "func",
                 PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(_CFuncPtr))),
-                PythonOps.MakeHomogeneousDictFromItems(new object[] { FUNCFLAG_STDCALL, "_flags_", resType, "_restype_" }));
+                PythonOps.MakeHomogeneousDictFromKeyValueItems(["_flags_", FUNCFLAG_STDCALL, "_restype_", resType]));
             return funcType;
         }
 

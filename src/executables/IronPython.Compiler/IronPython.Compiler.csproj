@@ -5,6 +5,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>IronPython.Compiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StartupObject>IronPython.Compiler.Program</StartupObject>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>

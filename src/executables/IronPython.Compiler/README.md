@@ -23,6 +23,8 @@ Options:
 
     /py:<option>                              Allows specifying options that modify the behavior of IronPython (e.g., -X:FullFrames)
 
+    /nologo                                   Suppress compiler copyright message
+
     @<file>                                   Specifies a response file to be parsed for input files and command line options (one per line)
 
     /? /h                                     This message

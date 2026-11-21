@@ -381,11 +381,6 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
-        // AsyncForStatement
-        public override bool Walk(AsyncForStatement node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
         // AsyncWithStatement
         public override bool Walk(AsyncWithStatement node) {
             node.Parent = _currentScope;
@@ -562,9 +557,16 @@ namespace IronPython.Compiler.Ast {
             return base.Walk(node);
         }
 
+        public override bool Walk(AsyncForStatement node) {
+            node.Parent = _currentScope;
+            CheckAssignTarget(node.Left);
+            return base.Walk(node);
+        }
+
         // ForEachStatement
         public override bool Walk(ForStatement node) {
             node.Parent = _currentScope;
+            CheckAssignTarget(node.Left);
 
             // we only push the loop for the body of the loop
             // so we need to walk the for statement ourselves
@@ -644,10 +646,7 @@ namespace IronPython.Compiler.Ast {
             _currentScope.ContainsExceptionHandling = true;
 
             if (node.Variable != null) {
-                var assignError = node.Variable.CheckAssign();
-                if (assignError != null) {
-                    ReportSyntaxError(assignError, node);
-                }
+                CheckAssignTarget(node.Variable);
                 node.Variable.Walk(_define);
             }
             return true;
@@ -877,8 +876,15 @@ namespace IronPython.Compiler.Ast {
         // ListComprehensionFor
         public override bool Walk(ComprehensionFor node) {
             node.Parent = _currentScope;
+            CheckAssignTarget(node.Left);
             node.Left.Walk(_define);
             return true;
+        }
+
+        private void CheckAssignTarget(Expression target) {
+            if (target.CheckAssign() is { } assignError) {
+                ReportSyntaxError(assignError, target);
+            }
         }
 
         // CallExpression

@@ -35,6 +35,8 @@ namespace IronPython.Compiler.Ast {
 
         public override Type Type => Expression.Type;
 
+        public override string NodeName => Expression.NodeName;
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 Expression?.Walk(walker);

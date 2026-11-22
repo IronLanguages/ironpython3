@@ -9,22 +9,22 @@ using Microsoft.Scripting;
 
 /*
  * The data flow.
- * 
+ *
  * Each local name is represented as 2 bits:
  * One is for definitive assignment, the other is for uninitialized use detection.
  * The only difference between the two is behavior on delete.
  * On delete, the name is not assigned to meaningful value (we need to check at runtime if it's initialized),
  * but it is not uninitialized either (because delete statement will set it to Uninitialized.instance).
  * This way, codegen doesn't have to emit an explicit initialization for it.
- * 
+ *
  * Consider:
- * 
+ *
  * def f():
  *     print a  # uninitialized use
  *     a = 10
- * 
+ *
  * We compile this into:
- * 
+ *
  * static void f$f0() {
  *     object a = Uninitialized.instance; // explicit initialization because of the uninitialized use
  *     // print statement
@@ -35,16 +35,16 @@ using Microsoft.Scripting;
  *     // a = 10
  *     a = 10
  * }
- * 
+ *
  * Whereas:
- * 
+ *
  * def f():
  *     a = 10
  *     del a        # explicit deletion which will set to Uninitialized.instance
  *     print a
- * 
+ *
  * compiles into:
- * 
+ *
  * static void f$f0() {
  *     object a = 10;                        // a = 10
  *     a = Uninitialized.instance;           // del a
@@ -53,22 +53,22 @@ using Microsoft.Scripting;
  *     else
  *       Ops.Print(a);
  * }
- * 
+ *
  * The bit arrays in the flow checker hold the state and upon encountering NameExpr we figure
  * out whether the name has not yet been initialized at all (in which case we need to emit the
  * first explicit assignment to Uninitialized.instance and guard the use with an inlined check)
  * or whether it is definitely assigned (we don't need to inline the check)
  * or whether it may be uninitialized, in which case we must only guard the use by inlining the Uninitialized check
- * 
+ *
  * More details on the bits.
- * 
+ *
  * First bit (variable is assigned a value):
  *  1 .. variable is definitely assigned to a value
  *  0 .. variable is not assigned to a value at this point (it could have been deleted or just not assigned yet)
  * Second bit (variable is assigned a value or is deleted):
  *  1 .. variable is definitely initialized (either by a value or by deletion)
  *  0 .. variable is not initialized at this point (neither assigned nor deleted)
- * 
+ *
  * Valid combinations:
  *  11 .. initialized
  *  01 .. deleted
@@ -122,7 +122,7 @@ namespace IronPython.Compiler.Ast {
         public FlowDeleter(FlowChecker fc) {
             _fc = fc;
         }
- 
+
         public override bool Walk(NameExpression node) {
             _fc.Delete(node.Name);
             return false;
@@ -283,6 +283,69 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
+        // NamedExpression
+        public override bool Walk(NamedExpression node) {
+            node.Value.Walk(this);
+            node.Target.Walk(_fdef);
+            return false;
+        }
+
+        // Only named expressions define names inside an expression, so the parts that may not run are walked on a
+        // copy of the bits that is then dropped.
+        private void WalkConditionally(Expression node) {
+            BitArray save = _bits;
+            _bits = new BitArray(_bits);
+            node.Walk(this);
+            _bits = save;
+        }
+
+        public override bool Walk(AssertStatement node) {
+            if (node.Optimize) {
+                WalkConditionally(node.Test);
+            } else {
+                node.Test.Walk(this);
+            }
+            if (node.Message != null) {
+                WalkConditionally(node.Message);
+            }
+            return false;
+        }
+
+        public override bool Walk(AndExpression node) {
+            node.Left.Walk(this);
+            WalkConditionally(node.Right);
+            return false;
+        }
+
+        public override bool Walk(OrExpression node) {
+            node.Left.Walk(this);
+            WalkConditionally(node.Right);
+            return false;
+        }
+
+        public override bool Walk(ConditionalExpression node) {
+            node.Test.Walk(this);
+            BitArray save = _bits;
+            _bits = new BitArray(save);
+            node.TrueExpression.Walk(this);
+            BitArray result = _bits;
+            _bits = save;
+            node.FalseExpression.Walk(this);
+            _bits.And(result);
+            return false;
+        }
+
+        public override bool Walk(BinaryExpression node) {
+            // a < b < c is BinaryExpression(a, BinaryExpression(b, c)); c only runs if a < b
+            if (BinaryExpression.IsComparison(node) && node.Right is BinaryExpression right && BinaryExpression.IsComparison(right)) {
+                node.Left.Walk(this);
+                right.Left.Walk(this);
+                WalkConditionally(right.Right);
+                return false;
+            }
+            return true;
+        }
+
         // NameExpr
         public override bool Walk(NameExpression node) {
             if (_variables.TryGetValue(node.Name, out PythonVariable binding)) {
@@ -415,16 +478,20 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(IfStatement node) {
             BitArray result = new BitArray(_bits.Length, true);
             BitArray save = _bits;
+            BitArray tests = new BitArray(save);
 
             _bits = new BitArray(_bits.Length);
 
             foreach (IfStatementTest ist in node.Tests) {
                 // Set the initial branch value to bits
                 _bits.SetAll(false);
-                _bits.Or(save);
+                _bits.Or(tests);
 
                 // Flow the test first
                 ist.Test.Walk(this);
+                // Later branches only run after this test (named expressions)
+                tests.SetAll(false);
+                tests.Or(_bits);
                 // Flow the body
                 ist.Body.Walk(this);
                 // Intersect
@@ -433,7 +500,7 @@ namespace IronPython.Compiler.Ast {
 
             // Set the initial branch value to bits
             _bits.SetAll(false);
-            _bits.Or(save);
+            _bits.Or(tests);
 
             // Flow the else_
             node.ElseStatement?.Walk(this);

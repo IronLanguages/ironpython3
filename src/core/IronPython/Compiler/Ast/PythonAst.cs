@@ -153,9 +153,21 @@ namespace IronPython.Compiler.Ast {
         /// be reduced.
         /// </summary>
         public void Bind() {
+            if (!SkipNamedExpressionCheck) NamedExpressionChecker.Check(this, _compilerContext);
             PythonNameBinder.BindAst(this, _compilerContext);
-            StarredExpressionChecker.Check(this, _compilerContext);
+            if (!SkipStarredExpressionCheck) StarredExpressionChecker.Check(this, _compilerContext);
         }
+
+        /// <summary>
+        /// Set by the parser when the source has no named expressions, so there is nothing for <see cref="NamedExpressionChecker"/> to find.
+        /// </summary>
+        internal bool SkipNamedExpressionCheck { get; set; }
+
+        /// <summary>
+        /// Set by the parser when the source has no starred expressions outside of call arguments and class bases,
+        /// so there is nothing for <see cref="StarredExpressionChecker"/> to find.
+        /// </summary>
+        internal bool SkipStarredExpressionCheck { get; set; }
 
         public override string Name {
             get {

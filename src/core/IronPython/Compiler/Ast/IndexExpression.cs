@@ -91,6 +91,8 @@ namespace IronPython.Compiler.Ast {
 
         internal override string CheckDelete() => null;
 
+        public override string NodeName => "subscript";
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 Target?.Walk(walker);

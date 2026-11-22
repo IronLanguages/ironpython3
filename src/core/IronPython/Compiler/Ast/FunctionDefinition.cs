@@ -124,7 +124,7 @@ namespace IronPython.Compiler.Ast {
         internal override bool IsGeneratorMethod => IsGenerator;
 
         // Async-generator (PEP 525) channels. The StrongBox *values* are per-async-generator instance,
-        // allocated per stack frame at runtime in the function body. 
+        // allocated per stack frame at runtime in the function body.
         // Declared/assigned in the body, captured by the generator (its yields read them through Parent),
         // and handed to the PythonAsyncGenerator wrapper, which writes them before each resume:
         //   AsyncSendSlot  — the value of `x = yield z` (asend(v); None for __anext__/async for).
@@ -147,6 +147,8 @@ namespace IronPython.Compiler.Ast {
         /// The function is a generator
         /// </summary>
         public bool IsGenerator { get; set; }
+
+        internal bool IsGeneratorExpression { get; set; }
 
         internal bool GeneratorStop { get; set; }
 
@@ -363,7 +365,7 @@ namespace IronPython.Compiler.Ast {
                 ret = Ast.Call(
                     AstMethods.MakeFunctionDebug,                                                   // method
                     Parent.LocalContext,                                                            // 1. Emit CodeContext
-                    FuncCodeExpr,                                                                   // 2. FunctionCode                        
+                    FuncCodeExpr,                                                                   // 2. FunctionCode
                     ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
@@ -634,7 +636,7 @@ namespace IronPython.Compiler.Ast {
 
         /// <summary>
         /// Creates the LambdaExpression which implements the body of the function.
-        /// 
+        ///
         /// The functions signature is either "object Function(PythonFunction, ...)"
         /// where there is one object parameter for each user defined parameter or
         /// object Function(PythonFunction, object[]) for functions which take more

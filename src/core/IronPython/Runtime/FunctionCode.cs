@@ -1279,22 +1279,49 @@ namespace IronPython.Runtime {
     ///   Used to build the tracing variant of an async function: the debug-enabled node instruments its own body when reduced, so the
     ///   async body becomes traceable while the outer factory stays untraced. A function's own async node is the only one in its lambda
     ///   — nested defs compile to their own lambdas/codes — so a single replacement is made, and the node is not descended into.
+    ///
+    ///   <para>The parameters and locals of the function are variables of the factory, which the async body accesses through closure. So
+    ///   the variables in scope at the node — the parameters of the enclosing lambdas and the variables of the enclosing blocks — are
+    ///   handed to the node, for the frame of the body to expose them as its locals.</para>
     /// </remarks>
     internal sealed class AsyncDebugHookInjector : ExpressionVisitor {
         private readonly DebugContext _debugContext;
         private readonly DebugLambdaInfo _debugLambdaInfo;
+
+        // The variables in scope at the node being visited, outermost first.
+        private readonly List<ParameterExpression> _scope = new List<ParameterExpression>();
 
         internal AsyncDebugHookInjector(DebugContext debugContext, DebugLambdaInfo debugLambdaInfo) {
             _debugContext = debugContext;
             _debugLambdaInfo = debugLambdaInfo;
         }
 
+        protected override Expression VisitLambda<T>(Expression<T> node) {
+            int count = _scope.Count;
+            _scope.AddRange(node.Parameters);
+            try {
+                return base.VisitLambda(node);
+            } finally {
+                _scope.RemoveRange(count, _scope.Count - count);
+            }
+        }
+
+        protected override Expression VisitBlock(BlockExpression node) {
+            int count = _scope.Count;
+            _scope.AddRange(node.Variables);
+            try {
+                return base.VisitBlock(node);
+            } finally {
+                _scope.RemoveRange(count, _scope.Count - count);
+            }
+        }
+
         protected override Expression VisitExtension(Expression node) {
             switch (node) {
                 case AsyncExpression ae:
-                    return ae.WithDebugInfo(_debugContext, _debugLambdaInfo);
+                    return ae.WithDebugInfo(_debugContext, _debugLambdaInfo, _scope);
                 case AsyncEnumerableExpression aee:
-                    return aee.WithDebugInfo(_debugContext, _debugLambdaInfo);
+                    return aee.WithDebugInfo(_debugContext, _debugLambdaInfo, _scope);
                 default:
                     return base.VisitExtension(node);
             }

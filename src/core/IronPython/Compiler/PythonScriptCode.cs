@@ -116,7 +116,7 @@ namespace IronPython.Compiler {
             if (ShouldInterpret(pc)) {
                 func = lambda.Compile(pc.Options.CompilationThreshold);
             } else {
-                func = lambda.ReduceToLambda().Compile(pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
+                func = CompilerHelpers.Compile(lambda.ReduceToLambda(), pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
             }
 
             return func;
@@ -174,7 +174,7 @@ namespace IronPython.Compiler {
 
                 LookupCompilationDelegate func = ShouldInterpret(pc)
                     ? lambda.LightCompile(pc.Options.CompilationThreshold)
-                    : lambda.Compile(pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
+                    : CompilerHelpers.Compile(lambda, pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
 
                 _tracingTarget = func;
                 debugProperties.Code = EnsureFunctionCode(_tracingTarget, true, true);

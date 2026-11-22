@@ -1058,7 +1058,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [LightThrowing]
         public static object? next([NotNone] PythonGenerator gen, object? defaultVal) {
-            object res = gen.__next__();
+            object? res = gen.__next__();
             Exception exc = LightExceptions.GetLightException(res);
 
             if (exc != null && exc is StopIterationException) {

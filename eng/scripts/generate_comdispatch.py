@@ -14,7 +14,8 @@ class VariantType:
         includeInUnionTypes=True,
         getStatements=None,
         setStatements=None,
-        critical=False):
+        critical=False,
+        nullable=False):
 
         self.emitAccessors = emitAccessors
         self.variantType = variantType
@@ -33,6 +34,7 @@ class VariantType:
         self.name = self.variantType.lower().replace(firstChar.lower(), firstChar, 1)
         self.accessorName = "As" + self.name
         self.critical = critical
+        self.nullable = nullable
 
     def write_UnionTypes(self, cw):
         if not self.includeInUnionTypes: return
@@ -51,7 +53,7 @@ class VariantType:
 
         cw.write("// VT_%s" % self.variantType)
 
-        cw.enter_block('public %s %s' % (self.managedType, self.accessorName))
+        cw.enter_block('public %s%s %s' % (self.managedType, '?' if self.nullable else '', self.accessorName))
 
         # Getter
         if not transparent and self.critical: gen_exposed_code_security(cw)
@@ -90,11 +92,11 @@ class VariantType:
 
     def write_accessor_propertyinfo(self, cw):
         if self.emitAccessors == True :
-            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetProperty(nameof(Variant.%s));' % (self.variantType, self.accessorName))
+            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetProperty(nameof(Variant.%s))!;' % (self.variantType, self.accessorName))
 
     def write_byref_setters(self, cw):
         if self.emitAccessors == True :
-            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetMethod(nameof(Variant.SetAsByref%s));' % (self.variantType, self.name))
+            cw.write('case VarEnum.VT_%s: return typeof(Variant).GetMethod(nameof(Variant.SetAsByref%s))!;' % (self.variantType, self.name))
 
     def write_ComToManagedPrimitiveTypes(self, cw):
         wrapper_types = ["CY", "DISPATCH", "UNKNOWN", "ERROR"]
@@ -191,7 +193,8 @@ variantTypes = [
                 "    Marshal.GetNativeVariantForObject(value, UnsafeMethods.ConvertVariantByrefToPtr(ref this));",
                 "}"
         ],
-        critical=True),
+        critical=True,
+        nullable=True),
     VariantType("UNKNOWN", "Object",
         isPrimitiveType=False,
         unmanagedRepresentationType="IntPtr",
@@ -206,7 +209,8 @@ variantTypes = [
                 "    _typeUnion._unionTypes._unknown = Marshal.GetIUnknownForObject(value);",
                 "}"
         ],
-        critical=True),
+        critical=True,
+        nullable=True),
     VariantType("DISPATCH", "Object",
         isPrimitiveType=False,
         unmanagedRepresentationType="IntPtr",
@@ -221,7 +225,8 @@ variantTypes = [
                 "    _typeUnion._unionTypes._unknown = GetIDispatchForObject(value);",
                 "}"
         ],
-        critical=True),
+        critical=True,
+        nullable=True),
     VariantType("VARIANT", "Object",
         emitAccessors=False,
         isPrimitiveType=False,

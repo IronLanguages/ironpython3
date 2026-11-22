@@ -21,7 +21,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
-    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, ICodeFormattable, IEnumerable, IWeakReferenceable {
+    public sealed class PythonGenerator : IEnumerator, IEnumerator<object?>, ICodeFormattable, IEnumerable, IWeakReferenceable {
         private readonly Func<MutableTuple, object>/*!*/ _next;     // The delegate which contains the user code to perform the iteration.
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
@@ -70,7 +70,7 @@ namespace IronPython.Runtime {
         #region Python Public APIs
 
         [LightThrowing]
-        public object __next__() {
+        public object? __next__() {
             // Python's language policy on generators is that attempting to access after it's closed (returned)
             // just continues to throw StopIteration exceptions.
             if (Closed) {
@@ -95,8 +95,8 @@ namespace IronPython.Runtime {
         /// The calling thread must hold the generator, see <see cref="CheckSetActive"/>.
         /// </summary>
         [LightThrowing]
-        private object Next() {
-            object res = NextWorker();
+        private object? Next() {
+            object? res = NextWorker();
             if (res == OperationFailed.Value) {
                 if (FinalValue is null)
                     return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException());
@@ -114,18 +114,18 @@ namespace IronPython.Runtime {
         /// Use multiple overloads to resolve the default parameters.
         /// </summary>
         [LightThrowing]
-        public object @throw(object? type) {
+        public object? @throw(object? type) {
             return @throw(type, null, null, false);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value) {
+        public object? @throw(object? type, object? value) {
             return @throw(type, value, null, false);
         }
 
         [LightThrowing]
         // The signature (type[, value[, traceback]]) is deprecated in CPython 3.12
-        public object @throw(object? type, object? value, object? traceback) {
+        public object? @throw(object? type, object? value, object? traceback) {
             return @throw(type, value, traceback, false);
         }
 
@@ -137,7 +137,7 @@ namespace IronPython.Runtime {
         /// If the generator catches the exception and yields another value, that is the return value of g.throw().
         /// </summary>
         [LightThrowing]
-        private object @throw(object? type, object? value, object? traceback, bool finalizing) {
+        private object? @throw(object? type, object? value, object? traceback, bool finalizing) {
             // Do argument validation outside of the generator's body and do not update the state on failure
             if (PythonOps.ValidateThrowArguments(type, value, traceback) is Exception error) return LightExceptions.Throw(error);
 
@@ -176,7 +176,7 @@ namespace IronPython.Runtime {
         /// the result of yield when used as an expression.
         /// </summary>
         [LightThrowing]
-        public object send(object? value) {
+        public object? send(object? value) {
             if (Closed) {
                 return LightExceptions.Throw(PythonOps.StopIteration());
             }
@@ -221,7 +221,7 @@ namespace IronPython.Runtime {
 
             // This function body is the psuedo code straight from Pep 342.
             try {
-                object res = @throw(new GeneratorExitException(), null, null, finalizing);
+                object? res = @throw(new GeneratorExitException(), null, null, finalizing);
                 Exception lightEh = LightExceptions.GetLightException(res);
                 if (lightEh != null) {
                     if (lightEh is StopIterationException || lightEh is GeneratorExitException) {
@@ -284,7 +284,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private object CurrentValue {
+        private object? CurrentValue {
             get {
                 return _dataTuple.Item001;
             }
@@ -305,7 +305,8 @@ namespace IronPython.Runtime {
         private static MutableTuple<int, object> GetBigData(MutableTuple data) {
             MutableTuple<int, object>? smallGen;
             do {
-                data = (MutableTuple)data.GetValue(0);
+                // the first item of a nested tuple is the tuple holding the generator's state and current value, or a tuple nesting it
+                data = data.GetValue(0) as MutableTuple ?? throw new InvalidOperationException("Generator data is not a nested tuple.");
             } while ((smallGen = (data as MutableTuple<int, object>)) == null);
 
             return smallGen;
@@ -465,7 +466,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Core implementation of Python's next() method.
         /// </summary>
-        private object NextWorker() {
+        private object? NextWorker() {
             RestoreFunctionStack();
 
             _state.PrevException = PythonOps.CurrentExceptionState;
@@ -668,7 +669,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerator Members
 
-        object IEnumerator.Current {
+        object? IEnumerator.Current {
             get { return CurrentValue; }
         }
 
@@ -678,9 +679,9 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IEnumerator<object> Members
+        #region IEnumerator<object?> Members
 
-        object IEnumerator<object>.Current {
+        object? IEnumerator<object?>.Current {
             get { return CurrentValue; }
         }
 

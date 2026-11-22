@@ -16,7 +16,7 @@ namespace IronPython.Runtime.Operations {
     public static class EnumOps {
         [SpecialName]
         public static object BitwiseOr(object self, object other) {
-            object result = EnumUtils.BitwiseOr(self, other);
+            object? result = EnumUtils.BitwiseOr(self, other);
             if (result != null) {
                 return result;
             }
@@ -25,7 +25,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object BitwiseAnd(object self, object other) {
-            object result = EnumUtils.BitwiseAnd(self, other);
+            object? result = EnumUtils.BitwiseAnd(self, other);
             if (result != null) {
                 return result;
             }
@@ -35,7 +35,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object ExclusiveOr(object self, object other) {
-            object result = EnumUtils.ExclusiveOr(self, other);
+            object? result = EnumUtils.ExclusiveOr(self, other);
             if (result != null) {
                 return result;
             }
@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
          public static object OnesComplement(object self) {
-            object result = EnumUtils.OnesComplement(self);
+            object? result = EnumUtils.OnesComplement(self);
             if (result != null) {
                 return result;
             }

@@ -112,7 +112,8 @@ namespace IronPython.Runtime {
         }
 
         internal ClosureCell GetCell(int i) {
-            return ((ClosureCell)_boxes.GetNestedValue(_args.Length, i));
+            // the tuple is created from the closure cells of the scope, see ScopeStatement.CreateLocalContext
+            return _boxes.GetNestedValue(_args.Length, i) as ClosureCell ?? throw new InvalidOperationException($"Closure tuple item {i} is not a closure cell.");
         }
     }
 }

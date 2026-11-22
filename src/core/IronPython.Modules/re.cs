@@ -884,7 +884,7 @@ namespace IronPython.Modules {
 
             PatternKey key = new PatternKey(pattern.GetType(), pattern, flags);
             lock (_cachedPatterns) {
-                if (_cachedPatterns.TryGetValue(key, out Pattern res)) {
+                if (_cachedPatterns.TryGetValue(key, out Pattern? res)) {
                     if (!compiled || res._re.Options.HasFlag(RegexOptions.Compiled)) {
                         return res;
                     }

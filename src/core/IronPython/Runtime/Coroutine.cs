@@ -47,7 +47,7 @@ namespace IronPython.Runtime {
 
 
         [LightThrowing]
-        public object send(object? value) {
+        public object? send(object? value) {
             // Fast path: task already completed. Dispatch on terminal state without
             // any try/catch — Result on a Faulted/Canceled task throws, so we must
             // check IsCanceled / IsFaulted before reading it.
@@ -68,10 +68,10 @@ namespace IronPython.Runtime {
 
 
         [LightThrowing]
-        public object @throw(object? value) => @throw(value, null, null);
+        public object? @throw(object? value) => @throw(value, null, null);
 
         [LightThrowing]
-        public object @throw(object? type, object? value) => @throw(type, value, null);
+        public object? @throw(object? type, object? value) => @throw(type, value, null);
 
         /// <summary>
         ///   Throw an exception into the generator at the suspended <c>yield</c>. Returns an awaitable.
@@ -87,7 +87,7 @@ namespace IronPython.Runtime {
         ///   and may be removed in a future version of Python.
         /// </remarks>
         [LightThrowing]
-        public object @throw(object? type, object? value, object? traceback) {
+        public object? @throw(object? type, object? value, object? traceback) {
             // Validate up front so we don't mutate any state on bad input.
             if (PythonOps.ValidateThrowArguments(type, value, traceback) is Exception error) return LightExceptions.Throw(error);
 
@@ -160,23 +160,23 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
-        public object send(object? value) {
+        public object? send(object? value) {
             return _generator.send(value);
         }
 
         [LightThrowing]
-        public object @throw(object? type) {
+        public object? @throw(object? type) {
             return _generator.@throw(type);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value) {
+        public object? @throw(object? type, object? value) {
             return _generator.@throw(type, value);
         }
 
         [LightThrowing]
         // The signature (type[, value[, traceback]]) is deprecated in CPython 3.12
-        public object @throw(object? type, object? value, object? traceback) {
+        public object? @throw(object? type, object? value, object? traceback) {
             return _generator.@throw(type, value, traceback);
         }
 
@@ -210,7 +210,7 @@ namespace IronPython.Runtime {
         public Task<object?> AsTask() {
             return Task.Run(() => {
                 while (true) {
-                    object result = send(null);
+                    object? result = send(null);
 
                     if (LightExceptions.IsLightException(result)) {
                         var clrExc = LightExceptions.GetLightException(result);
@@ -273,27 +273,27 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
-        public object __next__() {
+        public object? __next__() {
             return _coroutine.send(null);
         }
 
         [LightThrowing]
-        public object send(object? value) {
+        public object? send(object? value) {
             return _coroutine.send(value);
         }
 
         [LightThrowing]
-        public object @throw(object? type) {
+        public object? @throw(object? type) {
             return _coroutine.@throw(type);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value) {
+        public object? @throw(object? type, object? value) {
             return _coroutine.@throw(type, value);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value, object? traceback) {
+        public object? @throw(object? type, object? value, object? traceback) {
             return _coroutine.@throw(type, value, traceback);
         }
 

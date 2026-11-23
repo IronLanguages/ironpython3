@@ -26,7 +26,6 @@ def load_tests(loader, standard_tests, pattern):
                 test.test_threading.ConditionAsRLockTests('test_weakref_deleted'), # AssertionError
                 test.test_threading.PyRLockTests('test_weakref_deleted'), # AssertionError
                 test.test_threading.ThreadTests('test_main_thread_during_shutdown'), # AssertionError
-                test.test_threading.ThreadingExceptionTests('test_bare_raise_in_brand_new_thread'), # AssertionError: TypeError('exceptions must derive from BaseException',) is not an instance of <class 'RuntimeError'>
             ]
 
         skip_tests = [

@@ -225,7 +225,7 @@ for sym, rsym, name, fullName in groupings:
 
 simple = [(',', 'comma'), (':', 'colon'), (';', 'semicolon'),
         ('=', 'assign'), ('~', 'twiddle'), ('@', 'at'), ('=>', 'rarrow', 'RightArrow'),
-        ('->', 'rannotation', 'ReturnAnnotation')]
+        ('->', 'rannotation', 'ReturnAnnotation'), (':=', 'walrus', 'Walrus')]
 for info in simple:
     if len(info) == 2:
         sym, name = info

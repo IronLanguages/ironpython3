@@ -26,6 +26,13 @@ is_net70 = False
 is_net80 = False
 is_net90 = False
 is_net100 = False
+is_net110 = False
+is_net60_or_greater = False
+is_net70_or_greater = False
+is_net80_or_greater = False
+is_net90_or_greater = False
+is_net100_or_greater = False
+is_net110_or_greater = False
 is_mono = False
 is_netstandard = False
 if is_ironpython:
@@ -38,6 +45,16 @@ if is_ironpython:
     is_net80 = clr.FrameworkDescription.startswith(".NET 8.0")
     is_net90 = clr.FrameworkDescription.startswith(".NET 9.0")
     is_net100 = clr.FrameworkDescription.startswith(".NET 10.0")
+    is_net110 = clr.FrameworkDescription.startswith(".NET 11.0")
+    if is_netcoreapp:
+        import System
+        _major = System.Environment.Version.Major
+        is_net60_or_greater = _major >= 6
+        is_net70_or_greater = _major >= 7
+        is_net80_or_greater = _major >= 8
+        is_net90_or_greater = _major >= 9
+        is_net100_or_greater = _major >= 10
+        is_net110_or_greater = _major >= 11
     is_mono = clr.IsMono
     is_netstandard = clr.TargetFramework.startswith(".NETStandard")
 

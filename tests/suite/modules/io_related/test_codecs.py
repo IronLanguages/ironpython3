@@ -14,6 +14,7 @@ many special cases that are not being covered *yet*.
 
 import array
 import codecs
+import importlib
 import os
 import re
 import shutil
@@ -22,11 +23,8 @@ import subprocess
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, is_linux, is_windows, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, is_windows, run_test, skipUnlessIronPython
 from iptest.misc_util import ip_supported_encodings
-
-if is_cpython and is_linux:
-    import time
 
 class CodecTest(IronPythonTestCase):
     def test_escape_decode(self):
@@ -1840,8 +1838,7 @@ class CodecTest(IronPythonTestCase):
 
                     f.write("# coding: %s" % (coding))
 
-                if is_cpython and is_linux:
-                    time.sleep(0.01)
+                importlib.invalidate_caches()
                 __import__(temp_mod_name)
                 os.remove(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"))
 

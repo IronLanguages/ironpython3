@@ -105,13 +105,23 @@ namespace IronPython.Runtime.Exceptions {
             _back = back;
         }
 
-        internal TraceBackFrame(PythonTracebackListener traceAdapter, FunctionCode code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IDictionary<object, object>> scopeCallback) {
+        internal TraceBackFrame(PythonTracebackListener traceAdapter, FunctionCode code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IDictionary<object, object>> scopeCallback, bool pushedByCaller) {
             _traceAdapter = traceAdapter;
             _code = code;
             _back = back;
             _debugProperties = debugProperties;
             _scopeCallback = scopeCallback;
+            PushedByCaller = pushedByCaller;
         }
+
+        /// <summary>
+        ///   True if the frame stack entry of this frame was pushed, and is popped, by the caller of the code rather than the trace listener.
+        /// </summary>
+        /// <remarks>
+        ///   This is the case for module code run by <c>exec</c> or a script runner, which push the entry for it since module code has
+        ///   no frame push of its own (see <see cref="PythonTracebackListener"/>).
+        /// </remarks>
+        internal bool PushedByCaller { get; }
 
         [SpecialName, PropertyMethod]
         public object Getf_trace() {
@@ -188,7 +198,9 @@ namespace IronPython.Runtime.Exceptions {
 
         public object f_builtins {
             get {
-                return _context.LanguageContext.BuiltinModuleDict;
+                // a frame created by the trace listener has no context of its own, but the listener knows the language context
+                PythonContext context = _context?.LanguageContext ?? _traceAdapter.PythonContext;
+                return context.BuiltinModuleDict;
             }
         }
 
@@ -222,6 +234,12 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             FunctionCode funcCode = _debugProperties.Code;
+#if FEATURE_NET_ASYNC
+            // The frame of a traced async body reports its location but cannot change it.
+            if ((funcCode.Flags & FunctionAttributes.Coroutine) != 0) {
+                throw PythonOps.ValueError("can't jump in an async function or async generator");
+            }
+#endif
             Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations = _debugProperties.LoopAndFinallyLocations;
             Dictionary<int, bool> handlerLocations = _debugProperties.HandlerLocations;
 

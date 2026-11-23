@@ -46,6 +46,7 @@ namespace IronPython.Compiler.Ast {
         private CompilationMode.ConstantInfo _contextInfo;
         private Dictionary<PythonVariable, MSAst.Expression> _globalVariables = new Dictionary<PythonVariable, MSAst.Expression>();
         internal readonly Profiler _profiler;                            // captures timing data if profiling
+        private bool? _adaptiveCompilationDisabled;                      // whether -X NoAdaptiveCompilation applies to this source, once known
 
         internal const string GlobalContextName = "$globalContext";
         internal static MSAst.ParameterExpression _functionCode = Ast.Variable(typeof(FunctionCode), "$functionCode");
@@ -141,6 +142,10 @@ namespace IronPython.Compiler.Ast {
             _body = body;
             _lineLocations = lineLocations;
             _languageFeatures = languageFeatures;
+
+            // As in CPython 3.4, the code starts at its first statement (which gives co_firstlineno) and ends with its body.
+            int start = Math.Max(body is SuiteStatement { Statements: [var first, ..] } ? first.StartIndex : body.StartIndex, 0);
+            IndexSpan = new IndexSpan(start, Math.Max(body.EndIndex - start, 0));
         }
 
         /// <summary>
@@ -148,9 +153,21 @@ namespace IronPython.Compiler.Ast {
         /// be reduced.
         /// </summary>
         public void Bind() {
+            if (!SkipNamedExpressionCheck) NamedExpressionChecker.Check(this, _compilerContext);
             PythonNameBinder.BindAst(this, _compilerContext);
-            StarredExpressionChecker.Check(this, _compilerContext);
+            if (!SkipStarredExpressionCheck) StarredExpressionChecker.Check(this, _compilerContext);
         }
+
+        /// <summary>
+        /// Set by the parser when the source has no named expressions, so there is nothing for <see cref="NamedExpressionChecker"/> to find.
+        /// </summary>
+        internal bool SkipNamedExpressionCheck { get; set; }
+
+        /// <summary>
+        /// Set by the parser when the source has no starred expressions outside of call arguments and class bases,
+        /// so there is nothing for <see cref="StarredExpressionChecker"/> to find.
+        /// </summary>
+        internal bool SkipStarredExpressionCheck { get; set; }
 
         public override string Name {
             get {
@@ -369,6 +386,7 @@ namespace IronPython.Compiler.Ast {
                 var end = IndexToLocation(ret.Expression.EndIndex);
 
                 return Ast.Block(
+                    MakeEntrySequencePoint(),
                     Ast.DebugInfo(
                         _document,
                         start.Line,
@@ -381,6 +399,10 @@ namespace IronPython.Compiler.Ast {
             }
 
             ReadOnlyCollectionBuilder<MSAst.Expression> block = new ReadOnlyCollectionBuilder<MSAst.Expression>();
+
+            // Add beginning sequence point: the location of the 'call' trace event, as in FunctionDefinition.
+            // Without it, the first statement would take that role, and fire no 'line' event of its own.
+            block.Add(MakeEntrySequencePoint());
             AddInitialization(block);
 
             string doc = GetDocumentation(_body);
@@ -415,6 +437,17 @@ namespace IronPython.Compiler.Ast {
 
             return body;
         }
+
+        /// <summary>
+        ///   Makes the sequence point of the 'call' trace event, at the start of the code (see <see cref="ParsingFinished"/>).
+        /// </summary>
+        private MSAst.Expression MakeEntrySequencePoint() {
+            var loc = Start;
+            return AddDebugInfo(
+                AstUtils.Empty(),
+                new SourceSpan(new SourceLocation(0, loc.Line, loc.Column), new SourceLocation(0, loc.Line, int.MaxValue)));
+        }
+
 
         private void AddInitialization(ReadOnlyCollectionBuilder<MSAst.Expression> block) {
             if (IsModule) {
@@ -536,6 +569,15 @@ namespace IronPython.Compiler.Ast {
                 return _mode;
             }
         }
+
+        /// <summary>
+        /// Returns whether -X NoAdaptiveCompilation applies to this source.
+        /// </summary>
+        /// <remarks>
+        /// It depends only on the options and the source unit, so it is evaluated once and remains valid in <see cref="MakeLookupCode"/>.
+        /// </remarks>
+        internal bool IsAdaptiveCompilationDisabled
+            => _adaptiveCompilationDisabled ??= PyContext.IsAdaptiveCompilationDisabled(_compilerContext.SourceUnit);
 
         private MSAst.Expression GetGlobalContext() {
             if (_contextInfo != null) {

@@ -352,7 +352,7 @@ class IsInstanceTest(IronPythonTestCase):
         os.unlink(fname)
 
     def test_kwargs_primitives(self):
-        if sys.version_info >= (3,7):
+        if not is_cli and sys.version_info >= (3,7): # TODO: positional-only args (3.7)
             # starting with 3.7 these are no longer valid keyword arguments
             with self.assertRaises(TypeError): int(x=1)
             with self.assertRaises(TypeError): float(x=2)

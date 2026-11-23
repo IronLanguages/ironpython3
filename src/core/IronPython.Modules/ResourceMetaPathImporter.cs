@@ -5,19 +5,19 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
-using IronPython.Zlib;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Modules {
     /// <summary>
-    /// Implementes a resource-based meta_path importer as described in PEP 302.
+    /// Implements a resource-based meta_path importer as described in PEP 302.
     /// </summary>
     [PythonType]
     public class ResourceMetaPathImporter {
@@ -112,7 +112,7 @@ module, or raises ResourceImportError if it wasn't found."
                                                   ModuleOptions.None, out script);
 
             var dict = mod.__dict__;
-            // we do these here because we don't want CompileModule to initialize the module until we've set 
+            // we do these here because we don't want CompileModule to initialize the module until we've set
             // up some additional stuff
             dict.Add("__name__", fullname);
             dict.Add("__loader__", this);
@@ -179,7 +179,7 @@ module, or raises ResourceImportError if it wasn't found."
 
             if (data != null) {
                 if (isbytecode) {
-                    // would put in code to unmarshal the bytecode here...                                     
+                    // would put in code to unmarshal the bytecode here...
                 } else {
                     code = data;
                 }
@@ -411,23 +411,26 @@ module, or raises ResourceImportError if it wasn't found."
                         reader.BaseStream.Seek(fileOffset, SeekOrigin.Begin);
                         byte[] rawData;
                         try {
-                            rawData = reader.ReadBytes(compress == 0 ? dataSize : dataSize + 1);
+                            rawData = reader.ReadBytes(dataSize);
                         } catch {
                             unpackingError = "Can't read data";
                             return false;
                         }
 
-                        if (compress != 0) {
-                            rawData[dataSize] = (byte)'Z';
-                        }
-
-                        result = compress == 0 ? rawData : ZlibModule.Decompress(rawData, -15);
+                        result = compress == 0 ? rawData : Inflate(rawData);
                         return true;
                     }
                 } catch (Exception exception) {
                     unpackingError = String.Format("{0}: {1}", exception.GetType().Name, exception.Message);
                     return false;
                 }
+            }
+
+            private static byte[] Inflate(byte[] data) {
+                using var input = new DeflateStream(new MemoryStream(data), CompressionMode.Decompress);
+                using var output = new MemoryStream();
+                input.CopyTo(output);
+                return output.ToArray();
             }
         }
     }

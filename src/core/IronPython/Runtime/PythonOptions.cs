@@ -127,6 +127,15 @@ namespace IronPython.Runtime {
         /// </summary>
         public Regex? NoDebug { get; }
 
+        /// <summary>
+        /// Returns a regular expression of Python files in which adaptive compilation is disabled.
+        /// </summary>
+        /// <remarks>
+        /// Only used when <see cref="LanguageOptions.NoAdaptiveCompilation"/> is set. If null, adaptive compilation is disabled in all code,
+        /// including code compiled by compile, exec and eval, which otherwise is always compiled adaptively.
+        /// </remarks>
+        public Regex? NoAdaptiveCompilationFilter { get; }
+
         public bool Quiet { get; }
 
         /// <summary>
@@ -163,6 +172,7 @@ namespace IronPython.Runtime {
             GCStress = GetOption<int?>(options, "GCStress", null);
             Tracing = GetOption(options, "Tracing", false);
             NoDebug = GetOption(options, "NoDebug", (Regex?)null);
+            NoAdaptiveCompilationFilter = GetOption(options, "NoAdaptiveCompilationFilter", (Regex?)null);
             Quiet = GetOption(options, "Quiet", false);
             NoImportLib = GetOption(options, "NoImportLib", false);
             Isolated = GetOption(options, "Isolated", false);

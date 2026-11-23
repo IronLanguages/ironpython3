@@ -23,7 +23,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_types.MappingProxyTests('test_missing'), # AssertionError: 'missing=y' != None
             test.test_types.SimpleNamespaceTests('test_attrdel'), # KeyError: spam
             test.test_types.SimpleNamespaceTests('test_pickle'), # TypeError: protocol 0
-            test.test_types.TypesTests('test_float__format__'), # AssertionError: '1.12339e+200' != '1.1234e+200'
             test.test_types.TypesTests('test_internal_sizes'), # AttributeError: 'type' object has no attribute '__basicsize__'
         ]
         if sys.version_info >= (3, 6):

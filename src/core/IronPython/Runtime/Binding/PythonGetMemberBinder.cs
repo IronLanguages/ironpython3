@@ -125,6 +125,8 @@ namespace IronPython.Runtime.Binding {
                             break;
                         case "__file__":
                             return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).GetFile);
+                        case "__path__":
+                            return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).GetPath);
                         case "__dict__":
                             return (T)(object)new Func<CallSite, object, CodeContext, object>(new NamespaceTrackerDelegate(_name).GetDict);
                         case "__name__":
@@ -617,6 +619,14 @@ namespace IronPython.Runtime.Binding {
             public object GetFile(CallSite site, object self, CodeContext context) {
                 if (self != null && self.GetType() == typeof(NamespaceTracker)) {
                     return NamespaceTrackerOps.Get__file__((NamespaceTracker)self);
+                }
+
+                return Update(site, self, context);
+            }
+
+            public object GetPath(CallSite site, object self, CodeContext context) {
+                if (self != null && self.GetType() == typeof(NamespaceTracker)) {
+                    return NamespaceTrackerOps.Get__path__((NamespaceTracker)self);
                 }
 
                 return Update(site, self, context);

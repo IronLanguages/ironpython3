@@ -464,11 +464,13 @@ namespace IronPython.Runtime.Types {
 
                 DynamicMetaObject dict = args[index];
 
-                if (dict.Value is not IDictionary) {
+                if (dict.Value is not IDictionary || dict.Value is PythonDictionary && dict.Value.GetType() != typeof(PythonDictionary)) {
                     // The DefaultBinder only handles types that implement IDictionary.  Here we have an
                     // arbitrary user-defined mapping type.  We'll convert it into a PythonDictionary
                     // and then have an embedded dynamic site pass that dictionary through to the default
                     // binder.
+                    // Subclasses of dict are converted too since they may override __iter__, keys or __getitem__;
+                    // the rule is only restricted on the runtime type which is shared by all of them.
                     DynamicMetaObject[] dynamicArgs = ArrayUtils.Insert(function, args);
 
                     dynamicArgs[index + 1] = new DynamicMetaObject(
@@ -478,8 +480,7 @@ namespace IronPython.Runtime.Types {
                             args[index].Expression,
                             AstUtils.Constant(name)
                         ),
-                        BindingRestrictionsHelpers.GetRuntimeTypeRestriction(dict.Expression, dict.GetLimitType()),
-                        PythonOps.UserMappingToPythonDictionary(PythonContext.GetPythonContext(call).SharedContext, dict.Value, name)
+                        BindingRestrictionsHelpers.GetRuntimeTypeRestriction(dict.Expression, dict.GetLimitType())
                     );
 
                     if (call is IPythonSite) {

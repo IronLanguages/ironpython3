@@ -317,7 +317,31 @@ namespace IronPython.Compiler.Ast {
         /// Creates a method frame for tracking purposes and enforces recursion
         /// </summary>
         internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body)
-            => new FramedCodeExpression(localContext, codeObject, body);
+            => new FramedCodeExpression(localContext, codeObject, body, inGenerator: false);
+
+        /// <summary>
+        ///   Creates a method frame for the body of a generator, which hands the frame over to its <see cref="PythonGenerator"/>.
+        /// </summary>
+        /// <remarks>
+        ///   A generator body can suspend and resume on another thread, so it cannot pop its frame itself: it would pop it from the thread
+        ///   it started on. The generator removes the frame from the current thread at each suspension, adds it back at each resumption,
+        ///   and removes it when the body finishes.
+        /// </remarks>
+        internal static MSAst.Expression AddGeneratorFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body)
+            => new FramedCodeExpression(localContext, codeObject, body, inGenerator: true);
+
+#if FEATURE_NET_ASYNC
+        /// <summary>
+        ///   Creates a method frame for the body of an async function or async generator, which hands the frame over to
+        ///   <paramref name="asyncFrame"/>, an <see cref="AsyncBodyFrame"/>.
+        /// </summary>
+        /// <remarks>
+        ///   Like a generator body, an async body can suspend and resume on another thread, so it cannot pop its frame itself.
+        ///   The <see cref="AsyncBodyFrame"/>, the observer of the body's driver, moves the frame along with the body.
+        /// </remarks>
+        internal static MSAst.Expression AddAsyncFrame(MSAst.Expression localContext, MSAst.Expression asyncFrame, MSAst.Expression codeObject, MSAst.Expression body)
+            => new FramedCodeExpression(localContext, codeObject, body, inGenerator: false, asyncFrame);
+#endif
 
         /// <summary>
         /// Removes the frames from generated code for when we're compiling the tracing delegate
@@ -337,10 +361,16 @@ namespace IronPython.Compiler.Ast {
 
         private sealed class FramedCodeExpression : MSAst.Expression {
             private readonly MSAst.Expression _localContext, _codeObject;
+            private readonly bool _inGenerator;
 
-            public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
+            // For an async body: the AsyncBodyFrame the body hands its frame over to.
+            private readonly MSAst.Expression? _asyncFrame;
+
+            public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body, bool inGenerator, MSAst.Expression? asyncFrame = null) {
                 _localContext = localContext;
                 _codeObject = codeObject;
+                _inGenerator = inGenerator;
+                _asyncFrame = asyncFrame;
                 Body = body;
             }
 
@@ -349,6 +379,58 @@ namespace IronPython.Compiler.Ast {
             public MSAst.Expression Body { get; }
 
             public override MSAst.Expression Reduce() {
+                if (_inGenerator) {
+                    return Ast.Block(
+                        Ast.Call(
+                            AstMethods.PushGeneratorFrame,
+                            _localContext,
+                            GeneratorRewriter._generatorParam,
+                            _codeObject
+                        ),
+                        Body
+                    );
+                }
+
+#if FEATURE_NET_ASYNC
+                if (_asyncFrame is not null) {
+                    return Ast.Block(
+                        Ast.Call(
+                            AstMethods.PushAsyncFrame,
+                            _localContext,
+                            _asyncFrame,
+                            _codeObject
+                        ),
+                        Body
+                    );
+                }
+#endif
+
+#if DEBUG
+                // Debug builds check that the entry removed is the one pushed here. The check compares the code object pushed, since the
+                // function's __code__ can be reassigned while it runs. Release builds remove the top entry without checking.
+                var code = Ast.Variable(typeof(FunctionCode), "$frameCode");
+                return Ast.Block(
+                    new[] { code },
+                    AstUtils.Try(
+                        Ast.Assign(
+                            FunctionStackVariable,
+                            Ast.Call(
+                                AstMethods.PushFrame,
+                                _localContext,
+                                Ast.Assign(code, _codeObject)
+                            )
+                        ),
+                        Body
+                    ).Finally(
+                        Ast.Call(
+                            AstMethods.PopFrame,
+                            _localContext,
+                            code,
+                            FunctionStackVariable
+                        )
+                    )
+                );
+#else
                 return AstUtils.Try(
                     Ast.Assign(
                         FunctionStackVariable,
@@ -372,6 +454,7 @@ namespace IronPython.Compiler.Ast {
                         )
                     )
                 );
+#endif
             }
 
             public override Type Type => Body.Type;
@@ -382,9 +465,10 @@ namespace IronPython.Compiler.Ast {
                 var localContext = visitor.Visit(_localContext);
                 var codeObject = visitor.Visit(_codeObject);
                 var body = visitor.Visit(Body);
+                var asyncFrame = visitor.Visit(_asyncFrame);
 
-                if (localContext != _localContext || _codeObject != codeObject || body != Body) {
-                    return new FramedCodeExpression(localContext, codeObject, body);
+                if (localContext != _localContext || _codeObject != codeObject || body != Body || asyncFrame != _asyncFrame) {
+                    return new FramedCodeExpression(localContext, codeObject, body, _inGenerator, asyncFrame);
                 }
 
                 return this;

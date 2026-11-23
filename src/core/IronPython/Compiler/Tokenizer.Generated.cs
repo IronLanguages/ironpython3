@@ -128,6 +128,9 @@ namespace IronPython.Compiler {
                 case ',':
                     return Tokens.CommaToken;
                 case ':':
+                    if (NextChar('=')) {
+                        return Tokens.WalrusToken;
+                    }
                     return Tokens.ColonToken;
                 case ';':
                     return Tokens.SemicolonToken;

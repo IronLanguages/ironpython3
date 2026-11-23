@@ -443,6 +443,11 @@ namespace IronPython.Runtime {
         }
 
         public virtual PythonDictionary copy(CodeContext/*!*/ context) {
+            if (TreatAsMapping) {
+                var res = new PythonDictionary();
+                DictionaryOps.update(context, res, this);
+                return res;
+            }
             return new PythonDictionary(_storage.Clone());
         }
 
@@ -683,6 +688,29 @@ namespace IronPython.Runtime {
             return _storage.TryRemoveValue(ref _storage, key, out value);
         }
 
+#nullable enable
+
+        private static PythonTypeSlot? _dictIterSlot;
+
+        /// <summary>
+        /// If __iter__ is overridden then we should treat the dict as a mapping.
+        /// </summary>
+        internal bool TreatAsMapping {
+            get {
+                if (this is not IPythonObject pyObj) return false;
+
+                var context = DefaultContext.Default;
+                if (_dictIterSlot is null) {
+                    TypeCache.Dict.TryResolveSlot(context, "__iter__", out _dictIterSlot);
+                }
+
+                return pyObj.PythonType.TryResolveSlot(context, "__iter__", out PythonTypeSlot? slot)
+                    && slot != _dictIterSlot;
+            }
+        }
+
+#nullable restore
+
         #region Debugger View
 
         internal class DebugProxy {
@@ -800,7 +828,7 @@ namespace IronPython.Runtime {
 #endif
 
     /// <summary>
-    /// Note: 
+    /// Note:
     ///   IEnumerator innerEnum = Dictionary&lt;K,V&gt;.KeysCollections.GetEnumerator();
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
@@ -859,7 +887,7 @@ namespace IronPython.Runtime {
     }
 
     /// <summary>
-    /// Note: 
+    /// Note:
     ///   IEnumerator innerEnum = Dictionary&lt;K,V&gt;.KeysCollections.GetEnumerator();
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
@@ -921,7 +949,7 @@ namespace IronPython.Runtime {
     }
 
     /// <summary>
-    /// Note: 
+    /// Note:
     ///   IEnumerator innerEnum = Dictionary&lt;K,V&gt;.KeysCollections.GetEnumerator();
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python

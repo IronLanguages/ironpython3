@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard2.0;net8.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net462;netstandard2.0;net8.0;net10.0;net11.0</TargetFrameworks>
     <BaseAddress>885063680</BaseAddress>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.140">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.173">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

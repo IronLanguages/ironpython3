@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import importlib
 import sys
 import unittest
 
@@ -908,6 +909,23 @@ class NameBindingTest(IronPythonTestCase):
 
         self._test_undefined(test)
 
+    def test_loop_body_not_run(self):
+        def test_while(c):
+            while c:
+                undefined = 1
+                c = False
+            return undefined
+
+        def test_for(c):
+            for _ in c:
+                undefined = 1
+            return undefined
+
+        self.assertEqual(test_while(True), 1)
+        self._test_undefined(test_while, False)
+        self.assertEqual(test_for([0]), 1)
+        self._test_undefined(test_for, [])
+
     def test_del_local_var(self):
         result = "Failed"
 
@@ -1093,6 +1111,7 @@ class NameBindingTest(IronPythonTestCase):
             fname = module_name + '.py'
             with open(fname, 'w+') as f:
                 f.write('foo = 42')
+            importlib.invalidate_caches()
             try:
                 with path_modifier('.'):
                     foo = __import__(module_name).foo

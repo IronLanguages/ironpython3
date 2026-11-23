@@ -59,13 +59,13 @@ namespace IronPython.Compiler {
         private object RunWorker(CodeContext ctx) {
             LookupCompilationDelegate target = GetTarget(true);
 
-            Exception e = PythonOps.SaveCurrentException();
+            object e = PythonOps.SaveCurrentExceptionState();
             PushFrame(ctx, _code);
             try {
                 return target(ctx, _code);
             } finally {
-                PythonOps.RestoreCurrentException(e);
-                PopFrame();
+                PythonOps.RestoreCurrentExceptionState(e);
+                PopFrame(ctx, _code);
             }
         }
 
@@ -116,14 +116,14 @@ namespace IronPython.Compiler {
             if (ShouldInterpret(pc)) {
                 func = lambda.Compile(pc.Options.CompilationThreshold);
             } else {
-                func = lambda.ReduceToLambda().Compile(pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
+                func = CompilerHelpers.Compile(lambda.ReduceToLambda(), pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
             }
 
             return func;
         }
 
         private bool ShouldInterpret(PythonContext pc) {
-            return pc.ShouldInterpret((PythonCompilerOptions)Ast.CompilerContext.Options, Ast.CompilerContext.SourceUnit);
+            return pc.ShouldInterpret(Ast);
         }
 
         private static PythonConstantExpression ExtractConstant(LightExpression<LookupCompilationDelegate> lambda) {
@@ -174,7 +174,7 @@ namespace IronPython.Compiler {
 
                 LookupCompilationDelegate func = ShouldInterpret(pc)
                     ? lambda.LightCompile(pc.Options.CompilationThreshold)
-                    : lambda.Compile(pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
+                    : CompilerHelpers.Compile(lambda, pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
 
                 _tracingTarget = func;
                 debugProperties.Code = EnsureFunctionCode(_tracingTarget, true, true);

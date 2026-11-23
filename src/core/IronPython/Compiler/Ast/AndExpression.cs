@@ -64,6 +64,8 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        public override string NodeName => "operator";
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 Left?.Walk(walker);

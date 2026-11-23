@@ -724,4 +724,22 @@ def %s(self, other):
         self.assertEqual(0.06825994771674652 * (180 / math.pi), 3.911006913953236)
         self.assertEqual(math.degrees(0.06825994771674652), 3.911006913953236)
 
+    def test_frexp(self):
+        # compare reprs to check the sign of zero and the type of the exponent
+        tests = [
+            (3.0, (0.75, 2)),
+            (-3.5, (-0.875, 2)),
+            (5e-324, (0.5, -1073)),
+            (-5e-324, (-0.5, -1073)),
+            (2.225073858507201e-308, (0.9999999999999998, -1022)),
+            (1.7976931348623157e+308, (0.9999999999999999, 1024)),
+            (0.0, (0.0, 0)),
+            (-0.0, (-0.0, 0)),
+            (math.inf, (math.inf, 0)),
+            (-math.inf, (-math.inf, 0)),
+            (math.nan, (math.nan, 0)),
+        ]
+        for x, res in tests:
+            self.assertEqual(repr(math.frexp(x)), repr(res))
+
 run_test(__name__)

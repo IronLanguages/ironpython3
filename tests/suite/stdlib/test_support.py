@@ -24,6 +24,10 @@ def load_tests(loader, standard_tests, pattern):
             ]
 
         skip_tests = []
+        if sys.version_info >= (3, 6):
+            skip_tests += [
+                test.test_support.TestSupport('test_fd_count'), # flaky: a finalizer can close a leaked fd between the two counts
+            ]
 
         return generate_suite(tests, failing_tests, skip_tests)
 

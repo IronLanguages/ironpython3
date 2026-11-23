@@ -19,7 +19,6 @@ def load_tests(loader, standard_tests, pattern):
     if is_ironpython:
         failing_tests = [
             test_yield_from.TestPEP380Operation('test_broken_getattr_handling'), # TODO: figure out
-            test_yield_from.TestPEP380Operation('test_catching_exception_from_subgen_and_returning'), # TODO: figure out
         ]
 
         skip_tests = []

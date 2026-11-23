@@ -4,6 +4,8 @@
 
 """Tests for PEP 492: async/await support."""
 
+import sys
+import threading
 import unittest
 
 from iptest import run_test, skipUnlessIronPython, is_netcoreapp
@@ -21,6 +23,17 @@ def run_coro(coro):
             value = None
         except StopIteration as e:
             return e.value
+
+
+def _frame_names():
+    """The names of the calling thread's frames, outermost first, without the frame of this function."""
+    frame = sys._getframe(1)
+    names = []
+    while frame is not None:
+        names.append(frame.f_code.co_name)
+        frame = frame.f_back
+    names.reverse()
+    return names
 
 
 class AsyncIter:
@@ -47,6 +60,12 @@ class AsyncDefTest(unittest.TestCase):
         async def foo():
             return 42
         self.assertEqual(run_coro(foo()), 42)
+
+    def test_location_starts_at_async_keyword(self):
+        # As in CPython. It is also where a coroutine's 'call' trace event is reported.
+        import ast
+        node = ast.parse("x = 1\nasync def f():\n    pass\n").body[1]
+        self.assertEqual((node.lineno, node.col_offset), (2, 0))
 
     def test_coroutine_type(self):
         async def foo():
@@ -170,6 +189,47 @@ class AwaitTest(unittest.TestCase):
             return 'not caught'
 
         self.assertEqual(run_coro(test()), 'caught: boom')
+
+    def test_await_in_handler_left_by_continue(self):
+        """A handler that awaits and then leaves its iteration does not run again in a later iteration that does not raise."""
+        async def noop():
+            pass
+
+        async def test():
+            log = []
+            for i in range(3):
+                try:
+                    if i == 0:
+                        raise ValueError()
+                    log.append(('try', i))
+                except ValueError:
+                    await noop()
+                    log.append(('except', i))
+                    continue
+            return log
+
+        self.assertEqual(run_coro(test()), [('except', 0), ('try', 1), ('try', 2)])
+
+    def test_await_in_handler_left_by_break(self):
+        """As above, with the handler breaking out of an inner loop that the outer loop enters again."""
+        async def noop():
+            pass
+
+        async def test():
+            log = []
+            for j in range(2):
+                for i in range(2):
+                    try:
+                        if j == 0:
+                            raise ValueError()
+                        log.append(('try', j, i))
+                    except ValueError:
+                        await noop()
+                        log.append(('except', j, i))
+                        break
+            return log
+
+        self.assertEqual(run_coro(test()), [('except', 0, 0), ('try', 1, 0), ('try', 1, 1)])
 
 
 class AsyncWithTest(unittest.TestCase):
@@ -472,6 +532,98 @@ class DotNetAsyncInteropTest(unittest.TestCase):
         self.assertTrue(token.IsCancellationRequested)
 
 
+@skipUnlessIronPython()
+@unittest.skipUnless(is_netcoreapp, "tests the .NET async implementation (FEATURE_NET_ASYNC)")
+class CoroutineThrowTest(unittest.TestCase):
+    """coro.throw(exc) raises exc once, at the await the coroutine is suspended at, and can be repeated."""
+
+    @staticmethod
+    def pending():
+        from System.Threading.Tasks import TaskCompletionSource
+        return TaskCompletionSource[object]().Task  # never completes
+
+    @staticmethod
+    def throw_at_pending_await(coro, exc):
+        import clr
+        coro.AsTask()   # runs the body up to its first await of a task that hasn't completed
+        return coro.throw(exc)
+
+    def test_caught(self):
+        async def coro():
+            try:
+                await self.pending()
+            except KeyError as e:
+                return 'caught %s' % e.args[0]
+        with self.assertRaises(StopIteration) as cm:
+            self.throw_at_pending_await(coro(), KeyError('k'))
+        self.assertEqual(cm.exception.value, 'caught k')
+
+    def test_not_caught(self):
+        async def coro():
+            await self.pending()
+        with self.assertRaises(KeyError):
+            self.throw_at_pending_await(coro(), KeyError('k'))
+
+    def test_awaits_after_caught(self):
+        # The exception interrupts the body once: its later awaits complete normally
+        from System.Threading.Tasks import Task
+        async def coro():
+            try:
+                await self.pending()
+            except KeyError:
+                pass
+            await Task.Delay(10)
+            return await Task.FromResult(42)
+        with self.assertRaises(StopIteration) as cm:
+            self.throw_at_pending_await(coro(), KeyError('k'))
+        self.assertEqual(cm.exception.value, 42)
+
+    def test_repeated(self):
+        # The body handles a throw() and continues; a later throw() interrupts it again
+        import threading
+        at_second = threading.Event()
+        async def coro():
+            caught = []
+            try:
+                await self.pending()
+            except KeyError:
+                caught.append('KeyError')
+            at_second.set()
+            try:
+                await self.pending()
+            except ValueError:
+                caught.append('ValueError')
+            return caught
+
+        c = coro()
+        c.AsTask()
+        first = []
+        def throw_first():
+            # throw() returns only when the coroutine finishes
+            try:
+                c.throw(KeyError('k'))
+            except StopIteration as e:
+                first.append(e.value)
+        t = threading.Thread(target=throw_first)
+        t.start()
+        self.assertTrue(at_second.wait(10))
+        with self.assertRaises(StopIteration) as cm:
+            c.throw(ValueError('v'))
+        t.join(10)
+        self.assertEqual(cm.exception.value, ['KeyError', 'ValueError'])
+        self.assertEqual(first, [['KeyError', 'ValueError']])
+
+    def test_not_started(self):
+        # As in CPython, the body doesn't run
+        ran = []
+        async def coro():
+            ran.append(True)
+            await self.pending()
+        with self.assertRaises(KeyError):
+            coro().throw(KeyError('k'))
+        self.assertEqual(ran, [])
+
+
 @unittest.skipUnless(is_netcoreapp, "ValueTask is not available on .NET Framework")
 class ValueTaskInteropTest(unittest.TestCase):
     def test_await_valuetask(self):
@@ -510,6 +662,225 @@ class ValueTaskInteropTest(unittest.TestCase):
             vt = ValueTask[str]("world")
             return await vt
         self.assertEqual(run_coro(test()), "world")
+
+
+@skipUnlessIronPython()
+@unittest.skipUnless(is_netcoreapp, "tests the .NET async implementation (FEATURE_NET_ASYNC)")
+class FrameStackTest(unittest.TestCase):
+    """The frame of an async body is on the stack of the thread running the body, and on no thread's stack while it is suspended."""
+
+    def test_coroutine_resumed_on_pool_thread(self):
+        from System.Threading.Tasks import Task
+        seen = []
+        async def coro():
+            seen.append((threading.get_ident(), _frame_names()[-2:]))
+            await Task.Delay(50)    # pending, so the body resumes on a thread-pool thread, with no Python caller
+            seen.append((threading.get_ident(), _frame_names()))
+            return 1
+
+        expected = _frame_names()
+        self.assertEqual(run_coro(coro()), 1)
+        self.assertEqual(_frame_names(), expected)
+        main = threading.get_ident()
+        self.assertEqual(seen[0], (main, ['run_coro', 'coro']))
+        self.assertNotEqual(seen[1][0], main)
+        self.assertEqual(seen[1][1], ['coro'])
+
+    def test_async_generator_resumed_on_pool_thread(self):
+        from System.Threading.Tasks import Task
+        seen = []
+        async def agen():
+            seen.append(_frame_names()[-3:])
+            await Task.Delay(50)    # resumes on a thread-pool thread
+            seen.append(_frame_names())
+            yield 1
+            seen.append(_frame_names())  # resumed by the consumer, on that thread
+        async def collect():
+            out = []
+            async for x in agen():
+                out.append(x)
+                seen.append(_frame_names())
+            seen.append(_frame_names())
+            return out
+
+        expected = _frame_names()
+        self.assertEqual(run_coro(collect()), [1])
+        self.assertEqual(_frame_names(), expected)
+        self.assertEqual(seen, [
+            ['run_coro', 'collect', 'agen'],
+            ['agen'],
+            ['collect'],
+            ['collect', 'agen'],
+            ['collect'],
+        ])
+
+    def test_coroutines_taking_turns_on_one_thread(self):
+        # The awaited tasks are completed by Python code, which resumes each coroutine on its own thread
+        import clr
+        from System.Threading.Tasks import TaskCompletionSource
+        sources = [TaskCompletionSource[object]() for _ in range(2)]
+        seen = []
+        async def coro(i):
+            seen.append(_frame_names()[-2:])
+            await sources[i].Task
+            seen.append(_frame_names()[-2:])
+            return i
+
+        def start(c):
+            return c.AsTask()
+
+        def complete(source):
+            source.SetResult(None)
+
+        expected = _frame_names()
+        tasks = [start(coro(0)), start(coro(1))]
+        self.assertEqual(_frame_names(), expected)  # neither suspended coroutine has left its frame behind
+        complete(sources[0])
+        complete(sources[1])
+        self.assertEqual([t.Result for t in tasks], [0, 1])
+        self.assertEqual(_frame_names(), expected)
+        self.assertEqual(seen, [['start', 'coro'], ['start', 'coro'], ['complete', 'coro'], ['complete', 'coro']])
+
+    def test_coroutine_suspended_while_settrace_toggled(self):
+        import clr
+        from System.Threading.Tasks import TaskCompletionSource
+        def tracer(frame, event, arg):
+            return None
+
+        seen = []
+        async def coro(source):
+            seen.append(_frame_names()[-2:])
+            await source.Task
+            seen.append(_frame_names()[-2:])
+
+        def start(c):
+            return c.AsTask()
+
+        def complete(source):
+            source.SetResult(None)
+
+        expected = _frame_names()
+
+        # started untraced, resumed traced
+        source = TaskCompletionSource[object]()
+        task = start(coro(source))
+        sys.settrace(tracer)
+        try:
+            complete(source)
+        finally:
+            sys.settrace(None)
+        task.Wait()
+        self.assertEqual(_frame_names(), expected)
+
+        # started traced, resumed untraced
+        source = TaskCompletionSource[object]()
+        sys.settrace(tracer)
+        try:
+            task = start(coro(source))
+        finally:
+            sys.settrace(None)
+        complete(source)
+        task.Wait()
+        self.assertEqual(_frame_names(), expected)
+
+        self.assertEqual(seen, [['start', 'coro'], ['complete', 'coro']] * 2)
+
+    def test_coroutine_raises_after_resuming(self):
+        from System.Threading.Tasks import Task
+        seen = []
+        async def coro():
+            await Task.Delay(10)    # resumes on a thread-pool thread
+            try:
+                raise KeyError('k')
+            finally:
+                seen.append(_frame_names())
+
+        expected = _frame_names()
+        with self.assertRaises(KeyError):
+            run_coro(coro())
+        self.assertEqual(_frame_names(), expected)
+        self.assertEqual(seen, [['coro']])
+
+    def test_throw_at_pending_await(self):
+        import clr
+        from System.Threading.Tasks import TaskCompletionSource
+        seen = []
+        async def coro():
+            try:
+                await TaskCompletionSource[object]().Task   # never completes
+            except KeyError:
+                seen.append(_frame_names()[-1:])
+                return 'caught'
+
+        expected = _frame_names()
+        c = coro()
+        c.AsTask()
+        self.assertEqual(_frame_names(), expected)
+        with self.assertRaises(StopIteration) as cm:
+            c.throw(KeyError('k'))
+        self.assertEqual(cm.exception.value, 'caught')
+        self.assertEqual(_frame_names(), expected)
+        self.assertEqual(seen, [['coro']])
+
+    def test_async_generator_left_at_yield_and_closed(self):
+        from System.Threading.Tasks import Task
+        seen = []
+        async def agen():
+            try:
+                await Task.Delay(10)
+                yield 1
+                yield 2
+            finally:
+                seen.append(_frame_names()[-2:])
+
+        async def consume():
+            g = agen()
+            self.assertEqual(await g.asend(None), 1)
+            seen.append(_frame_names()[-1:])    # the generator, held at its yield, has left no frame behind
+            await g.aclose()
+            seen.append(_frame_names()[-1:])
+
+        expected = _frame_names()
+        run_coro(consume())
+        self.assertEqual(_frame_names(), expected)
+        self.assertEqual(seen, [['consume'], ['consume', 'agen'], ['consume']])
+
+    def test_concurrent_coroutines(self):
+        from System.Threading.Tasks import Task
+        lock = threading.Lock()
+        wrong, errors = [], []
+
+        def check():
+            names = _frame_names()
+            if names[-2:-1] != ['inner']:
+                with lock:
+                    wrong.append(names)
+
+        async def inner():
+            for _ in range(10):
+                check()
+                await Task.Delay(1)
+                check()
+
+        async def outer():
+            for _ in range(5):
+                await inner()
+
+        def thread_main():
+            try:
+                expected = _frame_names()
+                run_coro(outer())
+                if _frame_names() != expected:
+                    raise AssertionError(_frame_names())
+            except Exception as e:
+                with lock:
+                    errors.append(e)
+
+        threads = [threading.Thread(target=thread_main) for _ in range(8)]
+        for t in threads: t.start()
+        for t in threads: t.join()
+        self.assertEqual(errors, [])
+        self.assertEqual(wrong, [])
 
 
 import sys

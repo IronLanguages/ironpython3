@@ -724,7 +724,7 @@ finally:
         import System
         from IronPythonTest import ExceptionsTest
         path = clr.GetClrType(ExceptionsTest).Assembly.Location
-        mbro = System.AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(path, "IronPythonTest.EngineTest")
+        mbro = System.AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(path, "IronPythonTest.ScriptRunner")
         self.assertRaises(AssertionError, mbro.Run, 'raise AssertionError')
         import builtins
 
@@ -1078,5 +1078,47 @@ finally:
             raise error(0)
 
         self.assertRaises(error, f)
+
+    @skipUnlessIronPython()
+    def test_ipy3_gh1816(self):
+        import System
+
+        with self.assertRaises(System.InvalidOperationException):
+            raise System.InvalidOperationException
+
+        with self.assertRaises(SystemError):
+            raise System.InvalidOperationException
+
+        class MyException(System.Exception): pass
+
+        with self.assertRaises(MyException):
+            raise MyException
+
+        with self.assertRaises(TypeError): # constructor requires arguments
+            raise System.Reflection.ReflectionTypeLoadException
+
+        def gen():
+            try:
+                yield
+            except System.InvalidOperationException as e:
+                yield e.Message
+
+        g = gen()
+        next(g)
+        self.assertEqual(g.throw(System.InvalidOperationException, "abc"), "abc")
+
+    def test_context_cycle_broken(self):
+        a, b = KeyError(), ValueError()
+        try:
+            try:
+                raise a
+            except KeyError:
+                raise b
+        except ValueError:
+            try:
+                raise a
+            except KeyError as e:
+                self.assertIs(e.__context__, b)
+                self.assertIsNone(b.__context__)
 
 run_test(__name__)

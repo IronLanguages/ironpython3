@@ -100,6 +100,10 @@ def test_compile(self):
     self.assertRaises(SyntaxError, compile, "for x in : print(x)", "Error", "eval")
     self.assertRaises(SyntaxError, compile, "for x in : print(x)", "Error", "single")
 
+    # invalid for targets - https://github.com/IronLanguages/ironpython3/issues/1613
+    for code in ["for int(i) in (): pass", "for 1 in (): pass", "for x + 1 in y: pass", "for (x + 1) in y: pass", "for x, (y + 1) in z: pass", "[0 for f() in y]", "(0 for (x + 1) in y)", "async def f():\n    async for x + 1 in y: pass"]:
+        self.assertRaises(SyntaxError, compile, code, "Error", "exec")
+
     # empty backquote
     self.assertRaises(SyntaxError, compile, "``", "Error", "exec")
     self.assertRaises(SyntaxError, compile, "``", "Error", "eval")

@@ -984,14 +984,14 @@ namespace IronPython.Runtime.Binding {
                     Expression[] items = new Expression[namedArgs.Count * 2];
                     int itemIndex = 0;
                     foreach (KeyValuePair<string, Expression> kvp in namedArgs) {
-                        items[itemIndex++] = AstUtils.Convert(kvp.Value, typeof(object));
                         items[itemIndex++] = AstUtils.Constant(kvp.Key, typeof(object));
+                        items[itemIndex++] = AstUtils.Convert(kvp.Value, typeof(object));
                     }
 
                     dictCreator = Ast.Assign(
                         _dict,
                         Ast.Call(
-                            typeof(PythonOps).GetMethod(nameof(PythonOps.MakeHomogeneousDictFromItems)),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.MakeHomogeneousDictFromKeyValueItems)),
                             Ast.NewArrayInit(typeof(object), items)
                         )
                     );

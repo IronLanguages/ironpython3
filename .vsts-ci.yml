@@ -32,10 +32,10 @@ jobs:
 
       # Setup .NET
       - task: UseDotNet@2
-        displayName: Install .NET 10.0 SDK for build
+        displayName: Install .NET 11.0 SDK for build
         inputs:
           packageType: 'sdk'
-          version: '10.0.x'
+          version: '11.0.x'
 
       # Display version info
       - script: dotnet --info
@@ -127,10 +127,16 @@ jobs:
 
       # Setup .NET
       - task: UseDotNet@2
-        displayName: Install .NET 10.0 SDK for build
+        displayName: Install .NET 11.0 SDK for build
         inputs:
           packageType: 'sdk'
+          version: '11.0.x'
+      - task: UseDotNet@2
+        displayName: Install .NET 10.0 runtime for testing
+        inputs:
+          packageType: 'runtime'
           version: '10.0.x'
+        condition: eq(variables.framework, 'net10.0')
       - task: UseDotNet@2
         displayName: Install .NET 8.0 runtime for testing
         inputs:
@@ -158,6 +164,7 @@ jobs:
         displayName: ReadyToRun
         condition: and(succeeded(), ne(variables.framework, 'net462'))
       - powershell: |
+          dotnet --info
           $ipy = "bin/Release/$(framework)/ipy"
           if ('$(framework)' -ne 'net462') { dotnet "$ipy.dll" -VV }
           elseif ('$(osName)' -eq 'Windows') { & "$ipy.exe" -VV }

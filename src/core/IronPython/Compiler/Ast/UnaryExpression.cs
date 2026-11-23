@@ -34,6 +34,8 @@ namespace IronPython.Compiler.Ast {
         public override MSAst.Expression Reduce()
             => GlobalParent.Operation(typeof(object), OperationKind, Expression);
 
+        public override string NodeName => "operator";
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 Expression?.Walk(walker);

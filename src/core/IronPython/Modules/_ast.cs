@@ -306,6 +306,7 @@ namespace IronPython.Modules {
                     StarredExpression x => new Starred(x, ctx),
                     JoinedStringExpression x => new JoinedStr(x),
                     FormattedValueExpression x => new FormattedValue(x),
+                    NamedExpression x => new NamedExpr(x),
                     _ => throw new ArgumentTypeException("Unexpected expression type: " + expr.GetType()),
                 };
                 if (expr is ParenthesisExpression) return ast; // don't overwrite the source loc
@@ -1661,7 +1662,7 @@ namespace IronPython.Modules {
 
             // given following generator: (a for b in c for d in e for f in g)
             // PythonAST (Iron) Representation looks like this:
-            //             
+            //
             // Iterable
             //  NameExpression c
             //
@@ -1682,8 +1683,8 @@ namespace IronPython.Modules {
             //            NameExpression a
             //
             // and corresponding ast (implementation agnostic) looks like this:
-            //        ('Expression', ('GeneratorExp', (1, 1), 
-            //            ('Name', (1, 1), 'a', ('Load',)), 
+            //        ('Expression', ('GeneratorExp', (1, 1),
+            //            ('Name', (1, 1), 'a', ('Load',)),
             //            [('comprehension', ('Name', (1, 7), 'b', ('Store',)), ('Name', (1, 12), 'c', ('Load',)), []),
             //             ('comprehension', ('Name', (1, 18), 'd', ('Store',)), ('Name', (1, 23), 'e', ('Load',)), []),
             //             ('comprehension', ('Name', (1, 29), 'f', ('Store',)), ('Name', (1, 34), 'g', ('Load',)), [])
@@ -1751,8 +1752,10 @@ namespace IronPython.Modules {
                 } while (comprehensionIdx >= 0);
                 ((ForStatement)stmt).List = new NameExpression(generatorFnArgName);
                 Parameter parameter = new Parameter(generatorFnArgName, 0);
-                FunctionDefinition functionDefinition = new FunctionDefinition(generatorFnName, new Parameter[] { parameter }, stmt);
-                functionDefinition.IsGenerator = true;
+                FunctionDefinition functionDefinition = new(generatorFnName, [parameter], stmt) {
+                    IsGenerator = true,
+                    IsGeneratorExpression = true
+                };
                 return new GeneratorExpression(functionDefinition, list);
             }
 
@@ -2107,7 +2110,7 @@ namespace IronPython.Modules {
                     // What should be sufficient is:
                     // _body = ((Expr)statement).value;
                     // but, AST comes with trees containing twice YieldExpression.
-                    // For: 
+                    // For:
                     //   lambda x: (yield x)
                     // it comes back with:
                     //
@@ -2331,6 +2334,40 @@ namespace IronPython.Modules {
             }
 
             public object value { get; set; }
+        }
+
+        [PythonType]
+        public class NamedExpr : expr {
+            public NamedExpr() {
+                _fields = PythonTuple.MakeTuple([nameof(target), nameof(value)]);
+            }
+
+            public NamedExpr(expr target, expr value, [Optional] int? lineno, [Optional] int? col_offset)
+                : this() {
+                this.target = target;
+                this.value = value;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            public NamedExpr(expr target, expr value)
+                : this(target, value, null, null) { }
+
+            internal NamedExpr(NamedExpression expr)
+                : this() {
+                target = Convert(expr.Target, Store.Instance);
+                value = Convert(expr.Value);
+            }
+
+            internal override AstExpression Revert() {
+                if (target is not Name)
+                    throw PythonOps.TypeError("NamedExpr target must be a Name");
+                return new NamedExpression((NameExpression)Revert(target), Revert(value));
+            }
+
+            public expr target { get; set; }
+
+            public expr value { get; set; }
         }
 
         [PythonType]

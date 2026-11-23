@@ -29,10 +29,11 @@ def gen_tuple(cw, size, prevSize):
     cw.exit_block()
     cw.write('')
     for i in range(prevSize, size):
+        cw.write('[AllowNull, MaybeNull]')
         cw.write('public T%d Item%03d { get; set; }' % (i, i))
         cw.write('')
 
-    cw.enter_block('public override object GetValue(int index)')
+    cw.enter_block('public override object? GetValue(int index)')
     cw.enter_block('switch(index)')
     for i in range(0, size):
         cw.write('case %d: return Item%03d;' % (i, i))
@@ -41,10 +42,10 @@ def gen_tuple(cw, size, prevSize):
     cw.exit_block()
 
     cw.write('')
-    cw.enter_block('public override void SetValue(int index, object value)')
+    cw.enter_block('public override void SetValue(int index, object? value)')
     cw.enter_block('switch(index)')
     for i in range(0, size):
-        cw.write('case %d: Item%03d = (T%d)value; break;' % (i, i, i))
+        cw.write('case %d: Item%03d = (T%d?)value; break;' % (i, i, i))
     cw.write('default: throw new ArgumentOutOfRangeException(nameof(index));')
     cw.exit_block()
     cw.exit_block()

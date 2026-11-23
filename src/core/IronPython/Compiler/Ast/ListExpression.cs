@@ -14,6 +14,8 @@ namespace IronPython.Compiler.Ast {
             : base(items) {
         }
 
+        public override string NodeName => "list";
+
         public override MSAst.Expression Reduce() {
             if (Items.Count == 0) {
                 return Expression.Call(AstMethods.MakeEmptyList);

@@ -18,7 +18,7 @@ namespace IronPython.Runtime {
     /// implementation returns a singleton which indicates caching is not occuring.
     /// </summary>
     public sealed class ModuleGlobalCache {
-        private object _value;
+        private object? _value;
 
         internal static readonly object NotCaching = new object();
         internal static readonly ModuleGlobalCache NoCache = new ModuleGlobalCache(NotCaching);
@@ -26,7 +26,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Creates a new ModuleGlobalCache with the specified value.
         /// </summary>
-        public ModuleGlobalCache(object value) {
+        public ModuleGlobalCache(object? value) {
             _value = value;
         }
 
@@ -52,7 +52,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Gets or sets the current cached value
         /// </summary>
-        public object Value {
+        public object? Value {
             get {
                 return _value;
             }

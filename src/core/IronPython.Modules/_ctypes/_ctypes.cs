@@ -109,6 +109,12 @@ namespace IronPython.Modules {
                 res.MemHolder = new MemoryHolder(IntPtr.Size);
                 if (IsPointer(DynamicHelpers.GetPythonType(cdata))) {
                     res.MemHolder.WriteIntPtr(0, cdata.MemHolder.ReadIntPtr(0));
+                } else if (objHandle.Target is Bytes bytes) {
+                    // data points to a temporary managed copy that is only pinned for the duration of the call
+                    var copy = new MemoryHolder(bytes.UnsafeByteArray.Length + 1);
+                    copy.WriteSpan(0, bytes.UnsafeByteArray);
+                    res.MemHolder.WriteIntPtr(0, copy);
+                    res.MemHolder.AddObject(IdDispenser.GetId(copy), copy);
                 } else {
                     res.MemHolder.WriteIntPtr(0, data);
                 }
@@ -225,7 +231,7 @@ namespace IronPython.Modules {
                         name = "LP_" + type.Name;
                     }
 
-                    dict[type] = res = MakePointer(context, name, PythonOps.MakeDictFromItems(new object[] { type, "_type_" }));
+                    dict[type] = res = MakePointer(context, name, PythonOps.MakeDictFromKeyValueItems(["_type_", type]));
                 }
 
                 return res as PythonType;
@@ -326,8 +332,8 @@ namespace IronPython.Modules {
 
         /// <summary>
         /// returns address of C instance internal buffer.
-        /// 
-        /// It is the callers responsibility to ensure that the provided instance will 
+        ///
+        /// It is the callers responsibility to ensure that the provided instance will
         /// stay alive if memory in the resulting address is to be used later.
         /// </summary>
         public static object addressof(CData data) {
@@ -405,13 +411,13 @@ namespace IronPython.Modules {
             SimpleType resType = new SimpleType(
                 context,
                 "int",
-                PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(SimpleCData))), PythonOps.MakeHomogeneousDictFromItems(new object[] { "i", "_type_" }));
+                PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(SimpleCData))), PythonOps.MakeHomogeneousDictFromKeyValueItems(["_type_", "i"]));
 
             CFuncPtrType funcType = new CFuncPtrType(
                 context,
                 "func",
                 PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(_CFuncPtr))),
-                PythonOps.MakeHomogeneousDictFromItems(new object[] { FUNCFLAG_STDCALL, "_flags_", resType, "_restype_" }));
+                PythonOps.MakeHomogeneousDictFromKeyValueItems(["_flags_", FUNCFLAG_STDCALL, "_restype_", resType]));
             return funcType;
         }
 

@@ -70,8 +70,9 @@ namespace IronPython.Modules {
         public const string __doc__ = "Implementation module for SSL socket operations.  See the socket module\nfor documentation.";
         public const int OPENSSL_VERSION_NUMBER = 9437184;
         public static readonly PythonTuple OPENSSL_VERSION_INFO = PythonTuple.MakeTuple(0, 0, 0, 0, 0);
-        public static readonly object _OPENSSL_API_VERSION = OPENSSL_VERSION_INFO;
+        public static readonly PythonTuple _OPENSSL_API_VERSION = OPENSSL_VERSION_INFO;
         public const string OPENSSL_VERSION = "OpenSSL 0.0.0 (.NET SSL)";
+        public const string _DEFAULT_CIPHERS = "DEFAULT";
 
         private static readonly List<Asn1Object> _asn1Objects = new List<Asn1Object>();
 
@@ -90,6 +91,7 @@ namespace IronPython.Modules {
             context.EnsureModuleException("SSLSyscallError", sslError, dict, "SSLSyscallError", "ssl");
             context.EnsureModuleException("SSLEOFError", sslError, dict, "SSLEOFError", "ssl");
             context.EnsureModuleException("SSLWantReadError", sslError, dict, "SSLWantReadError", "ssl");
+            context.EnsureModuleException("SSLCertVerificationError", [sslError, PythonExceptions.ValueError], typeof(PythonExceptions._OSError), dict, "SSLCertVerificationError", "ssl");
         }
 
         #region Stubs for RAND functions
@@ -116,7 +118,6 @@ namespace IronPython.Modules {
             internal readonly X509Certificate2Collection _cert_store = new X509Certificate2Collection();
             internal string _cafile;
             internal X509Certificate2 _cert;
-            private int _verify_mode = SSL_VERIFY_NONE;
 
             public _SSLContext(CodeContext context, int protocol) {
                 if (protocol != PROTOCOL_SSLv2 && protocol != PROTOCOL_SSLv23 && protocol != PROTOCOL_SSLv3 &&
@@ -148,44 +149,39 @@ namespace IronPython.Modules {
                 // TODO
             }
 
-            public int options {
-                get; set;
-            }
+            public bool post_handshake_auth { get; set; } // TODO
+
+            public int options { get; set; }
 
             public int verify_mode {
-                get {
-                    return _verify_mode;
-                }
+                get;
                 set {
-                    if (_verify_mode != CERT_NONE && _verify_mode != CERT_OPTIONAL && _verify_mode != CERT_REQUIRED) {
+                    if (value != CERT_NONE && value != CERT_OPTIONAL && value != CERT_REQUIRED) {
                         throw PythonOps.ValueError("invalid value for verify_mode");
                     }
                     // TODO: change this in 3.7
                     if (check_hostname && value == CERT_NONE) {
                         throw PythonOps.ValueError("Cannot set verify_mode to CERT_NONE when check_hostname is enabled.");
                     }
-                    _verify_mode = value;
+                    field = value;
                 }
-            }
+            } = SSL_VERIFY_NONE;
 
-            public int protocol {
-                get; set;
-            }
+            public int protocol { get; set; }
 
-            private bool _check_hostname;
             public bool check_hostname {
-                get => _check_hostname;
+                get;
                 set {
                     // TODO: change this in 3.7
-                    if (value && _verify_mode != CERT_OPTIONAL && _verify_mode != CERT_REQUIRED) {
+                    if (value && verify_mode != CERT_OPTIONAL && verify_mode != CERT_REQUIRED) {
                         throw PythonOps.ValueError("check_hostname needs a SSL context with either CERT_OPTIONAL or CERT_REQUIRED");
                     }
-                    _check_hostname = value;
+                    field = value;
                 }
             }
 
             public void set_default_verify_paths(CodeContext context) {
-
+                // TODO
             }
 
             public void set_ecdh_curve(CodeContext context, [NotNone] string curve) {
@@ -268,7 +264,8 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object _wrap_socket(CodeContext context, PythonSocket.socket sock, bool server_side, string server_hostname = null) {
+            public object _wrap_socket(CodeContext context, PythonSocket.socket sock, bool server_side, string server_hostname = null, object owner = null, object session = null) {
+                // TODO: owner and session
                 return new _SSLSocket(context, this, sock, server_side, server_hostname);
             }
         }
@@ -1277,6 +1274,14 @@ Returns the number of bytes written.")]
         public const int PROTOCOL_TLS_CLIENT = 16;
         public const int PROTOCOL_TLS_SERVER = 17;
 
+        public const int PROTO_MINIMUM_SUPPORTED = -2;
+        public const int PROTO_MAXIMUM_SUPPORTED = -1;
+        public const int PROTO_SSLv3 = 768;
+        public const int PROTO_TLSv1 = 769;
+        public const int PROTO_TLSv1_1 = 770;
+        public const int PROTO_TLSv1_2 = 771;
+        public const int PROTO_TLSv1_3 = 772;
+
         public const int OP_ALL = unchecked((int)0x800003FF);
         public const int OP_CIPHER_SERVER_PREFERENCE = 0; // 0x400000;
         public const int OP_SINGLE_DH_USE = 0; // 0x100000;
@@ -1313,6 +1318,12 @@ Returns the number of bytes written.")]
         public const bool HAS_ALPN = false;
         public const bool HAS_TLS_UNIQUE = false;
         public const bool HAS_TLSv1_3 = false;
+
+        public const bool HAS_SSLv2 = false;
+        public const bool HAS_SSLv3 = false;
+        public const bool HAS_TLSv1 = true;
+        public const bool HAS_TLSv1_1 = true;
+        public const bool HAS_TLSv1_2 = true;
 
         private const int SSL_VERIFY_NONE = 0x00;
         private const int SSL_VERIFY_PEER = 0x01;

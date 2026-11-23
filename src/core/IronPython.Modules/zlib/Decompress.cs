@@ -6,20 +6,18 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+
 using ComponentAce.Compression.Libs.ZLib;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
-namespace IronPython.Zlib
-{
+using Microsoft.Scripting.Runtime;
+
+namespace IronPython.Zlib {
     [PythonType]
-    public class Decompress
-    {
+    public class Decompress {
         private const int Z_OK = ZlibModule.Z_OK;
         private const int Z_STREAM_END = ZlibModule.Z_STREAM_END;
         private const int Z_BUF_ERROR = ZlibModule.Z_BUF_ERROR;
@@ -27,12 +25,14 @@ namespace IronPython.Zlib
         private const int Z_SYNC_FLUSH = ZlibModule.Z_SYNC_FLUSH;
         private const int Z_FINISH = ZlibModule.Z_FINISH;
 
-        internal Decompress(int wbits)
-        {
+        private readonly CodeContext _context;
+        private ZStream zst;
+
+        internal Decompress(CodeContext context, int wbits) {
+            _context = context;
             zst = new ZStream();
             int err = zst.inflateInit(wbits);
-            switch(err)
-            {
+            switch (err) {
                 case ZlibModule.Z_OK:
                     break;
 
@@ -40,7 +40,7 @@ namespace IronPython.Zlib
                     throw PythonOps.ValueError("Invalid initialization option");
 
                 default:
-                    throw ZlibModule.zlib_error(this.zst, err, "while creating decompression object");
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "while creating decompression object");
             }
 
             unused_data = Bytes.Empty;
@@ -59,9 +59,8 @@ Call the flush() method to clear these buffers.
 If the max_length parameter is specified then the return value will be
 no longer than max_length.  Unconsumed input data will be stored in
 the unconsumed_tail attribute.")]
-        public Bytes decompress([NotNone] IBufferProtocol data, int max_length=0)
-        {
-            if(max_length < 0) throw new ArgumentException("max_length must be greater than zero");
+        public Bytes decompress([NotNone] IBufferProtocol data, int max_length = 0) {
+            if (max_length < 0) throw new ArgumentException("max_length must be greater than zero");
 
             using var buffer = data.GetBuffer();
             byte[] input = buffer.AsUnsafeArray() ?? buffer.ToArray();
@@ -77,32 +76,30 @@ the unconsumed_tail attribute.")]
 
             int err = zst.inflate(FlushStrategy.Z_SYNC_FLUSH);
 
-            while(err == Z_OK && zst.avail_out == 0)
-            {
-                if(max_length > 0 && output.Length >= max_length)
+            while (err == Z_OK && zst.avail_out == 0) {
+                if (max_length > 0 && output.Length >= max_length)
                     break;
 
                 int old_length = output.Length;
-                Array.Resize(ref output, output.Length * 2);
+                int new_length = output.Length * 2;
+                if (max_length > 0 && new_length > max_length) new_length = max_length;
+                Array.Resize(ref output, new_length);
+                zst.avail_out = new_length - old_length;
                 zst.next_out = output;
-                zst.avail_out = old_length;
 
                 err = zst.inflate(FlushStrategy.Z_SYNC_FLUSH);
             }
 
-            if(max_length > 0)
-            {
-                unconsumed_tail = GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
-            }
-
-            if(err == Z_STREAM_END)
-            {
-                unused_data += GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
+            var remaining = GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
+            if (err == Z_STREAM_END) {
+                unused_data += remaining;
+                unconsumed_tail = Bytes.Empty;
                 eof = true;
-            }
-            else if(err != Z_OK && err != Z_BUF_ERROR)
-            {
-                throw ZlibModule.zlib_error(this.zst, err, "while decompressing");
+            } else {
+                unconsumed_tail = remaining;
+                if (err != Z_OK && err != Z_BUF_ERROR) {
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "while decompressing");
+                }
             }
 
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
@@ -115,9 +112,8 @@ decompressed data. length, if given, is the initial size of the
 output buffer.
 
 The decompressor object can no longer be used after this call.")]
-        public Bytes flush(int length=ZlibModule.DEFAULTALLOC)
-        {
-            if(length < 1)
+        public Bytes flush(int length = ZlibModule.DEFAULTALLOC) {
+            if (length < 1)
                 throw PythonOps.ValueError("length must be greater than 0.");
 
             byte[] output = new byte[length];
@@ -129,8 +125,7 @@ The decompressor object can no longer be used after this call.")]
 
             int err = zst.inflate(FlushStrategy.Z_FINISH);
 
-            while((err == Z_OK || err == Z_BUF_ERROR) &&zst.avail_out == 0)
-            {
+            while ((err == Z_OK || err == Z_BUF_ERROR) && zst.avail_out == 0) {
                 int old_length = output.Length;
                 Array.Resize(ref output, output.Length * 2);
                 zst.next_out = output;
@@ -139,28 +134,20 @@ The decompressor object can no longer be used after this call.")]
                 err = zst.inflate(FlushStrategy.Z_FINISH);
             }
 
-            if(err == Z_STREAM_END)
-            {
+            if (err == Z_STREAM_END) {
                 err = zst.inflateEnd();
-                if(err != Z_OK)
-                {
-                    throw ZlibModule.zlib_error(this.zst, err, "from inflateEnd()");
+                if (err != Z_OK) {
+                    throw ZlibModule.zlib_error(_context, this.zst, err, "from inflateEnd()");
                 }
             }
 
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
-        //[Documentation("copy() -- Return a copy of the decompression object.")]
-        //public Compress copy()
-        //{
-        //    throw new NotImplementedException();
-        //}
+        // TODO: needs a deep clone of ZStream (zlib.NET has no deflateCopy/inflateCopy)
+        //public Decompress copy() => throw new NotImplementedException();
 
-        private ZStream zst;
-
-        private static Bytes GetBytes(byte[] bytes, int index, int count)
-        {
+        private static Bytes GetBytes(byte[] bytes, int index, int count) {
             var res = new byte[count];
             Array.Copy(bytes, index, res, 0, count);
             return Bytes.Make(res);

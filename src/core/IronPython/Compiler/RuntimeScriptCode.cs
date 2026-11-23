@@ -54,7 +54,7 @@ namespace IronPython.Compiler {
             if (scope == _optimizedContext.GlobalScope && !_optimizedContext.LanguageContext.EnableTracing) {
                 EnsureCompiled();
 
-                Exception e = PythonOps.SaveCurrentException();
+                object e = PythonOps.SaveCurrentExceptionState();
                 var funcCode = EnsureFunctionCode(_optimizedTarget, false, true);
                 PushFrame(_optimizedContext, funcCode);
                 try {
@@ -63,8 +63,8 @@ namespace IronPython.Compiler {
                     }
                     return _optimizedTarget(funcCode);
                 } finally {
-                    PythonOps.RestoreCurrentException(e);
-                    PopFrame();
+                    PythonOps.RestoreCurrentExceptionState(e);
+                    PopFrame(_optimizedContext, funcCode);
                 }
             }
 
@@ -105,13 +105,12 @@ namespace IronPython.Compiler {
         }
 
         private Func<FunctionCode, object>/*!*/ Compile() {
-            var pco = (PythonCompilerOptions)Ast.CompilerContext.Options;
             var pc = (PythonContext)SourceUnit.LanguageContext;
-            
-            if (pc.ShouldInterpret(pco, SourceUnit)) {
+
+            if (pc.ShouldInterpret(Ast)) {
                 return ((Microsoft.Scripting.Ast.LightExpression<Func<FunctionCode, object>>)Ast.GetLambda()).Compile(pc.Options.CompilationThreshold);
             } else {
-                return ((Microsoft.Scripting.Ast.LightExpression<Func<FunctionCode, object>>)Ast.GetLambda()).ReduceToLambda().Compile(pc.EmitDebugSymbols(SourceUnit));
+                return CompilerHelpers.Compile(((Microsoft.Scripting.Ast.LightExpression<Func<FunctionCode, object>>)Ast.GetLambda()).ReduceToLambda(), pc.EmitDebugSymbols(SourceUnit));
             }
         }
     }

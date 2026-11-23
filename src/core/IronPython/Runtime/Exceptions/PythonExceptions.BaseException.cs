@@ -281,6 +281,8 @@ namespace IronPython.Runtime.Exceptions {
                 }
             }
 
+            internal BaseException? RawContext => _context;
+
             public bool __suppress_context__ { get; set; }
 
             public TraceBack? __traceback__ {
@@ -301,8 +303,6 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             internal bool HasCause => __cause__ != null;
-
-            internal bool IsImplicitException => __cause__ == null && __cause__ != __context__;
 
             void IPythonObject.SetPythonType(PythonType/*!*/ newType) {
                 if (_type.IsSystemType || newType.IsSystemType) {

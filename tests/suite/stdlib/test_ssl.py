@@ -35,7 +35,6 @@ def load_tests(loader, standard_tests, pattern):
             test.test_ssl.ContextTests('test_session_stats'), # AttributeError: 'SSLContext' object has no attribute 'session_stats'
             test.test_ssl.ContextTests('test_sni_callback'), # AttributeError: 'SSLContext' object has no attribute 'set_servername_callback'
             test.test_ssl.ContextTests('test_sni_callback_refcycle'), # AttributeError: 'SSLContext' object has no attribute 'set_servername_callback'
-            test.test_ssl.ContextTests('test_verify_mode'), # AssertionError: ValueError not raised
             test.test_ssl.SSLErrorTests('test_lib_reason'), # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'
             test.test_ssl.SSLErrorTests('test_str'), # AssertionError: '[Errno 1] foo' != 'foo'
             test.test_ssl.ThreadedTests('test_dh_params'), # AttributeError: 'SSLContext' object has no attribute 'load_dh_params'

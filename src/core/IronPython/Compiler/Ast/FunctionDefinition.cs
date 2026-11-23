@@ -124,7 +124,7 @@ namespace IronPython.Compiler.Ast {
         internal override bool IsGeneratorMethod => IsGenerator;
 
         // Async-generator (PEP 525) channels. The StrongBox *values* are per-async-generator instance,
-        // allocated per stack frame at runtime in the function body. 
+        // allocated per stack frame at runtime in the function body.
         // Declared/assigned in the body, captured by the generator (its yields read them through Parent),
         // and handed to the PythonAsyncGenerator wrapper, which writes them before each resume:
         //   AsyncSendSlot  — the value of `x = yield z` (asend(v); None for __anext__/async for).
@@ -134,6 +134,11 @@ namespace IronPython.Compiler.Ast {
 
         internal MSAst.ParameterExpression AsyncSendSlot => _asyncSendSlot;
         internal MSAst.ParameterExpression AsyncThrowSlot => _asyncThrowSlot;
+
+        // The AsyncBodyFrame of an async body that pushes its own frame, one per call. Declared in the function that creates the coroutine
+        // or async generator, captured by the async body, which hands its frame over to it, and set as the observer of the body's driver,
+        // so that the frame moves along with the body.
+        private readonly MSAst.ParameterExpression _asyncFrame = MSAst.Expression.Variable(typeof(AsyncBodyFrame), "$asyncFrame");
 #else
         internal override bool IsGeneratorMethod => IsGenerator || IsAsync;
 #endif
@@ -142,6 +147,8 @@ namespace IronPython.Compiler.Ast {
         /// The function is a generator
         /// </summary>
         public bool IsGenerator { get; set; }
+
+        internal bool IsGeneratorExpression { get; set; }
 
         internal bool GeneratorStop { get; set; }
 
@@ -325,9 +332,8 @@ namespace IronPython.Compiler.Ast {
             var annotations = new List<MSAst.Expression>();
 
             if (ReturnAnnotation != null) {
-                // value needs to come before key in the array
-                annotations.Add(AstUtils.Convert(ReturnAnnotation, typeof(object)));
                 annotations.Add(Ast.Constant("return", typeof(string)));
+                annotations.Add(AstUtils.Convert(ReturnAnnotation, typeof(object)));
             }
 
             foreach (var param in _parameters) {
@@ -336,15 +342,13 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 if (param.Kind == ParameterKind.KeywordOnly && param.DefaultValue != null) {
-                    // value needs to come before key in the array
-                    kwdefaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
                     kwdefaults.Add(Ast.Constant(param.Name, typeof(string)));
+                    kwdefaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
                 }
 
                 if (param.Annotation != null) {
-                    // value needs to come before key in the array
-                    annotations.Add(AstUtils.Convert(param.Annotation, typeof(object)));
                     annotations.Add(Ast.Constant(param.Name, typeof(string)));
+                    annotations.Add(AstUtils.Convert(param.Annotation, typeof(object)));
                 }
             }
 
@@ -361,14 +365,14 @@ namespace IronPython.Compiler.Ast {
                 ret = Ast.Call(
                     AstMethods.MakeFunctionDebug,                                                   // method
                     Parent.LocalContext,                                                            // 1. Emit CodeContext
-                    FuncCodeExpr,                                                                   // 2. FunctionCode                        
+                    FuncCodeExpr,                                                                   // 2. FunctionCode
                     ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
                     kwdefaults.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 5. kwdefaults
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 kwdefaults
@@ -376,7 +380,7 @@ namespace IronPython.Compiler.Ast {
                         ),
                     annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 6. annotations
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 annotations
@@ -403,7 +407,7 @@ namespace IronPython.Compiler.Ast {
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
                     kwdefaults.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 5. kwdefaults
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 kwdefaults
@@ -411,7 +415,7 @@ namespace IronPython.Compiler.Ast {
                         ),
                     annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 6. annotations
-                            AstMethods.MakeDictFromItems,
+                            AstMethods.MakeDictFromKeyValueItems,
                             Ast.NewArrayInit(
                                 typeof(object),
                                 annotations
@@ -632,7 +636,7 @@ namespace IronPython.Compiler.Ast {
 
         /// <summary>
         /// Creates the LambdaExpression which implements the body of the function.
-        /// 
+        ///
         /// The functions signature is either "object Function(PythonFunction, ...)"
         /// where there is one object parameter for each user defined parameter or
         /// object Function(PythonFunction, object[]) for functions which take more
@@ -681,23 +685,24 @@ namespace IronPython.Compiler.Ast {
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
 
-            // Add beginning sequence point. For async functions this body is deferred into the nested Async/AsyncEnumerable lambda,
-            // and the outer factory (which runs first, and is the only one traced today) re-emits its own entry point at StartIndex;
-            // anchor this one at HeaderIndex (end of the signature) so the two occupy distinct source locations should the deferred
-            // body ever become traceable. For single-line signatures both still land on the same line (differing only in column).
-            statements.Add(MakeFunctionEntrySequencePoint(IsAsync ? HeaderIndex : StartIndex));
+            // Add beginning sequence point: the location of the 'call' trace event. Async functions included, since this is their body too;
+            // their outer factory, which only creates the coroutine, is not traced (as in CPython).
+            statements.Add(MakeFunctionEntrySequencePoint(StartIndex));
 
+
+            // Whether the body runs in a PythonGenerator, which drives it through the generator rewriter's state machine.
+#if FEATURE_NET_ASYNC
+            // Async functions and async generators have no backing PythonGenerator: they lower to a Task via AsyncExpression,
+            // or to an IAsyncEnumerable via AsyncEnumerableExpression.
+            bool inPythonGenerator = IsGenerator && !IsAsync;
+#else
+            bool inPythonGenerator = IsGenerator || IsAsync;
+#endif
 
             // For generators/coroutines, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
             // from inside the generator.
-#if FEATURE_NET_ASYNC
-            // Async generators have no backing PythonGenerator (they lower to IAsyncEnumerable via AsyncEnumerableExpression),
-            // so skip the $generator.CheckThrowable() prologue for them.
-            if (IsGenerator && !IsAsync) {
-#else
-            if (IsGenerator || IsAsync) {
-#endif
+            if (inPythonGenerator) {
                 MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(SourceSpan.None);
                 statements.Add(s1);
             }
@@ -709,9 +714,22 @@ namespace IronPython.Compiler.Ast {
             statements.Add(Body);
             MSAst.Expression body = Ast.Block(statements);
 
+#if FEATURE_NET_ASYNC
+            MSAst.ParameterExpression asyncFrame = null;
+#endif
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
-                body = AddFrame(LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty(nameof(PythonFunction.__code__))), body);
-                locals.Add(FunctionStackVariable);
+                MSAst.Expression codeObject = Ast.Property(_functionParam, typeof(PythonFunction).GetProperty(nameof(PythonFunction.__code__)));
+                if (inPythonGenerator) {
+                    body = AddGeneratorFrame(LocalContext, codeObject, body);
+#if FEATURE_NET_ASYNC
+                } else if (IsAsync) {
+                    asyncFrame = _asyncFrame;
+                    body = AddAsyncFrame(LocalContext, asyncFrame, codeObject, body);
+#endif
+                } else {
+                    body = AddFrame(LocalContext, codeObject, body);
+                    locals.Add(FunctionStackVariable);
+                }
             }
 
             body = AddProfiling(body);
@@ -721,14 +739,7 @@ namespace IronPython.Compiler.Ast {
 
 #if FEATURE_NET_ASYNC
             // Under .NET-async, an `async def` body returns a PythonCoroutine wrapping a Task<object?>.
-            // We pre-allocate a CancellationTokenSource and a StrongBox<Exception?> here
-            // so the same instances are shared with both AsyncExpression, which threads them into AsyncHelpers.DriveAsync
-            // and PythonCoroutine, which uses them to implement coro.throw(exc) on a running coroutine:
-            // write the exception to the box, cancel the CTS, and DriveAsync surfaces that exception in place of OperationCanceledException.
             if (IsAsync) {
-                var cts = MSAst.Expression.Variable(typeof(CancellationTokenSource), "$cts");
-                var excBox = MSAst.Expression.Variable(typeof(StrongBox<Exception>), "$cancelExc");
-                var ctToken = MSAst.Expression.Property(cts, nameof(CancellationTokenSource.Token));
                 if (IsGenerator) {
                     // Async generator: the body has both `await` and `yield`. Lower it to an
                     // IAsyncEnumerable<object?> via AsyncEnumerableExpression, sharing the generator label so
@@ -736,19 +747,23 @@ namespace IronPython.Compiler.Ast {
                     // PythonAsyncGenerator. The send/throw slots are per-generator StrongBoxes captured by the
                     // generator (the body's yields read them) AND handed to the wrapper, which writes them
                     // before each resume — see AsyncSendSlot / AsyncThrowSlot.
+                    var cts = MSAst.Expression.Variable(typeof(CancellationTokenSource), "$cts");
+                    var ctToken = MSAst.Expression.Property(cts, nameof(CancellationTokenSource.Token));
                     var sendSlot = AsyncSendSlot;
                     var throwSlot = AsyncThrowSlot;
+                    var asyncBody = AstUtils.AsyncEnumerable(Name, body, GeneratorLabel, interrupts: null, ctToken);
+                    if (asyncFrame is not null) {
+                        asyncBody = asyncBody.WithObserver(asyncFrame);
+                    }
                     body = MSAst.Expression.Block(
-                        [cts, excBox, sendSlot, throwSlot],
-                        MakeFunctionEntrySequencePoint(StartIndex),
+                        [cts, sendSlot, throwSlot],
                         MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
-                        MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         MSAst.Expression.Assign(sendSlot, MSAst.Expression.New(typeof(StrongBox<object>))),
                         MSAst.Expression.Assign(throwSlot, MSAst.Expression.New(typeof(StrongBox<Exception>))),
                         Ast.Call(
                             AstMethods.MakeAsyncGenerator,
                             _functionParam,
-                            AstUtils.AsyncEnumerable(Name, body, GeneratorLabel, ctToken, excBox),
+                            asyncBody,
                             sendSlot,
                             throwSlot,
                             cts));
@@ -758,18 +773,28 @@ namespace IronPython.Compiler.Ast {
                     // so the body doesn't execute until the coroutine is first driven (send/AsTask).
                     // This makes calling an async def side-effect-free (PEP 492) and lets the body's first await capture the driver's SynchronizationContext
                     // rather than whatever context happened to be current at construction.
+                    // The AsyncInterruptSource is shared by AsyncExpression, which threads it into AsyncHelpers.DriveAsync,
+                    // and PythonCoroutine, which uses it to implement coro.throw(exc).
+                    var interrupts = MSAst.Expression.Variable(typeof(Microsoft.Scripting.Runtime.AsyncInterruptSource), "$interrupts");
+                    var asyncBody = AstUtils.Async(Name, body, interrupts);
+                    if (asyncFrame is not null) {
+                        asyncBody = asyncBody.WithObserver(asyncFrame);
+                    }
                     body = MSAst.Expression.Block(
-                        [cts, excBox],
-                        MakeFunctionEntrySequencePoint(StartIndex),
-                        MSAst.Expression.Assign(cts, MSAst.Expression.New(typeof(CancellationTokenSource))),
-                        MSAst.Expression.Assign(excBox, MSAst.Expression.New(typeof(StrongBox<Exception>))),
+                        [interrupts],
+                        MSAst.Expression.Assign(interrupts, MSAst.Expression.New(typeof(Microsoft.Scripting.Runtime.AsyncInterruptSource))),
                         Ast.Call(
                             AstMethods.MakeAsyncCoroutine,
                             _functionParam,
-                            MSAst.Expression.Lambda<Func<Task<object>>>(
-                                AstUtils.Async(Name, body, ctToken, excBox)),
-                            cts,
-                            excBox));
+                            MSAst.Expression.Lambda<Func<Task<object>>>(asyncBody),
+                            interrupts));
+                }
+                if (asyncFrame is not null) {
+                    // A new AsyncBodyFrame for each call, so that each coroutine or async generator moves its own frame.
+                    body = MSAst.Expression.Block(
+                        [asyncFrame],
+                        MSAst.Expression.Assign(asyncFrame, MSAst.Expression.New(typeof(AsyncBodyFrame))),
+                        body);
                 }
             }
 #endif

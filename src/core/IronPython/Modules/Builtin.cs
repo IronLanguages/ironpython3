@@ -49,15 +49,55 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
         [LightThrowing]
         public static object __import__(CodeContext/*!*/ context, [NotNone] string name, object? globals = null, object? locals = null, object? fromlist = null, int level = 0) {
-            if (fromlist is string || fromlist is Extensible<string>) {
-                fromlist = new List<object> { fromlist };
+            PythonContext pc = context.LanguageContext;
+            PythonModule? bootstrap = pc.ImportLibBootstrap;
+
+            if (bootstrap is not null) {
+                var hasFromList = PythonOps.IsTrue(fromlist);
+
+                object module = Importer.ImportModule(context, globals, name, hasFromList, level);
+
+                if (hasFromList && HasPath(context, module)) {
+                    return PythonOps.Invoke(context, bootstrap, "_handle_fromlist", module, fromlist, PythonOps.GetBoundAttr(context, bootstrap, "_gcd_import"))!;
+                }
+                return module;
+            } else {
+                if (fromlist is string || fromlist is Extensible<string>) {
+                    fromlist = new List<object> { fromlist };
+                }
+                IList? from = fromlist as IList;
+                var hasFromList = from != null && from.Count > 0;
+
+                object module = Importer.ImportModule(context, globals, name, hasFromList, level);
+                if (module is null) return ModuleNotFound(context, name);
+
+                if (hasFromList && from is not null && module is PythonModule mod && mod.__dict__._storage.TryGetPath(out _)) {
+                    string strAttrName;
+                    for (int i = 0; i < from.Count; i++) {
+                        object? attrName = from[i];
+
+                        if (pc.TryConvertToString(attrName, out strAttrName) &&
+                            !string.IsNullOrEmpty(strAttrName) &&
+                            strAttrName != "*") {
+                            try {
+                                Importer.ImportFrom(context, mod, strAttrName);
+                            } catch (ImportException) {
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                return module;
             }
 
-            IList? from = fromlist as IList;
-            PythonContext pc = context.LanguageContext;
+            static bool HasPath(CodeContext context, object module) {
+                // the module type has no __path__ or __getattr__, so only the dict matters (and a miss through HasAttr is slow)
+                if (module is PythonModule mod && mod.GetType() == typeof(PythonModule)) return mod.__dict__._storage.TryGetPath(out _);
+                return PythonOps.HasAttr(context, module, "__path__");
+            }
 
-            object ret = Importer.ImportModule(context, globals, name, from != null && from.Count > 0, level);
-            if (ret == null) {
+            static object ModuleNotFound(CodeContext context, string name) {
 #if PYTHON_36_OR_GREATER // ModuleNotFoundError since Python 3.6
                 var err = PythonOps.ModuleNotFoundError("No module named {0}", PythonOps.Repr(context, name));
 #else
@@ -66,25 +106,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 ((PythonExceptions._ImportError)err.GetPythonException()!).name = name;
                 return LightExceptions.Throw(err);
             }
-
-            if (ret is PythonModule mod && from != null) {
-                string strAttrName;
-                for (int i = 0; i < from.Count; i++) {
-                    object? attrName = from[i];
-
-                    if (pc.TryConvertToString(attrName, out strAttrName) &&
-                        !string.IsNullOrEmpty(strAttrName) &&
-                        strAttrName != "*") {
-                        try {
-                            Importer.ImportFrom(context, mod, strAttrName);
-                        } catch (ImportException) {
-                            continue;
-                        }
-                    }
-                }
-            }
-
-            return ret;
         }
 
         [Documentation("abs(number) -> number\n\nReturn the absolute value of the argument.")]
@@ -207,7 +228,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             var sourceCodeKind = ValidateCompileMode(mode);
 
             if (source.Contains('\0')) {
-                throw PythonOps.TypeError("compile() expected string without null bytes");
+#if PYTHON_34
+                throw PythonOps.TypeError("source code string cannot contain null bytes");
+#else
+                // TODO: SyntaxError in 3.11
+                throw PythonOps.ValueError("source code string cannot contain null bytes");
+#endif
             }
 
             var sourceUnit = context.LanguageContext.CreateSnippet(source, sfilename, sourceCodeKind);
@@ -290,8 +316,19 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "The expression can be either be a string, bytes\n" +
             "or a code object returned by compile()")]
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [NotNone] FunctionCode code, PythonDictionary? globals = null, object? locals = null)
-            => code.Call(GetExecEvalScopeOptional(context, globals, locals, copyModule: false));
+        public static object eval(CodeContext/*!*/ context, [NotNone] FunctionCode code, PythonDictionary? globals = null, object? locals = null) {
+            CodeContext evalContext = GetExecEvalScopeOptional(context, globals, locals, copyModule: false);
+            if (context.LanguageContext.PythonOptions.Frames) {
+                List<FunctionStack> stack = PythonOps.PushFrame(evalContext, code);
+                try {
+                    return code.Call(evalContext);
+                } finally {
+                    PythonOps.AssertOwnFrameOnTop(evalContext, code, stack);
+                    stack.RemoveAt(stack.Count - 1);
+                }
+            }
+            return code.Call(evalContext);
+        }
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
@@ -356,6 +393,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 try {
                     code.Call(execContext);
                 } finally {
+                    PythonOps.AssertOwnFrameOnTop(execContext, code, stack);
                     stack.RemoveAt(stack.Count - 1);
                 }
             } else {
@@ -771,10 +809,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         private static readonly object UndefinedKeywordArgument = new object();
 
-        public static object? max(CodeContext/*!*/ context, object? x) {
+        private static object? MaxWithDefault(CodeContext/*!*/ context, object? x, object? def) {
             IEnumerator i = PythonOps.GetEnumerator(context, x);
-            if (!i.MoveNext())
+            if (!i.MoveNext()) {
+                if (def != UndefinedKeywordArgument) return def;
                 throw PythonOps.ValueError("max() arg is an empty sequence");
+            }
             object? ret = i.Current;
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
@@ -783,9 +823,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? max(CodeContext/*!*/ context, object? x, object? y) {
-            return context.LanguageContext.GreaterThan(x, y) ? x : y;
-        }
+        public static object? max(CodeContext/*!*/ context, object? x)
+            => MaxWithDefault(context, x, UndefinedKeywordArgument);
+
+        public static object? max(CodeContext/*!*/ context, object? x, object? y)
+            => context.LanguageContext.GreaterThan(y, x) ? y : x;
 
         public static object? max(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             if (args.Length > 0) {
@@ -808,19 +850,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? max(CodeContext/*!*/ context, object? x, [ParamDictionary] IDictionary<string, object?> dict) {
+            VerifyKeys(nameof(max), dict, out object? method, out object? def);
+
+            if (method == UndefinedKeywordArgument || method == null) { // null key is allowed since CPython 3.8
+                return MaxWithDefault(context, x, def);
+            }
+
             IEnumerator i = PythonOps.GetEnumerator(context, x);
-
-            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: true);
-            object? method = kwargTuple.Item1;
-            object? def = kwargTuple.Item2;
-
             if (!i.MoveNext()) {
                 if (def != UndefinedKeywordArgument) return def;
                 throw PythonOps.ValueError("max() arg is an empty sequence");
-            }
-
-            if (method == UndefinedKeywordArgument || method == null) { // null key is allowed since CPython 3.8
-                return max(context, x);
             }
 
             object? ret = i.Current;
@@ -837,57 +876,40 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? max(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary] IDictionary<string, object?> dict) {
-            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
+            VerifyKeysNoDefault(nameof(max), dict, out object? method);
 
             if (method == null) return max(context, x, y); // null key is allowed since CPython 3.8
 
             PythonContext pc = context.LanguageContext;
-            return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
+            return pc.GreaterThan(PythonCalls.Call(context, method, y), PythonCalls.Call(context, method, x)) ? y : x;
         }
 
         public static object? max(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
-            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
+            if (args.Length == 0) throw PythonOps.TypeError("max expected 1 arguments, got 0");
+
+            VerifyKeysNoDefault(nameof(max), dict, out object? method);
 
             if (method == null) return max(context, args); // null key is allowed since CPython 3.8
+            if (args.Length == 1) return max(context, args[0], dict);
 
-            if (args.Length > 0) {
-                int retIndex = 0;
-                if (args.Length == 1) {
-                    return max(context, args[retIndex], dict);
+            int retIndex = 0;
+            object? retValue = PythonCalls.Call(context, method, args[retIndex]);
+            PythonContext pc = context.LanguageContext;
+            for (int i = 1; i < args.Length; i++) {
+                object? tmpRetValue = PythonCalls.Call(context, method, args[i]);
+                if (pc.GreaterThan(tmpRetValue, retValue)) {
+                    retIndex = i;
+                    retValue = tmpRetValue;
                 }
-
-                object? retValue = PythonCalls.Call(context, method, args[retIndex]);
-                PythonContext pc = context.LanguageContext;
-                for (int i = 1; i < args.Length; i++) {
-                    object? tmpRetValue = PythonCalls.Call(context, method, args[i]);
-
-                    if (pc.GreaterThan(tmpRetValue, retValue)) {
-                        retIndex = i;
-                        retValue = tmpRetValue;
-                    }
-                }
-                return args[retIndex];
-            } else {
-                throw PythonOps.TypeError("max expected 1 arguments, got 0");
             }
+            return args[retIndex];
         }
 
-        private static Tuple<object?, object?> GetMaxKwArg(IDictionary<string, object?> dict, bool isDefaultAllowed) {
-            if (dict.Count != 1 && dict.Count != 2)
-                throw PythonOps.TypeError("max() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
-            if (dict.ContainsKey("default") && !isDefaultAllowed) {
-                throw PythonOps.TypeError("Cannot specify a default for max() with multiple positional arguments");
-            }
-
-            return VerifyKeys("max", dict);
-        }
-
-        public static object? min(CodeContext/*!*/ context, object? x) {
+        private static object? MinWithDefault(CodeContext/*!*/ context, object? x, object? def) {
             IEnumerator i = PythonOps.GetEnumerator(context, x);
             if (!i.MoveNext()) {
-                throw PythonOps.ValueError("empty sequence");
+                if (def != UndefinedKeywordArgument) return def;
+                throw PythonOps.ValueError("min() arg is an empty sequence");
             }
             object? ret = i.Current;
             PythonContext pc = context.LanguageContext;
@@ -897,9 +919,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ret;
         }
 
-        public static object? min(CodeContext/*!*/ context, object? x, object? y) {
-            return context.LanguageContext.LessThan(x, y) ? x : y;
-        }
+        public static object? min(CodeContext/*!*/ context, object? x)
+            => MinWithDefault(context, x, UndefinedKeywordArgument);
+
+        public static object? min(CodeContext/*!*/ context, object? x, object? y)
+            => context.LanguageContext.LessThan(y, x) ? y : x;
 
         public static object? min(CodeContext/*!*/ context, [NotNone] params object?[] args) {
             if (args.Length > 0) {
@@ -919,17 +943,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? min(CodeContext/*!*/ context, object? x, [ParamDictionary] IDictionary<string, object?> dict) {
+            VerifyKeys(nameof(min), dict, out object? method, out object? def);
+
+            if (method == UndefinedKeywordArgument || method == null) { // null key is allowed since CPython 3.8
+                return MinWithDefault(context, x, def);
+            }
+
             IEnumerator i = PythonOps.GetEnumerator(context, x);
-            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
-            object? method = kwargTuple.Item1;
-            object? def = kwargTuple.Item2;
             if (!i.MoveNext()) {
                 if (def != UndefinedKeywordArgument) return def;
                 throw PythonOps.ValueError("min() arg is an empty sequence");
-            }
-
-            if (method == UndefinedKeywordArgument || method == null) { // null key is allowed since CPython 3.8
-                return min(context, x);
             }
 
             object? ret = i.Current;
@@ -946,82 +969,59 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object? min(CodeContext/*!*/ context, object? x, object? y, [ParamDictionary] IDictionary<string, object?> dict) {
-            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
+            VerifyKeysNoDefault(nameof(min), dict, out object? method);
 
             if (method == null) return min(context, x, y); // null key is allowed since CPython 3.8
 
-            return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
+            return context.LanguageContext.LessThan(PythonCalls.Call(context, method, y), PythonCalls.Call(context, method, x)) ? y : x;
         }
 
         public static object? min(CodeContext/*!*/ context, [ParamDictionary] IDictionary<string, object?> dict, [NotNone] params object?[] args) {
-            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
-            object? method = kwargTuple.Item1;
+            if (args.Length == 0) throw PythonOps.TypeError("min expected 1 arguments, got 0");
+
+            VerifyKeysNoDefault(nameof(min), dict, out object? method);
 
             if (method == null) return min(context, args); // null key is allowed since CPython 3.8
+            if (args.Length == 1) return min(context, args[0], dict);
 
-            if (args.Length > 0) {
-                int retIndex = 0;
-                if (args.Length == 1) {
-                    return min(context, args[retIndex], dict);
+            int retIndex = 0;
+            object? retValue = PythonCalls.Call(context, method, args[retIndex]);
+            PythonContext pc = context.LanguageContext;
+            for (int i = 1; i < args.Length; i++) {
+                object? tmpRetValue = PythonCalls.Call(context, method, args[i]);
+                if (pc.LessThan(tmpRetValue, retValue)) {
+                    retIndex = i;
+                    retValue = tmpRetValue;
                 }
-
-                object? retValue = PythonCalls.Call(context, method, args[retIndex]);
-                PythonContext pc = context.LanguageContext;
-
-                for (int i = 1; i < args.Length; i++) {
-                    object? tmpRetValue = PythonCalls.Call(context, method, args[i]);
-
-                    if (pc.LessThan(tmpRetValue, retValue)) {
-                        retIndex = i;
-                        retValue = tmpRetValue;
-                    }
-                }
-                return args[retIndex];
-            } else {
-                throw PythonOps.TypeError("min expected 1 arguments, got 0");
             }
+            return args[retIndex];
         }
 
-        private static Tuple<object?, object?> GetMinKwArg(IDictionary<string, object?> dict, bool isDefaultAllowed) {
-            if (dict.Count != 1 && dict.Count != 2)
-                throw PythonOps.TypeError("min() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
-
-            if (dict.ContainsKey("default") && !isDefaultAllowed)
-                throw PythonOps.TypeError("Cannot specify a default for min() with multiple positional arguments");
-
-            return VerifyKeys("min", dict);
+        private static void VerifyKeysNoDefault(string name, IDictionary<string, object?> dict, out object? method) {
+            VerifyKeys(name, dict, out method, out object? def);
+            if (def != UndefinedKeywordArgument)
+                throw PythonOps.TypeError("Cannot specify a default for {0}() with multiple positional arguments", name);
         }
 
-        private static Tuple<object?, object?> VerifyKeys(string name, IDictionary<string, object?> dict) {
-            object? method;
-            object? def;
-
-            int cnt = 0;
-            if (dict.TryGetValue("key", out method)) {
-                cnt++;
-            } else {
-                method = UndefinedKeywordArgument;
-            }
-
-            if (dict.TryGetValue("default", out def)) {
-                cnt++;
-            } else {
-                def = UndefinedKeywordArgument;
-            }
-
+        private static void VerifyKeys(string name, IDictionary<string, object?> dict, out object? method, out object? def) {
             if (dict.Count > 2) {
-                throw PythonOps.TypeError("{1}() takes at most 2 keyword arguments ({0} given)", dict.Count, name);
+                throw PythonOps.TypeError("{0}() takes at most 2 keyword arguments ({1} given)", name, dict.Count);
             }
 
-            if (dict.Count > cnt) {
-                var key = dict.Keys.Cast<string>().Where(x => x != "default" && x != "key").First();
-                throw PythonOps.TypeError("{1}() got an unexpected keyword argument ({0})", key, name);
+            method = def = UndefinedKeywordArgument;
+
+            foreach (var pair in dict) {
+                switch (pair.Key) {
+                    case "key":
+                        method = pair.Value;
+                        break;
+                    case "default":
+                        def = pair.Value;
+                        break;
+                    default:
+                        throw PythonOps.TypeError("{1}() got an unexpected keyword argument '{0}'", pair.Key, name);
+                }
             }
-
-            var result = Tuple.Create(method, def);
-
-            return result;
         }
 
         /// <summary>
@@ -1058,7 +1058,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [LightThrowing]
         public static object? next([NotNone] PythonGenerator gen, object? defaultVal) {
-            object res = gen.__next__();
+            object? res = gen.__next__();
             Exception exc = LightExceptions.GetLightException(res);
 
             if (exc != null && exc is StopIterationException) {

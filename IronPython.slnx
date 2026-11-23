@@ -21,6 +21,8 @@
     <File Path="eng/After.targets" />
     <File Path="eng/net10.0-windows.props" />
     <File Path="eng/net10.0.props" />
+    <File Path="eng/net11.0-windows.props" />
+    <File Path="eng/net11.0.props" />
     <File Path="eng/net462.props" />
     <File Path="eng/net8.0-windows.props" />
     <File Path="eng/net8.0.props" />
@@ -65,5 +67,7 @@
   <Project Path="src/extensions/IronPython.SQLite/IronPython.SQLite.csproj" />
   <Project Path="src/extensions/IronPython.Wpf/IronPython.Wpf.csproj" />
   <Project Path="src/roslyn/IronPython.Analyzer/IronPython.Analyzer.csproj" />
+  <Project Path="src/roslyn/IronPython.SourceGenerator/IronPython.SourceGenerator.csproj" />
   <Project Path="tests/IronPython.Tests/IronPython.Tests.csproj" />
+  <Project Path="tests/IronPythonTest/IronPythonTest.csproj" />
 </Solution>

@@ -438,8 +438,6 @@ namespace IronPython.Runtime.Operations {
                         return x;
                     }
                     return 0.0;
-                } else if (y == 0.0) {
-                    return 1.0;
                 } else if (double.IsNegativeInfinity(y)) {
                     return double.PositiveInfinity;
                 }
@@ -519,28 +517,24 @@ namespace IronPython.Runtime.Operations {
             if (double.IsNaN(d)) return 0;
             if (d == 0) return 0;
 
-            // it's an integer!
-            if (d == Math.Truncate(d)) {
-                // Use this constant since long.MaxValue doesn't cast precisely to a double
-                const double maxValue = (ulong)long.MaxValue + 1;
-                if (long.MinValue <= d && d < maxValue) {
-                    return Int64Ops.__hash__((long)d);
-                }
-                return BigIntegerOps.__hash__((BigInteger)d);
-            }
+            // Python defines hash(d) as s * (m * 2**e mod P) with P = 2**31 - 1 for 32-bit hashes.
+            // Since 2**31 == 1 (mod P), we have:
+            //   2**e == 2**(e % 31) (mod P)        -> multiplying by 2**e is a shift by e % 31 (made non-negative)
+            //   x == (x & P) + (x >> 31) (mod P)   -> reducing mod P needs no division
+            const ulong P = int.MaxValue;
 
-            DecomposeDouble(d, out int sign, out long mantissa, out int exponent);
+            DecomposeDouble(d, out int s, out long m, out int e);
 
-            // make sure the mantissa is not even
-            while ((mantissa & 1) == 0) {
-                mantissa >>= 1;
-                exponent++;
-            }
-            Debug.Assert(exponent <= 0);
+            int shift = e % 31;
+            if (shift < 0) shift += 31;
 
-            var exp = exponent % 31;
-            var invmod = exp == 0 ? 1 : (1 << (31 + exp));
-            var hash = unchecked((int)(sign * (((mantissa % int.MaxValue) * invmod) % int.MaxValue)));
+            ulong x = ((ulong)m & P) + ((ulong)m >> 31); // < 2**32
+            x <<= shift;                                 // < 2**62
+            x = (x & P) + (x >> 31);                     // < 2**32
+            x = (x & P) + (x >> 31);                     // <= P + 1
+            if (x >= P) x -= P;
+
+            var hash = s * (int)x;
             return hash == -1 ? -2 : hash;
         }
 
@@ -733,27 +727,8 @@ namespace IronPython.Runtime.Operations {
             return x != y;
         }
 
-        internal static string Repr(CodeContext/*!*/ context, double self, bool trailingZeroAfterWholeFloat) {
-            if (double.IsNaN(self)) {
-                return "nan";
-            }
-
-            // first format using Python's specific formatting rules...
-            string res = StringFormatter.Format(context, "%.17g", self, trailingZeroAfterWholeFloat: trailingZeroAfterWholeFloat);
-            if (LiteralParser.ParseFloat(res) == self) {
-                return res;
-            }
-#if NETCOREAPP3_1_OR_GREATER
-            Debug.Assert(false);
-#endif
-
-            // if it's not round trippable though use .NET's round-trip format
-            res = self.ToString("R", CultureInfo.InvariantCulture);
-            if (trailingZeroAfterWholeFloat && !res.Contains('.')) {
-                res += ".0";
-            }
-            return res;
-        }
+        internal static string Repr(CodeContext/*!*/ context, double self, bool trailingZeroAfterWholeFloat)
+            => Schubfach.dtoa(self, trailingZeroAfterWholeFloat);
 
         public static string __repr__(CodeContext/*!*/ context, double self)
             => Repr(context, self, trailingZeroAfterWholeFloat: true);
@@ -791,193 +766,57 @@ namespace IronPython.Runtime.Operations {
             if (formatSpec == string.Empty) return __str__(context, self);
 
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
-            string digits;
+            string digits = DoubleToFormatString(context, self, spec);
 
-            if (Double.IsPositiveInfinity(self) || Double.IsNegativeInfinity(self)) {
-                if (spec.Type != null && char.IsUpper(spec.Type.Value)) {
-                    digits = "INF";
-                } else {
-                    digits = "inf";
-                }
-            } else if (Double.IsNaN(self)) {
-                if (spec.Type != null && char.IsUpper(spec.Type.Value)) {
-                    digits = "NAN";
-                } else {
-                    digits = "nan";
-                }
-            } else {
-                digits = DoubleToFormatString(context, self, spec);
-            }
-
-            if (spec.Sign == null) {
-                // This is special because its not "-nan", it's nan.
-                // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
-            } else {
-                // Always pass isZero=false so that -0.0 shows up
-                return spec.AlignNumericText(digits, false, Double.IsNaN(self) ? true : Sign(self) > 0);
-            }
+            // nan never gets a "-"; isZero is false so that -0.0 keeps its sign
+            return spec.AlignNumericText(digits, false, Double.IsNaN(self) || Sign(self) > 0);
         }
 
         /// <summary>
         /// Returns the digits for the format spec, no sign is included.
         /// </summary>
-        internal static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec) {
-            self = Math.Abs(self);
+        /// <param name="addDot0">Without a type, append ".0" to integral values like str() does.</param>
+        internal static string DoubleToFormatString(CodeContext/*!*/ context, double self, StringFormatSpec/*!*/ spec, bool addDot0 = true) {
             const int DefaultPrecision = 6;
             int precision = spec.Precision ?? DefaultPrecision;
+            int minWidth = spec.Fill == '0' && spec.Alignment == '=' && spec.Width is { } width ? ((spec.Sign != null && spec.Sign != '-' || Sign(self) < 0) ? width - 1 : width) : 0;
 
             string digits;
             switch (spec.Type) {
-                case '%': {
-                        string fmt = "0." + new string('0', precision) + "%";
-                        if (spec.ThousandsComma) {
-                            fmt = "#," + fmt;
-                        }
-                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
-                        break;
-                    }
-                case 'f':
-                case 'F': {
-                        string fmt = "0." + new string('0', precision);
-                        if (spec.ThousandsComma) {
-                            fmt = "#," + fmt;
-                        }
-                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
-                        break;
-                    }
+                case '%':
+                    digits = FloatFormatter.Format(self * 100, 'f', precision, spec.AlternateForm) + "%";
+                    break;
                 case 'e':
-                case 'E': {
-                        string fmt = "0." + new string('0', precision) + spec.Type + "+00";
-                        if (spec.ThousandsComma) {
-                            fmt = "#," + fmt;
-                        }
-                        digits = self.ToString(fmt, CultureInfo.InvariantCulture);
-                        break;
-                    }
-                case '\0':
-                case null:
-                    if (spec.Precision != null) {
-                        // precision applies to the combined digits before and after the decimal point
-                        // so we first need find out how many digits we have before...
-                        int digitCnt = 1;
-                        double cur = self;
-                        while (cur >= 10) {
-                            cur /= 10;
-                            digitCnt++;
-                        }
-
-                        // Use exponents if we don't have enough room for all the digits before.  If we
-                        // only have as single digit avoid exponents.
-                        if (digitCnt > spec.Precision.Value && digitCnt != 1) {
-                            // first round off the decimal value
-                            self = MathUtils.Round(self, 0 , MidpointRounding.ToEven);
-
-                            // then remove any insignificant digits
-                            double pow = Math.Pow(10, digitCnt - Math.Max(spec.Precision.Value, 1));
-                            self = self - (self % pow);
-
-                            // finally format w/ the requested precision
-                            string fmt = "0.0" + new string('#', spec.Precision.Value);
-
-                            digits = self.ToString(fmt + "e+00", CultureInfo.InvariantCulture);
-                        } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly
-                            // round to match CPython's behavior
-                            int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
-
-                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
-                            digits = self.ToString("0.0" + new string('#', decimalPoints), CultureInfo.InvariantCulture);
-                        }
-                    } else {
-                        // just the default formatting
-                        if (IncludeExponent(self)) {
-                            digits = self.ToString("0.#e+00", CultureInfo.InvariantCulture);
-                        } else if (spec.ThousandsComma) {
-                            digits = self.ToString("#,0.0###", CultureInfo.InvariantCulture);
-                        } else {
-                            digits = self.ToString("0.0###", CultureInfo.InvariantCulture);
-                        }
-                    }
+                case 'E':
+                case 'f':
+                case 'F':
+                case 'g':
+                case 'G':
+                    digits = FloatFormatter.Format(self, spec.Type.Value, precision, spec.AlternateForm);
                     break;
                 case 'n':
-                case 'g':
-                case 'G': {
-                        // precision applies to the combined digits before and after the decimal point
-                        // so we first need find out how many digits we have before...
-                        int digitCnt = 1;
-                        double cur = self;
-                        while (cur >= 10) {
-                            cur /= 10;
-                            digitCnt++;
-                        }
-
-                        // Use exponents if we don't have enough room for all the digits before.  If we
-                        // only have as single digit avoid exponents.
-                        if (digitCnt > precision && digitCnt != 1) {
-                            // first round off the decimal value
-                            self = MathUtils.Round(self, 0, MidpointRounding.ToEven);
-
-                            // then remove any insignificant digits
-                            double pow = Math.Pow(10, digitCnt - Math.Max(precision, 1));
-                            double rest = self / pow;
-                            self = self - self % pow;
-                            if ((rest % 1) >= .5) {
-                                // round up
-                                self += pow;
-                            }
-
-                            string fmt;
-                            if (spec.Precision > 1 || digitCnt > 6) {
-                                // include the requested precision to the right of the decimal
-                                fmt = "0.#" + new string('#', precision);
-                            } else {
-                                // zero precision, no decimal
-                                fmt = "0";
-                            }
-                            if (spec.ThousandsComma) {
-                                fmt = "#," + fmt;
-                            }
-
-                            digits = self.ToString(fmt + (spec.Type == 'G' ? "E+00" : "e+00"), CultureInfo.InvariantCulture);
-                        } else {
-                            // we're including all the numbers to the right of the decimal we can, we explicitly
-                            // round to match CPython's behavior
-                            if (self < 1) {
-                                // no implicit 0
-                                digitCnt--;
-                            }
-                            int decimalPoints = Math.Max(precision - digitCnt, 0);
-
-                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
-
-                            if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
-                                if (digitCnt != precision && (self % 1) != 0) {
-                                    digits = self.ToString("#,0.0" + new string('#', decimalPoints), context.LanguageContext.NumericCulture);
-                                } else {
-                                    // leave out the decimal if the precision == # of digits or we have a whole number
-                                    digits = self.ToString("#,0", context.LanguageContext.NumericCulture);
-                                }
-                            } else {
-                                if (digitCnt != precision && (self % 1) != 0) {
-                                    digits = self.ToString("0.0" + new string('#', decimalPoints), CultureInfo.InvariantCulture);
-                                } else {
-                                    // leave out the decimal if the precision == # of digits or we have a whole number
-                                    digits = self.ToString("0", CultureInfo.InvariantCulture);
-                                }
-                            }
-                        }
+                    digits = FloatFormatter.Format(self, 'g', precision, spec.AlternateForm);
+                    CultureInfo culture = context.LanguageContext.NumericCulture;
+                    if (culture != PythonContext.CCulture) {
+                        NumberFormatInfo nfi = culture.NumberFormat;
+                        digits = digits.Replace(".", nfi.NumberDecimalSeparator);
+                        digits = FloatFormatter.AddGrouping(digits, nfi.NumberGroupSeparator, nfi.NumberGroupSizes, minWidth);
                     }
+                    return digits;
+                case '\0':
+                case null:
+                    digits = FloatFormatter.Format(self, spec.Precision.HasValue ? 'g' : 'r', precision, spec.AlternateForm, addDot0);
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'float'", spec.TypeRepr);
             }
 
+            if (spec.ThousandsComma) {
+                digits = FloatFormatter.AddGrouping(digits, ",", minWidth);
+            } else if (spec.ThousandsUnderscore) {
+                digits = FloatFormatter.AddGrouping(digits, "_", minWidth);
+            }
             return digits;
-        }
-
-        private static bool IncludeExponent(double self) {
-            return self >= 1e12 || (self != 0 && self <= 0.00009);
         }
 
         private static string DefaultFloatFormat() {
@@ -1155,17 +994,17 @@ namespace IronPython.Runtime.Operations {
             return (float)(double)DoubleOps.NewFloat(context, TypeCache.Single, x);
         }
 
-        public static string __str__(CodeContext/*!*/ context, float x) {
-            // Python does not natively support System.Single. However, we try to provide
-            // formatting consistent with System.Double.
-            return StringFormatter.Format(context, "%.6g", x, trailingZeroAfterWholeFloat: true);
-        }
+        public static string __str__(CodeContext/*!*/ context, float x)
+            => Schubfach.ftoa(x);
 
         public static string __repr__(CodeContext/*!*/ context, float self) {
             return __str__(context, self);
         }
 
         public static string __format__(CodeContext/*!*/ context, float self, [NotNone] string/*!*/ formatSpec) {
+            // format(x, '') must be equal to str(x), which is not the same as str((double)x)
+            if (formatSpec.Length == 0) return __str__(context, self);
+
             return DoubleOps.__format__(context, self, formatSpec);
         }
 

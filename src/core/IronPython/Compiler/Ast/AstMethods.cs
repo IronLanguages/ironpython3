@@ -24,8 +24,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo ImportWithNames = GetMethod((Func<CodeContext, string, string[], int, object>)PythonOps.ImportWithNames);
         public static readonly MethodInfo ImportFrom = GetMethod((Func<CodeContext, object, string, object>)PythonOps.ImportFrom);
         public static readonly MethodInfo ImportStar = GetMethod((Action<CodeContext, string, int>)PythonOps.ImportStar);
-        public static readonly MethodInfo SaveCurrentException = GetMethod((Func<Exception>)PythonOps.SaveCurrentException);
-        public static readonly MethodInfo RestoreCurrentException = GetMethod((Action<Exception>)PythonOps.RestoreCurrentException);
+        public static readonly MethodInfo SaveCurrentExceptionState = GetMethod((Func<object>)PythonOps.SaveCurrentExceptionState);
+        public static readonly MethodInfo RestoreCurrentExceptionState = GetMethod((Action<object>)PythonOps.RestoreCurrentExceptionState);
         public static readonly MethodInfo MakeGeneratorExpression = GetMethod((Func<object, object, object>)PythonOps.MakeGeneratorExpression);
         public static readonly MethodInfo ListAddForComprehension = GetMethod((Action<PythonList, object>)PythonOps.ListAddForComprehension);
         public static readonly MethodInfo SetAddForComprehension = GetMethod((Action<SetCollection, object>)PythonOps.SetAddForComprehension);
@@ -37,7 +37,6 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo RemoveModule = GetMethod((Action<CodeContext, string, object>)PythonOps.RemoveModule);
         public static readonly MethodInfo ModuleStarted = GetMethod((Action<CodeContext, ModuleOptions>)PythonOps.ModuleStarted);
         public static readonly MethodInfo MakeRethrownException = GetMethod((Func<CodeContext, Exception>)PythonOps.MakeRethrownException);
-        public static readonly MethodInfo MakeRethrowExceptionWorker = GetMethod((Func<Exception, Exception>)PythonOps.MakeRethrowExceptionWorker);
         public static readonly MethodInfo MakeException = GetMethod((Func<CodeContext, object, Exception>)PythonOps.MakeException);
         public static readonly MethodInfo MakeExceptionWithCause = GetMethod((Func<CodeContext, object, object, Exception>)PythonOps.MakeExceptionWithCause);
         public static readonly MethodInfo MakeSlice = GetMethod((Func<object, object, object, Slice>)PythonOps.MakeSlice);
@@ -67,22 +66,27 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo SetName = GetMethod((Func<CodeContext, string, object, object>)PythonOps.SetName);
         public static readonly MethodInfo KeepAlive = GetMethod((Action<object>)GC.KeepAlive);
         public static readonly MethodInfo MakeEmptyDict = GetMethod((Func<PythonDictionary>)PythonOps.MakeEmptyDict);
-        public static readonly MethodInfo MakeDictFromItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeDictFromItems);
         public static readonly MethodInfo MakeConstantDict = GetMethod((Func<object, PythonDictionary>)PythonOps.MakeConstantDict);
         public static readonly MethodInfo MakeSet = GetMethod((Func<object[], SetCollection>)PythonOps.MakeSet);
         public static readonly MethodInfo MakeEmptySet = GetMethod((Func<SetCollection>)PythonOps.MakeEmptySet);
-        public static readonly MethodInfo MakeHomogeneousDictFromItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeHomogeneousDictFromItems);
+        public static readonly MethodInfo MakeDictFromKeyValueItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeDictFromKeyValueItems);
+        public static readonly MethodInfo MakeHomogeneousDictFromKeyValueItems = GetMethod((Func<object[], PythonDictionary>)PythonOps.MakeHomogeneousDictFromKeyValueItems);
         public static readonly MethodInfo CreateLocalContext = GetMethod((Func<CodeContext, MutableTuple, string[], int, int, bool, CodeContext>)PythonOps.CreateLocalContext);
         public static readonly MethodInfo UpdateStackTrace = GetMethod((Action<Exception, CodeContext, FunctionCode, int>)PythonOps.UpdateStackTrace);
         public static readonly MethodInfo ForLoopDispose = GetMethod((Action<KeyValuePair<IEnumerator, IDisposable>>)PythonOps.ForLoopDispose);
         public static readonly MethodInfo GetClosureTupleFromContext = GetMethod((Func<CodeContext, MutableTuple>)PythonOps.GetClosureTupleFromContext);
         public static readonly MethodInfo PushFrame = GetMethod((Func<CodeContext, FunctionCode, List<FunctionStack>>)PythonOps.PushFrame);
+#if DEBUG
+        public static readonly MethodInfo PopFrame = GetMethod((Action<CodeContext, FunctionCode, List<FunctionStack>>)PythonOps.PopFrame);
+#endif
+        public static readonly MethodInfo PushGeneratorFrame = GetMethod((Action<CodeContext, PythonGenerator, FunctionCode>)PythonOps.PushGeneratorFrame);
         public static readonly MethodInfo FormatString = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatString);
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
         public static readonly MethodInfo MakeCoroutine = GetMethod((Func<PythonFunction, MutableTuple, object, PythonCoroutine>)PythonOps.MakeCoroutine);
 #if FEATURE_NET_ASYNC
+        public static readonly MethodInfo PushAsyncFrame = GetMethod((Action<CodeContext, AsyncBodyFrame, FunctionCode>)PythonOps.PushAsyncFrame);
         public static readonly MethodInfo AsTaskForAwait = GetMethod((Func<object, System.Threading.Tasks.Task<object>>)PythonOps.AsTaskForAwait);
-        public static readonly MethodInfo MakeAsyncCoroutine = GetMethod((Func<PythonFunction, Func<System.Threading.Tasks.Task<object>>, System.Threading.CancellationTokenSource, System.Runtime.CompilerServices.StrongBox<System.Exception>, PythonCoroutine>)PythonOps.MakeAsyncCoroutine);
+        public static readonly MethodInfo MakeAsyncCoroutine = GetMethod((Func<PythonFunction, Func<System.Threading.Tasks.Task<object>>, Microsoft.Scripting.Runtime.AsyncInterruptSource, PythonCoroutine>)PythonOps.MakeAsyncCoroutine);
         public static readonly MethodInfo MakeAsyncGenerator = GetMethod((Func<PythonFunction, System.Collections.Generic.IAsyncEnumerable<object>, System.Runtime.CompilerServices.StrongBox<object>, System.Runtime.CompilerServices.StrongBox<System.Exception>, System.Threading.CancellationTokenSource, PythonAsyncGenerator>)PythonOps.MakeAsyncGenerator);
 #endif
 

@@ -16,9 +16,7 @@ def load_tests(loader, standard_tests, pattern):
     tests = loader.loadTestsFromModule(test.test_complex, pattern=pattern)
 
     if is_ironpython:
-        failing_tests = [
-            test.test_complex.ComplexTest('test_format'),
-        ]
+        failing_tests = []
         if sys.version_info >= (3, 6):
             failing_tests += [
                 test.test_complex.ComplexTest('test_underscores'), # https://github.com/IronLanguages/ironpython3/issues/105

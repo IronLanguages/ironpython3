@@ -6,7 +6,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Scripting.Runtime;
@@ -24,12 +23,8 @@ namespace IronPython.Runtime {
 #if FEATURE_NET_ASYNC
 
         // Under .NET async, `async def` is compiled directly to a Task<object?> via the DLR's AsyncExpression + AsyncHelpers.
-        // PythonCoroutine is a wrapper over the Task with two cancellation channels pre-bound at the codegen level:
-        //
-        //   _cts                   — CancellationTokenSource whose Token was passed into AsyncExpression. throw(exc) cancels this.
-        //   _cancellationException — StrongBox<Exception?> shared with DriveAsync's `cancellationException` parameter;
-        //                            when non-null at cancellation time, that exception is surfaced to the body
-        //                            instead of OperationCanceledException. 
+        // PythonCoroutine is a wrapper over the Task. _interrupts is the AsyncInterruptSource passed into AsyncExpression;
+        // throw(exc) interrupts the body with it.
         //
         // Lazy start: the body is not executed at construction. _factory is the thunk that creates (and thereby starts driving) the Task on
         // first access; _task caches the materialized Task. Calling an async def is therefore side-effect free until the coroutine is first
@@ -38,25 +33,21 @@ namespace IronPython.Runtime {
         private Task<object?>? _task;
         private readonly string _name;
         private readonly FunctionCode? _code;
-        private readonly CancellationTokenSource _cts;
-        private readonly StrongBox<Exception?> _cancellationException;
+        private readonly AsyncInterruptSource _interrupts;
         private WeakRefTracker? _tracker;
 
-        internal PythonCoroutine(Func<Task<object?>> factory, string name, FunctionCode? code,
-                                  CancellationTokenSource cts,
-                                  StrongBox<Exception?> cancellationException) {
+        internal PythonCoroutine(Func<Task<object?>> factory, string name, FunctionCode? code, AsyncInterruptSource interrupts) {
             _factory = factory;
             _name = name;
             _code = code;
-            _cts = cts;
-            _cancellationException = cancellationException;
+            _interrupts = interrupts;
         }
 
         private Task<object?> EnsureTask() => _task ??= _factory();
 
 
         [LightThrowing]
-        public object send(object? value) {
+        public object? send(object? value) {
             // Fast path: task already completed. Dispatch on terminal state without
             // any try/catch — Result on a Faulted/Canceled task throws, so we must
             // check IsCanceled / IsFaulted before reading it.
@@ -77,10 +68,10 @@ namespace IronPython.Runtime {
 
 
         [LightThrowing]
-        public object @throw(object? value) => @throw(value, null, null);
+        public object? @throw(object? value) => @throw(value, null, null);
 
         [LightThrowing]
-        public object @throw(object? type, object? value) => @throw(type, value, null);
+        public object? @throw(object? type, object? value) => @throw(type, value, null);
 
         /// <summary>
         ///   Throw an exception into the generator at the suspended <c>yield</c>. Returns an awaitable.
@@ -96,42 +87,27 @@ namespace IronPython.Runtime {
         ///   and may be removed in a future version of Python.
         /// </remarks>
         [LightThrowing]
-        public object @throw(object? type, object? value, object? traceback) {
-            // Validate the shape of (type, value, traceback) up front. Mirrors PythonGenerator.@throw
-            // so we don't mutate any state on bad input.
-            if (type is Exception || type is PythonExceptions.BaseException) {
-                if (value is not null)
-                    return LightExceptions.Throw(PythonOps.TypeError("instance exception may not have a separate value"));
-            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
-                // ok — class form, MakeExceptionForGenerator will construct.
-            } else {
-                return LightExceptions.Throw(PythonOps.TypeError(
-                    "exceptions must be classes or instances deriving from BaseException, not {0}",
-                    PythonOps.GetPythonTypeName(type)));
-            }
+        public object? @throw(object? type, object? value, object? traceback) {
+            // Validate up front so we don't mutate any state on bad input.
+            if (PythonOps.ValidateThrowArguments(type, value, traceback) is Exception error) return LightExceptions.Throw(error);
 
             // Construct the actual exception object. DefaultContext.Default suffices here — throw()'s
             // CodeContext role is limited to resolving class-form exception construction, and the
             // coroutine's own context will re-bind the chain when the exception unwinds inside the body.
-            Exception ex = PythonOps.MakeExceptionForGenerator(
-                DefaultContext.Default, type, value, traceback, cause: null);
+            Exception ex = PythonOps.MakeExceptionForGenerator(DefaultContext.Default, type, value, traceback);
 
-            var task = EnsureTask();
-            if (task.IsCompleted) {
-                // Case 1: coroutine has finished. throw() raises the exception immediately —
+            // The body sees `ex` raised at the await it is suspended at, or at its next await if it is running.
+            // If the body hasn't started, it doesn't run at all: its task fails with `ex`, as in CPython.
+            if (!_interrupts.Interrupt(ex)) {
+                // The coroutine has finished. throw() raises the exception immediately —
                 // the body has nothing left to observe it. Matches CPython.
                 return LightExceptions.Throw(ex);
             }
 
-            // Case 2: body is still running (or suspended at an await). Stash the exception in the
-            // shared StrongBox so DriveAsync surfaces it (instead of OCE) the moment it observes the
-            // cancellation, then cancel. The body sees `ex` rethrown at its next resume point.
-            _cancellationException.Value = ex;
-            _cts.Cancel();
-
             // Wait for the body to settle. After this the task is in a terminal state — dispatch via
             // the same logic as send() so the body's reaction (catch-and-return, propagate, etc.) is
             // reflected back to the caller of throw().
+            var task = EnsureTask();
             ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
             return SettleCompletedTask(task);
         }
@@ -184,23 +160,23 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
-        public object send(object? value) {
+        public object? send(object? value) {
             return _generator.send(value);
         }
 
         [LightThrowing]
-        public object @throw(object? type) {
+        public object? @throw(object? type) {
             return _generator.@throw(type);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value) {
+        public object? @throw(object? type, object? value) {
             return _generator.@throw(type, value);
         }
 
         [LightThrowing]
         // The signature (type[, value[, traceback]]) is deprecated in CPython 3.12
-        public object @throw(object? type, object? value, object? traceback) {
+        public object? @throw(object? type, object? value, object? traceback) {
             return _generator.@throw(type, value, traceback);
         }
 
@@ -234,7 +210,7 @@ namespace IronPython.Runtime {
         public Task<object?> AsTask() {
             return Task.Run(() => {
                 while (true) {
-                    object result = send(null);
+                    object? result = send(null);
 
                     if (LightExceptions.IsLightException(result)) {
                         var clrExc = LightExceptions.GetLightException(result);
@@ -297,27 +273,27 @@ namespace IronPython.Runtime {
         }
 
         [LightThrowing]
-        public object __next__() {
+        public object? __next__() {
             return _coroutine.send(null);
         }
 
         [LightThrowing]
-        public object send(object? value) {
+        public object? send(object? value) {
             return _coroutine.send(value);
         }
 
         [LightThrowing]
-        public object @throw(object? type) {
+        public object? @throw(object? type) {
             return _coroutine.@throw(type);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value) {
+        public object? @throw(object? type, object? value) {
             return _coroutine.@throw(type, value);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value, object? traceback) {
+        public object? @throw(object? type, object? value, object? traceback) {
             return _coroutine.@throw(type, value, traceback);
         }
 

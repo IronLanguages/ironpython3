@@ -150,7 +150,7 @@ namespace IronPython.Runtime {
         internal readonly object _codeCleanupLock = new object();
         internal readonly object _codeUpdateLock = new object();
         internal int _codeCount, _nextCodeCleanup = 200;
-        private int _recursionLimit;
+        private int _recursionLimit = int.MaxValue; // not enforced until set from the options in the constructor
 
         private readonly object _indexBindersLock = new object(); // https://github.com/IronLanguages/ironpython3/issues/1596
 
@@ -270,7 +270,7 @@ namespace IronPython.Runtime {
                 try {
                     HookAssemblyResolve();
                 } catch (System.Security.SecurityException) {
-                    // We may not have SecurityPermissionFlag.ControlAppDomain. 
+                    // We may not have SecurityPermissionFlag.ControlAppDomain.
                     // If so, we will not look up sys.path for module loads
                 }
             }
@@ -300,13 +300,26 @@ namespace IronPython.Runtime {
                 try {
                     var _frozen_importlib = LoadModuleFromResource("_frozen_importlib", "IronPython.Modules._bootstrap.py");
 #if PYTHON_36_OR_GREATER
-                    LoadModuleFromResource("_frozen_importlib_external", "IronPython.Modules._bootstrap_external.py");
+                    var _frozen_importlib_external = LoadModuleFromResource("_frozen_importlib_external", "IronPython.Modules._bootstrap_external.py");
 #endif
                     PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install", SystemState, GetBuiltinModule("_imp"));
 #if PYTHON_37_OR_GREATER
                     PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install_external_importers");
 #endif
-                } catch { }
+                    ImportLibModuleSpec = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "ModuleSpec");
+                    var metaPath = (PythonList)GetSystemStateValue("meta_path");
+#if PYTHON_36_OR_GREATER
+                    var pathFinder = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib_external, "PathFinder");
+#else
+                    var pathFinder = PythonOps.GetBoundAttr(SharedClsContext, _frozen_importlib, "PathFinder");
+#endif
+                    // Python modules take precedence over .NET namespaces and types; namespace packages come last,
+                    // so that a directory on sys.path doesn't hide a .NET namespace
+                    metaPath.insert(metaPath.index(pathFinder), new Importer.ClrImporter(pathFinder));
+                    ImportLibBootstrap = _frozen_importlib;
+                } catch {
+                    Debug.Fail("Failed to bootstrap importlib");
+                }
 
                 PythonModule LoadModuleFromResource(string name, string resourceName) {
                     var sourceUnit = CreateSourceUnit(new ResourceStreamContentProvider(resourceName), null, DefaultEncoding, SourceCodeKind.File);
@@ -346,9 +359,10 @@ namespace IronPython.Runtime {
                 }
 
                 lock (_codeUpdateLock) {
+                    bool wasEnforced = _recursionLimit != int.MaxValue;
                     _recursionLimit = value;
 
-                    if ((_recursionLimit == int.MaxValue) != (value == int.MaxValue)) {
+                    if (wasEnforced != (value != int.MaxValue)) {
                         // recursion setting has changed, we need to update all of our
                         // function codes to enforce or un-enforce recursion.
                         FunctionCode.UpdateAllCode(this);
@@ -666,6 +680,11 @@ namespace IronPython.Runtime {
 
         internal IDictionary<object, object>/*!*/ SystemStateModules { get; } = new PythonDictionary();
 
+        /// <summary>
+        /// The global import lock (_imp.acquire_lock), re-entrant and owned by a thread.
+        /// </summary>
+        internal Lock ImportLock { get; } = new Lock();
+
         internal PythonModule GetModuleByName(string/*!*/ name) {
             Assert.NotNull(name);
             if (SystemStateModules.TryGetValue(name, out object scopeObj) && scopeObj is PythonModule module) {
@@ -755,12 +774,24 @@ namespace IronPython.Runtime {
             flags.utf8_mode = PythonOptions.Utf8Mode ? 1 : 0;
         }
 
-        internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
-            // We have to turn off adaptive compilation in debug mode to
-            // support mangaged debuggers. Also turn off in optimized mode.
-            bool adaptiveCompilation = !PythonOptions.NoAdaptiveCompilation && !EmitDebugSymbols(source);
+        internal bool ShouldInterpret(PyAst.PythonAst ast) {
+            if (ast.IsAdaptiveCompilationDisabled) {
+                return false;
+            }
 
-            return options.Interpreted || adaptiveCompilation;
+            CompilerContext context = ast.CompilerContext;
+
+            // We have to turn off adaptive compilation in debug mode to
+            // support mangaged debuggers.
+            return ((PythonCompilerOptions)context.Options).Interpreted || !EmitDebugSymbols(context.SourceUnit);
+        }
+
+        /// <summary>
+        /// Returns whether -X NoAdaptiveCompilation applies to the source, even if it was compiled by compile, exec or eval.
+        /// </summary>
+        internal bool IsAdaptiveCompilationDisabled(SourceUnit source) {
+            var filter = PythonOptions.NoAdaptiveCompilationFilter;
+            return PythonOptions.NoAdaptiveCompilation && (filter == null || source.HasPath && filter.IsMatch(source.Path));
         }
 
         private static PyAst.PythonAst ParseAndBindAst(CompilerContext context) {
@@ -1140,6 +1171,17 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        /// <summary>
+        /// The _frozen_importlib module, which drives imports once it has been bootstrapped.
+        /// When null (e.g. NoImportLib), the legacy importer is used instead.
+        /// </summary>
+        internal PythonModule ImportLibBootstrap { get; private set; }
+
+        /// <summary>
+        /// importlib's ModuleSpec type, used by our sys.meta_path finders to create specs.
+        /// </summary>
+        internal object ImportLibModuleSpec { get; private set; }
+
         private object copyRegModule;
 
         internal object GetCopyRegModule() {
@@ -1270,7 +1312,7 @@ namespace IronPython.Runtime {
             try {
                 AppDomain.CurrentDomain.AssemblyResolve -= _resolveHolder.AssemblyResolveEvent;
             } catch (System.Security.SecurityException) {
-                // We may not have SecurityPermissionFlag.ControlAppDomain. 
+                // We may not have SecurityPermissionFlag.ControlAppDomain.
                 // If so, we will not look up sys.path for module loads
             }
         }
@@ -1352,6 +1394,10 @@ namespace IronPython.Runtime {
         public override string FormatException(Exception exception) {
             ContractUtils.RequiresNotNull(exception, nameof(exception));
 
+            return FormatException(exception, new HashSet<object>(ReferenceEqualityComparer<object>.Instance));
+        }
+
+        private string FormatException(Exception exception, HashSet<object> seen) {
             if (exception is SyntaxErrorException syntax_error) {
                 return FormatPythonSyntaxError(syntax_error);
             }
@@ -1359,21 +1405,18 @@ namespace IronPython.Runtime {
             StringBuilder result = new StringBuilder();
 
             var pythonEx = PythonExceptions.ToPython(exception);
+            seen.Add(pythonEx);
 
-            if (exception.InnerException != null) {
-                if (exception.InnerException.GetPythonException() is PythonExceptions.BaseException pythonInnerException) {
-                    // add the nested/chained exception
-                    result.AppendLine(FormatException(exception.InnerException));
-                    result.AppendLine();
-
-                    // check whether this is implicit or explicit
-                    if (!((PythonExceptions.BaseException)pythonEx).IsImplicitException) {
-                        result.AppendLine("The above exception was the direct cause of the following exception.");
-                    } else {
-                        result.AppendLine("During handing of the above exception, another exception occurred:");
-                    }
-                    result.AppendLine();
+            var chained = pythonEx.HasCause ? pythonEx.__cause__ : pythonEx.__suppress_context__ ? null : pythonEx.RawContext;
+            if (chained is not null && !seen.Contains(chained)) {
+                result.AppendLine(FormatException(chained.GetClrException(), seen));
+                result.AppendLine();
+                if (pythonEx.HasCause) {
+                    result.AppendLine("The above exception was the direct cause of the following exception:");
+                } else {
+                    result.AppendLine("During handling of the above exception, another exception occurred:");
                 }
+                result.AppendLine();
             }
 
             result.Append(FormatStackTraces(exception));
@@ -1614,7 +1657,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Returns (and creates if necessary) the PythonService that is associated with this PythonContext.
-        /// 
+        ///
         /// The PythonService is used for providing remoted convenience helpers for the DLR hosting APIs.
         /// </summary>
         internal Hosting.PythonService GetPythonService(Microsoft.Scripting.Hosting.ScriptEngine engine) {
@@ -1722,7 +1765,7 @@ namespace IronPython.Runtime {
 
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     // we make our nt package show up as a posix package
-                    // on unix platforms.  Because we build on top of the 
+                    // on unix platforms.  Because we build on top of the
                     // CLI for all file operations we should be good from
                     // there, but modules that check for the presence of
                     // names (e.g. os) will do the right thing.
@@ -2552,8 +2595,8 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Invokes the specified operation on the provided arguments and returns the new resulting value.
-        /// 
-        /// operation is usually a value from StandardOperators (standard CLR/DLR operator) or 
+        ///
+        /// operation is usually a value from StandardOperators (standard CLR/DLR operator) or
         /// OperatorStrings (a Python specific operator)
         /// </summary>
         internal object Operation(PythonOperationKind operation, object self, object other) {
@@ -3010,13 +3053,13 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Sets the current command dispatcher for the Python command line.  The previous dispatcher
         /// is returned.  Null can be passed to remove the current command dispatcher.
-        /// 
+        ///
         /// The command dispatcher will be called with a delegate to be executed.  The command dispatcher
         /// should invoke the target delegate in the desired context.
-        /// 
+        ///
         /// A common use for this is to enable running all REPL commands on the UI thread while the REPL
         /// continues to run on a non-UI thread.
-        /// 
+        ///
         /// The ipy.exe REPL will call into PythonContext.DispatchCommand to dispatch each execution to
         /// the correct thread.  Other REPLs can do the same to support this functionality as well.
         /// </summary>
@@ -3117,8 +3160,8 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Gets a function which can be used for comparing two values using the normal
         /// Python semantics.
-        /// 
-        /// If type is null then a generic comparison function is returned.  If type is 
+        ///
+        /// If type is null then a generic comparison function is returned.  If type is
         /// not null a comparison function is returned that's used for just that type.
         /// </summary>
         internal IComparer GetComparer(Type type) {
@@ -3842,13 +3885,13 @@ namespace IronPython.Runtime {
             void Debugging.ITraceCallback.OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload) {
                 var listener = _parent._tracebackListeners.Value;
 
-                if (listener == null && (_parent.PythonOptions.Tracing || _parent._tracebackListenersCount > 0)) {
-                    // If tracing is enabled (globally or via SetTrace on any thread), we need to register a dummy
-                    // traceback listener for this thread, because of the FunctionStack handling done there.
+                if (listener == null) {
+                    // Code compiled for tracing pushes and pops its frames on the FunctionStack only through the listener, so this thread
+                    // needs a dummy listener even without a trace function. This must not depend on whether tracing is on right now.
                     _parent._tracebackListeners.Value = listener = new PythonTracebackListener(_parent, null, isDummyListener: true);
                 }
 
-                listener?.OnTraceEvent(kind, name, sourceFileName, sourceSpan, scopeCallback, payload, customPayload);
+                listener.OnTraceEvent(kind, name, sourceFileName, sourceSpan, scopeCallback, payload, customPayload);
             }
         }
 
@@ -3888,7 +3931,7 @@ namespace IronPython.Runtime {
                 var newCounted = newTraceListener?.IsDummyListener == false;
 
                 if (oldCounted != newCounted) {
-                    _tracebackListenersCount += newCounted ? 1 : -1;
+                    Interlocked.Add(ref _tracebackListenersCount, newCounted ? 1 : -1);
                 }
 
                 if (EnableTracing != oldEnableTracing) {

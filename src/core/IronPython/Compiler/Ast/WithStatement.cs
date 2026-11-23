@@ -49,7 +49,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// WithStatement is translated to the DLR AST equivalent to
         /// the following Python code snippet (from with statement spec):
-        /// 
+        ///
         /// mgr = (EXPR)
         /// exit = mgr.__exit__  # Not calling it yet
         /// value = mgr.__enter__()
@@ -67,7 +67,7 @@ namespace IronPython.Compiler.Ast {
         ///     # The normal and non-local-goto cases are handled here
         ///     if exc:
         ///         exit(None, None, None)
-        /// 
+        ///
         /// </summary>
         public override MSAst.Expression Reduce() {
             // Five statements in the result...
@@ -158,7 +158,7 @@ namespace IronPython.Compiler.Ast {
             //          exit(None, None, None)
             //******************************************************************
 
-            var previousException = Ast.Variable(typeof(Exception), "$previousException");
+            var previousException = Ast.Variable(typeof(object), "$previousException");
             variables.Add(previousException);
 
             MSAst.ParameterExpression exception;
@@ -167,7 +167,7 @@ namespace IronPython.Compiler.Ast {
                 AstUtils.Try(
                     AstUtils.Try(// try statement body
                         PushLineUpdated(false, lineUpdated),
-                        Ast.Assign(previousException, Ast.Call(AstMethods.SaveCurrentException)),
+                        Ast.Assign(previousException, Ast.Call(AstMethods.SaveCurrentExceptionState)),
                         _var != null ?
                             (MSAst.Expression)Ast.Block(
                 // VAR = value
@@ -206,8 +206,8 @@ namespace IronPython.Compiler.Ast {
                                         UpdateLineUpdated(true),
                                         Ast.Throw(
                                             Ast.Call(
-                                                AstMethods.MakeRethrowExceptionWorker,
-                                                exception
+                                                AstMethods.MakeRethrownException,
+                                                Parent.LocalContext
                                             )
                                         )
                                     )
@@ -218,9 +218,9 @@ namespace IronPython.Compiler.Ast {
                         PopLineUpdated(lineUpdated),
                         Ast.Empty()
                     )
-                // finally:                    
+                // finally:
                 ).Finally(
-                    Ast.Call(AstMethods.RestoreCurrentException, previousException),
+                    Ast.Call(AstMethods.RestoreCurrentExceptionState, previousException),
                 //  if exc:
                 //      exit(None, None, None)
                     AstUtils.IfThen(

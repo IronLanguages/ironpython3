@@ -760,6 +760,9 @@ namespace IronPython.Runtime.Binding {
             res[typeof(char)] = new Type[] { typeof(CharOps) };
             res[typeof(decimal)] = new Type[] { typeof(DecimalOps) };
             res[typeof(float)] = new Type[] { typeof(SingleOps) };
+#if NET6_0_OR_GREATER
+            res[typeof(Half)] = new Type[] { typeof(HalfOps) };
+#endif
             res[typeof(DateTime)] = new Type[] { typeof(DateTimeOps) };
 
             return res;

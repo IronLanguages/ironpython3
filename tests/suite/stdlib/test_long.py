@@ -8,7 +8,7 @@
 
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, is_net110, generate_suite, run_test
 
 import test.test_long
 
@@ -18,10 +18,13 @@ def load_tests(loader, standard_tests, pattern):
     if is_ironpython:
         failing_tests = [
             test.test_long.LongTest('test_correctly_rounded_true_division'), # https://github.com/IronLanguages/ironpython3/issues/907
-            test.test_long.LongTest('test_float_conversion'), # https://github.com/IronLanguages/ironpython3/issues/907
             test.test_long.LongTest('test_small_ints'), # https://github.com/IronLanguages/ironpython3/issues/975
             test.test_long.LongTest('test_true_division'), # https://github.com/IronLanguages/ironpython3/issues/907
         ]
+        if not is_net110:
+            failing_tests += [
+                test.test_long.LongTest('test_float_conversion'), # https://github.com/IronLanguages/ironpython3/issues/907
+            ]
 
         skip_tests = []
 

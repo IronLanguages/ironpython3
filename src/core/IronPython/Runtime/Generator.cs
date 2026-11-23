@@ -21,7 +21,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
-    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, ICodeFormattable, IEnumerable, IWeakReferenceable {
+    public sealed class PythonGenerator : IEnumerator, IEnumerator<object?>, ICodeFormattable, IEnumerable, IWeakReferenceable {
         private readonly Func<MutableTuple, object>/*!*/ _next;     // The delegate which contains the user code to perform the iteration.
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
@@ -42,7 +42,7 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Fields set by Throw() to communicate an exception to the yield point.
-        /// These are plumbed through the generator to become parameters to Raise(...) invoked 
+        /// These are plumbed through the generator to become parameters to Raise(...) invoked
         /// at the yield suspension point in the generator.
         /// </summary>
         private object?[]? _excInfo;
@@ -70,14 +70,33 @@ namespace IronPython.Runtime {
         #region Python Public APIs
 
         [LightThrowing]
-        public object __next__() {
+        public object? __next__() {
             // Python's language policy on generators is that attempting to access after it's closed (returned)
             // just continues to throw StopIteration exceptions.
             if (Closed) {
                 return LightExceptions.Throw(PythonOps.StopIteration());
             }
-            
-            object res = NextWorker();
+
+            CheckSetActive();
+            try {
+                // Another thread may have closed the generator after the check above.
+                if (Closed) {
+                    return LightExceptions.Throw(PythonOps.StopIteration());
+                }
+
+                return Next();
+            } finally {
+                ClearActive();
+            }
+        }
+
+        /// <summary>
+        /// Runs the body to the next yield and returns the yielded value, or a StopIteration once the body has finished.
+        /// The calling thread must hold the generator, see <see cref="CheckSetActive"/>.
+        /// </summary>
+        [LightThrowing]
+        private object? Next() {
+            object? res = NextWorker();
             if (res == OperationFailed.Value) {
                 if (FinalValue is null)
                     return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException());
@@ -95,63 +114,61 @@ namespace IronPython.Runtime {
         /// Use multiple overloads to resolve the default parameters.
         /// </summary>
         [LightThrowing]
-        public object @throw(object? type) {
+        public object? @throw(object? type) {
             return @throw(type, null, null, false);
         }
 
         [LightThrowing]
-        public object @throw(object? type, object? value) {
+        public object? @throw(object? type, object? value) {
             return @throw(type, value, null, false);
         }
 
         [LightThrowing]
         // The signature (type[, value[, traceback]]) is deprecated in CPython 3.12
-        public object @throw(object? type, object? value, object? traceback) {
+        public object? @throw(object? type, object? value, object? traceback) {
             return @throw(type, value, traceback, false);
         }
 
         /// <summary>
         /// Throw(...) is like Raise(...) being called from the yield point within the generator.
-        /// Note it must come from inside the generator so that the traceback matches, and so that it can 
+        /// Note it must come from inside the generator so that the traceback matches, and so that it can
         /// properly cooperate with any try/catch/finallys inside the generator body.
-        /// 
+        ///
         /// If the generator catches the exception and yields another value, that is the return value of g.throw().
         /// </summary>
         [LightThrowing]
-        private object @throw(object? type, object? value, object? traceback, bool finalizing) {
+        private object? @throw(object? type, object? value, object? traceback, bool finalizing) {
             // Do argument validation outside of the generator's body and do not update the state on failure
-            if (type is Exception || type is PythonExceptions.BaseException) {
-                if (value is not null)
-                    throw PythonOps.TypeError("instance exception may not have a separate value");
-            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
-                // ok
-            } else {
-                throw PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonOps.GetPythonTypeName(type));
-            }
+            if (PythonOps.ValidateThrowArguments(type, value, traceback) is Exception error) return LightExceptions.Throw(error);
 
-            // Set fields which will then be used by CheckThrowable.
-            // We create the actual exception from inside the generator so that if the exception's __init__ 
-            // throws, the traceback matches that which we get from CPython2.5.
-            _excInfo = new object?[] { type, value, traceback };
-            Debug.Assert(_sendValue == null);
-
-            // Pep explicitly says that Throw on a closed generator throws the exception, 
+            // Pep explicitly says that Throw on a closed generator throws the exception,
             // and not a StopIteration exception. (This is different than Next()).
             if (Closed) {
-                // this will throw the exception that we just set the fields for.
-                var throwable = CheckThrowable();
-                if (throwable != null) {
-                    return throwable;
-                }
+                return ThrowOnClosed();
             }
             if (finalizing) {
                 // we are running on the finalizer thread - things can be already collected
                 return LightExceptions.Throw(PythonOps.StopIteration());
             }
-            if (!((IEnumerator)this).MoveNext()) {
-                return LightExceptions.Throw(PythonOps.StopIteration());
+
+            CheckSetActive();
+            try {
+                // Another thread may have closed the generator after the check above.
+                if (!Closed) {
+                    // Set fields which will then be used by CheckThrowable.
+                    // We create the actual exception from inside the generator so that if the exception's __init__
+                    // throws, the traceback matches that which we get from CPython.
+                    Debug.Assert(_sendValue == null);
+                    _excInfo = [ type, value, traceback ];
+                    return Next();
+                }
+            } finally {
+                ClearActive();
             }
-            return CurrentValue;
+            return ThrowOnClosed();
+
+            object ThrowOnClosed()
+                => LightExceptions.Throw(PythonOps.MakeExceptionForGenerator(Context, type, value, traceback));
         }
 
         /// <summary>
@@ -159,18 +176,31 @@ namespace IronPython.Runtime {
         /// the result of yield when used as an expression.
         /// </summary>
         [LightThrowing]
-        public object send(object? value) {
-            Debug.Assert(_excInfo == null);
-
-            // CPython2.5's behavior is that Send(non-null) on unstarted generator should:
-            // - throw a TypeError exception
-            // - not change generator state. So leave as unstarted, and allow future calls to succeed.
-            if (value != null && State == GeneratorRewriter.NotStarted) {
-                throw PythonOps.TypeErrorForIllegalSend();
+        public object? send(object? value) {
+            if (Closed) {
+                return LightExceptions.Throw(PythonOps.StopIteration());
             }
 
-            _sendValue = value;
-            return __next__();
+            CheckSetActive();
+            try {
+                // Another thread may have closed the generator after the check above.
+                if (Closed) {
+                    return LightExceptions.Throw(PythonOps.StopIteration());
+                }
+
+                // CPython's behavior is that Send(non-null) on unstarted generator should:
+                // - throw a TypeError exception
+                // - not change generator state. So leave as unstarted, and allow future calls to succeed.
+                if (value != null && State == GeneratorRewriter.NotStarted) {
+                    throw PythonOps.TypeErrorForIllegalSend();
+                }
+
+                Debug.Assert(_excInfo == null);
+                _sendValue = value;
+                return Next();
+            } finally {
+                ClearActive();
+            }
         }
 
         [LightThrowing]
@@ -191,7 +221,7 @@ namespace IronPython.Runtime {
 
             // This function body is the psuedo code straight from Pep 342.
             try {
-                object res = @throw(new GeneratorExitException(), null, null, finalizing);
+                object? res = @throw(new GeneratorExitException(), null, null, finalizing);
                 Exception lightEh = LightExceptions.GetLightException(res);
                 if (lightEh != null) {
                     if (lightEh is StopIterationException || lightEh is GeneratorExitException) {
@@ -200,7 +230,7 @@ namespace IronPython.Runtime {
                     return lightEh;
                 }
 
-                // Generator should not have exited normally. 
+                // Generator should not have exited normally.
                 return LightExceptions.Throw(new RuntimeException("generator ignored GeneratorExit"));
             } catch (StopIterationException) {
                 // Ignore, clear any stack frames we built up
@@ -254,7 +284,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        private object CurrentValue {
+        private object? CurrentValue {
             get {
                 return _dataTuple.Item001;
             }
@@ -275,7 +305,8 @@ namespace IronPython.Runtime {
         private static MutableTuple<int, object> GetBigData(MutableTuple data) {
             MutableTuple<int, object>? smallGen;
             do {
-                data = (MutableTuple)data.GetValue(0);
+                // the first item of a nested tuple is the tuple holding the generator's state and current value, or a tuple nesting it
+                data = data.GetValue(0) as MutableTuple ?? throw new InvalidOperationException("Generator data is not a nested tuple.");
             } while ((smallGen = (data as MutableTuple<int, object>)) == null);
 
             return smallGen;
@@ -318,13 +349,15 @@ namespace IronPython.Runtime {
             // PEP says:
             //   If close() raises an exception, a traceback for the exception is printed to sys.stderr
             //   and further ignored; it is not propagated back to the place that
-            //   triggered the garbage collection. 
+            //   triggered the garbage collection.
 
             // Sample error message from CPython 2.5 looks like:
             //     Exception __main__.MyError: MyError() in <generator object at 0x00D7F6E8> ignored
+            // CPython 3:
+            //     Exception ignored in: <generator object C.gen at 0x00D7F6E8>
             try {
 
-                string message = "Exception in generator " + __repr__(Context) + " ignored";
+                string message = "Exception ignored in: " + __repr__(Context);
 
                 PythonOps.PrintWithDest(Context, Context.LanguageContext.SystemStandardError, message);
                 PythonOps.PrintWithDest(Context, Context.LanguageContext.SystemStandardError, Context.LanguageContext.FormatException(e));
@@ -340,7 +373,18 @@ namespace IronPython.Runtime {
             }
 
             CheckSetActive();
+            try {
+                // Another thread may have closed the generator after the check above.
+                return !Closed && MoveNextCore();
+            } finally {
+                ClearActive();
+            }
+        }
 
+        /// <summary>
+        /// Runs the body to the next yield. The calling thread must hold the generator, see <see cref="CheckSetActive"/>.
+        /// </summary>
+        private bool MoveNextCore() {
             if (!CanSetSysExcInfo) {
                 return MoveNextWorker();
             } else {
@@ -356,27 +400,44 @@ namespace IronPython.Runtime {
             }
         }
 
-        private FunctionStack? fnStack = null;
+        /// <summary>
+        ///   The body's entry on the frame stack, from the moment the body pushes it until the body finishes.
+        /// </summary>
+        /// <remarks>
+        ///   <para>The body can suspend on one thread and resume on another, so the generator owns the entry once the body has pushed it:
+        ///   the entry is on the frame stack of the thread running the body, and on no thread's stack while the body is suspended.</para>
+        ///
+        ///   <para>It stays null for a body that doesn't push its own entry: with frames disabled, or when the body was compiled for tracing,
+        ///   where the trace listener pushes and pops an entry at each step. This is decided when the body is compiled, so it doesn't change
+        ///   when tracing is switched on or off while the generator is suspended.</para>
+        /// </remarks>
+        private FunctionStack? _stackEntry;
+
+        /// <summary>
+        ///   Called by the body when it starts, to push its entry on the current thread's frame stack and hand the entry over to the generator.
+        /// </summary>
+        internal void PushFrame(CodeContext context, FunctionCode code) {
+            Debug.Assert(_stackEntry is null, "the body of a generator starts only once");
+
+            // The entry never keeps a frame object, since the frame's f_back changes whenever the body resumes.
+            var entry = new FunctionStack(context, code);
+            PythonOps.GetFunctionStack().Add(entry);
+            _stackEntry = entry;
+        }
 
         private void SaveFunctionStack(bool done) {
-            if (!Context.LanguageContext.PythonOptions.Frames || Context.LanguageContext.EnableTracing) return;
-            if (!done) {
-                var stack = PythonOps.GetFunctionStack();
-                var functionStack = stack[stack.Count - 1];
-                stack.RemoveAt(stack.Count - 1);
-                Debug.Assert(functionStack.Context is not null);
-                fnStack = new FunctionStack(functionStack.Context!, functionStack.Code); // don't keep the frame since f_back may be invalid
-            }
-            else {
-                fnStack = null;
+            if (_stackEntry is not { } entry) return;
+
+            PythonOps.PopOwnFrame(entry);
+
+            if (done) {
+                _stackEntry = null;
             }
         }
 
         private void RestoreFunctionStack() {
-            if (!Context.LanguageContext.PythonOptions.Frames) return;
-            if (fnStack != null) {
-                var stack = PythonOps.GetFunctionStack();
-                stack.Add(fnStack.Value);
+            if (_stackEntry is { } entry) {
+                PythonOps.GetFunctionStack().Add(entry);
             }
         }
 
@@ -390,8 +451,6 @@ namespace IronPython.Runtime {
                 try {
                     ret = GetNext();
                 } finally {
-                    Active = false;
-
                     SaveFunctionStack(!ret);
 
                     if (!ret) {
@@ -407,10 +466,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Core implementation of Python's next() method.
         /// </summary>
-        private object NextWorker() {
-            // Generators can not be called re-entrantly.
-            CheckSetActive();
-
+        private object? NextWorker() {
             RestoreFunctionStack();
 
             _state.PrevException = PythonOps.CurrentExceptionState;
@@ -422,8 +478,8 @@ namespace IronPython.Runtime {
                 // The generator body here may:
                 // 1. return an item: _next() returns true and 'next' is set to the next item in the enumeration.
                 // 2. Exit normally: _next returns false.
-                // 3. Exit with a StopIteration exception: for-loops and other enumeration consumers will 
-                //    catch this and terminate the loop without propogating the exception.
+                // 3. Exit with a StopIteration exception: for-loops and other enumeration consumers will
+                //    catch this and terminate the loop without propagating the exception.
                 // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propagates.
                 //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
                 if (!(ret = GetNext())) {
@@ -443,8 +499,6 @@ namespace IronPython.Runtime {
                 PythonOps.CurrentExceptionState = _state.PrevException;
                 _state.PrevException = null;
 
-                Active = false;
-
                 SaveFunctionStack(!ret);
 
                 // If _next() returned false, or did not return (thus leaving ret assigned to its initial value of false), then
@@ -457,13 +511,23 @@ namespace IronPython.Runtime {
             return CurrentValue;
         }
 
+        /// <summary>
+        /// Claims the generator for the calling thread, or throws if a thread is already running it (also when the body calls back
+        /// into its own generator). The caller must release the claim with <see cref="ClearActive"/> once it is done with
+        /// the generator's state, after the generator has been closed if the body finished, so that the next thread to claim it
+        /// sees it closed.
+        /// </summary>
         private void CheckSetActive() {
-            if (Active) {
+            // Test and set in one step, so that of two threads entering the generator at the same time only one gets in.
+            if (Interlocked.CompareExchange(ref _active, 1, 0) != 0) {
                 // A generator could catch this exception and continue executing, so this does
                 // not necessarily close the generator.
                 AlreadyExecuting();
             }
-            Active = true;
+        }
+
+        private void ClearActive() {
+            Volatile.Write(ref _active, 0);
         }
 
         private static void AlreadyExecuting() {
@@ -480,7 +544,7 @@ namespace IronPython.Runtime {
         /// <returns></returns>
         [LightThrowing]
         internal object? CheckThrowableAndReturnSendValue() {
-            // Since this method is called from the generator body's execution, the generator must be running 
+            // Since this method is called from the generator body's execution, the generator must be running
             // and not closed.
             Debug.Assert(!Closed);
 
@@ -518,9 +582,9 @@ namespace IronPython.Runtime {
             // Clear it so that any future Next()/MoveNext() call doesn't pick up the exception again.
             _excInfo = null;
 
-            // This may invoke user code such as __init__, thus MakeException may throw. 
-            // Since this is invoked from the generator's body, the generator can catch this exception. 
-            return LightExceptions.Throw(PythonOps.MakeExceptionForGenerator(Context, throwableBackup[0], throwableBackup[1], throwableBackup[2], null));
+            // This may invoke user code such as __init__, thus MakeException may throw.
+            // Since this is invoked from the generator's body, the generator can catch this exception.
+            return LightExceptions.Throw(PythonOps.MakeExceptionForGenerator(Context, throwableBackup[0], throwableBackup[1], throwableBackup[2]));
         }
 
         private void Close() {
@@ -551,10 +615,12 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// True if the thread is currently inside the generator (ie, invoking the _next delegate).
-        /// This can be used to enforce that a generator does not call back into itself. 
+        /// This can be used to enforce that a generator does not call back into itself.
         /// Pep255 says that a generator should throw a ValueError if called reentrantly.
         /// </summary>
-        private bool Active { get; set; }
+        private bool Active => Volatile.Read(ref _active) != 0;
+
+        private int _active; // 1 while a thread is running the body; set by CheckSetActive, cleared by ClearActive
 
         private bool GetNext() {
             _next(_data);
@@ -603,7 +669,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerator Members
 
-        object IEnumerator.Current {
+        object? IEnumerator.Current {
             get { return CurrentValue; }
         }
 
@@ -613,9 +679,9 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IEnumerator<object> Members
+        #region IEnumerator<object?> Members
 
-        object IEnumerator<object>.Current {
+        object? IEnumerator<object?>.Current {
             get { return CurrentValue; }
         }
 
@@ -640,7 +706,7 @@ namespace IronPython.Runtime {
                 var gen = Generator;
                 if (gen != null) {
                     Debug.Assert(gen._finalizer == this);
-                    // We set this to null to indicate that the GeneratorFinalizer has been finalized, 
+                    // We set this to null to indicate that the GeneratorFinalizer has been finalized,
                     // and should not be reused (ie saved in PythonGenerator._LastFinalizer)
                     gen._finalizer = null;
 

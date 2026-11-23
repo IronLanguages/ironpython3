@@ -1050,4 +1050,52 @@ class DictTest(IronPythonTestCase):
             self.assertNotIn(key, C.__dict__)
             self.assertIsNone(C.__dict__.get(key))
 
+    def test_display_evaluation_order(self):
+        order = []
+        def log(x):
+            order.append(x)
+            return x
+
+        self.assertEqual({log(1): log(2), log(3): log(4)}, {1: 2, 3: 4})
+        self.assertEqual(order, [1, 2, 3, 4])
+
+        order.clear()
+        self.assertEqual({log('a'): log(1), **log({}), log('b'): log(2)}, {'a': 1, 'b': 2})
+        self.assertEqual(order, ['a', 1, {}, 'b', 2])
+
+        order.clear()
+        self.assertEqual({log(1): log('a'), log('b'): log(2)}, {1: 'a', 'b': 2})
+        self.assertEqual(order, [1, 'a', 'b', 2])
+
+    def test_subclass_overriding_iter(self):
+        """bpo-34320: a dict subclass overriding __iter__ is treated as a mapping"""
+        class Mapping(dict):
+            def __iter__(self): return iter(['a', 'b'])
+            def keys(self): return ['a', 'b']
+            def __getitem__(self, key): return key.upper()
+
+        class KeysOnly(dict):
+            def keys(self): return ['a']
+
+        def f(**kwargs): return kwargs
+
+        class Meta(type):
+            def __new__(mcs, name, bases, ns, **kwargs): return super().__new__(mcs, name, bases, ns)
+            def __init__(cls, name, bases, ns, **kwargs): cls.kwargs = kwargs
+
+        for x in (Mapping(a=1, b=2, c=3), KeysOnly(a=1, b=2, c=3)):
+            expected = {'a': 'A', 'b': 'B'} if isinstance(x, Mapping) else {'a': 1, 'b': 2, 'c': 3}
+            d = {}
+            d.update(x)
+            self.assertEqual(d, expected)
+            self.assertEqual(dict(x), expected)
+            self.assertEqual(f(**x), expected)
+            self.assertEqual(dict(**x), expected)
+            self.assertEqual(eval("f(**x, **{})"), expected)
+            self.assertEqual(eval("{**x}"), expected)
+            self.assertEqual(x.copy(), expected)
+
+            class C(metaclass=Meta, **x): pass
+            self.assertEqual(C.kwargs, expected)
+
 run_test(__name__)

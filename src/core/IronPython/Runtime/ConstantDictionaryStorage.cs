@@ -113,12 +113,12 @@ namespace IronPython.Runtime {
             MSAst.Expression[] items = new MSAst.Expression[Count * 2];
             int index = 0;
             foreach (var item in GetItems()) {
-                items[index++] = Utils.Convert(Utils.Constant(item.Value), typeof(object));
                 items[index++] = Utils.Convert(Utils.Constant(item.Key), typeof(object));
+                items[index++] = Utils.Convert(Utils.Constant(item.Value), typeof(object));
             }
 
             return MSAst.Expression.Call(
-                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeConstantDictStorage)),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeConstantDictStorageFromKeyValueItems)),
                 MSAst.Expression.NewArrayInit(
                     typeof(object),
                     items

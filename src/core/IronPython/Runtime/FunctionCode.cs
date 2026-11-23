@@ -584,19 +584,21 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", co_freevars.__repr__(context));
             }
 
-            if (Target == null || (Target.GetMethodInfo()?.DeclaringType == typeof(PythonCallTargets))) {
-                UpdateDelegate(context.LanguageContext, true);
+            // Target is read only once, since switching tracing on or off on another thread may change it at any time.
+            Delegate target = Target;
+            if (target == null || (target.GetMethodInfo()?.DeclaringType == typeof(PythonCallTargets))) {
+                target = UpdateDelegate(context.LanguageContext, true);
             }
 
-            if (Target is Func<CodeContext, CodeContext> classTarget) {
+            if (target is Func<CodeContext, CodeContext> classTarget) {
                 return classTarget(context);
             }
 
-            if (Target is LookupCompilationDelegate moduleCode) {
+            if (target is LookupCompilationDelegate moduleCode) {
                 return moduleCode(context, this);
             }
 
-            if (Target is Func<FunctionCode, object> optimizedModuleCode) {
+            if (target is Func<FunctionCode, object> optimizedModuleCode) {
                 return optimizedModuleCode(this);
             }
 
@@ -678,21 +680,30 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Updates the delegate based upon current Python context settings for recursion enforcement
-        /// and for tracing.
+        ///   Updates the delegate based upon current Python context settings for recursion enforcement and for tracing.
         /// </summary>
-        internal void UpdateDelegate(PythonContext context, bool forceCreation) {
+        /// <remarks>
+        ///   With <paramref name="forceCreation"/> false, this is the update done by switching tracing on or off (<see cref="UpdateAllCode"/>)
+        ///   and it always sets the target. With <paramref name="forceCreation"/> true, the update is not synchronized with such a switch,
+        ///   so the delegate is set as the target only if the tracing mode it was built for is still current (see <see cref="PublishTarget"/>).
+        /// </remarks>
+        /// <returns>
+        ///   The delegate for the tracing mode that was current when the update started, or null if only a lazy target was set (only when
+        ///   <paramref name="forceCreation"/> is false). A caller that needs the delegate should use this result rather than read
+        ///   <see cref="Target"/> again: another thread may change it at any time, e.g. by switching tracing on or off.
+        /// </returns>
+        internal Delegate UpdateDelegate(PythonContext context, bool forceCreation) {
+            // Read only once: the delegate is built for this mode, even if another thread switches tracing on or off meanwhile.
+            bool tracing = context.EnableTracing;
             Delegate finalTarget;
 
-            if (context.EnableTracing && _lambda != null) {
+            if (tracing && _lambda != null) {
                 if (_tracingLambda == null) {
                     if (!forceCreation) {
-                        if (_lambda is Compiler.Ast.ClassDefinition) return; // ClassDefinition does not have the same signature as call targets
                         // the user just called sys.settrace(), don't force re-compilation of every method in the system.  Instead
                         // we'll just re-compile them as they're invoked.
-                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
-                        SetTarget(target);
-                        return;
+                        SetLazyTarget();
+                        return null;
                     }
                     _tracingLambda = GetGeneratorOrNormalLambdaTracing(context);
                 }
@@ -708,9 +719,8 @@ namespace IronPython.Runtime {
                         // we cannot create the delegate when forceCreation is false because we hold the
                         // _CodeCreateAndUpdateDelegateLock and compiling the delegate may create a FunctionCode
                         // object which requires the lock.
-                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
-                        SetTarget(target);
-                        return;
+                        SetLazyTarget();
+                        return null;
                     }
                     _normalDelegate = CompileLambda(GetGeneratorOrNormalLambda(), new TargetUpdaterForCompilation(context, this).SetCompiledTarget);
                 }
@@ -720,7 +730,59 @@ namespace IronPython.Runtime {
 
             finalTarget = AddRecursionCheck(context, finalTarget);
 
-            SetTarget(finalTarget);
+            if (forceCreation) {
+                PublishTarget(context, tracing, finalTarget);
+            } else {
+                SetTarget(finalTarget);
+            }
+            return finalTarget;
+        }
+
+
+        /// <summary>
+        ///   Sets the target to a delegate built for the given tracing mode, unless that mode is no longer current.
+        /// </summary>
+        /// <remarks>
+        ///   Used for updates that are not synchronized with switching tracing on or off (<see cref="UpdateAllCode"/>), so that a delegate
+        ///   built for the previous mode cannot replace the target set for the new one. Such a delegate stays in its cache
+        ///   (<see cref="_normalDelegate"/> or <see cref="_tracingDelegate"/>) and is used when the mode switches back.
+        /// </remarks>
+        /// <param name="tracing">
+        ///   The tracing mode that <paramref name="target"/> was built for: true for the tracing delegate, false for the normal one.
+        /// </param>
+        /// <param name="target">
+        ///   The delegate for the target, with the recursion check already added (see <see cref="AddRecursionCheck"/>).
+        /// </param>
+        internal void PublishTarget(PythonContext context, bool tracing, Delegate target) {
+            if (context.EnableTracing != tracing) {
+                return;
+            }
+
+            SetTarget(target);
+            Thread.MemoryBarrier();
+            while (context.EnableTracing != tracing) {
+                tracing = context.EnableTracing;
+                UpdateDelegate(context, forceCreation: false);
+                Thread.MemoryBarrier();
+            }
+        }
+
+
+        /// <summary>
+        ///   Sets a target that creates the delegate for the current mode (tracing or not) when it is first needed.
+        /// </summary>
+        /// <remarks>
+        ///   A function gets a call target that compiles its delegate on the first call. A class body cannot get one, since its
+        ///   delegate has a different signature (<c>Func&lt;CodeContext, CodeContext&gt;</c>); it gets a null target instead, as when it
+        ///   has not been compiled yet, which makes <see cref="PythonOps.MakeClass"/> compile it the next time the class is created.
+        /// </remarks>
+        private void SetLazyTarget() {
+            if (_lambda is Compiler.Ast.ClassDefinition) {
+                SetTarget(null);
+            } else {
+                PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Delegate target);
+                SetTarget(target);
+            }
         }
 
         /// <summary>
@@ -730,7 +792,7 @@ namespace IronPython.Runtime {
         internal void SetDebugTarget(PythonContext context, Delegate target) {
             _normalDelegate = target;
 
-            SetTarget(AddRecursionCheck(context, target));
+            PublishTarget(context, tracing: false, AddRecursionCheck(context, target));
         }
 
         /// <summary>
@@ -754,11 +816,14 @@ namespace IronPython.Runtime {
             // Under .NET-async, async bodies are lowered before they reach here and must NOT go through the generator rewriter:
             //  * plain async (Coroutine, no Generator) via AsyncExpression,
             //  * async generators (Generator+Coroutine) via AsyncEnumerableExpression.
-            //  Only a plain generator (Generator without Coroutine) is rewritten here.
-            if ((Flags & FunctionAttributes.Generator) == 0 || (Flags & FunctionAttributes.Coroutine) != 0) {
-#else
-            if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
+            // As in CPython, calling an async function only creates the coroutine (or async generator) object, so the outer factory lambda
+            // is not traced at all. The async body is traced instead.
+            if ((Flags & FunctionAttributes.Coroutine) != 0) {
+                var lambda = (LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda());
+                return (LambdaExpression)new AsyncDebugHookInjector(context.DebugContext, debugInfo).Visit(lambda);
+            }
 #endif
+            if ((Flags & (FunctionAttributes.Generator | FunctionAttributes.Coroutine)) == 0) {
                 return context.DebugContext.TransformLambda((LambdaExpression)Compiler.Ast.Node.RemoveFrame(_lambda.GetLambda()), debugInfo);
             }
 
@@ -790,7 +855,7 @@ namespace IronPython.Runtime {
         private LightLambdaExpression GetGeneratorOrNormalLambda() {
             LightLambdaExpression finalCode;
 #if FEATURE_NET_ASYNC
-            // See GetGeneratorOrNormalLambda's sibling in MakeDebuggableFunctionCode: only a plain generator
+            // See the sibling GetGeneratorOrNormalLambdaTracing: only a plain generator
             // (Generator without Coroutine) is rewritten; plain async and async generators are lowered earlier.
             if ((Flags & FunctionAttributes.Generator) == 0 || (Flags & FunctionAttributes.Coroutine) != 0) {
 #else
@@ -828,7 +893,8 @@ namespace IronPython.Runtime {
                 return result;
             }
 
-            return code.Compile();
+            // LightLambdaExpression.Compile() would light-compile it with the default DLR threshold, so compile the reduced lambda instead
+            return ((LambdaExpression)code.Reduce()).Compile();
         }
 
         private Delegate CompileLambda(LambdaExpression code, EventHandler<LightLambdaCompileEventArgs> handler) {
@@ -939,11 +1005,11 @@ namespace IronPython.Runtime {
             }
 
             public void SetCompiledTarget(object sender, LightLambdaCompileEventArgs e) {
-                _code.SetTarget(_code.AddRecursionCheck(_context, _code._normalDelegate = e.Compiled));
+                _code.PublishTarget(_context, tracing: false, _code.AddRecursionCheck(_context, _code._normalDelegate = e.Compiled));
             }
 
             public void SetCompiledTargetTracing(object sender, LightLambdaCompileEventArgs e) {
-                _code.SetTarget(_code.AddRecursionCheck(_context, _code._tracingDelegate = e.Compiled));
+                _code.PublishTarget(_context, tracing: true, _code.AddRecursionCheck(_context, _code._tracingDelegate = e.Compiled));
             }
         }
 
@@ -1204,4 +1270,62 @@ namespace IronPython.Runtime {
             }
         }
     }
+
+#if FEATURE_NET_ASYNC
+    /// <summary>
+    ///   Swaps a lowered <see cref="AsyncExpression"/> / <see cref="AsyncEnumerableExpression"/> for a debug-enabled copy.
+    /// </summary>
+    /// <remarks>
+    ///   Used to build the tracing variant of an async function: the debug-enabled node instruments its own body when reduced, so the
+    ///   async body becomes traceable while the outer factory stays untraced. A function's own async node is the only one in its lambda
+    ///   — nested defs compile to their own lambdas/codes — so a single replacement is made, and the node is not descended into.
+    ///
+    ///   <para>The parameters and locals of the function are variables of the factory, which the async body accesses through closure. So
+    ///   the variables in scope at the node — the parameters of the enclosing lambdas and the variables of the enclosing blocks — are
+    ///   handed to the node, for the frame of the body to expose them as its locals.</para>
+    /// </remarks>
+    internal sealed class AsyncDebugHookInjector : ExpressionVisitor {
+        private readonly DebugContext _debugContext;
+        private readonly DebugLambdaInfo _debugLambdaInfo;
+
+        // The variables in scope at the node being visited, outermost first.
+        private readonly List<ParameterExpression> _scope = new List<ParameterExpression>();
+
+        internal AsyncDebugHookInjector(DebugContext debugContext, DebugLambdaInfo debugLambdaInfo) {
+            _debugContext = debugContext;
+            _debugLambdaInfo = debugLambdaInfo;
+        }
+
+        protected override Expression VisitLambda<T>(Expression<T> node) {
+            int count = _scope.Count;
+            _scope.AddRange(node.Parameters);
+            try {
+                return base.VisitLambda(node);
+            } finally {
+                _scope.RemoveRange(count, _scope.Count - count);
+            }
+        }
+
+        protected override Expression VisitBlock(BlockExpression node) {
+            int count = _scope.Count;
+            _scope.AddRange(node.Variables);
+            try {
+                return base.VisitBlock(node);
+            } finally {
+                _scope.RemoveRange(count, _scope.Count - count);
+            }
+        }
+
+        protected override Expression VisitExtension(Expression node) {
+            switch (node) {
+                case AsyncExpression ae:
+                    return ae.WithDebugInfo(_debugContext, _debugLambdaInfo, _scope);
+                case AsyncEnumerableExpression aee:
+                    return aee.WithDebugInfo(_debugContext, _debugLambdaInfo, _scope);
+                default:
+                    return base.VisitExtension(node);
+            }
+        }
+    }
+#endif
 }

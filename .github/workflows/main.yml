@@ -26,10 +26,10 @@ jobs:
         submodules: true
 
       # Setup .NET
-    - name: Setup .NET 10.0
+    - name: Setup .NET 11.0
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: '11.0.x'
 
       # CI debug information
     - name: Version Information
@@ -55,7 +55,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        framework: ['net462', 'net8.0', 'net10.0']
+        framework: ['net462', 'net8.0', 'net10.0', 'net11.0']
         stdlib: ['3.4', '3.6']
 
     name: test (${{ matrix.os }}, ${{ matrix.framework }}, ${{ matrix.stdlib }})
@@ -74,6 +74,10 @@ jobs:
         git -C src/core/IronPython.StdLib checkout FETCH_HEAD
 
       # Setup .NET
+    - name: Setup .NET 11.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '11.0.x'
     - name: Setup .NET 10.0
       uses: actions/setup-dotnet@v5
       with:
@@ -107,6 +111,7 @@ jobs:
       shell: pwsh
     - name: Version Information (${{ matrix.framework }})
       run: |
+        dotnet --info
         $ipy = "bin/Release/${{ matrix.framework }}/ipy"
         if ('${{ matrix.framework }}' -ne 'net462') { dotnet "$ipy.dll" -VV }
         elseif ('${{ matrix.os }}' -eq 'windows-latest') { & "$ipy.exe" -VV }

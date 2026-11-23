@@ -145,7 +145,7 @@ namespace IronPython.Runtime {
 
             switch (name) {
                 case "__dict__": throw PythonOps.AttributeError("readonly attribute");
-                case "__class__": throw PythonOps.TypeError("__class__ assignment: only for heap types");
+                case "__class__": throw PythonOps.TypeError("__class__ assignment only supported for heap types or ModuleType subclasses");
             }
 
             Debug.Assert(value != Uninitialized.Instance);

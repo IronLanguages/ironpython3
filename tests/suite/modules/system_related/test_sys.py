@@ -155,18 +155,21 @@ print(final)"""
         sys.settrace(None)
         self.assertEqual(sys.gettrace(), None)
 
-    @unittest.expectedFailure # https://github.com/IronLanguages/main/issues/740
     def test_cp24381(self):
+        # https://github.com/IronLanguages/main/issues/740
         CP24381_MESSAGES = []
 
         import sys
         orig_sys_trace_func = sys.gettrace()
-        def f(*args):
-            CP24381_MESSAGES.extend(args[1:])
-            return f
-
         cp24381_module = "cp24381_%d" % os.getpid()
         cp24381_file_name = cp24381_module + ".py"
+
+        def f(frame, event, arg):
+            # the import machinery (importlib) is Python code too, and is traced as well; keep the events of the module only
+            if os.path.basename(frame.f_code.co_filename) == cp24381_file_name:
+                CP24381_MESSAGES.extend((event, arg))
+            return f
+
         cp24381_contents  = """
 print('a')
 print('b')
@@ -185,12 +188,134 @@ f()
                 __import__(cp24381_module)
         finally:
             sys.settrace(orig_sys_trace_func)
+            sys.modules.pop(cp24381_module, None)
             os.unlink(cp24381_file_name)
 
         self.assertEqual(CP24381_MESSAGES,
                 ['call', None, 'line', None, 'line', None, 'line', None, 'line',
                 None, 'line', None, 'call', None, 'line', None, 'return', None,
                 'return', None])
+
+    def test_settrace_first_line(self):
+        # The first statement of module code gets a 'line' event of its own, as in a function.
+        # The 'call' event of module code is on the line of its first statement, as in Python 3.4.
+        # CPython changed that later: 3.10 puts it always on line 1, and 3.11 on line 0
+        # That line is also the co_firstlineno of module code, which 3.10 and later set to 1.
+        check_module_call_line = is_cli or sys.version_info < (3, 10)
+
+        cases = [
+            ("x = 1\ny = 2\n",          "exec",   [('call', 1), ('line', 1), ('line', 2), ('return', 2)]),
+            ("\n\nx = 1\ny = 2\n",      "exec",   [('call', 3), ('line', 3), ('line', 4), ('return', 4)]),
+            ("'doc'\nx = 1\n",          "exec",   [('call', 1), ('line', 1), ('line', 2), ('return', 2)]),
+            ("def g(): pass\ng()\n",    "exec",   [('call', 1), ('line', 1), ('line', 2), ('call', 1), ('line', 1), ('return', 1), ('return', 2)]),
+            ("1 + 2",                   "eval",   [('call', 1), ('line', 1), ('return', 1)]),
+            ("x = 1",                   "single", [('call', 1), ('line', 1), ('return', 1)]),
+        ]
+        # Before 3.7, CPython folds constants in the peephole optimizer, which places the folded constant
+        # on the line of the last operand (here 4); 3.7 moved folding to the AST, keeping the line of the expression.
+        if is_cli or sys.version_info >= (3, 7):
+            cases.append(("\n\n(1 +\n 2)",  "eval",   [('call', 3), ('line', 3), ('return', 3)]))
+
+        orig_sys_trace_func = sys.gettrace()
+        for source, mode, expected in cases:
+            events = []
+            def f(frame, event, arg):
+                if frame.f_code.co_filename == '<traced>':
+                    module_call = event == 'call' and frame.f_code.co_name == '<module>'
+                    events.append((event, None if module_call and not check_module_call_line else frame.f_lineno))
+                return f
+
+            if not check_module_call_line:
+                expected = [('call', None)] + expected[1:]
+
+            code = compile(source, '<traced>', mode)
+            if check_module_call_line:
+                self.assertEqual(code.co_firstlineno, expected[0][1], (source, mode))
+
+            try:
+                sys.settrace(f)
+                if mode == 'eval':
+                    eval(code, {})
+                else:
+                    exec(code, {})
+            finally:
+                sys.settrace(orig_sys_trace_func)
+
+            self.assertEqual(events, expected, (source, mode))
+
+    def test_settrace_jump(self):
+        # A trace function can set f_lineno to any line of the code, in module code as well as in a function.
+        # All the code is compiled under the same file name, since a jump must work in code compiled again under a file name too.
+        # The line jumped to gets no 'line' event. The code that jumped still reports its return, with the value returned or
+        # None when an exception leaves it, and leaves the frame stack as it found it.
+        module = "\n\nout.append(3)\nout.append(4)\n\nout.append(6)\n"
+        function = "def g(out):\n\n    out.append(3)\n    out.append(4)\n\n    out.append(6)\n    return 7\nout.append(g(out))\n"
+        raising = "def g(out):\n\n    out.append(3)\n    out.append(4)\n\n    raise KeyError(6)\ng(out)\n"
+        M = '<module>'
+        cases = [
+            # backward
+            (module, 6, 4, [3, 4, 4, 6], [
+                (M, 'call'), (M, 'line', 3), (M, 'line', 4), (M, 'line', 6), (M, 'line', 6), (M, 'return', 6, None),
+            ]),
+            (function, 6, 4, [3, 4, 4, 6, 7], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 8),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'line', 4), ('g', 'line', 6), ('g', 'line', 6), ('g', 'line', 7), ('g', 'return', 7, 7),
+                (M, 'return', 8, None),
+            ]),
+            (raising, 6, 4, [3, 4, 4, KeyError], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 7),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'line', 4), ('g', 'line', 6), ('g', 'line', 6), ('g', 'exception', 6, KeyError), ('g', 'return', 6, None),
+                (M, 'exception', 7, KeyError), (M, 'return', 7, None),
+            ]),
+            # forward
+            (module, 3, 6, [6], [
+                (M, 'call'), (M, 'line', 3), (M, 'return', 6, None),
+            ]),
+            (function, 3, 6, [6, 7], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 8),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'line', 7), ('g', 'return', 7, 7),
+                (M, 'return', 8, None),
+            ]),
+            (raising, 3, 6, [KeyError], [
+                (M, 'call'), (M, 'line', 1), (M, 'line', 7),
+                ('g', 'call'), ('g', 'line', 3), ('g', 'exception', 6, KeyError), ('g', 'return', 6, None),
+                (M, 'exception', 7, KeyError), (M, 'return', 7, None),
+            ]),
+        ]
+
+        orig_sys_trace_func = sys.gettrace()
+        for source, jump_from, jump_to, expected_out, expected_events in cases:
+            jumped = False
+            events = []
+            def f(frame, event, arg):
+                nonlocal jumped
+                if frame.f_code.co_filename == '<traced>':
+                    # test_settrace_first_line checks the line of 'call' events, which differs between versions for module code
+                    event_info = (frame.f_code.co_name, event)
+                    if event != 'call':
+                        event_info += (frame.f_lineno,)
+                    if event in ('return', 'exception'):
+                        event_info += (arg[0] if event == 'exception' else arg,)
+                    events.append(event_info)
+
+                    if event == 'line' and frame.f_lineno == jump_from and not jumped:
+                        jumped = True
+                        frame.f_lineno = jump_to
+                return f
+
+            out = []
+            code = compile(source, '<traced>', 'exec')
+            try:
+                sys.settrace(f)
+                exec(code, {'out': out})
+            except KeyError:
+                out.append(KeyError)
+            finally:
+                sys.settrace(orig_sys_trace_func)
+
+            self.assertEqual(out, expected_out, (source, jump_from, jump_to))
+            self.assertEqual(events, expected_events, (source, jump_from, jump_to))
+            self.assertEqual(sys._getframe(0).f_code.co_name, 'test_settrace_jump', (source, jump_from, jump_to))
 
     def test_cp30130(self):
         def f(frame, event, arg):
@@ -218,6 +343,158 @@ f()
 
         sys.settrace(None)
 
+    def test_class_body_after_settrace_none(self):
+        """A class body that has only run traced still runs after sys.settrace(None)."""
+        def f():
+            class Boom(Exception): pass
+            return Boom
+
+        sys.settrace(lambda *args: None)
+        try:
+            f()
+        finally:
+            sys.settrace(None)
+        # Before the fix, this failed (intermittently) with a TypeError about a Func`2[PythonFunction,Object] cast:
+        # sys.settrace(None) gave the class body a function's call target.
+        self.assertTrue(issubclass(f(), Exception))
+
+    @skipUnlessIronPython()
+    def test_settrace_function_Xdebug(self):
+        """With -X:Debug, a function defined while tracing is on is traced."""
+        import subprocess
+        code = """import sys
+events = []
+def tracer(frame, event, arg):
+    events.append((event, frame.f_code.co_name))
+    return tracer
+sys.settrace(tracer)
+def f():
+    return 1
+f()
+sys.settrace(None)
+print(('call', 'f') in events)
+"""
+        # Before PR #2118, defining f under -X:Debug gave it its normal (untraced) delegate, even with tracing on.
+        out = subprocess.check_output([sys.executable, '-X:Debug', '-c', code])
+        self.assertEqual(out.strip(), b'True')
+
+    def test_settrace_no_frames(self):
+        # A traced function that calls sys.settrace(None) leaves no frames behind on the frame stack
+        def stop():
+            sys.settrace(None)
+        def f():
+            stop()
+
+        sys.settrace(lambda *args: None)
+        try:
+            f()
+        finally:
+            sys.settrace(None)
+        self.assertEqual(sys._getframe(0).f_code.co_name, 'test_settrace_no_frames')
+
+    def test_no_trace_events_after_settrace_none(self):
+        # After sys.settrace(None), no trace events are delivered, not even to frames that have a local trace function,
+        # also while another thread is still being traced
+        import threading
+        events = []
+        def tracer(frame, event, arg):
+            events.append((event, frame.f_code.co_name))
+            return tracer
+        def stop():
+            sys.settrace(None)
+        def f():
+            stop()
+            return 1
+
+        traced, finished = threading.Event(), threading.Event()
+        def other():
+            sys.settrace(lambda *args: None)
+            traced.set()
+            finished.wait()
+            sys.settrace(None)
+        thread = threading.Thread(target=other)
+        thread.start()
+        traced.wait()
+        sys.settrace(tracer)
+        try:
+            f()
+        finally:
+            sys.settrace(None)
+            finished.set()
+            thread.join()
+        self.assertEqual(events, [('call', 'f'), ('line', 'f'), ('call', 'stop'), ('line', 'stop')])
+
+    def test_settrace_f_back(self):
+        # The frame of a traced function called from code that is not traced has the frame of that code as f_back
+        def g():
+            return sys._getframe(0).f_back
+
+        sys.settrace(lambda *args: None)
+        try:
+            back = g()
+        finally:
+            sys.settrace(None)
+        self.assertIs(back, sys._getframe(0))
+
+    def test_settrace_exec_f_back(self):
+        # Code run by exec while tracing is on has a single frame, whose f_back is the frame that called exec
+        ns = {'sys': sys}
+        sys.settrace(lambda *args: None)
+        try:
+            exec("back = sys._getframe(0).f_back", ns)
+        finally:
+            sys.settrace(None)
+        self.assertIs(ns['back'], sys._getframe(0))
+
+    def test_eval_frame(self):
+        # Code run by eval has a frame of its own, whose f_back is the frame that called eval
+        def depth():
+            n, f = 0, sys._getframe(1)
+            while f:
+                n, f = n + 1, f.f_back
+            return n
+
+        before = depth()
+        frame = eval("sys._getframe(0)", {'sys': sys})
+        self.assertEqual(frame.f_code.co_filename, "<string>")
+        self.assertEqual(frame.f_back.f_code.co_name, "test_eval_frame")
+        self.assertEqual(eval("depth()", {'depth': depth}), before + 1)
+        self.assertEqual(eval("eval('depth()', {'depth': depth})", {'depth': depth}), before + 2)
+        self.assertEqual(depth(), before)
+
+        with self.assertRaises(ZeroDivisionError):
+            eval("1/0")
+        self.assertEqual(depth(), before)
+
+        sys.settrace(lambda *args: None)
+        try:
+            self.assertEqual(eval("depth()", {'depth': depth}), before + 1)
+        finally:
+            sys.settrace(None)
+        self.assertEqual(depth(), before)
+
+    @skipUnlessIronPython()
+    def test_settrace_Xtracing_module_frame(self):
+        # With -X:Tracing, the main module has a single frame
+        import subprocess
+        code = "import traceback\ndef g():\n    return [entry[2] for entry in traceback.extract_stack()]\nprint(g())\n"
+        out = subprocess.check_output([sys.executable, '-X:Tracing', '-c', code])
+        self.assertEqual(out.strip(), b"['<module>', 'g']")
+
+    def test_settrace_f_builtins(self):
+        # The frame of a traced function has the same builtins as the frame of code that is not traced
+        import builtins
+        def g():
+            return sys._getframe(0).f_builtins
+
+        sys.settrace(lambda *args: None)
+        try:
+            traced = g()
+        finally:
+            sys.settrace(None)
+        self.assertIs(traced, builtins.__dict__)
+        self.assertIs(sys._getframe(0).f_builtins, builtins.__dict__)
+
     @skipUnlessIronPython()
     @unittest.expectedFailure # dummy getrefcount removed in https://github.com/IronLanguages/ironpython3/pull/577
     def test_getrefcount(self):
@@ -235,5 +512,23 @@ f()
         ''' Validate properly sorted module names for issue #875
             See issue https://github.com/IronLanguages/ironpython3/issues/875 for full details '''
         self.assertTrue(sys.builtin_module_names == tuple(sorted(sys.builtin_module_names)))
+
+    def test_setrecursionlimit_existing_function(self):
+        # Setting a recursion limit is enforced also for functions that were already called before
+        # (in a new process, where IronPython enforces no limit by default)
+        import subprocess
+        code = """import sys
+def f(n):
+    return f(n - 1) if n else 0
+f(10)
+sys.setrecursionlimit(50)
+try:
+    f(100)
+    print(False)
+except RecursionError:
+    print(True)
+"""
+        out = subprocess.check_output([sys.executable, '-c', code])
+        self.assertEqual(out.strip(), b'True')
 
 run_test(__name__)

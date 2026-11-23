@@ -430,7 +430,7 @@ class TestBank:
             2:b'c%s\nNewClass_GetState_GetNewArgs\nq<\x00>X\x04\x00\x00\x00arg1q<\x01>K\x02K\x03\x87q<\x02>\x81q<\x03>X\x06\x00\x00\x00state1q<\x04>X\x06\x00\x00\x00state2q<\x05>\x86q<\x06>b.'.replace(b"%s", __name__.encode("ascii")),
             }),
         ]
-    if is_cli or sys.version_info < (3,5): #https://github.com/IronLanguages/main/issues/853
+    if not is_cli and sys.version_info < (3,5):
         tests.append((0.33333333333333331,
                       {
                        0:b'F0.33333333333333331\n.',

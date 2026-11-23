@@ -317,6 +317,9 @@ namespace IronPython.Runtime {
                     // so that a directory on sys.path doesn't hide a .NET namespace
                     metaPath.insert(metaPath.index(pathFinder), new Importer.ClrImporter(pathFinder));
                     ImportLibBootstrap = _frozen_importlib;
+#if PYTHON_36_OR_GREATER
+                    ImportLibBootstrapExternal = _frozen_importlib_external;
+#endif
                 } catch {
                     Debug.Fail("Failed to bootstrap importlib");
                 }
@@ -782,7 +785,8 @@ namespace IronPython.Runtime {
             CompilerContext context = ast.CompilerContext;
 
             // We have to turn off adaptive compilation in debug mode to
-            // support mangaged debuggers.
+            // support mangaged debuggers. Code from compile, exec and eval is
+            // still interpreted, except the source of modules that importlib loads.
             return ((PythonCompilerOptions)context.Options).Interpreted || !EmitDebugSymbols(context.SourceUnit);
         }
 
@@ -1176,6 +1180,18 @@ namespace IronPython.Runtime {
         /// When null (e.g. NoImportLib), the legacy importer is used instead.
         /// </summary>
         internal PythonModule ImportLibBootstrap { get; private set; }
+
+        /// <summary>
+        /// The _frozen_importlib_external module, which has importlib's path-based finders and loaders since Python 3.6.
+        /// Null before Python 3.6, and when <see cref="ImportLibBootstrap"/> is null.
+        /// </summary>
+        internal PythonModule ImportLibBootstrapExternal { get; private set; }
+
+        /// <summary>
+        /// Returns whether the module is one of the bootstrap modules of importlib.
+        /// </summary>
+        internal bool IsImportLibBootstrap(PythonModule module)
+            => module is not null && (module == ImportLibBootstrap || module == ImportLibBootstrapExternal);
 
         /// <summary>
         /// importlib's ModuleSpec type, used by our sys.meta_path finders to create specs.

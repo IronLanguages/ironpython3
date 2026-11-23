@@ -265,6 +265,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if ((cflags & CompileFlags.CO_DONT_IMPLY_DEDENT) != 0) {
                 opts.DontImplyDedent = true;
             }
+            if (mode == "exec" && context.LanguageContext.IsImportLibBootstrap(context.ModuleContext.Module)) {
+                // importlib compiles the source of the modules it loads; unlike other code from compile, exec and eval,
+                // such code is not forced to be interpreted, so that -X Debug applies to it as to a script run from a file
+                opts.Interpreted = false;
+            }
 
             return !astOnly ?
                 (object)FunctionCode.FromSourceUnit(sourceUnit, opts, true) :

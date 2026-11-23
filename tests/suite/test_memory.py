@@ -5,7 +5,7 @@
 import gc
 import unittest
 
-from time import clock
+from time import clock, sleep
 
 from iptest import is_cli, is_cli64, is_mono, retryOnFailure, run_test, skipUnlessIronPython
 
@@ -14,18 +14,22 @@ def evalLoop(code, N):
         func = compile(code, '<>', 'exec')
         eval(func)
 
-def evalTest(code, N):
+def evalTest(code, N, maxMem=None):
     from System import GC
     startMem = GC.GetTotalMemory(True)
     startTime = clock()
     evalLoop(code, N)
     endTime = clock()
-    if is_mono:
-        gc.collect()
-    else:
-        gc.collect(2)
-    endMem = GC.GetTotalMemory(True)
-    return max(endMem-startMem, 0)
+    for attempt in range(51):
+        if is_mono:
+            gc.collect()
+        else:
+            gc.collect(2)
+        usedMem = max(GC.GetTotalMemory(True)-startMem, 0)
+        if maxMem is None or usedMem < maxMem or attempt == 50:
+            return usedMem
+        # Class-body compilation can still be running on the thread pool.
+        sleep(0.1)
 
 t_list = [
         "if not 1 + 2 == 3: raise AssertionError('Assertion Failed')",
@@ -96,7 +100,7 @@ class MemoryTest(unittest.TestCase):
             usedMax = max(self.expectedMem, 4*baseMem)
             if not self.skipMemoryCheck:
                 for repetitions in [100, 500]:
-                    usedMem = evalTest(code, repetitions)
+                    usedMem = evalTest(code, repetitions, usedMax)
                     self.assertTrue(usedMem < usedMax, "Allocated %i (max %i, base %i) running %s %d times" % (usedMem, usedMax, baseMem, code, repetitions))
             else:
                 # not to measure the memory usage, but still try to peverify the code at the end
@@ -117,6 +121,16 @@ z = f(3)
         names = {}
         eval(e, names)
         self.assertEqual(names['z'], 5)
+
+    def test_evalTest_retained_memory(self):
+        import sys
+        sys._test_memory_retained = []
+        try:
+            usedMem = evalTest("import sys\nsys._test_memory_retained.append(bytearray(4096))", 100, 30000)
+            self.assertGreaterEqual(usedMem, 30000)
+            self.assertEqual(len(sys._test_memory_retained), 100)
+        finally:
+            del sys._test_memory_retained
 
     def test_cp26005(self):
         def coroutine():

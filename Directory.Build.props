@@ -144,4 +144,10 @@
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <DefineConstants>$(PythonSymbols);$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
+
+  <!-- Runtime-async opt-in. Done AFTER DefineConstants is computed so the compiler-feature name
+       (which contains '=' and '-') does not leak into C# preprocessor symbols.-->
+  <PropertyGroup Condition="$(Features.Contains('FEATURE_RUNTIME_ASYNC'))">
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
 </Project>

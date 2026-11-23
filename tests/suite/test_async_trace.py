@@ -57,10 +57,14 @@ class Recorder:
     def __call__(self, frame, event, arg):
         code = frame.f_code
         if code in self.codes and not (event == "exception" and arg[0] is StopIteration and arg[2] is None):
-            self.events.append((event, code.co_name, frame.f_lineno - code.co_firstlineno))
-            if event == "return":
-                self.returns.append((code.co_name, arg))
+            self.record(frame, event, arg)
         return self
+
+    def record(self, frame, event, arg):
+        code = frame.f_code
+        self.events.append((event, code.co_name, frame.f_lineno - code.co_firstlineno))
+        if event == "return":
+            self.returns.append((code.co_name, arg))
 
     def run(self, fn, *args):
         sys.settrace(self)
@@ -75,6 +79,23 @@ class Recorder:
         whether a coroutine or generator body is traced when it is created.)
         """
         return self.run(lambda: drive(async_fn(*args)))
+
+
+class LocalsRecorder(Recorder):
+    """
+    Recorder that records each event as (event, name, line, locals), where locals has the values of the given local variables.
+
+    A variable is left out of locals while its value is None: IronPython reports a local variable that is not set yet as None, as it
+    does in the frame of a synchronous function, whereas CPython does not report it.
+    """
+    def __init__(self, names, *functions):
+        super().__init__(*functions)
+        self.names = names
+
+    def record(self, frame, event, arg):
+        code = frame.f_code
+        values = {k: v for k, v in frame.f_locals.items() if k in self.names and v is not None}
+        self.events.append((event, code.co_name, frame.f_lineno - code.co_firstlineno, values))
 
 
 @unittest.skipIf(is_cli and not is_netcoreapp, "tests tracing of the .NET async implementation (FEATURE_NET_ASYNC)")
@@ -387,6 +408,115 @@ class AsyncTraceTest(unittest.TestCase):
             sys.settrace(None)
         self.assertEqual(errors, [ValueError])
         self.assertEqual(result, 2)
+
+    def test_coroutine_locals(self):
+        # The frame shows the parameters, including those the body does not use, and the local variables, with their current values.
+        async def inner(x):
+            return x * 2
+
+        async def coro(a, unused):
+            total = a
+            for i in range(2):
+                total += await inner(i)
+            return total
+
+        rec = LocalsRecorder({"a", "unused", "total", "i"}, coro)
+        self.assertEqual(rec.drive(coro, 1, 2), 3)
+        self.assertEqual(rec.events, [
+            ("call", "coro", 0, {"a": 1, "unused": 2}),
+            ("line", "coro", 1, {"a": 1, "unused": 2}),
+            ("line", "coro", 2, {"a": 1, "unused": 2, "total": 1}),
+            ("line", "coro", 3, {"a": 1, "unused": 2, "total": 1, "i": 0}),
+            ("line", "coro", 2, {"a": 1, "unused": 2, "total": 1, "i": 0}),
+            ("line", "coro", 3, {"a": 1, "unused": 2, "total": 1, "i": 1}),
+            ("line", "coro", 2, {"a": 1, "unused": 2, "total": 3, "i": 1}),
+            ("line", "coro", 4, {"a": 1, "unused": 2, "total": 3, "i": 1}),
+            ("return", "coro", 4, {"a": 1, "unused": 2, "total": 3, "i": 1}),
+        ])
+
+    def test_async_generator_locals_across_resumptions(self):
+        # Each resumption has a frame of its own, which starts with the values the variables had when the generator suspended.
+        async def agen(n):
+            acc = n
+            yield acc
+            acc += 1
+            yield acc
+
+        async def consume(out):
+            async for v in agen(10):
+                out.append(v)
+
+        rec = LocalsRecorder({"n", "acc"}, agen)
+        out = []
+        rec.run(drive, consume(out))
+        self.assertEqual(out, [10, 11])
+        self.assertEqual(rec.events, [
+            ("call", "agen", 0, {"n": 10}),
+            ("line", "agen", 1, {"n": 10}),
+            ("line", "agen", 2, {"n": 10, "acc": 10}),
+            ("return", "agen", 2, {"n": 10, "acc": 10}),
+            ("call", "agen", 2, {"n": 10, "acc": 10}),
+            ("line", "agen", 3, {"n": 10, "acc": 10}),
+            ("line", "agen", 4, {"n": 10, "acc": 11}),
+            ("return", "agen", 4, {"n": 10, "acc": 11}),
+            ("call", "agen", 4, {"n": 10, "acc": 11}),
+            ("return", "agen", 4, {"n": 10, "acc": 11}),
+        ])
+
+    def test_exception_variable_is_a_local(self):
+        async def coro():
+            try:
+                raise ValueError(1)
+            except ValueError as e:
+                return 1
+
+        rec = LocalsRecorder({"e"}, coro)
+        self.assertEqual(rec.drive(coro), 1)
+        error = [values["e"] for (event, name, line, values) in rec.events if event == "line" and line == 4]
+        self.assertEqual(len(error), 1)
+        self.assertIsInstance(error[0], ValueError)
+        self.assertEqual(error[0].args, (1,))
+
+    def test_setting_local_through_frame(self):
+        # A trace function can change a local variable through f_locals of the frame.
+        async def coro():
+            x = 1
+            return x
+
+        def tracer(frame, event, arg):
+            if frame.f_code is coro.__code__ and event == "line" and frame.f_lineno == coro.__code__.co_firstlineno + 2:
+                frame.f_locals["x"] = 10
+            return tracer
+
+        sys.settrace(tracer)
+        try:
+            result = drive(coro())
+        finally:
+            sys.settrace(None)
+        self.assertEqual(result, 10)
+
+    def test_frame_globals_and_getframe(self):
+        # The traced frame, which sys._getframe also gets in the body, has the globals of the module and the locals of the body.
+        globals_seen = []
+
+        async def coro(a):
+            b = a + 1
+            frame = sys._getframe()
+            return frame.f_code.co_name, frame.f_locals["a"], frame.f_locals["b"], frame.f_globals is globals()
+
+        def tracer(frame, event, arg):
+            if frame.f_code is coro.__code__:
+                globals_seen.append(frame.f_globals is globals())
+            return tracer
+
+        sys.settrace(tracer)
+        try:
+            result = drive(coro(1))
+        finally:
+            sys.settrace(None)
+        self.assertEqual(result, ("coro", 1, 2, True))
+        self.assertEqual(len(globals_seen), 5)
+        self.assertTrue(all(globals_seen))
 
 
 run_test(__name__)

@@ -5,8 +5,9 @@
 """A minimal stand-in for NumPy, for running tests ported from NumPy against CLR arrays.
 
 Ported tests import it as `from iptest import numpy_shim as np`. The NumPy-like functions that
-IronPython implements on `System.Array` are re-exported unchanged; everything else here (array
-creation, dtypes, `testing`) is a test helper written in Python, not a part of IronPython's API.
+the IronPython.NDArray extension implements on `System.Array` are re-exported unchanged;
+everything else here (array creation, dtypes, `testing`) is a test helper written in Python,
+not a part of IronPython's API.
 
 Differences from NumPy that ported tests have to take into account:
 
@@ -26,10 +27,11 @@ import itertools
 import unittest
 
 import clr
+clr.AddReference('IronPython.NDArray')
 import System
 from System import Array
 
-# ---- NumPy-like functions implemented by IronPython
+# ---- NumPy-like functions implemented by IronPython.NDArray
 
 add = Array.add
 multiply = Array.multiply

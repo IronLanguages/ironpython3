@@ -16,13 +16,24 @@ using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-namespace IronPython.Runtime.Operations {
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
+[assembly: ExtensionType(typeof(Array), typeof(IronPython.NDArray.NDArrayOps))]
+namespace IronPython.NDArray {
     /// <summary>
     ///   Provides the NumPy-like interface of CLR arrays.
     /// </summary>
     /// <remarks>
     ///   The functions are static methods of <c>System.Array</c> and follow the interface of the NumPy
     ///   functions of the same name (a subset of it). The operators of CLR arrays are in <see cref="ArrayOps"/>.
+    ///   <para>
+    ///     The functions are available once this assembly is loaded, e.g. with <c>clr.AddReference("IronPython.NDArray")</c>;
+    ///     the <c>ipy</c> console loads it at startup from the <c>DLLs</c> directory. It has to be loaded before the members
+    ///     of <c>System.Array</c> are looked up, since the lookups are cached (in part, by all engines in the process):
+    ///     e.g. after <c>hasattr(System.Array, "add")</c> or <c>dir(System.Array)</c>, the functions may stay hidden.
+    ///   </para>
     ///   <para>
     ///     The result element type follows NumPy's type promotion rules applied to the CLR primitive
     ///     numeric types (<c>bool</c>, signed and unsigned integers, <c>Half</c> on .NET 7+, <c>Single</c>,
@@ -80,7 +91,7 @@ namespace IronPython.Runtime.Operations {
                 CheckCast(name, "output", resultType, outArray.GetType().GetElementType()!);
             }
 
-            var site = CallSite<Func<CallSite, object?, object?, object?>>.Create(context.LanguageContext.BinaryOperation(operation));
+            var site = CallSite<Func<CallSite, object?, object?, object?>>.Create(context.LanguageContext.CreateBinaryOperationBinder(operation));
 
             Array? a1 = x1 as Array;
             Array? a2 = x2 as Array;
@@ -91,11 +102,11 @@ namespace IronPython.Runtime.Operations {
             // Like NumPy, operands are cast to a common numeric type before the operation is applied
             bool cast1 = MustCastInput(x1, resultType);
             bool cast2 = MustCastInput(x2, resultType);
-            if (a1 is null && cast1) x1 = ConvertElement(x1, resultType);
-            if (a2 is null && cast2) x2 = ConvertElement(x2, resultType);
+            if (a1 is null && cast1) x1 = ConvertElement(context, x1, resultType);
+            if (a2 is null && cast2) x2 = ConvertElement(context, x2, resultType);
 
             if (a1 is null && a2 is null && outArray is null) {
-                return ConvertElement(site.Target(site, x1, x2), resultType);
+                return ConvertElement(context, site.Target(site, x1, x2), resultType);
             }
 
             int[] shape = BroadcastShapes(GetShape(x1), GetShape(x2))
@@ -124,11 +135,11 @@ namespace IronPython.Runtime.Operations {
             for (int i = 0; i < count; i++) {
                 object? item1 = a1 is null ? x1 : GetBroadcastValue(a1, index, index1!);
                 object? item2 = a2 is null ? x2 : GetBroadcastValue(a2, index, index2!);
-                if (a1 is not null && cast1) item1 = ConvertElement(item1, resultType);
-                if (a2 is not null && cast2) item2 = ConvertElement(item2, resultType);
+                if (a1 is not null && cast1) item1 = ConvertElement(context, item1, resultType);
+                if (a2 is not null && cast2) item2 = ConvertElement(context, item2, resultType);
                 object? res = site.Target(site, item1, item2);
-                if (dtype is not null && outArray is not null) res = ConvertElement(res, dtype);
-                result.SetValue(ConvertElement(res, elementType), index);
+                if (dtype is not null && outArray is not null) res = ConvertElement(context, res, dtype);
+                result.SetValue(ConvertElement(context, res, elementType), index);
 
                 NextIndex(index, shape, lowerBounds);
             }
@@ -376,15 +387,19 @@ namespace IronPython.Runtime.Operations {
             int toCategory = KindCategory(to);
             if (fromCategory < 0 || toCategory < fromCategory) {
                 throw PythonOps.TypeError("Cannot cast ufunc '{0}' {1} from {2} to {3} with casting rule 'same_kind'",
-                    name, operand, PythonOps.GetPythonTypeNameFromType(from), PythonOps.GetPythonTypeNameFromType(to));
+                    name, operand, GetPythonTypeName(from), GetPythonTypeName(to));
             }
         }
 
         private static void CheckOperand(string name, object? x) {
             if (x is PythonList || x is PythonTuple) {
-                throw PythonOps.TypeError("{0}() does not support operands of type '{1}'; convert them to System.Array", name, PythonOps.GetPythonTypeName(x));
+                throw PythonOps.TypeError("{0}() does not support operands of type '{1}'; convert them to System.Array", name, PythonType.Get__name__(DynamicHelpers.GetPythonType(x)));
             }
         }
+
+        private static string GetPythonTypeName(Type type)
+            // IronPython uses Int32 objects as "int" for performance reasons (GH #52)
+            => type == typeof(int) ? "int" : PythonType.Get__name__(DynamicHelpers.GetPythonTypeFromType(type));
 
         private static Array? GetOutArray(object? @out) {
             if (@out is PythonTuple tuple) {
@@ -448,11 +463,11 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static object? ConvertElement(object? value, Type type) {
+        private static object? ConvertElement(CodeContext context, object? value, Type type) {
             if (type == typeof(object)) return value;
             if (type == typeof(bool) && value is int i) return ScriptingRuntimeHelpers.BooleanToObject(i != 0); // NumPy: add is or, multiply is and
             if (value is bool b && type != typeof(bool)) value = b ? 1 : 0; // not every numeric type converts from bool, e.g. Half
-            return Converter.Convert(value!, type);
+            return ClrModule.Convert(context, value!, type);
         }
 
         private static bool ShapeEquals(int[] shape1, int[] shape2) {

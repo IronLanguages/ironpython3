@@ -14,6 +14,7 @@ from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
+    clr.AddReference('IronPython.NDArray')
     import System
 
 def array2d(elemType, rows, bases=None):

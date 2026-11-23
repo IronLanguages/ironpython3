@@ -49,6 +49,9 @@
         <Component>
           <File Id="IronPython.SQLite.dll" Source="$(var.PlatformDir)\DLLs\IronPython.SQLite.dll" />
         </Component>
+        <Component>
+          <File Id="IronPython.NDArray.dll" Source="$(var.PlatformDir)\DLLs\IronPython.NDArray.dll" />
+        </Component>
       </Directory>
 
       <Component>
@@ -130,6 +133,7 @@
       <ComponentRef Id="IronPython.Modules.dll" />
       <ComponentRef Id="IronPython.Wpf.dll" />
       <ComponentRef Id="IronPython.SQLite.dll" />
+      <ComponentRef Id="IronPython.NDArray.dll" />
       <ComponentRef Id="ipy.exe" />
       <ComponentRef Id="ipy32.exe" />
       <ComponentRef Id="ipyw.exe" />

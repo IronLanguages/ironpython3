@@ -494,6 +494,45 @@ print(('call', 'f') in events)
         self.assertIs(ns['frame'].f_code, ns['f'].__code__)
         self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
 
+    def test_settrace_callback_frames(self):
+        # Code run by the trace function is not traced, but it has frames, as does the trace function itself
+        def depth():
+            n, f = 0, sys._getframe(1)
+            while f:
+                n, f = n + 1, f.f_back
+            return n
+
+        def g():
+            return sys._getframe(0).f_code.co_name
+
+        def traced():
+            pass
+
+        events = []
+        results = {}
+        def tracer(frame, event, arg):
+            events.append((event, frame.f_code.co_name))
+            if event == 'call' and frame.f_code.co_name == 'traced' and not results:
+                results['tracer'] = sys._getframe(0).f_code.co_name
+                results['tracer f_back'] = sys._getframe(1).f_code.co_name
+                results['function'] = g()
+                results['eval'] = eval("sys._getframe(0)", {'sys': sys}).f_code.co_filename
+                ns = {'sys': sys}
+                exec("frame = sys._getframe(0)", ns)
+                results['exec'] = ns['frame'].f_code.co_filename
+            return None
+
+        before = depth()
+        sys.settrace(tracer)
+        try:
+            traced()
+        finally:
+            sys.settrace(None)
+        self.assertEqual(depth(), before)
+
+        self.assertEqual(results, {'tracer': 'tracer', 'tracer f_back': 'traced', 'function': 'g', 'eval': '<string>', 'exec': '<string>'})
+        self.assertNotIn(('call', 'g'), events)
+
     @skipUnlessIronPython()
     def test_settrace_Xtracing_module_frame(self):
         # With -X:Tracing, the main module has a single frame

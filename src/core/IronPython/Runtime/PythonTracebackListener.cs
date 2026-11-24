@@ -67,6 +67,14 @@ namespace IronPython.Runtime {
         // dummy listener used to maintain the frame stack on a thread without a trace function
         internal bool IsDummyListener { get; }
 
+        /// <summary>
+        ///   The frame whose event the trace function is handling, or null if no event is being handled.
+        /// </summary>
+        /// <remarks>
+        ///   It is not necessarily the topmost frame: code that the trace function runs, including the trace function itself, has frames too.
+        /// </remarks>
+        internal TraceBackFrame DispatchedFrame { get; private set; }
+
 #if PROFILE_SUPPORT
         internal void SetProfile(TracebackDelegate traceDispatch) {
             _traceDispatch = traceDispatch;
@@ -90,14 +98,13 @@ namespace IronPython.Runtime {
             var thread = PythonOps.GetFunctionStack();
             TraceBackFrame pyFrame;
 
-            if (_inTraceBack) {
-                return;
-            }
-
+            // Code that the trace function runs is not traced, but it still has frames, which are pushed and popped here as usual.
             try {
                 if (kind == Debugging.TraceEventKind.FrameEnter) {
-                    traceDispatch = _traceDispatch;
-                    traceDispatchObject = _traceObject;
+                    if (!_inTraceBack) {
+                        traceDispatch = _traceDispatch;
+                        traceDispatchObject = _traceObject;
+                    }
 
                     var properties = (PythonDebuggingPayload)customPayload;
 
@@ -134,7 +141,7 @@ namespace IronPython.Runtime {
                     pyFrame._lineNo = sourceSpan.Start.Line;
                 }
 
-                if (traceDispatchObject != null && !_exceptionThrown && !IsDummyListener) {
+                if (traceDispatchObject != null && !_inTraceBack && !_exceptionThrown && !IsDummyListener) {
                     DispatchTrace(thread, kind, payload, traceDispatch, traceDispatchObject, pyFrame);
                 }
             } finally {
@@ -188,13 +195,16 @@ namespace IronPython.Runtime {
             }
 
             bool traceDispatchThrew = true;
+            TraceBackFrame outerDispatchedFrame = DispatchedFrame; // sys.call_tracing can trace code while an event is being handled
             _inTraceBack = true;
+            DispatchedFrame = pyFrame;
             try {
                 TracebackDelegate dlg = traceDispatch(pyFrame, traceEvent, args);
                 traceDispatchThrew = false;
                 pyFrame.Setf_trace(dlg);
             } finally {
                 _inTraceBack = false;
+                DispatchedFrame = outerDispatchedFrame;
                 if (traceDispatchThrew) {
                     // We're matching CPython's behavior here.  If the trace dispatch throws any exceptions
                     // we don't re-enable tracebacks.  We need to leave the trace callback in place though

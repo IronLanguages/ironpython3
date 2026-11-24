@@ -218,9 +218,8 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         private void SetLineNumber(int newLineNum) {
-            var pyThread = PythonOps.GetFunctionStackNoCreate();
-            if (_traceAdapter == null || !IsTopMostFrame(pyThread)) {
-                throw PythonOps.ValueError("f_lineno can only be set by a trace function on the topmost frame");
+            if (_traceAdapter == null || _traceAdapter.DispatchedFrame != this) {
+                throw PythonOps.ValueError("f_lineno can only be set by a trace function on the frame being traced");
             }
 
             FunctionCode funcCode = _debugProperties.Code;
@@ -285,10 +284,6 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             throw PythonOps.ValueError("line {0} is invalid jump location ({1} - {2} are valid)", originalNewLine, funcCode.Span.Start.Line, funcCode.Span.End.Line);
-        }
-
-        private bool IsTopMostFrame(List<FunctionStack> pyThread) {
-            return pyThread != null && pyThread.Count != 0 && pyThread[pyThread.Count - 1].Frame == this;
         }
 
         private static Exception BadForOrFinallyJump(int newLineNum, Dictionary<int, bool> jumpIntoLoopIds) {

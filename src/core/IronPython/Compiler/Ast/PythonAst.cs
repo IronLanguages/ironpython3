@@ -446,7 +446,7 @@ namespace IronPython.Compiler.Ast {
         ///   Adds the frame of module, exec or eval code, which the code pushes and pops itself, as functions and class bodies do.
         /// </summary>
         private MSAst.Expression AddModuleFrame(MSAst.Expression body) {
-            if (!Body.CanThrow || !PyContext.PythonOptions.Frames) {
+            if (!PyContext.PythonOptions.Frames) {
                 return body;
             }
 

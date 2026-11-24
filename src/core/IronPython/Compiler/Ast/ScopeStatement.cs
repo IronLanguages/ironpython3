@@ -163,16 +163,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal bool ShouldInterpret {
-            get {
-                if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
-                    // code from compile, exec and eval is compiled adaptively, unless -X NoAdaptiveCompilation applies to it
-                    return !GlobalParent.IsAdaptiveCompilationDisabled;
-                }
-
-                return PyContext.ShouldInterpret(GlobalParent);
-            }
-        }
+        internal bool ShouldInterpret => PyContext.ShouldInterpret(GlobalParent);
 
         internal string AddReferencedGlobal(string name) {
             _globalVars ??= new List<string>();

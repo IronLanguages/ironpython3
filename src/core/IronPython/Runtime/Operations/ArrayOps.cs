@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Runtime;
@@ -127,12 +128,15 @@ namespace IronPython.Runtime.Operations {
         public static object __ne__(CodeContext context, object self, object? other) => NotImplementedType.Value;
 
         [SpecialName]
-        public static Array Add(Array data1, Array data2) {
+        [Obsolete("The meaning of addition will change in future versions from concatenation to element-wise addition")]
+        public static Array Add(CodeContext context, Array data1, Array data2) {
             if (data1 == null) throw PythonOps.TypeError("expected array for 1st argument, got None");
             if (data2 == null) throw PythonOps.TypeError("expected array for 2nd argument, got None");
 
             if (data1.Rank > 1 || data2.Rank > 1) throw new NotImplementedException("can't add multidimensional arrays");
             if (data1.GetLowerBound(0) != 0 || data2.GetLowerBound(0) != 0) throw new NotImplementedException("can't add non-0-based arrays");
+
+            PythonOps.Warn(context, PythonExceptions.FutureWarning, "The meaning of addition will change in future versions from concatenation to element-wise addition");
 
             Type type1 = data1.GetType();
             Type type2 = data2.GetType();
@@ -148,9 +152,12 @@ namespace IronPython.Runtime.Operations {
         /// Multiply two object[] arrays - slow version, we need to get the type, etc...
         /// </summary>
         [SpecialName]
-        public static Array Multiply(Array data, int count) {
+        [Obsolete("The meaning of multiplication will change in future versions from repetition to element-wise multiplication")]
+        public static Array Multiply(CodeContext context, Array data, int count) {
             if (data.Rank > 1) throw new NotImplementedException("can't multiply multidimensional arrays");
             if (data.GetLowerBound(0) != 0) throw new NotImplementedException("can't multiply non-0-based arrays");
+
+            PythonOps.Warn(context, PythonExceptions.FutureWarning, "The meaning of multiplication will change in future versions from repetition to element-wise multiplication");
 
             Type elemType = data.GetType().GetElementType()!;
             if (count <= 0) return Array.CreateInstance(elemType, 0);

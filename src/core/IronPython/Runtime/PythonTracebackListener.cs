@@ -101,25 +101,15 @@ namespace IronPython.Runtime {
 
                     var properties = (PythonDebuggingPayload)customPayload;
 
-                    // Module code has no frame push of its own: when exec or a script runner runs it, the caller has just pushed an entry
-                    // for it. That entry gets the new frame, rather than a second entry being pushed for the same code.
-                    bool pushedByCaller = IsPushedByCaller(thread, properties.Code);
-
                     pyFrame = new TraceBackFrame(
                         this,
                         properties.Code,
-                        GetFrame(thread, pushedByCaller ? thread.Count - 2 : thread.Count - 1),
+                        GetFrame(thread, thread.Count - 1),
                         properties,
-                        scopeCallback,
-                        pushedByCaller
+                        scopeCallback
                     );
 
-                    if (pushedByCaller) {
-                        FunctionStack entry = thread[thread.Count - 1];
-                        thread[thread.Count - 1] = new FunctionStack(entry.Context, entry.Code, pyFrame);
-                    } else {
-                        thread.Add(new FunctionStack(pyFrame));
-                    }
+                    thread.Add(new FunctionStack(pyFrame));
 
                     if (traceDispatchObject == null) {
                         return;
@@ -149,9 +139,9 @@ namespace IronPython.Runtime {
                 }
             } finally {
                 if (kind == Debugging.TraceEventKind.FrameExit && thread.Count > 0) {
-                    // don't pop frames we didn't push, nor an entry that the caller of module code pushed (the caller pops it)
+                    // don't pop frames we didn't push
                     FunctionStack top = thread[thread.Count - 1];
-                    if (top.Code == ((PythonDebuggingPayload)customPayload).Code && top.Frame is not { PushedByCaller: true }) {
+                    if (top.Code == ((PythonDebuggingPayload)customPayload).Code) {
                         thread.RemoveAt(thread.Count - 1);
                     }
                 }
@@ -159,23 +149,6 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-
-
-        /// <summary>
-        ///   Determines whether the entry on top of the frame stack was pushed for <paramref name="code"/> by the caller of that code.
-        /// </summary>
-        /// <remarks>
-        ///   Module code has no frame push of its own, so <c>exec</c> and the script runners push an entry for it just before running it.
-        ///   No frame object has been created for that entry yet, since no code has run in between.
-        /// </remarks>
-        private static bool IsPushedByCaller(List<FunctionStack> thread, FunctionCode code) {
-            if (!code.IsModule || thread.Count == 0) {
-                return false;
-            }
-
-            FunctionStack top = thread[thread.Count - 1];
-            return top.Code == code && top.Frame is null;
-        }
 
 
         /// <summary>

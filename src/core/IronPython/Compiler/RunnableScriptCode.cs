@@ -83,19 +83,5 @@ namespace IronPython.Compiler {
         }
 
         public abstract FunctionCode GetFunctionCode(bool register);
-                
-        protected void PushFrame(CodeContext context, FunctionCode code) {
-            if (((PythonContext)SourceUnit.LanguageContext).PythonOptions.Frames) {
-                PythonOps.PushFrame(context, code);
-            }
-        }
-
-        protected void PopFrame(CodeContext context, FunctionCode code) {
-            if (((PythonContext)SourceUnit.LanguageContext).PythonOptions.Frames) {
-                List<FunctionStack> stack = PythonOps.GetFunctionStack();
-                PythonOps.AssertOwnFrameOnTop(context, code, stack);
-                stack.RemoveAt(stack.Count - 1);
-            }
-        }
     }
 }

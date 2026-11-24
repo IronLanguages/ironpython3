@@ -473,6 +473,27 @@ print(('call', 'f') in events)
             sys.settrace(None)
         self.assertEqual(depth(), before)
 
+    def test_exec_frame(self):
+        # Code run by exec has a frame of its own, whose f_back is the frame that called exec
+        ns = {'sys': sys}
+        exec("frame = sys._getframe(0)", ns)
+        self.assertEqual(ns['frame'].f_code.co_filename, "<string>")
+        self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
+
+        # The code object of a function has a single frame too
+        exec("def f():\n    global frame\n    frame = sys._getframe(0)\n", ns)
+        exec(ns['f'].__code__, ns)
+        self.assertIs(ns['frame'].f_code, ns['f'].__code__)
+        self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
+
+        sys.settrace(lambda *args: None)
+        try:
+            exec(ns['f'].__code__, ns)
+        finally:
+            sys.settrace(None)
+        self.assertIs(ns['frame'].f_code, ns['f'].__code__)
+        self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
+
     @skipUnlessIronPython()
     def test_settrace_Xtracing_module_frame(self):
         # With -X:Tracing, the main module has a single frame

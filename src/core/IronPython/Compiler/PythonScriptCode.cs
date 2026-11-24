@@ -60,12 +60,10 @@ namespace IronPython.Compiler {
             LookupCompilationDelegate target = GetTarget(true);
 
             object e = PythonOps.SaveCurrentExceptionState();
-            PushFrame(ctx, _code);
             try {
                 return target(ctx, _code);
             } finally {
                 PythonOps.RestoreCurrentExceptionState(e);
-                PopFrame(ctx, _code);
             }
         }
 
@@ -170,7 +168,8 @@ namespace IronPython.Compiler {
                     debugProperties // custom payload
                 );
 
-                var lambda = (Expression<LookupCompilationDelegate>)pc.DebugContext.TransformLambda((MSAst.LambdaExpression)Ast.GetLambda().Reduce(), debugInfo);
+                // the trace listener pushes the frame of traced code, so the code's own frame is removed
+                var lambda = (Expression<LookupCompilationDelegate>)pc.DebugContext.TransformLambda((MSAst.LambdaExpression)Node.RemoveFrame(Ast.GetLambda().Reduce()), debugInfo);
 
                 LookupCompilationDelegate func = ShouldInterpret(pc)
                     ? lambda.LightCompile(pc.Options.CompilationThreshold)

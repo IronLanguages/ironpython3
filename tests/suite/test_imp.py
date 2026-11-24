@@ -1192,6 +1192,36 @@ class Test(object):
         self.assertEqual(g['ClrImporterGlobalType'].__name__, 'ClrImporterGlobalType')
 
     @skipUnlessIronPython()
+    def test_clr_importer_refresh(self):
+        # types in sys.modules that become type groups when an assembly is loaded are replaced
+        import clr
+        from System.Reflection import AssemblyName, TypeAttributes
+        from System.Reflection.Emit import AssemblyBuilder, AssemblyBuilderAccess
+        names = ['ClrImporterRefresh', 'ClrImporterRefreshNs.Type']
+        def add_reference(assembly_name, generic):
+            ab = AssemblyBuilder.DefineDynamicAssembly(AssemblyName(assembly_name), AssemblyBuilderAccess.Run)
+            mb = ab.DefineDynamicModule(assembly_name)
+            for name in names:
+                tb = mb.DefineType(name + '`1' if generic else name, TypeAttributes.Public)
+                if generic: tb.DefineGenericParameters('T')
+                tb.CreateType()
+            clr.AddReference(ab)
+
+        add_reference('ClrImporterRefresh1', False)
+        try:
+            for name in names:
+                self.assertIsInstance(importlib.import_module(name), type)
+            add_reference('ClrImporterRefresh2', True)
+            for name in names:
+                self.assertNotIsInstance(sys.modules[name], type)
+                self.assertIs(importlib.import_module(name), sys.modules[name])
+            import ClrImporterRefreshNs
+            self.assertIs(sys.modules['ClrImporterRefreshNs.Type'], ClrImporterRefreshNs.Type)
+        finally:
+            for name in names + ['ClrImporterRefreshNs']:
+                sys.modules.pop(name, None)
+
+    @skipUnlessIronPython()
     def test_clr_importer_globals(self):
         # the runtime's globals take precedence over namespaces
         import clr

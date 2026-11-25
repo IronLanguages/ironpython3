@@ -954,7 +954,22 @@ namespace IronPython.Compiler.Ast {
         private static Type GetDelegateType(Parameter[] parameters, bool wrapper, out Delegate originalTarget)
             => PythonCallTargets.GetPythonTargetType(wrapper, parameters.Length, out originalTarget);
 
-        internal override bool CanThrow => false;
+        internal override bool CanThrow {
+            get {
+                // the name is bound in a namespace that can be a user mapping: outside a function (exec locals, __prepare__),
+                // and for a global name, since IronPython binds it through a dict subclass's __setitem__, unlike CPython
+                if (Parent is not FunctionDefinition || PythonVariable?.Kind == VariableKind.Global
+                        || Decorators is { Count: > 0 } || ReturnAnnotation is { CanThrow: true }) {
+                    return true;
+                }
+                foreach (Parameter p in _parameters) {
+                    if (p.DefaultValue is { CanThrow: true } || p.Annotation is { CanThrow: true }) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
 
         internal override void RewriteBody(MSAst.ExpressionVisitor visitor) {
             _dlrBody = null;    // clear the cached body if we've been reduced

@@ -140,6 +140,19 @@ class TracebackTest(IronPythonTestCase):
             except:
                 self.assert_traceback([(lineno + 4, 0, FILE, 'C2'), _retb])
 
+    def test_throw_in_default_value(self):
+        lineno = getlineno(lambda _: None)
+
+        def f():
+            x = 1
+            def g(a=_raise_exception()): pass
+
+        try:
+            f()
+        except:
+            self.assert_traceback([(lineno + 7, 0, FILE, 'test_throw_in_default_value'),
+                                (lineno + 4, 0, FILE, 'f'), _retb])
+
     def test_throw_when_defining_class_directly(self):
         lineno = getlineno(lambda _: None)
 

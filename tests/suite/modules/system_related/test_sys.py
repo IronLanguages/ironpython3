@@ -573,6 +573,26 @@ print(('call', 'f') in events)
         self.assertIs(ns['frame'].f_code, ns['f'].__code__)
         self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
 
+    def test_def_frame(self):
+        # A def statement can run Python code (decorators, default values, annotations), so the code running it has a frame,
+        # whether called directly, through exec or through eval
+        names = []
+        def probe(*args):
+            names.append(sys._getframe(1).f_code.co_name)
+            return args[0] if args else None
+
+        ns = {'probe': probe}
+        exec("def with_default():\n    def inner(x=probe()): pass\n"
+             "def decorated():\n    @probe\n    def inner(): pass\n"
+             "def annotated():\n    def inner(x: probe()): pass\n", ns)
+        for name in ('with_default', 'decorated', 'annotated'):
+            f = ns[name]
+            f()
+            exec(f.__code__, ns)
+            eval(f.__code__, ns)
+        exec("class C:\n    def m(self, x=probe()): pass\n", ns)
+        self.assertEqual(names, ['with_default'] * 3 + ['decorated'] * 3 + ['annotated'] * 3 + ['C'])
+
     def test_settrace_callback_frames(self):
         # Code run by the trace function is not traced, but it has frames, as does the trace function itself
         def depth():

@@ -385,16 +385,18 @@ namespace IronPython.Compiler.Ast {
                 var start = IndexToLocation(ret.Expression.StartIndex);
                 var end = IndexToLocation(ret.Expression.EndIndex);
 
-                return Ast.Block(
-                    MakeEntrySequencePoint(),
-                    Ast.DebugInfo(
-                        _document,
-                        start.Line,
-                        start.Column,
-                        end.Line,
-                        end.Column
-                    ),
-                    AstUtils.Convert(simpleBody, typeof(object))
+                return AddModuleFrame(
+                    Ast.Block(
+                        MakeEntrySequencePoint(),
+                        Ast.DebugInfo(
+                            _document,
+                            start.Line,
+                            start.Column,
+                            end.Line,
+                            end.Column
+                        ),
+                        AstUtils.Convert(simpleBody, typeof(object))
+                    )
                 );
             }
 
@@ -419,7 +421,9 @@ namespace IronPython.Compiler.Ast {
             block.Add(_body);
 
             MSAst.Expression body = Ast.Block(block.ToReadOnlyCollection());
-            
+
+            body = AddModuleFrame(body);
+
             body = WrapScopeStatements(body, Body.CanThrow);   // new ComboActionRewriter().VisitNode(Transform(ag))
 
             body = AddModulePublishing(body);
@@ -436,6 +440,17 @@ namespace IronPython.Compiler.Ast {
             }
 
             return body;
+        }
+
+        /// <summary>
+        ///   Adds the frame of module, exec or eval code, which the code pushes and pops itself, as functions and class bodies do.
+        /// </summary>
+        private MSAst.Expression AddModuleFrame(MSAst.Expression body) {
+            if (!PyContext.PythonOptions.Frames) {
+                return body;
+            }
+
+            return Ast.Block([FunctionStackVariable], AddFrame(LocalContext, FuncCodeExpr, body));
         }
 
         /// <summary>

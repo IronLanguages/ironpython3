@@ -56,7 +56,6 @@ namespace IronPython.Compiler {
 
                 object e = PythonOps.SaveCurrentExceptionState();
                 var funcCode = EnsureFunctionCode(_optimizedTarget, false, true);
-                PushFrame(_optimizedContext, funcCode);
                 try {
                     if (Ast.CompilerContext.SourceUnit.Kind == SourceCodeKind.Expression) {
                         return OptimizedEvalWrapper(funcCode);
@@ -64,7 +63,6 @@ namespace IronPython.Compiler {
                     return _optimizedTarget(funcCode);
                 } finally {
                     PythonOps.RestoreCurrentExceptionState(e);
-                    PopFrame(_optimizedContext, funcCode);
                 }
             }
 

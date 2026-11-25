@@ -67,6 +67,21 @@ namespace IronPython.Runtime {
         // dummy listener used to maintain the frame stack on a thread without a trace function
         internal bool IsDummyListener { get; }
 
+        [ThreadStatic]
+        private static TraceBackFrame _currentTraceFrame;
+
+        /// <summary>
+        ///   The frame of the event that a trace function handles on the current thread, which is the only frame that can jump.
+        ///   Null if no event is being handled.
+        /// </summary>
+        /// <remarks>
+        ///   It is the frame that the DLR's <see cref="Debugging.TracePipeline.TrySetNextStatement"/> moves: the frame of the innermost event
+        ///   handled on the thread (events can be handled in a nested way, see sys.call_tracing), except that the frame of a 'return' event
+        ///   does not become current. It is kept per thread rather than per listener, since a listener set later by sys.settrace can handle
+        ///   the events of a frame.
+        /// </remarks>
+        internal static TraceBackFrame CurrentTraceFrame => _currentTraceFrame;
+
 #if PROFILE_SUPPORT
         internal void SetProfile(TracebackDelegate traceDispatch) {
             _traceDispatch = traceDispatch;
@@ -90,36 +105,25 @@ namespace IronPython.Runtime {
             var thread = PythonOps.GetFunctionStack();
             TraceBackFrame pyFrame;
 
-            if (_inTraceBack) {
-                return;
-            }
-
+            // Code that the trace function runs is not traced, but it still has frames, which are pushed and popped here as usual.
             try {
                 if (kind == Debugging.TraceEventKind.FrameEnter) {
-                    traceDispatch = _traceDispatch;
-                    traceDispatchObject = _traceObject;
+                    if (!_inTraceBack) {
+                        traceDispatch = _traceDispatch;
+                        traceDispatchObject = _traceObject;
+                    }
 
                     var properties = (PythonDebuggingPayload)customPayload;
-
-                    // Module code has no frame push of its own: when exec or a script runner runs it, the caller has just pushed an entry
-                    // for it. That entry gets the new frame, rather than a second entry being pushed for the same code.
-                    bool pushedByCaller = IsPushedByCaller(thread, properties.Code);
 
                     pyFrame = new TraceBackFrame(
                         this,
                         properties.Code,
-                        GetFrame(thread, pushedByCaller ? thread.Count - 2 : thread.Count - 1),
+                        GetFrame(thread, thread.Count - 1),
                         properties,
-                        scopeCallback,
-                        pushedByCaller
+                        scopeCallback
                     );
 
-                    if (pushedByCaller) {
-                        FunctionStack entry = thread[thread.Count - 1];
-                        thread[thread.Count - 1] = new FunctionStack(entry.Context, entry.Code, pyFrame);
-                    } else {
-                        thread.Add(new FunctionStack(pyFrame));
-                    }
+                    thread.Add(new FunctionStack(pyFrame));
 
                     if (traceDispatchObject == null) {
                         return;
@@ -144,14 +148,14 @@ namespace IronPython.Runtime {
                     pyFrame._lineNo = sourceSpan.Start.Line;
                 }
 
-                if (traceDispatchObject != null && !_exceptionThrown && !IsDummyListener) {
+                if (traceDispatchObject != null && !_inTraceBack && !_exceptionThrown && !IsDummyListener) {
                     DispatchTrace(thread, kind, payload, traceDispatch, traceDispatchObject, pyFrame);
                 }
             } finally {
                 if (kind == Debugging.TraceEventKind.FrameExit && thread.Count > 0) {
-                    // don't pop frames we didn't push, nor an entry that the caller of module code pushed (the caller pops it)
+                    // don't pop frames we didn't push
                     FunctionStack top = thread[thread.Count - 1];
-                    if (top.Code == ((PythonDebuggingPayload)customPayload).Code && top.Frame is not { PushedByCaller: true }) {
+                    if (top.Code == ((PythonDebuggingPayload)customPayload).Code) {
                         thread.RemoveAt(thread.Count - 1);
                     }
                 }
@@ -159,23 +163,6 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-
-
-        /// <summary>
-        ///   Determines whether the entry on top of the frame stack was pushed for <paramref name="code"/> by the caller of that code.
-        /// </summary>
-        /// <remarks>
-        ///   Module code has no frame push of its own, so <c>exec</c> and the script runners push an entry for it just before running it.
-        ///   No frame object has been created for that entry yet, since no code has run in between.
-        /// </remarks>
-        private static bool IsPushedByCaller(List<FunctionStack> thread, FunctionCode code) {
-            if (!code.IsModule || thread.Count == 0) {
-                return false;
-            }
-
-            FunctionStack top = thread[thread.Count - 1];
-            return top.Code == code && top.Frame is null;
-        }
 
 
         /// <summary>
@@ -216,12 +203,17 @@ namespace IronPython.Runtime {
 
             bool traceDispatchThrew = true;
             _inTraceBack = true;
+            TraceBackFrame outerTraceFrame = _currentTraceFrame;
+            if (kind != Debugging.TraceEventKind.FrameExit) {
+                _currentTraceFrame = pyFrame;
+            }
             try {
                 TracebackDelegate dlg = traceDispatch(pyFrame, traceEvent, args);
                 traceDispatchThrew = false;
                 pyFrame.Setf_trace(dlg);
             } finally {
                 _inTraceBack = false;
+                _currentTraceFrame = outerTraceFrame;
                 if (traceDispatchThrew) {
                     // We're matching CPython's behavior here.  If the trace dispatch throws any exceptions
                     // we don't re-enable tracebacks.  We need to leave the trace callback in place though

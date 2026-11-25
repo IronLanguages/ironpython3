@@ -317,6 +317,85 @@ f()
             self.assertEqual(events, expected_events, (source, jump_from, jump_to))
             self.assertEqual(sys._getframe(0).f_code.co_name, 'test_settrace_jump', (source, jump_from, jump_to))
 
+    def test_settrace_jump_after_settrace(self):
+        # A frame can still jump when sys.settrace was called while it runs (as pdb's set_trace does),
+        # and when the trace function has just removed itself
+        def tracer(frame, event, arg):
+            if event == 'line' and frame.f_code in (retrace.__code__, untrace.__code__):
+                first = frame.f_code.co_firstlineno
+                if frame.f_lineno == first + 3:     # x = 2
+                    if frame.f_code is untrace.__code__:
+                        sys.settrace(None)
+                    frame.f_lineno = first + 4      # skip it
+            return tracer
+
+        def retrace():
+            sys.settrace(tracer)
+            x = 1
+            x = 2
+            return x
+
+        def untrace():
+            x = 0
+            x = 1
+            x = 2
+            return x
+
+        orig_sys_trace_func = sys.gettrace()
+        for f in (retrace, untrace):
+            sys.settrace(tracer)
+            try:
+                result = f()
+            finally:
+                sys.settrace(orig_sys_trace_func)
+            self.assertEqual(result, 1, f.__name__)
+
+    def test_settrace_jump_nested(self):
+        # With events handled in a nested way, through sys.call_tracing, a jump never moves another frame than the one requested
+        def f(depth, out):
+            out.append(1)   # +1
+            out.append(2)   # +2
+            out.append(3)   # +3
+            return out
+
+        first = f.__code__.co_firstlineno
+
+        def run(jump_event):
+            state = {}
+            def tracer(frame, event, arg):
+                if frame.f_code is f.__code__:
+                    depth = frame.f_locals['depth']
+                    if event == 'line' and depth == 0 and frame.f_lineno == first + 1 and 'outer' not in state:
+                        state['outer'] = frame
+                        state['inner'] = sys.call_tracing(f, (1, []))
+                    elif event == jump_event and depth == 1 and 'jump' not in state:
+                        # the outer frame in a 'line' event of the inner one, the inner frame in its own 'return' event
+                        target = state['outer'] if event == 'line' else frame
+                        try:
+                            target.f_lineno = first + 3
+                            state['jump'] = 'accepted'
+                        except ValueError:
+                            state['jump'] = 'rejected'
+                return tracer
+
+            orig_sys_trace_func = sys.gettrace()
+            sys.settrace(tracer)
+            try:
+                outer = f(0, [])
+            finally:
+                sys.settrace(orig_sys_trace_func)
+            return state['jump'], state['inner'], outer
+
+        jump, inner, outer = run('line')
+        self.assertEqual(inner, [1, 2, 3])
+        if is_cli:
+            # only the frame of the innermost event can jump, since the DLR moves that frame
+            self.assertEqual((jump, outer), ('rejected', [1, 2, 3]))
+        else:
+            self.assertEqual((jump, outer), ('accepted', [3]))
+
+        self.assertEqual(run('return'), ('rejected', [1, 2, 3], [1, 2, 3]))
+
     def test_cp30130(self):
         def f(frame, event, arg):
             if event == 'exception':
@@ -472,6 +551,86 @@ print(('call', 'f') in events)
         finally:
             sys.settrace(None)
         self.assertEqual(depth(), before)
+
+    def test_exec_frame(self):
+        # Code run by exec has a frame of its own, whose f_back is the frame that called exec
+        ns = {'sys': sys}
+        exec("frame = sys._getframe(0)", ns)
+        self.assertEqual(ns['frame'].f_code.co_filename, "<string>")
+        self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
+
+        # The code object of a function has a single frame too
+        exec("def f():\n    global frame\n    frame = sys._getframe(0)\n", ns)
+        exec(ns['f'].__code__, ns)
+        self.assertIs(ns['frame'].f_code, ns['f'].__code__)
+        self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
+
+        sys.settrace(lambda *args: None)
+        try:
+            exec(ns['f'].__code__, ns)
+        finally:
+            sys.settrace(None)
+        self.assertIs(ns['frame'].f_code, ns['f'].__code__)
+        self.assertEqual(ns['frame'].f_back.f_code.co_name, "test_exec_frame")
+
+    def test_def_frame(self):
+        # A def statement can run Python code (decorators, default values, annotations), so the code running it has a frame,
+        # whether called directly, through exec or through eval
+        names = []
+        def probe(*args):
+            names.append(sys._getframe(1).f_code.co_name)
+            return args[0] if args else None
+
+        ns = {'probe': probe}
+        exec("def with_default():\n    def inner(x=probe()): pass\n"
+             "def decorated():\n    @probe\n    def inner(): pass\n"
+             "def annotated():\n    def inner(x: probe()): pass\n", ns)
+        for name in ('with_default', 'decorated', 'annotated'):
+            f = ns[name]
+            f()
+            exec(f.__code__, ns)
+            eval(f.__code__, ns)
+        exec("class C:\n    def m(self, x=probe()): pass\n", ns)
+        self.assertEqual(names, ['with_default'] * 3 + ['decorated'] * 3 + ['annotated'] * 3 + ['C'])
+
+    def test_settrace_callback_frames(self):
+        # Code run by the trace function is not traced, but it has frames, as does the trace function itself
+        def depth():
+            n, f = 0, sys._getframe(1)
+            while f:
+                n, f = n + 1, f.f_back
+            return n
+
+        def g():
+            return sys._getframe(0).f_code.co_name
+
+        def traced():
+            pass
+
+        events = []
+        results = {}
+        def tracer(frame, event, arg):
+            events.append((event, frame.f_code.co_name))
+            if event == 'call' and frame.f_code.co_name == 'traced' and not results:
+                results['tracer'] = sys._getframe(0).f_code.co_name
+                results['tracer f_back'] = sys._getframe(1).f_code.co_name
+                results['function'] = g()
+                results['eval'] = eval("sys._getframe(0)", {'sys': sys}).f_code.co_filename
+                ns = {'sys': sys}
+                exec("frame = sys._getframe(0)", ns)
+                results['exec'] = ns['frame'].f_code.co_filename
+            return None
+
+        before = depth()
+        sys.settrace(tracer)
+        try:
+            traced()
+        finally:
+            sys.settrace(None)
+        self.assertEqual(depth(), before)
+
+        self.assertEqual(results, {'tracer': 'tracer', 'tracer f_back': 'traced', 'function': 'g', 'eval': '<string>', 'exec': '<string>'})
+        self.assertNotIn(('call', 'g'), events)
 
     @skipUnlessIronPython()
     def test_settrace_Xtracing_module_frame(self):

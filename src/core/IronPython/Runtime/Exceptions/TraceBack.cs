@@ -105,23 +105,13 @@ namespace IronPython.Runtime.Exceptions {
             _back = back;
         }
 
-        internal TraceBackFrame(PythonTracebackListener traceAdapter, FunctionCode code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IDictionary<object, object>> scopeCallback, bool pushedByCaller) {
+        internal TraceBackFrame(PythonTracebackListener traceAdapter, FunctionCode code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IDictionary<object, object>> scopeCallback) {
             _traceAdapter = traceAdapter;
             _code = code;
             _back = back;
             _debugProperties = debugProperties;
             _scopeCallback = scopeCallback;
-            PushedByCaller = pushedByCaller;
         }
-
-        /// <summary>
-        ///   True if the frame stack entry of this frame was pushed, and is popped, by the caller of the code rather than the trace listener.
-        /// </summary>
-        /// <remarks>
-        ///   This is the case for module code run by <c>exec</c> or a script runner, which push the entry for it since module code has
-        ///   no frame push of its own (see <see cref="PythonTracebackListener"/>).
-        /// </remarks>
-        internal bool PushedByCaller { get; }
 
         [SpecialName, PropertyMethod]
         public object Getf_trace() {
@@ -228,9 +218,8 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         private void SetLineNumber(int newLineNum) {
-            var pyThread = PythonOps.GetFunctionStackNoCreate();
-            if (_traceAdapter == null || !IsTopMostFrame(pyThread)) {
-                throw PythonOps.ValueError("f_lineno can only be set by a trace function on the topmost frame");
+            if (_traceAdapter == null || PythonTracebackListener.CurrentTraceFrame != this) {
+                throw PythonOps.ValueError("f_lineno can only be set by a trace function on the frame of the current event, other than a 'return' event");
             }
 
             FunctionCode funcCode = _debugProperties.Code;
@@ -295,10 +284,6 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             throw PythonOps.ValueError("line {0} is invalid jump location ({1} - {2} are valid)", originalNewLine, funcCode.Span.Start.Line, funcCode.Span.End.Line);
-        }
-
-        private bool IsTopMostFrame(List<FunctionStack> pyThread) {
-            return pyThread != null && pyThread.Count != 0 && pyThread[pyThread.Count - 1].Frame == this;
         }
 
         private static Exception BadForOrFinallyJump(int newLineNum, Dictionary<int, bool> jumpIntoLoopIds) {

@@ -321,19 +321,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "The expression can be either be a string, bytes\n" +
             "or a code object returned by compile()")]
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [NotNone] FunctionCode code, PythonDictionary? globals = null, object? locals = null) {
-            CodeContext evalContext = GetExecEvalScopeOptional(context, globals, locals, copyModule: false);
-            if (context.LanguageContext.PythonOptions.Frames) {
-                List<FunctionStack> stack = PythonOps.PushFrame(evalContext, code);
-                try {
-                    return code.Call(evalContext);
-                } finally {
-                    PythonOps.AssertOwnFrameOnTop(evalContext, code, stack);
-                    stack.RemoveAt(stack.Count - 1);
-                }
-            }
-            return code.Call(evalContext);
-        }
+        public static object eval(CodeContext/*!*/ context, [NotNone] FunctionCode code, PythonDictionary? globals = null, object? locals = null)
+            => code.Call(GetExecEvalScopeOptional(context, globals, locals, copyModule: false));
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
@@ -393,17 +382,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
             CodeContext execContext = Builtin.GetExecEvalScope(context, globals, Builtin.GetAttrLocals(context, locals), true, false);
-            if (context.LanguageContext.PythonOptions.Frames) {
-                List<FunctionStack> stack = PythonOps.PushFrame(execContext, code);
-                try {
-                    code.Call(execContext);
-                } finally {
-                    PythonOps.AssertOwnFrameOnTop(execContext, code, stack);
-                    stack.RemoveAt(stack.Count - 1);
-                }
-            } else {
-                code.Call(execContext);
-            }
+            code.Call(execContext);
         }
 
         [Documentation("")] // provided by first overload

@@ -67,6 +67,21 @@ namespace IronPython.Runtime {
         // dummy listener used to maintain the frame stack on a thread without a trace function
         internal bool IsDummyListener { get; }
 
+        [ThreadStatic]
+        private static TraceBackFrame _currentTraceFrame;
+
+        /// <summary>
+        ///   The frame of the event that a trace function handles on the current thread, which is the only frame that can jump.
+        ///   Null if no event is being handled.
+        /// </summary>
+        /// <remarks>
+        ///   It is the frame that the DLR's <see cref="Debugging.TracePipeline.TrySetNextStatement"/> moves: the frame of the innermost event
+        ///   handled on the thread (events can be handled in a nested way, see sys.call_tracing), except that the frame of a 'return' event
+        ///   does not become current. It is kept per thread rather than per listener, since a listener set later by sys.settrace can handle
+        ///   the events of a frame.
+        /// </remarks>
+        internal static TraceBackFrame CurrentTraceFrame => _currentTraceFrame;
+
 #if PROFILE_SUPPORT
         internal void SetProfile(TracebackDelegate traceDispatch) {
             _traceDispatch = traceDispatch;
@@ -188,14 +203,17 @@ namespace IronPython.Runtime {
 
             bool traceDispatchThrew = true;
             _inTraceBack = true;
-            pyFrame.IsHandlingTraceEvent = true;
+            TraceBackFrame outerTraceFrame = _currentTraceFrame;
+            if (kind != Debugging.TraceEventKind.FrameExit) {
+                _currentTraceFrame = pyFrame;
+            }
             try {
                 TracebackDelegate dlg = traceDispatch(pyFrame, traceEvent, args);
                 traceDispatchThrew = false;
                 pyFrame.Setf_trace(dlg);
             } finally {
                 _inTraceBack = false;
-                pyFrame.IsHandlingTraceEvent = false;
+                _currentTraceFrame = outerTraceFrame;
                 if (traceDispatchThrew) {
                     // We're matching CPython's behavior here.  If the trace dispatch throws any exceptions
                     // we don't re-enable tracebacks.  We need to leave the trace callback in place though

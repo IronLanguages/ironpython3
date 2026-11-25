@@ -350,6 +350,52 @@ f()
                 sys.settrace(orig_sys_trace_func)
             self.assertEqual(result, 1, f.__name__)
 
+    def test_settrace_jump_nested(self):
+        # With events handled in a nested way, through sys.call_tracing, a jump never moves another frame than the one requested
+        def f(depth, out):
+            out.append(1)   # +1
+            out.append(2)   # +2
+            out.append(3)   # +3
+            return out
+
+        first = f.__code__.co_firstlineno
+
+        def run(jump_event):
+            state = {}
+            def tracer(frame, event, arg):
+                if frame.f_code is f.__code__:
+                    depth = frame.f_locals['depth']
+                    if event == 'line' and depth == 0 and frame.f_lineno == first + 1 and 'outer' not in state:
+                        state['outer'] = frame
+                        state['inner'] = sys.call_tracing(f, (1, []))
+                    elif event == jump_event and depth == 1 and 'jump' not in state:
+                        # the outer frame in a 'line' event of the inner one, the inner frame in its own 'return' event
+                        target = state['outer'] if event == 'line' else frame
+                        try:
+                            target.f_lineno = first + 3
+                            state['jump'] = 'accepted'
+                        except ValueError:
+                            state['jump'] = 'rejected'
+                return tracer
+
+            orig_sys_trace_func = sys.gettrace()
+            sys.settrace(tracer)
+            try:
+                outer = f(0, [])
+            finally:
+                sys.settrace(orig_sys_trace_func)
+            return state['jump'], state['inner'], outer
+
+        jump, inner, outer = run('line')
+        self.assertEqual(inner, [1, 2, 3])
+        if is_cli:
+            # only the frame of the innermost event can jump, since the DLR moves that frame
+            self.assertEqual((jump, outer), ('rejected', [1, 2, 3]))
+        else:
+            self.assertEqual((jump, outer), ('accepted', [3]))
+
+        self.assertEqual(run('return'), ('rejected', [1, 2, 3], [1, 2, 3]))
+
     def test_cp30130(self):
         def f(frame, event, arg):
             if event == 'exception':

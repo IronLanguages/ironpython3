@@ -317,6 +317,39 @@ f()
             self.assertEqual(events, expected_events, (source, jump_from, jump_to))
             self.assertEqual(sys._getframe(0).f_code.co_name, 'test_settrace_jump', (source, jump_from, jump_to))
 
+    def test_settrace_jump_after_settrace(self):
+        # A frame can still jump when sys.settrace was called while it runs (as pdb's set_trace does),
+        # and when the trace function has just removed itself
+        def tracer(frame, event, arg):
+            if event == 'line' and frame.f_code in (retrace.__code__, untrace.__code__):
+                first = frame.f_code.co_firstlineno
+                if frame.f_lineno == first + 3:     # x = 2
+                    if frame.f_code is untrace.__code__:
+                        sys.settrace(None)
+                    frame.f_lineno = first + 4      # skip it
+            return tracer
+
+        def retrace():
+            sys.settrace(tracer)
+            x = 1
+            x = 2
+            return x
+
+        def untrace():
+            x = 0
+            x = 1
+            x = 2
+            return x
+
+        orig_sys_trace_func = sys.gettrace()
+        for f in (retrace, untrace):
+            sys.settrace(tracer)
+            try:
+                result = f()
+            finally:
+                sys.settrace(orig_sys_trace_func)
+            self.assertEqual(result, 1, f.__name__)
+
     def test_cp30130(self):
         def f(frame, event, arg):
             if event == 'exception':

@@ -113,6 +113,16 @@ namespace IronPython.Runtime.Exceptions {
             _scopeCallback = scopeCallback;
         }
 
+        /// <summary>
+        ///   True while a trace function handles an event of this frame, which is when it may set <see cref="f_lineno"/>.
+        /// </summary>
+        /// <remarks>
+        ///   The frame keeps this itself, since its events can be handled by a later listener than the one that created it
+        ///   (when sys.settrace is called while it runs), and the frame is not necessarily the topmost one: code that the trace function runs,
+        ///   including the trace function itself, has frames too.
+        /// </remarks>
+        internal bool IsHandlingTraceEvent { get; set; }
+
         [SpecialName, PropertyMethod]
         public object Getf_trace() {
             if (_traceAdapter != null) {
@@ -218,7 +228,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         private void SetLineNumber(int newLineNum) {
-            if (_traceAdapter == null || _traceAdapter.DispatchedFrame != this) {
+            if (_traceAdapter == null || !IsHandlingTraceEvent) {
                 throw PythonOps.ValueError("f_lineno can only be set by a trace function on the frame being traced");
             }
 

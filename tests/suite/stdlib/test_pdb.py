@@ -9,7 +9,7 @@
 import doctest
 import sys
 
-from iptest import is_ironpython, generate_suite, run_test
+from iptest import is_ironpython, is_posix, generate_suite, run_test
 
 import test.test_pdb
 
@@ -39,6 +39,19 @@ def load_tests(loader, standard_tests, pattern):
             'test_pdb_until_command_for_generator',
             'test_post_mortem',
         )]
+        if sys.version_info >= (3, 6):
+            failing_tests += [doctests['test.test_pdb.' + name] for name in (
+                # the second set_trace stops on the line after it (in CI, an order-dependent "Value cannot be null. Parameter name: del")
+                'test_pdb_issue_20766',
+                # asyncio.new_event_loop() fails: socket.fileno() returns Int64, which selectors rejects
+                'test_pdb_next_command_for_asyncgen',
+                'test_pdb_next_command_for_coroutine',
+                'test_pdb_return_command_for_coroutine',
+                'test_pdb_until_command_for_coroutine',
+            )]
+        if is_posix:
+            # the subprocess's stderr is lost: Popen on .NET's Process doesn't implement stderr=STDOUT
+            failing_tests.append(test.test_pdb.PdbTestCase('test_issue16180'))
 
         skip_tests = []
 

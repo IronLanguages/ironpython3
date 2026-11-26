@@ -49,9 +49,11 @@ def load_tests(loader, standard_tests, pattern):
                 'test_pdb_return_command_for_coroutine',
                 'test_pdb_until_command_for_coroutine',
             )]
+
         if is_posix:
-            # the subprocess's stderr is lost: Popen on .NET's Process doesn't implement stderr=STDOUT
-            failing_tests.append(test.test_pdb.PdbTestCase('test_issue16180'))
+            failing_tests += [
+                test.test_pdb.PdbTestCase('test_issue16180'),  # the subprocess's stderr is lost: Popen on .NET's Process doesn't implement stderr=STDOUT
+            ]
 
         skip_tests = []
 

@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -15,7 +16,9 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     public sealed class SiteLocalStorageBuilder : ArgBuilder {
         public SiteLocalStorageBuilder(ParameterInfo info)
-            : base(info) {
+            : base(info)
+        {
+            Debug.Assert(info != null);
         }
 
         public override int Priority {
@@ -27,7 +30,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            return AstUtils.Constant(Activator.CreateInstance(ParameterInfo.ParameterType));
+            return AstUtils.Constant(Activator.CreateInstance(ParameterInfo!.ParameterType)); // the constructor requires a non-null ParameterInfo
         }
     }
 }

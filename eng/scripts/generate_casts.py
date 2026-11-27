@@ -59,7 +59,7 @@ enum_casts = {
 }
 
 def generate_nullable_instance(cw):
-    cw.enter_block("public static object NewNullableInstance(Type type)")
+    cw.enter_block("public static object? NewNullableInstance(Type type)")
     cond = cw.conditions()
     for t in types:
         cond.condition("if (type == %(type)sType)", type = t)
@@ -81,7 +81,7 @@ def mark_cls_compliance(cw, t):
 
 def generate_type_cast(cw, t):
     mark_cls_compliance(cw, t)
-    cw.enter_block("public static %(type)s ExplicitCastTo%(type)s(object o)", type = t)
+    cw.enter_block("public static %(type)s ExplicitCastTo%(type)s(object? o)", type = t)
     cw.enter_block("if (o is not null)")
     cw.write("Type type = o.GetType();");
 
@@ -111,7 +111,7 @@ def generate_type_cast(cw, t):
 
 def generate_nullable_type_cast(cw, t):
     mark_cls_compliance(cw, t)
-    cw.enter_block("public static Nullable<%(type)s> ExplicitCastToNullable%(type)s(object o)", type = t)
+    cw.enter_block("public static Nullable<%(type)s> ExplicitCastToNullable%(type)s(object? o)", type = t)
     cw.enter_block("if (o is null)")
     cw.write("return new Nullable<%(type)s>();", type = t);
     cw.exit_block()

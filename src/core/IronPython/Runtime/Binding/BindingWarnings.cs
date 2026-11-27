@@ -25,8 +25,7 @@ namespace IronPython.Runtime.Binding {
         public static bool ShouldWarn(PythonContext/*!*/ context, OverloadInfo/*!*/ method, [NotNullWhen(true)] out WarningInfo? info) {
             Assert.NotNull(method);
 
-            ObsoleteAttribute[] os = (ObsoleteAttribute[])method.ReflectionInfo.GetCustomAttributes(typeof(ObsoleteAttribute), true);
-            if (os.Length > 0) {
+            if (method.ReflectionInfo?.GetCustomAttributes(typeof(ObsoleteAttribute), true) is ObsoleteAttribute[] { Length: > 0 } os) {
                 info = new WarningInfo(
                     PythonExceptions.DeprecationWarning,
                     string.Format("{0}.{1} has been obsoleted.  {2}",

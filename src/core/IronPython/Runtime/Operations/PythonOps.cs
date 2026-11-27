@@ -3393,8 +3393,7 @@ namespace IronPython.Runtime.Operations {
                     return StopIterationValue(e);
                 }
                 // A [LightThrowing] __next__/send may return a light-exception sentinel rather than throwing — handle both forms.
-                if (LightExceptions.IsLightException(yielded)) {
-                    var clrExc = LightExceptions.GetLightException(yielded!);
+                if (LightExceptions.GetLightException(yielded) is Exception clrExc) {
                     if (clrExc is StopIterationException si) return StopIterationValue(si);
                     throw clrExc;
                 }

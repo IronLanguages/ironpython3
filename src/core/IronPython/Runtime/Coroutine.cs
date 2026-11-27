@@ -119,7 +119,8 @@ namespace IronPython.Runtime {
                 return LightExceptions.Throw(new TaskCanceledException(task));
             }
             if (task.IsFaulted) {
-                return LightExceptions.Throw(task.Exception?.InnerException ?? task.Exception);
+                AggregateException exception = task.Exception!; // a faulted task always has an exception
+                return LightExceptions.Throw(exception.InnerException ?? exception);
             }
             return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException(task.Result!));
         }
@@ -212,8 +213,7 @@ namespace IronPython.Runtime {
                 while (true) {
                     object? result = send(null);
 
-                    if (LightExceptions.IsLightException(result)) {
-                        var clrExc = LightExceptions.GetLightException(result);
+                    if (LightExceptions.GetLightException(result) is Exception clrExc) {
                         if (clrExc is StopIterationException) {
                             var pyExc = ((IPythonAwareException)clrExc).PythonException;
                             return pyExc is PythonExceptions._StopIteration si ? si.value : null;

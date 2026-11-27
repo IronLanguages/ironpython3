@@ -222,7 +222,7 @@ namespace IronPython.Runtime {
             // This function body is the psuedo code straight from Pep 342.
             try {
                 object? res = @throw(new GeneratorExitException(), null, null, finalizing);
-                Exception lightEh = LightExceptions.GetLightException(res);
+                Exception? lightEh = LightExceptions.GetLightException(res);
                 if (lightEh != null) {
                     if (lightEh is StopIterationException || lightEh is GeneratorExitException) {
                         return null;
@@ -333,7 +333,7 @@ namespace IronPython.Runtime {
                 try {
                     // This may run the users generator.
                     object? res = close(true);
-                    Exception ex = LightExceptions.GetLightException(res);
+                    Exception? ex = LightExceptions.GetLightException(res);
                     if (ex != null) {
                         HandleFinalizerException(ex);
                     }

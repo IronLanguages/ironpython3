@@ -173,9 +173,9 @@ class Operator(Symbol):
             return
         if self.isCompare():
             if type != 'Complex':
-                cw.writeline('case PythonOperator.%s: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((%s)constLeft.Value %s (%s)constRight.Value));' % (self.clrName, type, self.symbol, type))
+                cw.writeline('case PythonOperator.%s: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((%s)left %s (%s)right));' % (self.clrName, type, self.symbol, type))
         elif (type !='Double' and type != 'Complex') or not self.is_bitwise():
-            cw.writeline('case PythonOperator.%s: return new ConstantExpression(%sOps.%s((%s)constLeft.Value, (%s)constRight.Value));' % (self.clrName, type, self.clrName, type, type))
+            cw.writeline('case PythonOperator.%s: return new ConstantExpression(%sOps.%s((%s)left, (%s)right));' % (self.clrName, type, self.clrName, type, type))
 
 class Grouping(Symbol):
     def __init__(self, symbol, name, side, titleName=None):
@@ -567,8 +567,8 @@ def fast_op_ret_bool(cw):
 def gen_constant_folding(cw):
     types = ['Int32', 'Double', 'BigInteger', 'Complex']
     for cur_type in types:
-        cw.enter_block('if (constLeft.Value.GetType() == typeof(%s))' % (cur_type, ))
-        cw.enter_block('switch (Operator)')
+        cw.enter_block('if (left.GetType() == typeof(%s))' % (cur_type, ))
+        cw.enter_block('switch (op)')
         for op in ops:
             gen = getattr(op, 'genConstantFolding', None)
             if gen is not None:

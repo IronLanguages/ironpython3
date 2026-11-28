@@ -96,6 +96,13 @@ namespace IronPythonTest.Cases {
                     paths.Insert(0, Path.Combine(root, "src", "core", "IronPython.StdLib", "lib"));
                 }
             }
+
+            // the default path gets the DLLs directory from the entry assembly, which is missing on .NET Framework,
+            // where NUnit runs the tests in a separate AppDomain
+            var dlls = Path.Combine(Path.GetDirectoryName(Executable), "DLLs");
+            if (!paths.Contains(dlls)) {
+                paths.Add(dlls);
+            }
             engine.SetSearchPaths(paths);
         }
 

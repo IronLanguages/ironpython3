@@ -64,6 +64,7 @@
   <Project Path="src/executables/IronPython.Console32/IronPython.Console32.csproj" />
   <Project Path="src/executables/IronPython.Window/IronPython.Window.csproj" />
   <Project Path="src/executables/IronPython.Window32/IronPython.Window32.csproj" />
+  <Project Path="src/extensions/IronPython.NDArray/IronPython.NDArray.csproj" />
   <Project Path="src/extensions/IronPython.SQLite/IronPython.SQLite.csproj" />
   <Project Path="src/extensions/IronPython.Wpf/IronPython.Wpf.csproj" />
   <Project Path="src/roslyn/IronPython.Analyzer/IronPython.Analyzer.csproj" />
